@@ -20,7 +20,7 @@ registration extension with both interceptors) and prints the 7-line wiring
 checklist. The steps below are what the generator + checklist cover - verify
 rather than re-do
 
-1. **Project layout**: `src/Modules/Premise.Modules.<Name>/` with feature folders (one folder
+1. **Project layout**: `src/Modules/LocIntel.Modules.<Name>/` with feature folders (one folder
    per use case), not layer folders. Handlers are Wolverine handlers.
 2. **Schema + DbContext**: new `<ModuleName>DbContext` with
    `HasDefaultSchema("<module_name>")` and its own `__EFMigrationsHistory` in
@@ -32,7 +32,7 @@ rather than re-do
    integration message subscriptions. Cross-module communication is messages +
    outbox only - no project reference to another module's internals.
 5. **Contracts**: anything other modules may consume goes in
-   `src/Premise.Contracts/<Name>/` (DTOs and integration events only).
+   `src/LocIntel.Contracts/<Name>/` (DTOs and integration events only).
 6. **Architecture tests**: add the module to the boundary rules (may not
    reference other modules' internals; must only expose contracts).
 7. **Test fixtures**: per-module fixture that provisions the schema, applies

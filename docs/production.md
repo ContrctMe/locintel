@@ -1,7 +1,7 @@
 # Deploying a fork to production
 
 The AppHost is **dev-only orchestration**. In production you run one
-container image (`src/Premise.Api`) in three roles, two static frontend
+container image (`src/LocIntel.Api`) in three roles, two static frontend
 builds, Postgres, and your chosen adapters. This page is the complete story:
 topology, the database role split, every configuration key, the boot guards,
 and how the system degrades when a dependency is down.
@@ -29,7 +29,7 @@ reports its role — wire it to your readiness probe.
 Two Postgres identities:
 
 - The **owner** (whatever your platform provisions) is handed **only to the
-  migrate role** via `ConnectionStrings:premise`.
+  migrate role** via `ConnectionStrings:locintel`.
 - `api` and `worker` receive the same connection string **plus**
   `Database:AppUser` / `Database:AppPassword`; at boot they rewrite the
   connection string to those credentials and never hold owner access.
@@ -54,7 +54,7 @@ Everything the image reads. Section syntax (`A:B`) maps to env vars as
 |---|---|---|
 | `ROLE` | yes | `migrate` \| `api` \| `worker` (default `api`) |
 | `Build:Version` | recommended | Stamp it in CI (e.g. the git SHA or tag); surfaces in `/healthz` and the console footer so "what version are you running?" is answerable |
-| `ConnectionStrings:premise` | yes | Owner credentials; rewritten for api/worker |
+| `ConnectionStrings:locintel` | yes | Owner credentials; rewritten for api/worker |
 | `Database:AppUser` / `Database:AppPassword` | api/worker | The RLS-subject identity |
 | `Public:HostTemplate` | yes | e.g. `https://{slug}.yourproduct.com` — contact links are minted from this |
 | `Proxy:TrustForwardedHeaders` | yes, behind a proxy | Honors `X-Forwarded-Proto/Host/For` from the immediate peer. **Required in the documented topology**: without it, TLS terminates at the proxy, the app sees HTTP, session cookies lose the `Secure` flag and scheme-built URLs (billing returns, SSO portal returns) come out `http://`. Only enable when the proxy strips inbound `X-Forwarded-*` from clients (reverse proxies do). Production also hard-floors cookies to `Secure` regardless — a forgotten flag breaks logins loudly instead of leaking cookies silently |
@@ -209,7 +209,7 @@ OTLP only, and wired: traces (ASP.NET Core, HttpClient, Wolverine), metrics,
 and logs all export wherever the standard `OTEL_EXPORTER_OTLP_ENDPOINT` /
 `OTEL_EXPORTER_OTLP_HEADERS` env vars point — the Aspire dashboard in dev
 (it injects those vars), any collector in production; nothing exports when
-they are unset. Services are named `premise-api` / `premise-worker`. Keep
+they are unset. Services are named `locintel-api` / `locintel-worker`. Keep
 tenant, site, and actor on traces and logs as baggage — **never metric
 labels**; a metric with an org label is a cardinality bomb and a
 cross-tenant side channel at once.

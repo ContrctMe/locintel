@@ -1,5 +1,5 @@
-import { api, ENTITLEMENTS, type EntitlementCode } from '@premise/api';
-import { Button, Card, CardContent, CardHeader, CardTitle, ConfirmButton, Input } from '@premise/ui';
+import { api, ENTITLEMENTS, type EntitlementCode } from '@locintel/api';
+import { Button, Card, CardContent, CardHeader, CardTitle, ConfirmButton, Input } from '@locintel/ui';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { entitlementLabel, fmtDateTime } from '../lib/format';

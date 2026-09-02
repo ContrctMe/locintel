@@ -10,7 +10,7 @@ date: 2026-08-30
 ## Decision
 
 Adopted from a sibling repository's proven standards (Kajay), adapted where
-Premise's architecture demands:
+LocIntel's architecture demands:
 
 1. **Tenant context is set on every connection open, unconditionally** - the
    org id, or `''` when no tenant resolved. A pooled connection's previous

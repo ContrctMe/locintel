@@ -1,13 +1,13 @@
 {
-  "name": "premise-web",
+  "name": "locintel-web",
   "private": true,
   "scripts": {
-    "codegen:api": "pnpm --filter @premise/codegen generate",
-    "codegen:keys": "dotnet run --project ../tools/Premise.Tools.CodegenKeys",
+    "codegen:api": "pnpm --filter @locintel/codegen generate",
+    "codegen:keys": "dotnet run --project ../tools/LocIntel.Tools.CodegenKeys",
     "typecheck": "pnpm -r typecheck",
     "build": "pnpm -r build",
-    "dev:console": "pnpm --filter @premise/console dev",
-    "dev:public": "pnpm --filter @premise/public dev",
+    "dev:console": "pnpm --filter @locintel/console dev",
+    "dev:public": "pnpm --filter @locintel/public dev",
     "lint": "oxlint apps packages/api/src",
     "test": "pnpm -r --if-present test"
   },

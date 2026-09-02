@@ -1,4 +1,4 @@
-import { api, type Capability } from '@premise/api';
+import { api, type Capability } from '@locintel/api';
 import { useQuery } from '@tanstack/react-query';
 
 export type Me =

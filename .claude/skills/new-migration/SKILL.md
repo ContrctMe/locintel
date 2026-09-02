@@ -15,7 +15,7 @@ migration files; always add a new one.
    modules is two migrations - and a design smell worth flagging.
 2. Create it:
    ```bash
-   dotnet ef migrations add <Name> --project src/Modules/Premise.Modules.<Name> --startup-project src/Modules/Premise.Modules.<Name> --context <Name>DbContext
+   dotnet ef migrations add <Name> --project src/Modules/LocIntel.Modules.<Name> --startup-project src/Modules/LocIntel.Modules.<Name> --context <Name>DbContext
    ```
 3. **RLS checklist - every new tenant-scoped table:**
    - `ALTER TABLE <schema>.<table> ENABLE ROW LEVEL SECURITY;`

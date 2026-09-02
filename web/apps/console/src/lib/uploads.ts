@@ -1,4 +1,4 @@
-import { api } from '@premise/api';
+import { api } from '@locintel/api';
 
 type Ticket = { url: string; method: string; headers: Record<string, string> };
 

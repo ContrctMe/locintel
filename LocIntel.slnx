@@ -1,0 +1,32 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/LocIntel.Api/LocIntel.Api.csproj" />
+    <Project Path="src/LocIntel.AppHost/LocIntel.AppHost.csproj" />
+    <Project Path="src/LocIntel.Contracts/LocIntel.Contracts.csproj" />
+    <Project Path="src/LocIntel.Platform/LocIntel.Platform.csproj" />
+  </Folder>
+  <Folder Name="/src/Integrations/">
+    <Project Path="src/Integrations/LocIntel.Integrations.AmazonS3/LocIntel.Integrations.AmazonS3.csproj" />
+    <Project Path="src/Integrations/LocIntel.Integrations.AzureBlob/LocIntel.Integrations.AzureBlob.csproj" />
+    <Project Path="src/Integrations/LocIntel.Integrations.Smtp/LocIntel.Integrations.Smtp.csproj" />
+    <Project Path="src/Integrations/LocIntel.Integrations.Stripe/LocIntel.Integrations.Stripe.csproj" />
+    <Project Path="src/Integrations/LocIntel.Integrations.WorkOS/LocIntel.Integrations.WorkOS.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/">
+    <Project Path="src/Modules/LocIntel.Modules.Audit/LocIntel.Modules.Audit.csproj" />
+    <Project Path="src/Modules/LocIntel.Modules.Checklists/LocIntel.Modules.Checklists.csproj" />
+    <Project Path="src/Modules/LocIntel.Modules.Entitlements/LocIntel.Modules.Entitlements.csproj" />
+    <Project Path="src/Modules/LocIntel.Modules.Identity/LocIntel.Modules.Identity.csproj" />
+    <Project Path="src/Modules/LocIntel.Modules.Ingest/LocIntel.Modules.Ingest.csproj" />
+    <Project Path="src/Modules/LocIntel.Modules.Storage/LocIntel.Modules.Storage.csproj" />
+    <Project Path="src/Modules/LocIntel.Modules.Tenancy/LocIntel.Modules.Tenancy.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/LocIntel.ArchitectureTests/LocIntel.ArchitectureTests.csproj" />
+    <Project Path="tests/LocIntel.IntegrationTests/LocIntel.IntegrationTests.csproj" />
+    <Project Path="tests/LocIntel.Platform.UnitTests/LocIntel.Platform.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/LocIntel.Tools.CodegenKeys/LocIntel.Tools.CodegenKeys.csproj" />
+  </Folder>
+</Solution>

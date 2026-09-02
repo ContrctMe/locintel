@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Premise module generator (ADR 36): scaffolds a vertical-slice module with
+"""LocIntel module generator (ADR 36): scaffolds a vertical-slice module with
 its own schema, DbContext, migration history, and registration checklist.
 
 Usage: python3 tools/new-module.py Bookings
@@ -14,17 +14,17 @@ if len(sys.argv) != 2 or not re.fullmatch(r"[A-Z][A-Za-z0-9]+", sys.argv[1]):
 name = sys.argv[1]
 schema = re.sub(r"(?<!^)(?=[A-Z])", "_", name).lower()
 root = pathlib.Path(__file__).resolve().parent.parent
-module_dir = root / "src" / "Modules" / f"Premise.Modules.{name}"
+module_dir = root / "src" / "Modules" / f"LocIntel.Modules.{name}"
 if module_dir.exists():
     sys.exit(f"{module_dir} already exists")
 
 (module_dir / "Data").mkdir(parents=True)
 
-(module_dir / f"Premise.Modules.{name}.csproj").write_text(f"""<Project Sdk="Microsoft.NET.Sdk">
+(module_dir / f"LocIntel.Modules.{name}.csproj").write_text(f"""<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\\..\\Premise.Contracts\\Premise.Contracts.csproj" />
-    <ProjectReference Include="..\\..\\Premise.Platform\\Premise.Platform.csproj" />
+    <ProjectReference Include="..\\..\\LocIntel.Contracts\\LocIntel.Contracts.csproj" />
+    <ProjectReference Include="..\\..\\LocIntel.Platform\\LocIntel.Platform.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -40,10 +40,10 @@ if module_dir.exists():
 """)
 
 (module_dir / "Data" / f"{name}DbContext.cs").write_text(f"""using Microsoft.EntityFrameworkCore;
-using Premise.Platform.Data;
-using Premise.Platform.Kernel;
+using LocIntel.Platform.Data;
+using LocIntel.Platform.Kernel;
 
-namespace Premise.Modules.{name}.Data;
+namespace LocIntel.Modules.{name}.Data;
 
 public sealed class {name}DbContext(DbContextOptions<{name}DbContext> options, ITenantContext tenant)
     : ModuleDbContext(options, tenant)
@@ -64,9 +64,9 @@ public sealed class {name}DbContext(DbContextOptions<{name}DbContext> options, I
 
 (module_dir / "Data" / "DesignTimeFactory.cs").write_text(f"""using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
-using Premise.Platform.Kernel;
+using LocIntel.Platform.Kernel;
 
-namespace Premise.Modules.{name}.Data;
+namespace LocIntel.Modules.{name}.Data;
 
 /// <summary>Design-time only (dotnet ef). Never used at runtime.</summary>
 public sealed class DesignTimeFactory : IDesignTimeDbContextFactory<{name}DbContext>
@@ -83,12 +83,12 @@ public sealed class DesignTimeFactory : IDesignTimeDbContextFactory<{name}DbCont
 
 (module_dir / f"{name}Module.cs").write_text(f"""using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Premise.Modules.{name}.Data;
-using Premise.Platform.Data;
-using Premise.Platform.Kernel;
+using LocIntel.Modules.{name}.Data;
+using LocIntel.Platform.Data;
+using LocIntel.Platform.Kernel;
 using Wolverine.EntityFrameworkCore;
 
-namespace Premise.Modules.{name};
+namespace LocIntel.Modules.{name};
 
 public static class {name}Module
 {{
@@ -105,7 +105,7 @@ public static class {name}Module
                     npgsql.MigrationsHistoryTable("__ef_migrations_history", "{schema}"))
                 .AddInterceptors(
                     TenantSessionInterceptor.Instance,
-                    sp.GetRequiredService<Premise.Platform.Audit.AuditSaveChangesInterceptor>());
+                    sp.GetRequiredService<LocIntel.Platform.Audit.AuditSaveChangesInterceptor>());
         }});
         return services;
     }}
@@ -115,15 +115,15 @@ public static class {name}Module
 print(f"""created {module_dir}
 
 Finish the wiring (each is one line):
- 1. dotnet sln add src/Modules/Premise.Modules.{name}
- 2. dotnet add src/Premise.Api reference src/Modules/Premise.Modules.{name}
+ 1. dotnet sln add src/Modules/LocIntel.Modules.{name}
+ 2. dotnet add src/LocIntel.Api reference src/Modules/LocIntel.Modules.{name}
  3. Program.cs:  builder.Services.Add{name}Module();
  4. Program.cs:  opts.Discovery.IncludeAssembly(typeof({name}Module).Assembly);
- 5. tests/Premise.ArchitectureTests ModuleBoundaryTests: add typeof(Modules.{name}.{name}Module).Assembly
- 6. src/Premise.Api/MigrationRunner.cs: migrate {name}DbContext + add "{schema}" to BOTH grant lines
+ 5. tests/LocIntel.ArchitectureTests ModuleBoundaryTests: add typeof(Modules.{name}.{name}Module).Assembly
+ 6. src/LocIntel.Api/MigrationRunner.cs: migrate {name}DbContext + add "{schema}" to BOTH grant lines
  7. tests ApiFixture: migrate {name}DbContext + GRANT on schema "{schema}"
  8. First migration (RLS checklist in the new-migration skill):
-    dotnet ef migrations add Initial --project src/Modules/Premise.Modules.{name} --startup-project src/Modules/Premise.Modules.{name}
+    dotnet ef migrations add Initial --project src/Modules/LocIntel.Modules.{name} --startup-project src/Modules/LocIntel.Modules.{name}
 
 Remember (CLAUDE.md): one Wolverine handler class per message; [Transactional(typeof({name}DbContext))]
 on endpoints whose chain touches another module's DbContext (injecting IScopeResolver counts).""")

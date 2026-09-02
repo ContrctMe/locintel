@@ -1,5 +1,5 @@
 {
-  "name": "@premise/api",
+  "name": "@locintel/api",
   "private": true,
   "type": "module",
   "exports": {

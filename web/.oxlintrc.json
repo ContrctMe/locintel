@@ -7,8 +7,8 @@
       {
         "patterns": [
           {
-            "group": ["**/components/ui/*", "@premise/ui/src/*"],
-            "message": "Import UI from the @premise/ui barrel, never components/ui/* directly (ADR 20)."
+            "group": ["**/components/ui/*", "@locintel/ui/src/*"],
+            "message": "Import UI from the @locintel/ui barrel, never components/ui/* directly (ADR 20)."
           }
         ]
       }

@@ -1,6 +1,6 @@
-import { api } from '@premise/api';
+import { api } from '@locintel/api';
 import { Button, Card, CardContent, ConfirmButton, Table, TableBody, TableCell,
-  TableHead, TableHeader, TableRow } from '@premise/ui';
+  TableHead, TableHeader, TableRow } from '@locintel/ui';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import { fmtDateTime } from '../lib/format';

@@ -1,4 +1,4 @@
-# Premise
+# LocIntel
 
 A forkable template for **location/site-based multi-tenant SaaS** — the
 platform machinery every product in this category rebuilds, finished once:
@@ -6,7 +6,7 @@ tenancy with real isolation, plans and metering, roles and scopes, schedules
 that respect time zones, audit that holds up, and the operational seams
 (auth, billing, email, storage) behind swappable adapters.
 
-You don't install Premise. You **fork it, rename it, and build your vertical
+You don't install LocIntel. You **fork it, rename it, and build your vertical
 on top** — the template stays out of your domain and owns everything beneath
 it.
 
@@ -45,7 +45,7 @@ Prereqs: .NET 10 SDK, [Aspire CLI](https://learn.microsoft.com/dotnet/aspire)
 (`~/.aspire/bin` on PATH), Docker, Node + pnpm.
 
 ```bash
-cd src/Premise.AppHost && aspire run
+cd src/LocIntel.AppHost && aspire run
 ```
 
 That boots Postgres, the WorkOS emulator, the migration runner, api + worker,
@@ -55,10 +55,10 @@ as `alice@acme.test` / `test123`. Caught mail (contact links, resets):
 `http://acme-dev.localhost:5174`.
 
 ```bash
-dotnet build Premise.slnx                       # build everything
-dotnet test tests/Premise.ArchitectureTests     # fast structural checks
-dotnet test tests/Premise.Platform.UnitTests    # pure logic
-dotnet test tests/Premise.IntegrationTests      # Testcontainers Postgres
+dotnet build LocIntel.slnx                       # build everything
+dotnet test tests/LocIntel.ArchitectureTests     # fast structural checks
+dotnet test tests/LocIntel.Platform.UnitTests    # pure logic
+dotnet test tests/LocIntel.IntegrationTests      # Testcontainers Postgres
 cd web && pnpm install && pnpm typecheck        # frontends
 ```
 
@@ -82,10 +82,10 @@ guards that refuse to boot until dev-only adapters are replaced.
 ## Layout
 
 ```
-src/Premise.AppHost/       Aspire dev orchestration (dev-only)
-src/Premise.Api/           the deployable: one image, ROLE = migrate|api|worker
-src/Premise.Platform/      kernel seams: principals, scopes, entitlements, ports
-src/Premise.Contracts/     cross-module messages + read-model contracts (ADR 37)
+src/LocIntel.AppHost/       Aspire dev orchestration (dev-only)
+src/LocIntel.Api/           the deployable: one image, ROLE = migrate|api|worker
+src/LocIntel.Platform/      kernel seams: principals, scopes, entitlements, ports
+src/LocIntel.Contracts/     cross-module messages + read-model contracts (ADR 37)
 src/Modules/*/             vertical slices, one schema + migration history each
 src/Integrations/*/        adapters: WorkOS, Stripe, SMTP, S3, Azure Blob
 web/apps/console/          tenant console (SPA)

@@ -1,0 +1,32 @@
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using LocIntel.Contracts;
+using LocIntel.Modules.Entitlements.Data;
+using LocIntel.Platform.Entitlements;
+using LocIntel.Platform.Kernel;
+using Wolverine.Attributes;
+using Wolverine.Http;
+
+namespace LocIntel.Modules.Entitlements;
+
+public sealed record SetEntitlementRequest(string Value);
+
+public sealed record AddExceptionRequest(string Value, string Reason, DateTimeOffset ExpiresAt);
+
+public static class EntitlementEndpoints
+{
+    /// <summary>Effective entitlements for the active org - part of the UI bootstrap.</summary>
+    [Transactional(typeof(EntitlementsDbContext))]
+    [WolverineGet("/api/entitlements")]
+    public static async Task<IResult> List(
+        IPrincipalAccessor accessor,
+        EntitlementsService service,
+        IEnumerable<IEntitlementUsageProbe> probes,
+        CancellationToken ct
+    )
+    {
+        if (accessor.Current is not Principal.User { ActiveOrg: { } org })
+            return Results.Unauthorized();
+        return Results.Ok(await service.DescribeAllAsync(org, probes, ct));
+    }
+}

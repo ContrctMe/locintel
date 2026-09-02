@@ -10,11 +10,11 @@ set -euo pipefail
 INDEX="${1:?shard index (1-based) required}"
 COUNT="${2:?shard count required}"
 CONFIGURATION="${CONFIGURATION:-Debug}"
-PROJECT="tests/Premise.IntegrationTests"
+PROJECT="tests/LocIntel.IntegrationTests"
 
 classes=$(
   dotnet test "$PROJECT" -c "$CONFIGURATION" --no-build --list-tests 2>/dev/null |
-    grep -E '^\s+Premise\.IntegrationTests\.' |
+    grep -E '^\s+LocIntel\.IntegrationTests\.' |
     sed -E 's/^\s+//; s/\.[^.]+$//' |
     sort -u
 )

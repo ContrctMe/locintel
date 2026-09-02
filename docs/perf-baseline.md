@@ -14,7 +14,7 @@ the same setup, not to size production.
    `RateLimits:*PerMinute` config far above the load, so the limiter is not
    what you measure.
 3. Run the API standalone (Release, quiet logs) against the same database.
-4. `node tools/load-baseline.mjs <base> <premise_key> [seconds] [concurrency]`
+4. `node tools/load-baseline.mjs <base> <locintel_key> [seconds] [concurrency]`
    - zero dependencies, warms up each target, reports rps and p50/95/99.
 
 ## Numbers (1,000-site org, 8s per target, concurrency 16)

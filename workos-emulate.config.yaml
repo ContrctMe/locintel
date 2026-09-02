@@ -10,8 +10,8 @@ users:
     email_verified: true
 
   - id: user_01DEVOPERATOR0000000000
-    email: operator@premise.local
-    first_name: Premise
+    email: operator@locintel.local
+    first_name: LocIntel
     last_name: Operator
     password: test123
     email_verified: true

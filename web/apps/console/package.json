@@ -1,5 +1,5 @@
 {
-  "name": "@premise/console",
+  "name": "@locintel/console",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,8 +9,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@premise/api": "workspace:*",
-    "@premise/ui": "workspace:*",
+    "@locintel/api": "workspace:*",
+    "@locintel/ui": "workspace:*",
     "@tanstack/react-query": "^5.102.8",
     "@tanstack/react-router": "^1.170.32",
     "react": "^19.2.8",

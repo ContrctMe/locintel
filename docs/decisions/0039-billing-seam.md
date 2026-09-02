@@ -13,7 +13,7 @@ Billing follows the auth seam's shape (ADR 14): a provider port
 (`IBillingProvider`) with hosted UI for everything that touches money -
 checkout and the billing portal are provider-hosted URLs, so card data never
 crosses the template. The built-in adapter is Stripe
-(`Premise.Integrations.Stripe`, smoke-tested against stripe-mock with
+(`LocIntel.Integrations.Stripe`, smoke-tested against stripe-mock with
 hand-signed webhooks); the local provider is dev/test only and refused in
 Production.
 
@@ -38,7 +38,7 @@ Production.
 The entitlement system was complete but disconnected from revenue; this
 closes the loop without importing PCI scope, provider lock-in, or a second
 source of entitlement truth. Metadata stamped on the Stripe session and
-subscription (`premise_org`, `premise_plan`) makes every webhook
+subscription (`locintel_org`, `locintel_plan`) makes every webhook
 self-describing - no lookup tables.
 
 ## Consequences

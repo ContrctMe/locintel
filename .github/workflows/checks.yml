@@ -20,15 +20,15 @@ jobs:
         with:
           dotnet-version: 10.0.x
       - run: dotnet tool restore || true
-      - run: dotnet build Premise.slnx -c Release
+      - run: dotnet build LocIntel.slnx -c Release
       - name: Format check
         run: dotnet csharpier check .
       - name: Architecture tests
-        run: dotnet test tests/Premise.ArchitectureTests -c Release --no-build
+        run: dotnet test tests/LocIntel.ArchitectureTests -c Release --no-build
       - name: Wolverine codegen (catches fails-at-first-request wiring at CI time)
-        run: dotnet run --project src/Premise.Api -c Release --no-build -- codegen write
+        run: dotnet run --project src/LocIntel.Api -c Release --no-build -- codegen write
         env:
-          ConnectionStrings__premise: "Host=localhost;Port=1;Database=x;Username=x;Password=x"
+          ConnectionStrings__locintel: "Host=localhost;Port=1;Database=x;Username=x;Password=x"
           ASPNETCORE_ENVIRONMENT: Testing
           ROLE: api
 
@@ -59,14 +59,14 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
-      - run: dotnet build tests/Premise.IntegrationTests -c Release
+      - run: dotnet build tests/LocIntel.IntegrationTests -c Release
       - name: Integration shard ${{ matrix.shard }}/2 (real PostgreSQL via Testcontainers)
         run: CONFIGURATION=Release tools/run-integration-shard.sh ${{ matrix.shard }} 2
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: integration-shard-${{ matrix.shard }}
-          path: tests/Premise.IntegrationTests/TestResults/*.trx
+          path: tests/LocIntel.IntegrationTests/TestResults/*.trx
 
   contract:
     # the committed OpenAPI document and generated client must match the code:
@@ -85,14 +85,14 @@ jobs:
           node-version: 22
       - name: Regenerate contract snapshot
         run: |
-          dotnet test tests/Premise.IntegrationTests -c Release \
+          dotnet test tests/LocIntel.IntegrationTests -c Release \
             --filter "FullyQualifiedName~OpenApiSnapshotTest"
-          dotnet run --project tools/Premise.Tools.CodegenKeys -c Release
+          dotnet run --project tools/LocIntel.Tools.CodegenKeys -c Release
       - name: Regenerate typed client
         working-directory: web
         run: |
           pnpm install --frozen-lockfile
-          pnpm --filter @premise/codegen generate
+          pnpm --filter @locintel/codegen generate
       - name: Contract drift is a build failure
         run: git diff --exit-code web/packages/api
 

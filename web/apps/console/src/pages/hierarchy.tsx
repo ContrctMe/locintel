@@ -1,6 +1,6 @@
-import { api } from '@premise/api';
+import { api } from '@locintel/api';
 import { Button, Card, CardContent, CardHeader, CardTitle, ConfirmButton, FormDialog,
-  Input, Label, Select } from '@premise/ui';
+  Input, Label, Select } from '@locintel/ui';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useApiMutation } from '../lib/mutation';

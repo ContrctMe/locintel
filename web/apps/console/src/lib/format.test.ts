@@ -1,4 +1,4 @@
-import { ENTITLEMENTS } from '@premise/api';
+import { ENTITLEMENTS } from '@locintel/api';
 import { describe, expect, it } from 'vitest';
 import { ENTITLEMENT_LABELS, entitlementLabel, fmtDayInZone, fmtTimeInZone } from './format';
 

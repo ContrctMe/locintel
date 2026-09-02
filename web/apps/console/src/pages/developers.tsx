@@ -1,7 +1,7 @@
-import { api } from '@premise/api';
+import { api } from '@locintel/api';
 import { Button, Card, CardContent, CardHeader, CardTitle, ConfirmButton, FormDialog,
   Input, Label, Select, Table, TableBody, TableCell, TableHead, TableHeader,
-  TableRow } from '@premise/ui';
+  TableRow } from '@locintel/ui';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { fmtDateTime } from '../lib/format';
@@ -125,7 +125,7 @@ function ApiKeysCard() {
       </CardHeader>
       <CardContent>
         <p className="mb-3 text-sm text-muted-foreground">
-          Authenticate with <code className="rounded bg-muted px-1">Authorization: Bearer premise_…</code>{' '}
+          Authenticate with <code className="rounded bg-muted px-1">Authorization: Bearer locintel_…</code>{' '}
           against this console's origin. The full contract:{' '}
           <a href="/openapi/v1.json" target="_blank" rel="noreferrer" className="underline">
             OpenAPI spec
@@ -253,7 +253,7 @@ function WebhooksCard() {
             }}
             trigger={<Button size="sm">Add webhook</Button>}
             title="Add webhook"
-            description="We POST signed JSON for each matching org event. Verify with the X-Premise-Signature header."
+            description="We POST signed JSON for each matching org event. Verify with the X-LocIntel-Signature header."
           >
             {secret ? (
               <SecretReveal
@@ -266,7 +266,7 @@ function WebhooksCard() {
                   <Label htmlFor="hook-url">URL</Label>
                   <Input id="hook-url" value={url}
                     onChange={(e) => setUrl(e.target.value)}
-                    placeholder="https://example.com/premise-hooks" />
+                    placeholder="https://example.com/locintel-hooks" />
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="hook-events">

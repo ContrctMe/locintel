@@ -15,7 +15,7 @@ export const Route = createRootRoute({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: org ? `${org.name} — Locations` : 'Premise' },
+      { title: org ? `${org.name} — Locations` : 'LocIntel' },
       {
         name: 'description',
         content: org
@@ -52,7 +52,7 @@ function RootComponent() {
       <footer className="mt-16 border-t">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-6 py-6 text-xs text-muted-foreground">
           <span>{org?.name ?? ''}</span>
-          <span>Powered by Premise</span>
+          <span>Powered by LocIntel</span>
         </div>
       </footer>
     </RootDocument>

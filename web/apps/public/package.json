@@ -1,5 +1,5 @@
 {
-  "name": "@premise/public",
+  "name": "@locintel/public",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,7 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@premise/ui": "workspace:*",
+    "@locintel/ui": "workspace:*",
     "@tanstack/react-router": "^1.170.32",
     "@tanstack/react-start": "^1.168.49",
     "leaflet": "^1.9.4",

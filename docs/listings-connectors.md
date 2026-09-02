@@ -9,7 +9,7 @@ reverse-engineer site truth. Two primitives:
 
 ## 1. The canonical feed (pull)
 
-`GET /api/listings/feed` with an API key (`Authorization: Bearer premise_…`,
+`GET /api/listings/feed` with an API key (`Authorization: Bearer locintel_…`,
 ADR 40) whose role grants `sites:read`. Returns every site in the key's
 scope as a full listing record:
 
@@ -41,7 +41,7 @@ subtree-scoped key exports its subtree (gate 3 filters, as everywhere).
 
 Subscribe an outbound webhook (Developers page, or `POST /api/webhooks`) to
 `site.*` and `hierarchy.*` events. Deliveries are HMAC-signed
-(`X-Premise-Signature`, `t/v1`, dual-secret during rotation) and retried
+(`X-LocIntel-Signature`, `t/v1`, dual-secret during rotation) and retried
 with backoff. The webhook tells you *when*; re-pull the feed for *what* —
 diffing feed snapshots beats trusting event payloads for full-record sync.
 

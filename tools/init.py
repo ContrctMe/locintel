@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Premise fork initializer (ADR 36): renames the template to YOUR product.
+"""LocIntel fork initializer (ADR 36): renames the template to YOUR product.
 
 Usage: python3 tools/init.py Acme
-Renames Premise -> Acme across solution, projects, namespaces, config keys,
+Renames LocIntel -> Acme across solution, projects, namespaces, config keys,
 schemas stay as-is (they are yours to evolve), and the web workspace scopes.
 Run BEFORE the first migration is applied anywhere durable. One-way: there is
 no upstream-merge story after forking - this is stated, not implied.
@@ -31,18 +31,18 @@ for path in root.rglob("*"):
     if path.is_file() and eligible(path) and path.suffix in TEXT_SUFFIXES:
         text = path.read_text(errors="ignore")
         replaced = (text
-                    .replace("Premise", name)
-                    .replace("premise", lower)
+                    .replace("LocIntel", name)
+                    .replace("locintel", lower)
                     .replace(f"@{lower}/", f"@{lower}/"))
         if replaced != text:
             path.write_text(replaced)
 
 # 2. file and directory names (deepest first)
 renames = sorted(
-    (p for p in root.rglob("*Premise*") if eligible(p)),
+    (p for p in root.rglob("*LocIntel*") if eligible(p)),
     key=lambda p: len(p.parts), reverse=True)
 for path in renames:
-    path.rename(path.with_name(path.name.replace("Premise", name)))
+    path.rename(path.with_name(path.name.replace("LocIntel", name)))
 
 # 3. remove template-only bits
 for sample in []:  # add paths here if the fork should drop sample slices

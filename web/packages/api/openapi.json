@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.1",
   "info": {
-    "title": "Premise.Api | v1",
+    "title": "LocIntel.Api | v1",
     "version": "1.0.0"
   },
   "servers": [
@@ -13,7 +13,7 @@
     "/api/sites/{id}/closures": {
       "get": {
         "tags": [
-          "Premise.Modules.Tenancy.Sites.ClosureEndpoints"
+          "LocIntel.Modules.Tenancy.Sites.ClosureEndpoints"
         ],
         "summary": "GET_api_sites_id_closures",
         "description": "GET_api_sites_id_closures",
@@ -52,7 +52,7 @@
       },
       "post": {
         "tags": [
-          "Premise.Modules.Tenancy.Sites.ClosureEndpoints"
+          "LocIntel.Modules.Tenancy.Sites.ClosureEndpoints"
         ],
         "summary": "POST_api_sites_id_closures",
         "description": "POST_api_sites_id_closures",
@@ -103,7 +103,7 @@
     "/api/sites/{id}/closures/{date}": {
       "delete": {
         "tags": [
-          "Premise.Modules.Tenancy.Sites.ClosureEndpoints"
+          "LocIntel.Modules.Tenancy.Sites.ClosureEndpoints"
         ],
         "summary": "DELETE_api_sites_id_closures_date",
         "description": "DELETE_api_sites_id_closures_date",
@@ -152,7 +152,7 @@
     "/api/sites": {
       "post": {
         "tags": [
-          "Premise.Modules.Tenancy.Sites.SiteEndpoints"
+          "LocIntel.Modules.Tenancy.Sites.SiteEndpoints"
         ],
         "summary": "POST_api_sites",
         "description": "POST_api_sites",
@@ -190,7 +190,7 @@
       },
       "get": {
         "tags": [
-          "Premise.Modules.Tenancy.Sites.SiteEndpoints"
+          "LocIntel.Modules.Tenancy.Sites.SiteEndpoints"
         ],
         "summary": "GET_api_sites",
         "description": "GET_api_sites",
@@ -261,7 +261,7 @@
     "/api/sites/open-now": {
       "get": {
         "tags": [
-          "Premise.Modules.Tenancy.Sites.SiteEndpoints"
+          "LocIntel.Modules.Tenancy.Sites.SiteEndpoints"
         ],
         "summary": "GET_api_sites_open_now",
         "description": "GET_api_sites_open_now",
@@ -294,7 +294,7 @@
     "/api/sites/{id}": {
       "get": {
         "tags": [
-          "Premise.Modules.Tenancy.Sites.SiteEndpoints"
+          "LocIntel.Modules.Tenancy.Sites.SiteEndpoints"
         ],
         "summary": "GET_api_sites_id",
         "description": "GET_api_sites_id",
@@ -333,7 +333,7 @@
       },
       "post": {
         "tags": [
-          "Premise.Modules.Tenancy.Sites.SiteEndpoints"
+          "LocIntel.Modules.Tenancy.Sites.SiteEndpoints"
         ],
         "summary": "POST_api_sites_id",
         "description": "POST_api_sites_id",
@@ -384,7 +384,7 @@
     "/api/sites/{id}/schedules": {
       "post": {
         "tags": [
-          "Premise.Modules.Tenancy.Sites.SiteEndpoints"
+          "LocIntel.Modules.Tenancy.Sites.SiteEndpoints"
         ],
         "summary": "POST_api_sites_id_schedules",
         "description": "POST_api_sites_id_schedules",
@@ -433,7 +433,7 @@
       },
       "get": {
         "tags": [
-          "Premise.Modules.Tenancy.Sites.ScheduleEndpoints"
+          "LocIntel.Modules.Tenancy.Sites.ScheduleEndpoints"
         ],
         "summary": "GET_api_sites_id_schedules",
         "description": "GET_api_sites_id_schedules",
@@ -474,7 +474,7 @@
     "/api/sites/{id}/schedules/{scheduleId}": {
       "delete": {
         "tags": [
-          "Premise.Modules.Tenancy.Sites.ScheduleEndpoints"
+          "LocIntel.Modules.Tenancy.Sites.ScheduleEndpoints"
         ],
         "summary": "DELETE_api_sites_id_schedules_scheduleId",
         "description": "DELETE_api_sites_id_schedules_scheduleId",
@@ -524,7 +524,7 @@
     "/api/sites/{id}/windows": {
       "get": {
         "tags": [
-          "Premise.Modules.Tenancy.Sites.ScheduleEndpoints"
+          "LocIntel.Modules.Tenancy.Sites.ScheduleEndpoints"
         ],
         "summary": "GET_api_sites_id_windows",
         "description": "GET_api_sites_id_windows",
@@ -577,7 +577,7 @@
     "/api/listings/feed": {
       "get": {
         "tags": [
-          "Premise.Modules.Tenancy.Sites.ListingsFeedEndpoint"
+          "LocIntel.Modules.Tenancy.Sites.ListingsFeedEndpoint"
         ],
         "summary": "GET_api_listings_feed",
         "description": "GET_api_listings_feed",
@@ -607,7 +607,7 @@
     "/public/org": {
       "get": {
         "tags": [
-          "Premise.Modules.Tenancy.Sites.PublicSiteEndpoints"
+          "LocIntel.Modules.Tenancy.Sites.PublicSiteEndpoints"
         ],
         "summary": "GET_public_org",
         "description": "GET_public_org",
@@ -637,7 +637,7 @@
     "/public/sites": {
       "get": {
         "tags": [
-          "Premise.Modules.Tenancy.Sites.PublicSiteEndpoints"
+          "LocIntel.Modules.Tenancy.Sites.PublicSiteEndpoints"
         ],
         "summary": "GET_public_sites",
         "description": "GET_public_sites",
@@ -679,7 +679,7 @@
     "/public/sites/{id}": {
       "get": {
         "tags": [
-          "Premise.Modules.Tenancy.Sites.PublicSiteEndpoints"
+          "LocIntel.Modules.Tenancy.Sites.PublicSiteEndpoints"
         ],
         "summary": "GET_public_sites_id",
         "description": "GET_public_sites_id",
@@ -720,7 +720,7 @@
     "/api/sites/attributes": {
       "get": {
         "tags": [
-          "Premise.Modules.Tenancy.Sites.SiteAttributeEndpoints"
+          "LocIntel.Modules.Tenancy.Sites.SiteAttributeEndpoints"
         ],
         "summary": "GET_api_sites_attributes",
         "description": "GET_api_sites_attributes",
@@ -751,7 +751,7 @@
       },
       "post": {
         "tags": [
-          "Premise.Modules.Tenancy.Sites.SiteAttributeEndpoints"
+          "LocIntel.Modules.Tenancy.Sites.SiteAttributeEndpoints"
         ],
         "summary": "POST_api_sites_attributes",
         "description": "POST_api_sites_attributes",
@@ -791,7 +791,7 @@
     "/api/sites/attributes/{id}": {
       "delete": {
         "tags": [
-          "Premise.Modules.Tenancy.Sites.SiteAttributeEndpoints"
+          "LocIntel.Modules.Tenancy.Sites.SiteAttributeEndpoints"
         ],
         "summary": "DELETE_api_sites_attributes_id",
         "description": "DELETE_api_sites_attributes_id",
@@ -832,7 +832,7 @@
     "/api/settings": {
       "get": {
         "tags": [
-          "Premise.Modules.Tenancy.Organizations.SettingsEndpoints"
+          "LocIntel.Modules.Tenancy.Organizations.SettingsEndpoints"
         ],
         "summary": "GET_api_settings",
         "description": "GET_api_settings",
@@ -865,7 +865,7 @@
     "/api/settings/{id}": {
       "get": {
         "tags": [
-          "Premise.Modules.Tenancy.Organizations.SettingsEndpoints"
+          "LocIntel.Modules.Tenancy.Organizations.SettingsEndpoints"
         ],
         "summary": "GET_api_settings_id",
         "description": "GET_api_settings_id",
@@ -906,7 +906,7 @@
     "/api/settings/{key}": {
       "put": {
         "tags": [
-          "Premise.Modules.Tenancy.Organizations.SettingsEndpoints"
+          "LocIntel.Modules.Tenancy.Organizations.SettingsEndpoints"
         ],
         "summary": "PUT_api_settings_key",
         "description": "PUT_api_settings_key",
@@ -956,7 +956,7 @@
     "/api/org/export": {
       "post": {
         "tags": [
-          "Premise.Modules.Tenancy.Organizations.LifecycleEndpoints"
+          "LocIntel.Modules.Tenancy.Organizations.LifecycleEndpoints"
         ],
         "summary": "POST_api_org_export",
         "description": "POST_api_org_export",
@@ -986,7 +986,7 @@
     "/api/operator/orgs/{orgId}/export": {
       "post": {
         "tags": [
-          "Premise.Modules.Tenancy.Organizations.LifecycleEndpoints"
+          "LocIntel.Modules.Tenancy.Organizations.LifecycleEndpoints"
         ],
         "summary": "POST_api_operator_orgs_orgId_export",
         "description": "POST_api_operator_orgs_orgId_export",
@@ -1027,7 +1027,7 @@
     "/api/operator/orgs/{orgId}/offboard": {
       "post": {
         "tags": [
-          "Premise.Modules.Tenancy.Organizations.LifecycleEndpoints"
+          "LocIntel.Modules.Tenancy.Organizations.LifecycleEndpoints"
         ],
         "summary": "POST_api_operator_orgs_orgId_offboard",
         "description": "POST_api_operator_orgs_orgId_offboard",
@@ -1068,7 +1068,7 @@
     "/api/orgs": {
       "post": {
         "tags": [
-          "Premise.Modules.Tenancy.Organizations.OnboardingEndpoints"
+          "LocIntel.Modules.Tenancy.Organizations.OnboardingEndpoints"
         ],
         "summary": "POST_api_orgs",
         "description": "POST_api_orgs",
@@ -1108,7 +1108,7 @@
     "/api/org": {
       "put": {
         "tags": [
-          "Premise.Modules.Tenancy.Organizations.OrgSettingsEndpoints"
+          "LocIntel.Modules.Tenancy.Organizations.OrgSettingsEndpoints"
         ],
         "summary": "PUT_api_org",
         "description": "PUT_api_org",
@@ -1148,7 +1148,7 @@
     "/api/operator/orgs": {
       "get": {
         "tags": [
-          "Premise.Modules.Tenancy.Organizations.OperatorOrgEndpoints"
+          "LocIntel.Modules.Tenancy.Organizations.OperatorOrgEndpoints"
         ],
         "summary": "GET_api_operator_orgs",
         "description": "GET_api_operator_orgs",
@@ -1178,7 +1178,7 @@
     "/api/operator/orgs/{orgId}/suspend": {
       "post": {
         "tags": [
-          "Premise.Modules.Tenancy.Organizations.OperatorOrgEndpoints"
+          "LocIntel.Modules.Tenancy.Organizations.OperatorOrgEndpoints"
         ],
         "summary": "POST_api_operator_orgs_orgId_suspend",
         "description": "POST_api_operator_orgs_orgId_suspend",
@@ -1219,7 +1219,7 @@
     "/api/operator/orgs/{orgId}/reactivate": {
       "post": {
         "tags": [
-          "Premise.Modules.Tenancy.Organizations.OperatorOrgEndpoints"
+          "LocIntel.Modules.Tenancy.Organizations.OperatorOrgEndpoints"
         ],
         "summary": "POST_api_operator_orgs_orgId_reactivate",
         "description": "POST_api_operator_orgs_orgId_reactivate",
@@ -1260,7 +1260,7 @@
     "/api/org/closure": {
       "get": {
         "tags": [
-          "Premise.Modules.Tenancy.Organizations.OrgClosureEndpoints"
+          "LocIntel.Modules.Tenancy.Organizations.OrgClosureEndpoints"
         ],
         "summary": "GET_api_org_closure",
         "description": "GET_api_org_closure",
@@ -1290,7 +1290,7 @@
     "/api/org/close": {
       "post": {
         "tags": [
-          "Premise.Modules.Tenancy.Organizations.OrgClosureEndpoints"
+          "LocIntel.Modules.Tenancy.Organizations.OrgClosureEndpoints"
         ],
         "summary": "POST_api_org_close",
         "description": "POST_api_org_close",
@@ -1320,7 +1320,7 @@
     "/api/org/close/cancel": {
       "post": {
         "tags": [
-          "Premise.Modules.Tenancy.Organizations.OrgClosureEndpoints"
+          "LocIntel.Modules.Tenancy.Organizations.OrgClosureEndpoints"
         ],
         "summary": "POST_api_org_close_cancel",
         "description": "POST_api_org_close_cancel",
@@ -1350,7 +1350,7 @@
     "/api/org/public-url": {
       "get": {
         "tags": [
-          "Premise.Modules.Tenancy.Organizations.PublicUrlEndpoint"
+          "LocIntel.Modules.Tenancy.Organizations.PublicUrlEndpoint"
         ],
         "summary": "GET_api_org_public_url",
         "description": "GET_api_org_public_url",
@@ -1380,7 +1380,7 @@
     "/api/hierarchy": {
       "post": {
         "tags": [
-          "Premise.Modules.Tenancy.Hierarchy.HierarchyEndpoints"
+          "LocIntel.Modules.Tenancy.Hierarchy.HierarchyEndpoints"
         ],
         "summary": "POST_api_hierarchy",
         "description": "POST_api_hierarchy",
@@ -1418,7 +1418,7 @@
       },
       "get": {
         "tags": [
-          "Premise.Modules.Tenancy.Hierarchy.HierarchyEndpoints"
+          "LocIntel.Modules.Tenancy.Hierarchy.HierarchyEndpoints"
         ],
         "summary": "GET_api_hierarchy",
         "description": "GET_api_hierarchy",
@@ -1448,7 +1448,7 @@
     "/api/hierarchy/nodes": {
       "post": {
         "tags": [
-          "Premise.Modules.Tenancy.Hierarchy.HierarchyEndpoints"
+          "LocIntel.Modules.Tenancy.Hierarchy.HierarchyEndpoints"
         ],
         "summary": "POST_api_hierarchy_nodes",
         "description": "POST_api_hierarchy_nodes",
@@ -1488,7 +1488,7 @@
     "/api/hierarchy/nodes/{id}": {
       "put": {
         "tags": [
-          "Premise.Modules.Tenancy.Hierarchy.HierarchyEndpoints"
+          "LocIntel.Modules.Tenancy.Hierarchy.HierarchyEndpoints"
         ],
         "summary": "PUT_api_hierarchy_nodes_id",
         "description": "PUT_api_hierarchy_nodes_id",
@@ -1537,7 +1537,7 @@
       },
       "delete": {
         "tags": [
-          "Premise.Modules.Tenancy.Hierarchy.HierarchyEndpoints"
+          "LocIntel.Modules.Tenancy.Hierarchy.HierarchyEndpoints"
         ],
         "summary": "DELETE_api_hierarchy_nodes_id",
         "description": "DELETE_api_hierarchy_nodes_id",
@@ -1578,7 +1578,7 @@
     "/api/hierarchy/nodes/{id}/move": {
       "post": {
         "tags": [
-          "Premise.Modules.Tenancy.Hierarchy.HierarchyEndpoints"
+          "LocIntel.Modules.Tenancy.Hierarchy.HierarchyEndpoints"
         ],
         "summary": "POST_api_hierarchy_nodes_id_move",
         "description": "POST_api_hierarchy_nodes_id_move",
@@ -1629,7 +1629,7 @@
     "/notifications/bounce": {
       "post": {
         "tags": [
-          "Premise.Modules.Identity.Users.BounceWebhookEndpoint"
+          "LocIntel.Modules.Identity.Users.BounceWebhookEndpoint"
         ],
         "summary": "POST_notifications_bounce",
         "description": "POST_notifications_bounce",
@@ -1669,7 +1669,7 @@
     "/auth/directory/webhook": {
       "post": {
         "tags": [
-          "Premise.Modules.Identity.Users.DirectoryWebhookEndpoint"
+          "LocIntel.Modules.Identity.Users.DirectoryWebhookEndpoint"
         ],
         "summary": "POST_auth_directory_webhook",
         "description": "POST_auth_directory_webhook",
@@ -1699,7 +1699,7 @@
     "/api/members/leave": {
       "post": {
         "tags": [
-          "Premise.Modules.Identity.Users.MemberEndpoints"
+          "LocIntel.Modules.Identity.Users.MemberEndpoints"
         ],
         "summary": "POST_api_members_leave",
         "description": "POST_api_members_leave",
@@ -1729,7 +1729,7 @@
     "/api/members": {
       "get": {
         "tags": [
-          "Premise.Modules.Identity.Users.MemberEndpoints"
+          "LocIntel.Modules.Identity.Users.MemberEndpoints"
         ],
         "summary": "GET_api_members",
         "description": "GET_api_members",
@@ -1792,7 +1792,7 @@
     "/api/members/invitations": {
       "post": {
         "tags": [
-          "Premise.Modules.Identity.Users.MemberEndpoints"
+          "LocIntel.Modules.Identity.Users.MemberEndpoints"
         ],
         "summary": "POST_api_members_invitations",
         "description": "POST_api_members_invitations",
@@ -1830,7 +1830,7 @@
       },
       "get": {
         "tags": [
-          "Premise.Modules.Identity.Users.MemberEndpoints"
+          "LocIntel.Modules.Identity.Users.MemberEndpoints"
         ],
         "summary": "GET_api_members_invitations",
         "description": "GET_api_members_invitations",
@@ -1860,7 +1860,7 @@
     "/api/members/invitations/{invitationId}": {
       "delete": {
         "tags": [
-          "Premise.Modules.Identity.Users.MemberEndpoints"
+          "LocIntel.Modules.Identity.Users.MemberEndpoints"
         ],
         "summary": "DELETE_api_members_invitations_invitationId",
         "description": "DELETE_api_members_invitations_invitationId",
@@ -1900,7 +1900,7 @@
     "/api/members/{userId}": {
       "delete": {
         "tags": [
-          "Premise.Modules.Identity.Users.MemberEndpoints"
+          "LocIntel.Modules.Identity.Users.MemberEndpoints"
         ],
         "summary": "DELETE_api_members_userId",
         "description": "DELETE_api_members_userId",
@@ -1941,7 +1941,7 @@
     "/api/org/sso": {
       "get": {
         "tags": [
-          "Premise.Modules.Identity.Users.SsoEndpoints"
+          "LocIntel.Modules.Identity.Users.SsoEndpoints"
         ],
         "summary": "GET_api_org_sso",
         "description": "GET_api_org_sso",
@@ -1971,7 +1971,7 @@
     "/api/org/sso/portal": {
       "post": {
         "tags": [
-          "Premise.Modules.Identity.Users.SsoEndpoints"
+          "LocIntel.Modules.Identity.Users.SsoEndpoints"
         ],
         "summary": "POST_api_org_sso_portal",
         "description": "POST_api_org_sso_portal",
@@ -2011,7 +2011,7 @@
     "/api/contacts": {
       "get": {
         "tags": [
-          "Premise.Modules.Identity.Auth.ContactManagementEndpoints"
+          "LocIntel.Modules.Identity.Auth.ContactManagementEndpoints"
         ],
         "summary": "GET_api_contacts",
         "description": "GET_api_contacts",
@@ -2041,7 +2041,7 @@
     "/api/contacts/{id}": {
       "delete": {
         "tags": [
-          "Premise.Modules.Identity.Auth.ContactManagementEndpoints"
+          "LocIntel.Modules.Identity.Auth.ContactManagementEndpoints"
         ],
         "summary": "DELETE_api_contacts_id",
         "description": "DELETE_api_contacts_id",
@@ -2082,7 +2082,7 @@
     "/api/api-keys": {
       "get": {
         "tags": [
-          "Premise.Modules.Identity.Access.ApiKeyEndpoints"
+          "LocIntel.Modules.Identity.Access.ApiKeyEndpoints"
         ],
         "summary": "GET_api_api_keys",
         "description": "GET_api_api_keys",
@@ -2110,7 +2110,7 @@
       },
       "post": {
         "tags": [
-          "Premise.Modules.Identity.Access.ApiKeyEndpoints"
+          "LocIntel.Modules.Identity.Access.ApiKeyEndpoints"
         ],
         "summary": "POST_api_api_keys",
         "description": "POST_api_api_keys",
@@ -2150,7 +2150,7 @@
     "/api/api-keys/{id}/rotate": {
       "post": {
         "tags": [
-          "Premise.Modules.Identity.Access.ApiKeyEndpoints"
+          "LocIntel.Modules.Identity.Access.ApiKeyEndpoints"
         ],
         "summary": "POST_api_api_keys_id_rotate",
         "description": "POST_api_api_keys_id_rotate",
@@ -2201,7 +2201,7 @@
     "/api/api-keys/{id}": {
       "delete": {
         "tags": [
-          "Premise.Modules.Identity.Access.ApiKeyEndpoints"
+          "LocIntel.Modules.Identity.Access.ApiKeyEndpoints"
         ],
         "summary": "DELETE_api_api_keys_id",
         "description": "DELETE_api_api_keys_id",
@@ -2242,7 +2242,7 @@
     "/api/roles": {
       "get": {
         "tags": [
-          "Premise.Modules.Identity.Access.AccessEndpoints"
+          "LocIntel.Modules.Identity.Access.AccessEndpoints"
         ],
         "summary": "GET_api_roles",
         "description": "GET_api_roles",
@@ -2270,7 +2270,7 @@
       },
       "post": {
         "tags": [
-          "Premise.Modules.Identity.Access.AccessEndpoints"
+          "LocIntel.Modules.Identity.Access.AccessEndpoints"
         ],
         "summary": "POST_api_roles",
         "description": "POST_api_roles",
@@ -2310,7 +2310,7 @@
     "/api/roles/{id}/assign": {
       "post": {
         "tags": [
-          "Premise.Modules.Identity.Access.AccessEndpoints"
+          "LocIntel.Modules.Identity.Access.AccessEndpoints"
         ],
         "summary": "POST_api_roles_id_assign",
         "description": "POST_api_roles_id_assign",
@@ -2361,7 +2361,7 @@
     "/api/grant-exceptions": {
       "post": {
         "tags": [
-          "Premise.Modules.Identity.Access.AccessEndpoints"
+          "LocIntel.Modules.Identity.Access.AccessEndpoints"
         ],
         "summary": "POST_api_grant_exceptions",
         "description": "POST_api_grant_exceptions",
@@ -2399,7 +2399,7 @@
       },
       "get": {
         "tags": [
-          "Premise.Modules.Identity.Access.RoleManagementEndpoints"
+          "LocIntel.Modules.Identity.Access.RoleManagementEndpoints"
         ],
         "summary": "GET_api_grant_exceptions",
         "description": "GET_api_grant_exceptions",
@@ -2429,7 +2429,7 @@
     "/api/operator/orgs/{orgId}/impersonate": {
       "post": {
         "tags": [
-          "Premise.Modules.Identity.Access.ImpersonationEndpoints"
+          "LocIntel.Modules.Identity.Access.ImpersonationEndpoints"
         ],
         "summary": "POST_api_operator_orgs_orgId_impersonate",
         "description": "POST_api_operator_orgs_orgId_impersonate",
@@ -2470,7 +2470,7 @@
     "/auth/impersonation/stop": {
       "post": {
         "tags": [
-          "Premise.Modules.Identity.Access.ImpersonationEndpoints"
+          "LocIntel.Modules.Identity.Access.ImpersonationEndpoints"
         ],
         "summary": "POST_auth_impersonation_stop",
         "description": "POST_auth_impersonation_stop",
@@ -2500,7 +2500,7 @@
     "/api/operator/suppressions": {
       "get": {
         "tags": [
-          "Premise.Modules.Identity.Access.OperatorSuppressionEndpoints"
+          "LocIntel.Modules.Identity.Access.OperatorSuppressionEndpoints"
         ],
         "summary": "GET_api_operator_suppressions",
         "description": "GET_api_operator_suppressions",
@@ -2539,7 +2539,7 @@
     "/api/operator/suppressions/{id}": {
       "delete": {
         "tags": [
-          "Premise.Modules.Identity.Access.OperatorSuppressionEndpoints"
+          "LocIntel.Modules.Identity.Access.OperatorSuppressionEndpoints"
         ],
         "summary": "DELETE_api_operator_suppressions_id",
         "description": "DELETE_api_operator_suppressions_id",
@@ -2580,7 +2580,7 @@
     "/api/operator/users": {
       "get": {
         "tags": [
-          "Premise.Modules.Identity.Access.OperatorUserLookupEndpoint"
+          "LocIntel.Modules.Identity.Access.OperatorUserLookupEndpoint"
         ],
         "summary": "GET_api_operator_users",
         "description": "GET_api_operator_users",
@@ -2619,7 +2619,7 @@
     "/api/roles/{id}": {
       "put": {
         "tags": [
-          "Premise.Modules.Identity.Access.RoleManagementEndpoints"
+          "LocIntel.Modules.Identity.Access.RoleManagementEndpoints"
         ],
         "summary": "PUT_api_roles_id",
         "description": "PUT_api_roles_id",
@@ -2668,7 +2668,7 @@
       },
       "delete": {
         "tags": [
-          "Premise.Modules.Identity.Access.RoleManagementEndpoints"
+          "LocIntel.Modules.Identity.Access.RoleManagementEndpoints"
         ],
         "summary": "DELETE_api_roles_id",
         "description": "DELETE_api_roles_id",
@@ -2709,7 +2709,7 @@
     "/api/roles/{id}/assign/{userId}": {
       "delete": {
         "tags": [
-          "Premise.Modules.Identity.Access.RoleManagementEndpoints"
+          "LocIntel.Modules.Identity.Access.RoleManagementEndpoints"
         ],
         "summary": "DELETE_api_roles_id_assign_userId",
         "description": "DELETE_api_roles_id_assign_userId",
@@ -2759,7 +2759,7 @@
     "/api/grant-exceptions/{id}": {
       "delete": {
         "tags": [
-          "Premise.Modules.Identity.Access.RoleManagementEndpoints"
+          "LocIntel.Modules.Identity.Access.RoleManagementEndpoints"
         ],
         "summary": "DELETE_api_grant_exceptions_id",
         "description": "DELETE_api_grant_exceptions_id",
@@ -2800,7 +2800,7 @@
     "/api/billing": {
       "get": {
         "tags": [
-          "Premise.Modules.Entitlements.BillingEndpoints"
+          "LocIntel.Modules.Entitlements.BillingEndpoints"
         ],
         "summary": "GET_api_billing",
         "description": "GET_api_billing",
@@ -2830,7 +2830,7 @@
     "/api/billing/checkout": {
       "post": {
         "tags": [
-          "Premise.Modules.Entitlements.BillingEndpoints"
+          "LocIntel.Modules.Entitlements.BillingEndpoints"
         ],
         "summary": "POST_api_billing_checkout",
         "description": "POST_api_billing_checkout",
@@ -2870,7 +2870,7 @@
     "/api/billing/portal": {
       "post": {
         "tags": [
-          "Premise.Modules.Entitlements.BillingEndpoints"
+          "LocIntel.Modules.Entitlements.BillingEndpoints"
         ],
         "summary": "POST_api_billing_portal",
         "description": "POST_api_billing_portal",
@@ -2910,7 +2910,7 @@
     "/billing/webhook": {
       "post": {
         "tags": [
-          "Premise.Modules.Entitlements.BillingEndpoints"
+          "LocIntel.Modules.Entitlements.BillingEndpoints"
         ],
         "summary": "POST_billing_webhook",
         "description": "POST_billing_webhook",
@@ -2940,7 +2940,7 @@
     "/api/entitlements": {
       "get": {
         "tags": [
-          "Premise.Modules.Entitlements.EntitlementEndpoints"
+          "LocIntel.Modules.Entitlements.EntitlementEndpoints"
         ],
         "summary": "GET_api_entitlements",
         "description": "GET_api_entitlements",
@@ -2970,7 +2970,7 @@
     "/api/operator/orgs/{orgId}/entitlements": {
       "get": {
         "tags": [
-          "Premise.Modules.Entitlements.OperatorEntitlementEndpoints"
+          "LocIntel.Modules.Entitlements.OperatorEntitlementEndpoints"
         ],
         "summary": "GET_api_operator_orgs_orgId_entitlements",
         "description": "GET_api_operator_orgs_orgId_entitlements",
@@ -3011,7 +3011,7 @@
     "/api/operator/orgs/{orgId}/entitlements/{code}": {
       "put": {
         "tags": [
-          "Premise.Modules.Entitlements.OperatorEntitlementEndpoints"
+          "LocIntel.Modules.Entitlements.OperatorEntitlementEndpoints"
         ],
         "summary": "PUT_api_operator_orgs_orgId_entitlements_code",
         "description": "PUT_api_operator_orgs_orgId_entitlements_code",
@@ -3070,7 +3070,7 @@
     "/api/operator/orgs/{orgId}/entitlements/{code}/exceptions": {
       "post": {
         "tags": [
-          "Premise.Modules.Entitlements.OperatorEntitlementEndpoints"
+          "LocIntel.Modules.Entitlements.OperatorEntitlementEndpoints"
         ],
         "summary": "POST_api_operator_orgs_orgId_entitlements_code_exceptions",
         "description": "POST_api_operator_orgs_orgId_entitlements_code_exceptions",
@@ -3129,7 +3129,7 @@
     "/api/audit/{kind}": {
       "get": {
         "tags": [
-          "Premise.Modules.Audit.AuditEndpoints"
+          "LocIntel.Modules.Audit.AuditEndpoints"
         ],
         "summary": "GET_api_audit_kind",
         "description": "GET_api_audit_kind",
@@ -3181,7 +3181,7 @@
     "/api/admin/audit-config": {
       "get": {
         "tags": [
-          "Premise.Modules.Audit.AuditEndpoints"
+          "LocIntel.Modules.Audit.AuditEndpoints"
         ],
         "summary": "GET_api_admin_audit_config",
         "description": "GET_api_admin_audit_config",
@@ -3209,7 +3209,7 @@
       },
       "put": {
         "tags": [
-          "Premise.Modules.Audit.AuditEndpoints"
+          "LocIntel.Modules.Audit.AuditEndpoints"
         ],
         "summary": "PUT_api_admin_audit_config",
         "description": "PUT_api_admin_audit_config",
@@ -3249,7 +3249,7 @@
     "/api/audit/export": {
       "post": {
         "tags": [
-          "Premise.Modules.Audit.ExportEndpoint"
+          "LocIntel.Modules.Audit.ExportEndpoint"
         ],
         "summary": "POST_api_audit_export",
         "description": "POST_api_audit_export",
@@ -3279,7 +3279,7 @@
     "/api/webhooks": {
       "get": {
         "tags": [
-          "Premise.Modules.Audit.WebhookManagementEndpoints"
+          "LocIntel.Modules.Audit.WebhookManagementEndpoints"
         ],
         "summary": "GET_api_webhooks",
         "description": "GET_api_webhooks",
@@ -3307,7 +3307,7 @@
       },
       "post": {
         "tags": [
-          "Premise.Modules.Audit.WebhookManagementEndpoints"
+          "LocIntel.Modules.Audit.WebhookManagementEndpoints"
         ],
         "summary": "POST_api_webhooks",
         "description": "POST_api_webhooks",
@@ -3347,7 +3347,7 @@
     "/api/webhooks/{id}/rotate-secret": {
       "post": {
         "tags": [
-          "Premise.Modules.Audit.WebhookManagementEndpoints"
+          "LocIntel.Modules.Audit.WebhookManagementEndpoints"
         ],
         "summary": "POST_api_webhooks_id_rotate_secret",
         "description": "POST_api_webhooks_id_rotate_secret",
@@ -3388,7 +3388,7 @@
     "/api/webhooks/{id}": {
       "delete": {
         "tags": [
-          "Premise.Modules.Audit.WebhookManagementEndpoints"
+          "LocIntel.Modules.Audit.WebhookManagementEndpoints"
         ],
         "summary": "DELETE_api_webhooks_id",
         "description": "DELETE_api_webhooks_id",
@@ -3429,7 +3429,7 @@
     "/api/webhooks/{id}/deliveries": {
       "get": {
         "tags": [
-          "Premise.Modules.Audit.WebhookManagementEndpoints"
+          "LocIntel.Modules.Audit.WebhookManagementEndpoints"
         ],
         "summary": "GET_api_webhooks_id_deliveries",
         "description": "GET_api_webhooks_id_deliveries",
@@ -3470,7 +3470,7 @@
     "/api/webhooks/{id}/ping": {
       "post": {
         "tags": [
-          "Premise.Modules.Audit.WebhookManagementEndpoints"
+          "LocIntel.Modules.Audit.WebhookManagementEndpoints"
         ],
         "summary": "POST_api_webhooks_id_ping",
         "description": "POST_api_webhooks_id_ping",
@@ -3511,7 +3511,7 @@
     "/api/files": {
       "post": {
         "tags": [
-          "Premise.Modules.Storage.FileEndpoints"
+          "LocIntel.Modules.Storage.FileEndpoints"
         ],
         "summary": "POST_api_files",
         "description": "POST_api_files",
@@ -3549,7 +3549,7 @@
       },
       "get": {
         "tags": [
-          "Premise.Modules.Storage.FileEndpoints"
+          "LocIntel.Modules.Storage.FileEndpoints"
         ],
         "summary": "GET_api_files",
         "description": "GET_api_files",
@@ -3619,7 +3619,7 @@
     "/api/files/{id}/complete": {
       "post": {
         "tags": [
-          "Premise.Modules.Storage.FileEndpoints"
+          "LocIntel.Modules.Storage.FileEndpoints"
         ],
         "summary": "POST_api_files_id_complete",
         "description": "POST_api_files_id_complete",
@@ -3660,7 +3660,7 @@
     "/api/files/{id}/download": {
       "get": {
         "tags": [
-          "Premise.Modules.Storage.FileEndpoints"
+          "LocIntel.Modules.Storage.FileEndpoints"
         ],
         "summary": "GET_api_files_id_download",
         "description": "GET_api_files_id_download",
@@ -3701,7 +3701,7 @@
     "/api/files/{id}/hold": {
       "post": {
         "tags": [
-          "Premise.Modules.Storage.FileEndpoints"
+          "LocIntel.Modules.Storage.FileEndpoints"
         ],
         "summary": "POST_api_files_id_hold",
         "description": "POST_api_files_id_hold",
@@ -3752,7 +3752,7 @@
     "/api/files/{id}": {
       "delete": {
         "tags": [
-          "Premise.Modules.Storage.FileEndpoints"
+          "LocIntel.Modules.Storage.FileEndpoints"
         ],
         "summary": "DELETE_api_files_id",
         "description": "DELETE_api_files_id",
@@ -3793,7 +3793,7 @@
     "/api/files/{id}/restore": {
       "post": {
         "tags": [
-          "Premise.Modules.Storage.FileEndpoints"
+          "LocIntel.Modules.Storage.FileEndpoints"
         ],
         "summary": "POST_api_files_id_restore",
         "description": "POST_api_files_id_restore",
@@ -3834,7 +3834,7 @@
     "/api/ingest/uploads": {
       "post": {
         "tags": [
-          "Premise.Modules.Ingest.IngestEndpoints"
+          "LocIntel.Modules.Ingest.IngestEndpoints"
         ],
         "summary": "POST_api_ingest_uploads",
         "description": "POST_api_ingest_uploads",
@@ -3874,7 +3874,7 @@
     "/api/ingest/batches/{id}": {
       "get": {
         "tags": [
-          "Premise.Modules.Ingest.IngestEndpoints"
+          "LocIntel.Modules.Ingest.IngestEndpoints"
         ],
         "summary": "GET_api_ingest_batches_id",
         "description": "GET_api_ingest_batches_id",
@@ -3915,7 +3915,7 @@
     "/api/ingest/batches": {
       "get": {
         "tags": [
-          "Premise.Modules.Ingest.IngestEndpoints"
+          "LocIntel.Modules.Ingest.IngestEndpoints"
         ],
         "summary": "GET_api_ingest_batches",
         "description": "GET_api_ingest_batches",
@@ -3945,7 +3945,7 @@
     "/api/ingest/batches/{id}/discard": {
       "post": {
         "tags": [
-          "Premise.Modules.Ingest.IngestEndpoints"
+          "LocIntel.Modules.Ingest.IngestEndpoints"
         ],
         "summary": "POST_api_ingest_batches_id_discard",
         "description": "POST_api_ingest_batches_id_discard",
@@ -3986,7 +3986,7 @@
     "/api/ingest/batches/{id}/commit": {
       "post": {
         "tags": [
-          "Premise.Modules.Ingest.IngestEndpoints"
+          "LocIntel.Modules.Ingest.IngestEndpoints"
         ],
         "summary": "POST_api_ingest_batches_id_commit",
         "description": "POST_api_ingest_batches_id_commit",
@@ -4027,7 +4027,7 @@
     "/api/connectors": {
       "post": {
         "tags": [
-          "Premise.Modules.Ingest.IngestEndpoints"
+          "LocIntel.Modules.Ingest.IngestEndpoints"
         ],
         "summary": "POST_api_connectors",
         "description": "POST_api_connectors",
@@ -4065,7 +4065,7 @@
       },
       "get": {
         "tags": [
-          "Premise.Modules.Ingest.IngestEndpoints"
+          "LocIntel.Modules.Ingest.IngestEndpoints"
         ],
         "summary": "GET_api_connectors",
         "description": "GET_api_connectors",
@@ -4095,7 +4095,7 @@
     "/api/connectors/{id}": {
       "put": {
         "tags": [
-          "Premise.Modules.Ingest.IngestEndpoints"
+          "LocIntel.Modules.Ingest.IngestEndpoints"
         ],
         "summary": "PUT_api_connectors_id",
         "description": "PUT_api_connectors_id",
@@ -4144,7 +4144,7 @@
       },
       "delete": {
         "tags": [
-          "Premise.Modules.Ingest.IngestEndpoints"
+          "LocIntel.Modules.Ingest.IngestEndpoints"
         ],
         "summary": "DELETE_api_connectors_id",
         "description": "DELETE_api_connectors_id",
@@ -4185,7 +4185,7 @@
     "/api/connectors/{id}/sync": {
       "post": {
         "tags": [
-          "Premise.Modules.Ingest.IngestEndpoints"
+          "LocIntel.Modules.Ingest.IngestEndpoints"
         ],
         "summary": "POST_api_connectors_id_sync",
         "description": "POST_api_connectors_id_sync",
@@ -4226,7 +4226,7 @@
     "/api/checklists/templates": {
       "get": {
         "tags": [
-          "Premise.Modules.Checklists.Checklists.ChecklistEndpoints"
+          "LocIntel.Modules.Checklists.Checklists.ChecklistEndpoints"
         ],
         "summary": "GET_api_checklists_templates",
         "description": "GET_api_checklists_templates",
@@ -4257,7 +4257,7 @@
       },
       "post": {
         "tags": [
-          "Premise.Modules.Checklists.Checklists.ChecklistEndpoints"
+          "LocIntel.Modules.Checklists.Checklists.ChecklistEndpoints"
         ],
         "summary": "POST_api_checklists_templates",
         "description": "POST_api_checklists_templates",
@@ -4297,7 +4297,7 @@
     "/api/checklists/templates/{id}": {
       "delete": {
         "tags": [
-          "Premise.Modules.Checklists.Checklists.ChecklistEndpoints"
+          "LocIntel.Modules.Checklists.Checklists.ChecklistEndpoints"
         ],
         "summary": "DELETE_api_checklists_templates_id",
         "description": "DELETE_api_checklists_templates_id",
@@ -4338,7 +4338,7 @@
     "/api/checklists/today": {
       "get": {
         "tags": [
-          "Premise.Modules.Checklists.Checklists.ChecklistEndpoints"
+          "LocIntel.Modules.Checklists.Checklists.ChecklistEndpoints"
         ],
         "summary": "GET_api_checklists_today",
         "description": "GET_api_checklists_today",
@@ -4378,7 +4378,7 @@
     "/api/checklists/check": {
       "post": {
         "tags": [
-          "Premise.Modules.Checklists.Checklists.ChecklistEndpoints"
+          "LocIntel.Modules.Checklists.Checklists.ChecklistEndpoints"
         ],
         "summary": "POST_api_checklists_check",
         "description": "POST_api_checklists_check",
@@ -4418,7 +4418,7 @@
     "/objects/upload/{token}": {
       "put": {
         "tags": [
-          "Premise.Api"
+          "LocIntel.Api"
         ],
         "parameters": [
           {
@@ -4440,7 +4440,7 @@
     "/objects/download/{token}": {
       "get": {
         "tags": [
-          "Premise.Api"
+          "LocIntel.Api"
         ],
         "parameters": [
           {
@@ -4462,7 +4462,7 @@
     "/auth/login": {
       "get": {
         "tags": [
-          "Premise.Api"
+          "LocIntel.Api"
         ],
         "parameters": [
           {
@@ -4505,7 +4505,7 @@
     "/auth/signup": {
       "get": {
         "tags": [
-          "Premise.Api"
+          "LocIntel.Api"
         ],
         "parameters": [
           {
@@ -4527,7 +4527,7 @@
     "/auth/callback": {
       "get": {
         "tags": [
-          "Premise.Api"
+          "LocIntel.Api"
         ],
         "parameters": [
           {
@@ -4562,7 +4562,7 @@
     "/auth/logout": {
       "post": {
         "tags": [
-          "Premise.Api"
+          "LocIntel.Api"
         ],
         "responses": {
           "200": {
@@ -4574,7 +4574,7 @@
     "/auth/switch-org": {
       "post": {
         "tags": [
-          "Premise.Api"
+          "LocIntel.Api"
         ],
         "requestBody": {
           "content": {
@@ -4596,7 +4596,7 @@
     "/me": {
       "get": {
         "tags": [
-          "Premise.Api"
+          "LocIntel.Api"
         ],
         "responses": {
           "200": {
@@ -4608,7 +4608,7 @@
     "/auth/profile": {
       "put": {
         "tags": [
-          "Premise.Api"
+          "LocIntel.Api"
         ],
         "requestBody": {
           "content": {
@@ -4630,7 +4630,7 @@
     "/auth/password-reset": {
       "post": {
         "tags": [
-          "Premise.Api"
+          "LocIntel.Api"
         ],
         "responses": {
           "200": {
@@ -4642,7 +4642,7 @@
     "/auth/sessions": {
       "get": {
         "tags": [
-          "Premise.Api"
+          "LocIntel.Api"
         ],
         "responses": {
           "200": {
@@ -4654,7 +4654,7 @@
     "/auth/sessions/{id}": {
       "delete": {
         "tags": [
-          "Premise.Api"
+          "LocIntel.Api"
         ],
         "parameters": [
           {
@@ -4677,7 +4677,7 @@
     "/auth/sessions/revoke-others": {
       "post": {
         "tags": [
-          "Premise.Api"
+          "LocIntel.Api"
         ],
         "responses": {
           "200": {
@@ -4689,7 +4689,7 @@
     "/auth/account": {
       "delete": {
         "tags": [
-          "Premise.Api"
+          "LocIntel.Api"
         ],
         "responses": {
           "200": {
@@ -4701,7 +4701,7 @@
     "/contact-links": {
       "post": {
         "tags": [
-          "Premise.Api"
+          "LocIntel.Api"
         ],
         "requestBody": {
           "content": {
@@ -4723,7 +4723,7 @@
     "/contact/redeem": {
       "get": {
         "tags": [
-          "Premise.Api"
+          "LocIntel.Api"
         ],
         "parameters": [
           {
@@ -4745,7 +4745,7 @@
     "/api/operator/dead-letters": {
       "get": {
         "tags": [
-          "Premise.Api"
+          "LocIntel.Api"
         ],
         "parameters": [
           {
@@ -4771,7 +4771,7 @@
     "/api/operator/dead-letters/{id}/replay": {
       "post": {
         "tags": [
-          "Premise.Api"
+          "LocIntel.Api"
         ],
         "parameters": [
           {
@@ -4794,7 +4794,7 @@
     "/api/operator/dead-letters/{id}": {
       "delete": {
         "tags": [
-          "Premise.Api"
+          "LocIntel.Api"
         ],
         "parameters": [
           {
@@ -4817,7 +4817,7 @@
     "/api/operator/overview": {
       "get": {
         "tags": [
-          "Premise.Api"
+          "LocIntel.Api"
         ],
         "responses": {
           "200": {
@@ -4829,7 +4829,7 @@
     "/api/operator/health": {
       "get": {
         "tags": [
-          "Premise.Api"
+          "LocIntel.Api"
         ],
         "responses": {
           "200": {
@@ -4841,7 +4841,7 @@
     "/healthz": {
       "get": {
         "tags": [
-          "Premise.Api"
+          "LocIntel.Api"
         ],
         "responses": {
           "200": {
@@ -6607,109 +6607,109 @@
   },
   "tags": [
     {
-      "name": "Premise.Modules.Tenancy.Sites.ClosureEndpoints"
+      "name": "LocIntel.Modules.Tenancy.Sites.ClosureEndpoints"
     },
     {
-      "name": "Premise.Modules.Tenancy.Sites.SiteEndpoints"
+      "name": "LocIntel.Modules.Tenancy.Sites.SiteEndpoints"
     },
     {
-      "name": "Premise.Modules.Tenancy.Sites.ScheduleEndpoints"
+      "name": "LocIntel.Modules.Tenancy.Sites.ScheduleEndpoints"
     },
     {
-      "name": "Premise.Modules.Tenancy.Sites.ListingsFeedEndpoint"
+      "name": "LocIntel.Modules.Tenancy.Sites.ListingsFeedEndpoint"
     },
     {
-      "name": "Premise.Modules.Tenancy.Sites.PublicSiteEndpoints"
+      "name": "LocIntel.Modules.Tenancy.Sites.PublicSiteEndpoints"
     },
     {
-      "name": "Premise.Modules.Tenancy.Sites.SiteAttributeEndpoints"
+      "name": "LocIntel.Modules.Tenancy.Sites.SiteAttributeEndpoints"
     },
     {
-      "name": "Premise.Modules.Tenancy.Organizations.SettingsEndpoints"
+      "name": "LocIntel.Modules.Tenancy.Organizations.SettingsEndpoints"
     },
     {
-      "name": "Premise.Modules.Tenancy.Organizations.LifecycleEndpoints"
+      "name": "LocIntel.Modules.Tenancy.Organizations.LifecycleEndpoints"
     },
     {
-      "name": "Premise.Modules.Tenancy.Organizations.OnboardingEndpoints"
+      "name": "LocIntel.Modules.Tenancy.Organizations.OnboardingEndpoints"
     },
     {
-      "name": "Premise.Modules.Tenancy.Organizations.OrgSettingsEndpoints"
+      "name": "LocIntel.Modules.Tenancy.Organizations.OrgSettingsEndpoints"
     },
     {
-      "name": "Premise.Modules.Tenancy.Organizations.OperatorOrgEndpoints"
+      "name": "LocIntel.Modules.Tenancy.Organizations.OperatorOrgEndpoints"
     },
     {
-      "name": "Premise.Modules.Tenancy.Organizations.OrgClosureEndpoints"
+      "name": "LocIntel.Modules.Tenancy.Organizations.OrgClosureEndpoints"
     },
     {
-      "name": "Premise.Modules.Tenancy.Organizations.PublicUrlEndpoint"
+      "name": "LocIntel.Modules.Tenancy.Organizations.PublicUrlEndpoint"
     },
     {
-      "name": "Premise.Modules.Tenancy.Hierarchy.HierarchyEndpoints"
+      "name": "LocIntel.Modules.Tenancy.Hierarchy.HierarchyEndpoints"
     },
     {
-      "name": "Premise.Modules.Identity.Users.BounceWebhookEndpoint"
+      "name": "LocIntel.Modules.Identity.Users.BounceWebhookEndpoint"
     },
     {
-      "name": "Premise.Modules.Identity.Users.DirectoryWebhookEndpoint"
+      "name": "LocIntel.Modules.Identity.Users.DirectoryWebhookEndpoint"
     },
     {
-      "name": "Premise.Modules.Identity.Users.MemberEndpoints"
+      "name": "LocIntel.Modules.Identity.Users.MemberEndpoints"
     },
     {
-      "name": "Premise.Modules.Identity.Users.SsoEndpoints"
+      "name": "LocIntel.Modules.Identity.Users.SsoEndpoints"
     },
     {
-      "name": "Premise.Modules.Identity.Auth.ContactManagementEndpoints"
+      "name": "LocIntel.Modules.Identity.Auth.ContactManagementEndpoints"
     },
     {
-      "name": "Premise.Modules.Identity.Access.ApiKeyEndpoints"
+      "name": "LocIntel.Modules.Identity.Access.ApiKeyEndpoints"
     },
     {
-      "name": "Premise.Modules.Identity.Access.AccessEndpoints"
+      "name": "LocIntel.Modules.Identity.Access.AccessEndpoints"
     },
     {
-      "name": "Premise.Modules.Identity.Access.RoleManagementEndpoints"
+      "name": "LocIntel.Modules.Identity.Access.RoleManagementEndpoints"
     },
     {
-      "name": "Premise.Modules.Identity.Access.ImpersonationEndpoints"
+      "name": "LocIntel.Modules.Identity.Access.ImpersonationEndpoints"
     },
     {
-      "name": "Premise.Modules.Identity.Access.OperatorSuppressionEndpoints"
+      "name": "LocIntel.Modules.Identity.Access.OperatorSuppressionEndpoints"
     },
     {
-      "name": "Premise.Modules.Identity.Access.OperatorUserLookupEndpoint"
+      "name": "LocIntel.Modules.Identity.Access.OperatorUserLookupEndpoint"
     },
     {
-      "name": "Premise.Modules.Entitlements.BillingEndpoints"
+      "name": "LocIntel.Modules.Entitlements.BillingEndpoints"
     },
     {
-      "name": "Premise.Modules.Entitlements.EntitlementEndpoints"
+      "name": "LocIntel.Modules.Entitlements.EntitlementEndpoints"
     },
     {
-      "name": "Premise.Modules.Entitlements.OperatorEntitlementEndpoints"
+      "name": "LocIntel.Modules.Entitlements.OperatorEntitlementEndpoints"
     },
     {
-      "name": "Premise.Modules.Audit.AuditEndpoints"
+      "name": "LocIntel.Modules.Audit.AuditEndpoints"
     },
     {
-      "name": "Premise.Modules.Audit.ExportEndpoint"
+      "name": "LocIntel.Modules.Audit.ExportEndpoint"
     },
     {
-      "name": "Premise.Modules.Audit.WebhookManagementEndpoints"
+      "name": "LocIntel.Modules.Audit.WebhookManagementEndpoints"
     },
     {
-      "name": "Premise.Modules.Storage.FileEndpoints"
+      "name": "LocIntel.Modules.Storage.FileEndpoints"
     },
     {
-      "name": "Premise.Modules.Ingest.IngestEndpoints"
+      "name": "LocIntel.Modules.Ingest.IngestEndpoints"
     },
     {
-      "name": "Premise.Modules.Checklists.Checklists.ChecklistEndpoints"
+      "name": "LocIntel.Modules.Checklists.Checklists.ChecklistEndpoints"
     },
     {
-      "name": "Premise.Api"
+      "name": "LocIntel.Api"
     }
   ]
 }

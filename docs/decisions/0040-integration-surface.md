@@ -13,7 +13,7 @@ Two halves of one idea - tenants integrate in, and events push out - both
 built on machinery that already existed.
 
 **API keys are service principals.** A key (`Authorization: Bearer
-premise_...`) resolves by SHA-256 hash to a `Principal.Service` holding
+locintel_...`) resolves by SHA-256 hash to a `Principal.Service` holding
 exactly one role, optionally subtree-scoped - the SAME grant model as
 people, so the three gates need nothing new. The secret is shown once;
 only its hash is stored. `api_keys` is platform-global (a credential must

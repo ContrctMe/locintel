@@ -5,7 +5,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * Premise design tokens (ADR 20): Tailwind v4 CSS-first theming. This file is
+ * LocIntel design tokens (ADR 20): Tailwind v4 CSS-first theming. This file is
  * THE reskin seam - forks change these values, never component source. Both
  * schemes defined; components reference semantic tokens only.
  */

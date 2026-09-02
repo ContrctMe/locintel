@@ -1,6 +1,6 @@
-import { api } from '@premise/api';
+import { api } from '@locintel/api';
 import { Button, Card, CardContent, FormDialog, Input, Label, Select,
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TimeZoneSelect } from '@premise/ui';
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TimeZoneSelect } from '@locintel/ui';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';

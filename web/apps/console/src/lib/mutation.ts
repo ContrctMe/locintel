@@ -1,4 +1,4 @@
-import { toast } from '@premise/ui';
+import { toast } from '@locintel/ui';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 /** The server's error body, when it sent one - with the trace id support can quote (maturity review, hole 1). */

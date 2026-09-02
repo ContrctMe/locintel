@@ -1,0 +1,187 @@
+using System.Net;
+using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json;
+
+namespace LocIntel.IntegrationTests;
+
+/// <summary>ADR 19: tickets, quarantine, derivatives, hold, auditable erasure. ADR 29: idempotency.</summary>
+public class StorageTests(ApiFixture fixture) : IClassFixture<ApiFixture>
+{
+    private const string Eicar =
+        @"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*";
+
+    private async Task<(HttpClient client, Guid fileId)> Upload(
+        string name,
+        string content,
+        string contentType = "text/plain"
+    )
+    {
+        var client = await fixture.LoginAsync(ApiFixture.UserA);
+        var bytes = Encoding.UTF8.GetBytes(content);
+        var created = await client.PostAsJsonAsync(
+            "/api/files",
+            new
+            {
+                name,
+                contentType,
+                sizeBytes = bytes.Length,
+            }
+        );
+        created.EnsureSuccessStatusCode();
+        var body = await created.Content.ReadFromJsonAsync<JsonElement>();
+        var fileId = body.GetProperty("fileId").GetGuid();
+        var ticket = body.GetProperty("ticket");
+
+        // the ticket flow: client PUTs directly to storage, not through the API surface
+        var put = new HttpRequestMessage(HttpMethod.Put, ticket.GetProperty("url").GetString())
+        {
+            Content = new ByteArrayContent(bytes),
+        };
+        (await client.SendAsync(put)).EnsureSuccessStatusCode();
+        (await client.PostAsync($"/api/files/{fileId}/complete", null)).EnsureSuccessStatusCode();
+        return (client, fileId);
+    }
+
+    private async Task<string?> PollStatus(HttpClient client, Guid fileId, string until)
+    {
+        string? status = null;
+        for (var i = 0; i < 60; i++)
+        {
+            var files = await ApiFixture.GetItemsAsync(client, "/api/files");
+            status = files
+                .EnumerateArray()
+                .FirstOrDefault(f => f.GetProperty("id").GetGuid() == fileId)
+                .TryGetProperty("status", out var s)
+                ? s.GetString()
+                : null;
+            if (status == until)
+                return status;
+            await Task.Delay(100);
+        }
+        return status;
+    }
+
+    [Fact]
+    public async Task Clean_file_flows_ticket_scan_preview_download()
+    {
+        var (client, fileId) = await Upload("notes.txt", "hello locintel storage");
+        Assert.Equal("Clean", await PollStatus(client, fileId, "Clean"));
+
+        // derivative: text head-preview generated async
+        for (var i = 0; i < 50; i++)
+        {
+            var files = await ApiFixture.GetItemsAsync(client, "/api/files");
+            if (
+                files
+                    .EnumerateArray()
+                    .First(f => f.GetProperty("id").GetGuid() == fileId)
+                    .GetProperty("hasPreview")
+                    .GetBoolean()
+            )
+                break;
+            await Task.Delay(100);
+        }
+
+        // download: authz at signing time, then the unguarded short-TTL URL
+        var download = await client.GetFromJsonAsync<JsonElement>($"/api/files/{fileId}/download");
+        var bytes = await client.GetStringAsync(download.GetProperty("url").GetString());
+        Assert.Equal("hello locintel storage", bytes);
+    }
+
+    [Fact]
+    public async Task Infected_file_is_quarantined_and_never_downloadable()
+    {
+        var (client, fileId) = await Upload("malware.txt", $"prefix {Eicar} suffix");
+        Assert.Equal("Quarantined", await PollStatus(client, fileId, "Quarantined"));
+        var download = await client.GetAsync($"/api/files/{fileId}/download");
+        Assert.Equal(HttpStatusCode.NotFound, download.StatusCode); // never confirm the bytes exist
+    }
+
+    [Fact]
+    public async Task Legal_hold_blocks_deletion_and_deletion_is_audited()
+    {
+        var (client, fileId) = await Upload("evidence.txt", "hold me");
+        await PollStatus(client, fileId, "Clean");
+
+        (
+            await client.PostAsJsonAsync($"/api/files/{fileId}/hold", new { hold = true })
+        ).EnsureSuccessStatusCode();
+        var blocked = await client.DeleteAsync($"/api/files/{fileId}");
+        Assert.Equal(HttpStatusCode.Conflict, blocked.StatusCode);
+
+        (
+            await client.PostAsJsonAsync($"/api/files/{fileId}/hold", new { hold = false })
+        ).EnsureSuccessStatusCode();
+        var deleted = await client.DeleteAsync($"/api/files/{fileId}");
+        Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
+
+        // in the trash (tier 2): not downloadable, but restorable
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (await client.GetAsync($"/api/files/{fileId}/download")).StatusCode
+        );
+
+        // the act is a domain event (ADR 19: AUDITABLE deletion)
+        List<LocIntel.Modules.Audit.Data.DomainLogEntry> events = [];
+        for (var i = 0; i < 50 && events.Count == 0; i++)
+        {
+            await Task.Delay(100);
+            events = (
+                await fixture.QueryAudit(db =>
+                    Microsoft
+                        .EntityFrameworkCore.EntityFrameworkQueryableExtensions.AsNoTracking(
+                            db.DomainEvents
+                        )
+                        .Where(a => a.EventName == "file.deleted")
+                )
+            )
+                .Where(a => a.Payload.Contains("evidence.txt")) // jsonb: filter in memory
+                .ToList();
+        }
+        Assert.NotEmpty(events);
+    }
+
+    [Fact]
+    public async Task Idempotency_key_replays_and_conflicts()
+    {
+        var client = await fixture.LoginAsync(ApiFixture.UserA);
+        var key = Guid.NewGuid().ToString();
+
+        HttpRequestMessage Request(string value) =>
+            new(HttpMethod.Put, "/api/settings/idem.probe")
+            {
+                Content = JsonContent.Create(new { value }),
+                Headers = { { "Idempotency-Key", key } },
+            };
+
+        var first = await client.SendAsync(Request("one"));
+        first.EnsureSuccessStatusCode();
+        var firstBody = await first.Content.ReadAsStringAsync();
+
+        // same key + same request: REPLAYED, not re-executed
+        var replay = await client.SendAsync(Request("one"));
+        Assert.Equal(first.StatusCode, replay.StatusCode);
+        Assert.Equal(firstBody, await replay.Content.ReadAsStringAsync());
+
+        // same key + different body: refused
+        var conflict = await client.SendAsync(Request("two"));
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, conflict.StatusCode);
+    }
+
+    [Fact]
+    public async Task Files_are_tenant_isolated()
+    {
+        var (_, fileId) = await Upload("private-a.txt", "org A only");
+        var clientB = await fixture.LoginAsync(ApiFixture.UserB);
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (await clientB.GetAsync($"/api/files/{fileId}/download")).StatusCode
+        );
+        var list = await ApiFixture.GetItemsAsync(clientB, "/api/files");
+        Assert.DoesNotContain(
+            list.EnumerateArray(),
+            f => f.GetProperty("name").GetString() == "private-a.txt"
+        );
+    }
+}

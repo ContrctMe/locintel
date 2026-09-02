@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="WolverineFx.Http" />
+    <PackageReference Include="WolverineFx.Postgresql" />
+    <PackageReference Include="WolverineFx.RuntimeCompilation" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Modules\LocIntel.Modules.Tenancy\LocIntel.Modules.Tenancy.csproj" />
+    <ProjectReference Include="..\Modules\LocIntel.Modules.Checklists\LocIntel.Modules.Checklists.csproj" />
+    <ProjectReference Include="..\Modules\LocIntel.Modules.Identity\LocIntel.Modules.Identity.csproj" />
+    <ProjectReference Include="..\Integrations\LocIntel.Integrations.WorkOS\LocIntel.Integrations.WorkOS.csproj" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
+    <ProjectReference Include="..\Integrations\LocIntel.Integrations.Smtp\LocIntel.Integrations.Smtp.csproj" />
+    <ProjectReference Include="..\Integrations\LocIntel.Integrations.Stripe\LocIntel.Integrations.Stripe.csproj" />
+    <ProjectReference Include="..\Modules\LocIntel.Modules.Entitlements\LocIntel.Modules.Entitlements.csproj" />
+    <ProjectReference Include="..\Modules\LocIntel.Modules.Audit\LocIntel.Modules.Audit.csproj" />
+    <ProjectReference Include="..\Modules\LocIntel.Modules.Storage\LocIntel.Modules.Storage.csproj" />
+    <ProjectReference Include="..\Modules\LocIntel.Modules.Ingest\LocIntel.Modules.Ingest.csproj" />
+  </ItemGroup>
+</Project>

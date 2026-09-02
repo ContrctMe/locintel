@@ -1,4 +1,4 @@
-# Premise
+# LocIntel
 
 A forkable template for location/site-based multi-tenant SaaS.
 
@@ -18,7 +18,9 @@ subtree it belongs to). Every request passes **three gates**, in order:
 ## Architectural decisions
 
 All 47 settled decisions live in `docs/decisions/` (one ADR each, indexed in its
-README). **Consult them before proposing structural changes.** Decisions marked
+README). **Consult them before proposing structural changes.**
+The product plan being built on this fork is `docs/product/crime-intelligence-blueprint.md`;
+record build-time decisions in its decisions log. Decisions marked
 `pinned: true` are expensive to reverse once data exists — do not contradict them
 without the maintainer explicitly reopening the decision.
 
@@ -98,14 +100,14 @@ don't restate them here.
 
 ## Commands
 
-- Build: `dotnet build Premise.slnx` (Aspire CLI must be on PATH: `~/.aspire/bin`)
+- Build: `dotnet build LocIntel.slnx` (Aspire CLI must be on PATH: `~/.aspire/bin`)
 - Architecture tests (fast, run after any cross-module change):
-  `dotnet test tests/Premise.ArchitectureTests`
-- Unit tests (pure logic): `dotnet test tests/Premise.Platform.UnitTests`
+  `dotnet test tests/LocIntel.ArchitectureTests`
+- Unit tests (pure logic): `dotnet test tests/LocIntel.Platform.UnitTests`
 - Tenant-isolation golden suite (needs Docker; Testcontainers Postgres):
-  `dotnet test tests/Premise.IntegrationTests` — or one deterministic shard,
+  `dotnet test tests/LocIntel.IntegrationTests` — or one deterministic shard,
   exactly as CI runs it: `tools/run-integration-shard.sh 1 2`
-- Local dev: `aspire run` from `src/Premise.AppHost` (Postgres + WorkOS emulator + migrate → api + worker + dashboard). Dev login: alice@acme.test / test123 (seeded in `workos-emulate.config.yaml`). Caught mail (contact links, resets): `GET /dev/mail` on the api. Localhost quirk: cookies ignore ports, so a console session bleeds into `localhost:5174` — prod subdomains don't have this.
+- Local dev: `aspire run` from `src/LocIntel.AppHost` (Postgres + WorkOS emulator + migrate → api + worker + dashboard). Dev login: alice@acme.test / test123 (seeded in `workos-emulate.config.yaml`). Caught mail (contact links, resets): `GET /dev/mail` on the api. Localhost quirk: cookies ignore ports, so a console session bleeds into `localhost:5174` — prod subdomains don't have this.
 - Migrations: `dotnet ef migrations add <Name> --project src/Modules/<Module> --startup-project src/Modules/<Module>` (see new-migration skill)
 - Format: `dotnet csharpier format .`
 - Frontend (web/): `pnpm install`, `pnpm typecheck`, `pnpm build`,

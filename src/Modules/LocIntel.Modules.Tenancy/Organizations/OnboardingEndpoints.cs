@@ -1,0 +1,164 @@
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using LocIntel.Contracts;
+using LocIntel.Modules.Tenancy.Data;
+using LocIntel.Platform.Auth;
+using LocIntel.Platform.Kernel;
+using Wolverine;
+using Wolverine.Attributes;
+using Wolverine.Http;
+
+namespace LocIntel.Modules.Tenancy.Organizations;
+
+public sealed record CreateOrgRequest(string Name, string Slug);
+
+/// <summary>
+/// Day-zero onboarding (the tenant-lifecycle front half): any authenticated
+/// user may create an org. The provider directory capability (WorkOS) gets
+/// the org created on its side too; Identity provisions the founder via the
+/// outbox; OrganizationUpserted feeds every read model.
+/// </summary>
+public static class OnboardingEndpoints
+{
+    [Transactional(typeof(TenancyDbContext))]
+    [WolverinePost("/api/orgs")]
+    public static async Task<IResult> Create(
+        CreateOrgRequest request,
+        TenancyDbContext db,
+        IPrincipalAccessor accessor,
+        IAuthProvider provider,
+        IMessageBus bus,
+        CancellationToken ct
+    )
+    {
+        if (accessor.Current is not Principal.User { UserId: var userId })
+            return Results.Unauthorized();
+
+        var slug = request.Slug.Trim().ToLowerInvariant();
+        if (
+            slug.Length is < 3 or > 60
+            || !slug.All(c => char.IsAsciiLetterLower(c) || char.IsAsciiDigit(c) || c == '-')
+        )
+            return Results.BadRequest(
+                new { error = "slug must be 3-60 chars of lowercase letters, digits, and dashes" }
+            );
+        if (string.IsNullOrWhiteSpace(request.Name))
+            return Results.BadRequest(new { error = "name is required" });
+        if (await db.Organizations.AnyAsync(o => o.Slug == slug, ct))
+            return Results.Conflict(new { error = $"slug '{slug}' is taken" });
+
+        // provider org first (WorkOS as much as possible): invitations and
+        // SSO hang off it. Absent the capability (bare OIDC), ExternalId
+        // stays null and everything else still works.
+        string? externalId = null;
+        if (provider is IOrganizationDirectory directory)
+            externalId = await directory.CreateOrganizationAsync(request.Name, ct);
+
+        var org = new Organization
+        {
+            Id = OrgId.New(),
+            Name = request.Name.Trim(),
+            Slug = slug,
+            Region = RegionId.Default,
+            ExternalId = externalId,
+        };
+        db.Organizations.Add(org);
+        await db.SaveChangesAsync(ct);
+
+        await bus.PublishAsync(
+            new OrganizationUpserted(
+                org.Id,
+                org.Name,
+                org.Slug,
+                org.Region,
+                org.ExternalId,
+                org.Status.ToString(),
+                org.IsPlatform
+            )
+        );
+        await bus.PublishAsync(
+            new ProvisionFounderMembership(userId, org.Id),
+            new DeliveryOptions { TenantId = org.Id.Value.ToString() }
+        );
+        await bus.PublishAsync(
+            new RecordDomainAudit(
+                "org.created",
+                System.Text.Json.JsonSerializer.Serialize(new { org.Name, org.Slug })
+            ),
+            new DeliveryOptions
+            {
+                TenantId = org.Id.Value.ToString(),
+                Headers =
+                {
+                    ["locintel-actor-tier"] = "user",
+                    ["locintel-actor-id"] = userId.ToString(),
+                },
+            }
+        );
+        return Results.Ok(new { orgId = org.Id.Value, org.Slug });
+    }
+}
+
+public sealed record RenameOrgRequest(string Name);
+
+public static class OrgSettingsEndpoints
+{
+    /// <summary>Rename the active org: local truth, read models, and the provider directory all learn.</summary>
+    [Transactional(typeof(TenancyDbContext))]
+    [WolverinePut("/api/org")]
+    public static async Task<IResult> Rename(
+        RenameOrgRequest request,
+        TenancyDbContext db,
+        IPrincipalAccessor accessor,
+        IScopeResolver scopes,
+        IAuthProvider provider,
+        IMessageBus bus,
+        CancellationToken ct
+    )
+    {
+        if (
+            accessor.Current
+                is not Principal.User { ActiveOrg: { } orgId, UserId: var userId } principal
+            || !await scopes.CanAsync(principal, Capabilities.OrgManage, ct)
+        )
+            return Results.Unauthorized();
+        if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Length > 200)
+            return Results.BadRequest(new { error = "name must be 1-200 characters" });
+
+        var org = await db.Organizations.FirstAsync(o => o.Id == orgId, ct);
+        var previous = org.Name;
+        org.Name = request.Name.Trim();
+        await db.SaveChangesAsync(ct);
+
+        if (provider is IOrganizationDirectory directory && org.ExternalId is { } externalId)
+            await directory.UpdateOrganizationNameAsync(externalId, org.Name, ct);
+
+        await bus.PublishAsync(
+            new OrganizationUpserted(
+                org.Id,
+                org.Name,
+                org.Slug,
+                org.Region,
+                org.ExternalId,
+                org.Status.ToString(),
+                org.IsPlatform
+            )
+        );
+        await bus.PublishAsync(
+            new RecordDomainAudit(
+                "org.renamed",
+                System.Text.Json.JsonSerializer.Serialize(new { from = previous, to = org.Name })
+            ),
+            new DeliveryOptions
+            {
+                TenantId = org.Id.Value.ToString(),
+                Headers =
+                {
+                    ["locintel-actor-tier"] = "user",
+                    ["locintel-actor-id"] = userId.ToString(),
+                },
+            }
+        );
+        return Results.Ok(new { org.Name });
+    }
+}

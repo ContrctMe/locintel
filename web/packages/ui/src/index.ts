@@ -1,4 +1,4 @@
-// The @premise/ui barrel (ADR 20): app code imports ONLY from here, never
+// The @locintel/ui barrel (ADR 20): app code imports ONLY from here, never
 // from component files directly - a lint rule enforces it. This indirection
 // is the real seam: reskin via tokens.css, replace a component behind the
 // barrel without touching call sites.

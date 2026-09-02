@@ -1,7 +1,7 @@
-import { api } from '@premise/api';
+import { api } from '@locintel/api';
 import { Button, Card, CardContent, CardHeader, CardTitle, ConfirmButton, FormDialog,
   Input, Label, Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-  TimeZoneSelect } from '@premise/ui';
+  TimeZoneSelect } from '@locintel/ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from '@tanstack/react-router';
 import { useState } from 'react';

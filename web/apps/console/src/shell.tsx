@@ -1,5 +1,5 @@
-import { api } from '@premise/api';
-import { Badge, Button, cn, Input, Label, Toaster } from '@premise/ui';
+import { api } from '@locintel/api';
+import { Badge, Button, cn, Input, Label, Toaster } from '@locintel/ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useRouterState } from '@tanstack/react-router';
 import { useState, type ReactNode } from 'react';
@@ -76,7 +76,7 @@ export function Shell({ children }: { children: ReactNode }) {
       {/* the sidebar content renders twice: a fixed rail on md+, a drawer below */}
       <aside className="hidden w-56 flex-col border-r bg-card md:flex">
         <div className="border-b p-4">
-          <div className="font-semibold">Premise</div>
+          <div className="font-semibold">LocIntel</div>
           <div className="text-xs text-muted-foreground">{activeOrg?.name ?? 'No organization'}</div>
         </div>
         <nav className="flex-1 space-y-4 p-2">
@@ -158,7 +158,7 @@ export function Shell({ children }: { children: ReactNode }) {
           />
           <aside className="relative flex w-64 flex-col overflow-y-auto border-r bg-card">
         <div className="border-b p-4">
-          <div className="font-semibold">Premise</div>
+          <div className="font-semibold">LocIntel</div>
           <div className="text-xs text-muted-foreground">{activeOrg?.name ?? 'No organization'}</div>
         </div>
         <nav className="flex-1 space-y-4 p-2">
@@ -240,7 +240,7 @@ export function Shell({ children }: { children: ReactNode }) {
             ☰
           </Button>
           <div>
-            <span className="font-semibold">Premise</span>
+            <span className="font-semibold">LocIntel</span>
             <span className="ml-2 text-xs text-muted-foreground">{activeOrg?.name}</span>
           </div>
         </div>
@@ -295,7 +295,7 @@ function SignInScreen() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-background">
       <div className="w-full max-w-sm space-y-4 rounded-lg border bg-card p-8 text-center">
-        <h1 className="text-xl font-semibold">Premise Console</h1>
+        <h1 className="text-xl font-semibold">LocIntel Console</h1>
         <p className="text-sm text-muted-foreground">Sign in to manage your organization.</p>
         {authError && (
           <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
