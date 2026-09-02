@@ -169,3 +169,17 @@ jurisdiction.
   rows; managers can trigger a sweep. `ActorRef` moved to Platform for
   modules whose writes accept people and API keys. Deferred: entity photos
   (biometric exposure) until Evidence; `IEntityDirectory` until Cases.
+- 2026-09-01: **Cases module shipped** (schema `cases`; capabilities
+  `cases:read|manage`). Visibility is membership or a linked incident in
+  scope (links stamp the path) or manage; members work (tasks, notes,
+  evidence), managers run the case. Evidence is Storage files by id with an
+  append-only `custody_events` chain (Added / Downloaded / Exported /
+  Removed / HoldPlaced / HoldReleased); downloads go THROUGH the case so
+  they are attributable. Legal hold cascades to files via the new
+  `FileHoldRequested` outbox message (Storage handles it); downloads sign
+  via the new `ISignedFileAccess` read contract. Entities on a case resolve
+  through `IEntityDirectory.LookupVisibleAsync`, so a reader without
+  need-to-know sees a restricted placeholder. Prosecution package v1 is a
+  JSON document (PDF later). Offboarding exporters added for Checklists,
+  Incidents, Entities, and Cases - the lifecycle test enumerates every
+  module's section and none of the fork's modules had one.

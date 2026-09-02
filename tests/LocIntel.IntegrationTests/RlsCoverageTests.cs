@@ -40,7 +40,7 @@ public class RlsCoverageTests(ApiFixture fixture) : IClassFixture<ApiFixture>
             FROM pg_class c
             JOIN pg_namespace n ON n.oid = c.relnamespace
             WHERE c.relkind IN ('r', 'p')
-              AND n.nspname IN ('tenancy','identity','entitlements','audit','storage','ingest','checklists','incidents','entities')
+              AND n.nspname IN ('tenancy','identity','entitlements','audit','storage','ingest','checklists','incidents','entities','cases')
               AND EXISTS (
                   SELECT 1 FROM information_schema.columns col
                   WHERE col.table_schema = n.nspname AND col.table_name = c.relname

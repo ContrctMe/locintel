@@ -39,6 +39,7 @@ public class MigrationRoundTripTests(MigrationDbFixture fixture) : IClassFixture
             "checklists",
             "incidents",
             "entities",
+            "cases",
         ];
 
     [Theory]
@@ -79,6 +80,7 @@ public class MigrationRoundTripTests(MigrationDbFixture fixture) : IClassFixture
             "checklists" => Build<LocIntel.Modules.Checklists.Data.ChecklistsDbContext>(cs, module),
             "incidents" => Build<LocIntel.Modules.Incidents.Data.IncidentsDbContext>(cs, module),
             "entities" => Build<LocIntel.Modules.Entities.Data.EntitiesDbContext>(cs, module),
+            "cases" => Build<LocIntel.Modules.Cases.Data.CasesDbContext>(cs, module),
             _ => throw new ArgumentOutOfRangeException(nameof(module)),
         };
     }

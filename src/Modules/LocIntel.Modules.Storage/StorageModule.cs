@@ -37,6 +37,7 @@ public static class StorageModule
             }
         );
         services.AddScoped<LocIntel.Contracts.IStoredFileLookup, StoredFileLookup>();
+        services.AddScoped<LocIntel.Contracts.Storage.ISignedFileAccess, SignedFileAccess>();
         services.AddScoped<LocIntel.Contracts.IOrgDataExporter, StorageExporter>();
         return services;
     }

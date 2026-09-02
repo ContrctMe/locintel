@@ -5773,6 +5773,1262 @@
         }
       }
     },
+    "/api/cases": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Cases.Cases.CaseEndpoints"
+        ],
+        "summary": "GET_api_cases",
+        "description": "GET_api_cases",
+        "operationId": "GET_api_cases",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/CaseStatus"
+            }
+          },
+          {
+            "name": "priority",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/CasePriority"
+            }
+          },
+          {
+            "name": "incidentId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "entityId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "mine",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "trash",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseListResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Cases.Cases.CaseEndpoints"
+        ],
+        "summary": "POST_api_cases",
+        "description": "POST_api_cases",
+        "operationId": "POST_api_cases",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpenCaseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseOpened"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{id}": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Cases.Cases.CaseEndpoints"
+        ],
+        "summary": "GET_api_cases_id",
+        "description": "GET_api_cases_id",
+        "operationId": "GET_api_cases_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "LocIntel.Modules.Cases.Cases.CaseEndpoints"
+        ],
+        "summary": "PUT_api_cases_id",
+        "description": "PUT_api_cases_id",
+        "operationId": "PUT_api_cases_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCaseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "LocIntel.Modules.Cases.Cases.CaseEndpoints"
+        ],
+        "summary": "DELETE_api_cases_id",
+        "description": "DELETE_api_cases_id",
+        "operationId": "DELETE_api_cases_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{id}/close": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Cases.Cases.CaseEndpoints"
+        ],
+        "summary": "POST_api_cases_id_close",
+        "description": "POST_api_cases_id_close",
+        "operationId": "POST_api_cases_id_close",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloseCaseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{id}/reopen": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Cases.Cases.CaseEndpoints"
+        ],
+        "summary": "POST_api_cases_id_reopen",
+        "description": "POST_api_cases_id_reopen",
+        "operationId": "POST_api_cases_id_reopen",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{id}/hold": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Cases.Cases.CaseEndpoints"
+        ],
+        "summary": "POST_api_cases_id_hold",
+        "description": "POST_api_cases_id_hold",
+        "operationId": "POST_api_cases_id_hold",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetCaseHoldRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{id}/restore": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Cases.Cases.CaseEndpoints"
+        ],
+        "summary": "POST_api_cases_id_restore",
+        "description": "POST_api_cases_id_restore",
+        "operationId": "POST_api_cases_id_restore",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{id}/custody": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Cases.Cases.CaseEndpoints"
+        ],
+        "summary": "GET_api_cases_id_custody",
+        "description": "GET_api_cases_id_custody",
+        "operationId": "GET_api_cases_id_custody",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseCustodyResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{id}/package": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Cases.Cases.CaseEndpoints"
+        ],
+        "summary": "GET_api_cases_id_package",
+        "description": "GET_api_cases_id_package",
+        "operationId": "GET_api_cases_id_package",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CasePackage"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{id}/evidence": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Cases.Cases.CaseEvidenceEndpoints"
+        ],
+        "summary": "POST_api_cases_id_evidence",
+        "description": "POST_api_cases_id_evidence",
+        "operationId": "POST_api_cases_id_evidence",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddCaseEvidenceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseChildAdded"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{id}/evidence/{evidenceId}": {
+      "delete": {
+        "tags": [
+          "LocIntel.Modules.Cases.Cases.CaseEvidenceEndpoints"
+        ],
+        "summary": "DELETE_api_cases_id_evidence_evidenceId",
+        "description": "DELETE_api_cases_id_evidence_evidenceId",
+        "operationId": "DELETE_api_cases_id_evidence_evidenceId",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "evidenceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseChildRemoved"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{id}/evidence/{evidenceId}/download": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Cases.Cases.CaseEvidenceEndpoints"
+        ],
+        "summary": "GET_api_cases_id_evidence_evidenceId_download",
+        "description": "GET_api_cases_id_evidence_evidenceId_download",
+        "operationId": "GET_api_cases_id_evidence_evidenceId_download",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "evidenceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseEvidenceDownload"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{id}/incidents": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Cases.Cases.CaseLinkEndpoints"
+        ],
+        "summary": "POST_api_cases_id_incidents",
+        "description": "POST_api_cases_id_incidents",
+        "operationId": "POST_api_cases_id_incidents",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddCaseIncidentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseChildAdded"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{id}/incidents/{linkId}": {
+      "delete": {
+        "tags": [
+          "LocIntel.Modules.Cases.Cases.CaseLinkEndpoints"
+        ],
+        "summary": "DELETE_api_cases_id_incidents_linkId",
+        "description": "DELETE_api_cases_id_incidents_linkId",
+        "operationId": "DELETE_api_cases_id_incidents_linkId",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "linkId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseChildRemoved"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{id}/entities": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Cases.Cases.CaseLinkEndpoints"
+        ],
+        "summary": "POST_api_cases_id_entities",
+        "description": "POST_api_cases_id_entities",
+        "operationId": "POST_api_cases_id_entities",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddCaseEntityRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseChildAdded"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{id}/entities/{linkId}": {
+      "delete": {
+        "tags": [
+          "LocIntel.Modules.Cases.Cases.CaseLinkEndpoints"
+        ],
+        "summary": "DELETE_api_cases_id_entities_linkId",
+        "description": "DELETE_api_cases_id_entities_linkId",
+        "operationId": "DELETE_api_cases_id_entities_linkId",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "linkId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseChildRemoved"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{id}/members": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Cases.Cases.CaseMemberEndpoints"
+        ],
+        "summary": "POST_api_cases_id_members",
+        "description": "POST_api_cases_id_members",
+        "operationId": "POST_api_cases_id_members",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddCaseMemberRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseChildAdded"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{id}/members/{memberId}": {
+      "delete": {
+        "tags": [
+          "LocIntel.Modules.Cases.Cases.CaseMemberEndpoints"
+        ],
+        "summary": "DELETE_api_cases_id_members_memberId",
+        "description": "DELETE_api_cases_id_members_memberId",
+        "operationId": "DELETE_api_cases_id_members_memberId",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "memberId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseChildRemoved"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{id}/notes": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Cases.Cases.CaseNoteEndpoints"
+        ],
+        "summary": "POST_api_cases_id_notes",
+        "description": "POST_api_cases_id_notes",
+        "operationId": "POST_api_cases_id_notes",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddCaseNoteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseChildAdded"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{id}/notes/{noteId}": {
+      "delete": {
+        "tags": [
+          "LocIntel.Modules.Cases.Cases.CaseNoteEndpoints"
+        ],
+        "summary": "DELETE_api_cases_id_notes_noteId",
+        "description": "DELETE_api_cases_id_notes_noteId",
+        "operationId": "DELETE_api_cases_id_notes_noteId",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "noteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseChildRemoved"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{id}/tasks": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Cases.Cases.CaseTaskEndpoints"
+        ],
+        "summary": "POST_api_cases_id_tasks",
+        "description": "POST_api_cases_id_tasks",
+        "operationId": "POST_api_cases_id_tasks",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddCaseTaskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseChildAdded"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{id}/tasks/{taskId}/done": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Cases.Cases.CaseTaskEndpoints"
+        ],
+        "summary": "POST_api_cases_id_tasks_taskId_done",
+        "description": "POST_api_cases_id_tasks_taskId_done",
+        "operationId": "POST_api_cases_id_tasks_taskId_done",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetTaskDoneRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseTaskMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{id}/tasks/{taskId}": {
+      "delete": {
+        "tags": [
+          "LocIntel.Modules.Cases.Cases.CaseTaskEndpoints"
+        ],
+        "summary": "DELETE_api_cases_id_tasks_taskId",
+        "description": "DELETE_api_cases_id_tasks_taskId",
+        "operationId": "DELETE_api_cases_id_tasks_taskId",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseChildRemoved"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
     "/objects/upload/{token}": {
       "put": {
         "tags": [
@@ -6211,6 +7467,105 @@
   },
   "components": {
     "schemas": {
+      "AddCaseEntityRequest": {
+        "required": [
+          "entityId"
+        ],
+        "type": "object",
+        "properties": {
+          "entityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "AddCaseEvidenceRequest": {
+        "required": [
+          "fileId"
+        ],
+        "type": "object",
+        "properties": {
+          "fileId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "label": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "AddCaseIncidentRequest": {
+        "required": [
+          "incidentId"
+        ],
+        "type": "object",
+        "properties": {
+          "incidentId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "AddCaseMemberRequest": {
+        "required": [
+          "userId"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "role": {
+            "$ref": "#/components/schemas/CaseMemberRole"
+          }
+        }
+      },
+      "AddCaseNoteRequest": {
+        "required": [
+          "body"
+        ],
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string"
+          }
+        }
+      },
+      "AddCaseTaskRequest": {
+        "required": [
+          "title"
+        ],
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "assigneeId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "dueAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
       "AddClosureRequest": {
         "required": [
           "date"
@@ -6399,6 +7754,762 @@
           }
         }
       },
+      "CaseChildAdded": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "CaseChildRemoved": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "CaseCustodyResponse": {
+        "required": [
+          "caseId",
+          "events"
+        ],
+        "type": "object",
+        "properties": {
+          "caseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustodyEventView"
+            }
+          }
+        }
+      },
+      "CaseDetail": {
+        "required": [
+          "id",
+          "title",
+          "summary",
+          "status",
+          "priority",
+          "leadId",
+          "lead",
+          "disposition",
+          "closedAt",
+          "closureNote",
+          "legalHold",
+          "canManage",
+          "canWork",
+          "createdAt",
+          "updatedAt",
+          "deletedAt",
+          "incidents",
+          "entities",
+          "members",
+          "tasks",
+          "notes",
+          "evidence",
+          "custodyEvents"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CaseStatus"
+          },
+          "priority": {
+            "$ref": "#/components/schemas/CasePriority"
+          },
+          "leadId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "lead": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "disposition": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CaseDisposition"
+              }
+            ]
+          },
+          "closedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "closureNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "legalHold": {
+            "type": "boolean"
+          },
+          "canManage": {
+            "type": "boolean"
+          },
+          "canWork": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deletedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "incidents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaseIncidentView"
+            }
+          },
+          "entities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaseEntityView"
+            }
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaseMemberView"
+            }
+          },
+          "tasks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaseTaskView"
+            }
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaseNoteView"
+            }
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaseEvidenceView"
+            }
+          },
+          "custodyEvents": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "CaseDisposition": {
+        "enum": [
+          "Unfounded",
+          "Resolved",
+          "ReferredToPolice",
+          "Prosecuted",
+          "Other",
+          null
+        ]
+      },
+      "CaseEntityView": {
+        "required": [
+          "id",
+          "entityId",
+          "displayName",
+          "kind",
+          "status",
+          "note",
+          "restricted",
+          "addedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "entityId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "kind": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "restricted": {
+            "type": "boolean"
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CaseEvidenceDownload": {
+        "required": [
+          "url",
+          "expiresInSeconds",
+          "fileName",
+          "contentType"
+        ],
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "expiresInSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "contentType": {
+            "type": "string"
+          }
+        }
+      },
+      "CaseEvidenceView": {
+        "required": [
+          "id",
+          "fileId",
+          "fileName",
+          "contentType",
+          "fileStatus",
+          "label",
+          "addedBy",
+          "addedByLabel",
+          "addedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fileId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fileName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "contentType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "fileStatus": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "label": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "addedBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "addedByLabel": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CaseIncidentView": {
+        "required": [
+          "id",
+          "incidentId",
+          "siteId",
+          "title",
+          "category",
+          "status",
+          "occurredAt",
+          "addedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "incidentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "siteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "category": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "occurredAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CaseListResponse": {
+        "required": [
+          "items",
+          "total",
+          "nextOffset"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaseSummary"
+            }
+          },
+          "total": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "nextOffset": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "CaseMemberRole": {
+        "enum": [
+          "Lead",
+          "Investigator",
+          "Reviewer"
+        ]
+      },
+      "CaseMemberView": {
+        "required": [
+          "id",
+          "userId",
+          "user",
+          "role",
+          "addedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "role": {
+            "$ref": "#/components/schemas/CaseMemberRole"
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CaseMutated": {
+        "required": [
+          "id",
+          "status",
+          "priority",
+          "legalHold",
+          "deletedAt",
+          "updatedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CaseStatus"
+          },
+          "priority": {
+            "$ref": "#/components/schemas/CasePriority"
+          },
+          "legalHold": {
+            "type": "boolean"
+          },
+          "deletedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CaseNoteView": {
+        "required": [
+          "id",
+          "authorId",
+          "author",
+          "body",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "authorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "author": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "body": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CaseOpened": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "CasePackage": {
+        "required": [
+          "exportedAt",
+          "exportedBy",
+          "exportedByLabel",
+          "case",
+          "custody"
+        ],
+        "type": "object",
+        "properties": {
+          "exportedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "exportedBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "exportedByLabel": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "case": {
+            "$ref": "#/components/schemas/CaseDetail"
+          },
+          "custody": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustodyEventView"
+            }
+          }
+        }
+      },
+      "CasePriority": {
+        "enum": [
+          "Low",
+          "Medium",
+          "High",
+          "Critical"
+        ]
+      },
+      "CaseStatus": {
+        "enum": [
+          "Open",
+          "Closed"
+        ]
+      },
+      "CaseSummary": {
+        "required": [
+          "id",
+          "title",
+          "status",
+          "priority",
+          "leadId",
+          "lead",
+          "incidentCount",
+          "openTasks",
+          "legalHold",
+          "updatedAt",
+          "deletedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CaseStatus"
+          },
+          "priority": {
+            "$ref": "#/components/schemas/CasePriority"
+          },
+          "leadId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "lead": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "incidentCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "openTasks": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "legalHold": {
+            "type": "boolean"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deletedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "CaseTaskMutated": {
+        "required": [
+          "id",
+          "doneAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "doneAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "CaseTaskView": {
+        "required": [
+          "id",
+          "title",
+          "assigneeId",
+          "assignee",
+          "dueAt",
+          "doneAt",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "assigneeId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "assignee": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dueAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "doneAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "CheckItemRequest": {
         "required": [
           "templateId",
@@ -6554,6 +8665,23 @@
           },
           "returnPath": {
             "type": "string"
+          }
+        }
+      },
+      "CloseCaseRequest": {
+        "required": [
+          "disposition"
+        ],
+        "type": "object",
+        "properties": {
+          "disposition": {
+            "$ref": "#/components/schemas/CaseDisposition"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -6953,6 +9081,65 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "CustodyAction": {
+        "enum": [
+          "Added",
+          "Downloaded",
+          "Exported",
+          "Removed",
+          "HoldPlaced",
+          "HoldReleased"
+        ]
+      },
+      "CustodyEventView": {
+        "required": [
+          "id",
+          "fileId",
+          "action",
+          "actorId",
+          "actorTier",
+          "actor",
+          "detail",
+          "at"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fileId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "action": {
+            "$ref": "#/components/schemas/CustodyAction"
+          },
+          "actorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "actorTier": {
+            "type": "string"
+          },
+          "actor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -8346,6 +10533,36 @@
           }
         }
       },
+      "OpenCaseRequest": {
+        "required": [
+          "title"
+        ],
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "summary": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "priority": {
+            "$ref": "#/components/schemas/CasePriority"
+          },
+          "incidentIds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
       "OperatorAddExceptionRequest": {
         "required": [
           "value",
@@ -8780,6 +10997,17 @@
           }
         }
       },
+      "SetCaseHoldRequest": {
+        "required": [
+          "hold"
+        ],
+        "type": "object",
+        "properties": {
+          "hold": {
+            "type": "boolean"
+          }
+        }
+      },
       "SetEntityHoldRequest": {
         "required": [
           "hold"
@@ -8820,6 +11048,17 @@
         "type": "object",
         "properties": {
           "hold": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SetTaskDoneRequest": {
+        "required": [
+          "done"
+        ],
+        "type": "object",
+        "properties": {
+          "done": {
             "type": "boolean"
           }
         }
@@ -9053,6 +11292,36 @@
         "properties": {
           "orgId": {
             "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "UpdateCaseRequest": {
+        "required": [
+          "title",
+          "summary",
+          "priority",
+          "leadId"
+        ],
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "summary": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "priority": {
+            "$ref": "#/components/schemas/CasePriority"
+          },
+          "leadId": {
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "uuid"
           }
         }
@@ -9455,6 +11724,24 @@
     },
     {
       "name": "LocIntel.Modules.Entities.Entities.EntityLinkEndpoints"
+    },
+    {
+      "name": "LocIntel.Modules.Cases.Cases.CaseEndpoints"
+    },
+    {
+      "name": "LocIntel.Modules.Cases.Cases.CaseEvidenceEndpoints"
+    },
+    {
+      "name": "LocIntel.Modules.Cases.Cases.CaseLinkEndpoints"
+    },
+    {
+      "name": "LocIntel.Modules.Cases.Cases.CaseMemberEndpoints"
+    },
+    {
+      "name": "LocIntel.Modules.Cases.Cases.CaseNoteEndpoints"
+    },
+    {
+      "name": "LocIntel.Modules.Cases.Cases.CaseTaskEndpoints"
     },
     {
       "name": "LocIntel.Api"

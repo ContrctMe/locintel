@@ -10,6 +10,7 @@ import type { Page } from '../lib/paging';
 import { can, useMe } from '../session';
 import { StatusBadge } from '../shell';
 import { EntityStatusBadge, LINK_ROLES, type EntitySummary } from './entities';
+import { OpenCaseDialog, PriorityBadge, type CaseSummary } from './cases';
 import { categoryLabel, SeverityBadge } from './incidents';
 
 type Note = { id: string; authorId: string; author: string | null; body: string; createdAt: string };
@@ -213,6 +214,8 @@ export function IncidentDetailPage() {
         </CardContent>
       </Card>
 
+      {can(me, 'cases:read') && <CasesCard incidentId={incidentId} manage={can(me, 'cases:manage')} />}
+
       {can(me, 'entities:read') && (
         <LinkedEntitiesCard incidentId={incidentId} manage={can(me, 'entities:manage')} />
       )}
@@ -390,5 +393,31 @@ function LinkEntityDialog({ incidentId }: { incidentId: string }) {
         </Button>
       </div>
     </FormDialog>
+  );
+}
+
+function CasesCard({ incidentId, manage }: { incidentId: string; manage: boolean }) {
+  const { data } = useQuery({
+    queryKey: ['cases', 'by-incident', incidentId],
+    queryFn: () => api.get<Page<CaseSummary>>(`/api/cases?incidentId=${incidentId}&status=&limit=50`),
+  });
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between text-base">
+          Cases
+          {manage && <OpenCaseDialog incidentId={incidentId} trigger={<Button size="sm" variant="outline">Open case</Button>} />}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {data?.items.length === 0 && <p className="text-sm text-muted-foreground">Not part of a case you can see.</p>}
+        {data?.items.map((c) => (
+          <div key={c.id} className="flex items-center justify-between rounded-md border p-2 text-sm">
+            <Link to="/cases/$caseId" params={{ caseId: c.id }} className="font-medium hover:underline">{c.title}</Link>
+            <span className="flex items-center gap-2"><PriorityBadge priority={c.priority} /><StatusBadge status={c.status} /></span>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 }

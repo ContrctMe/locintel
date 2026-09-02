@@ -33,5 +33,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Modules\LocIntel.Modules.Incidents\LocIntel.Modules.Incidents.csproj" />
     <ProjectReference Include="..\Modules\LocIntel.Modules.Entities\LocIntel.Modules.Entities.csproj" />
+    <ProjectReference Include="..\Modules\LocIntel.Modules.Cases\LocIntel.Modules.Cases.csproj" />
   </ItemGroup>
 </Project>

@@ -2360,6 +2360,458 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_cases
+         * @description GET_api_cases
+         */
+        get: operations["GET_api_cases"];
+        put?: never;
+        /**
+         * POST_api_cases
+         * @description POST_api_cases
+         */
+        post: operations["POST_api_cases"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_cases_id
+         * @description GET_api_cases_id
+         */
+        get: operations["GET_api_cases_id"];
+        /**
+         * PUT_api_cases_id
+         * @description PUT_api_cases_id
+         */
+        put: operations["PUT_api_cases_id"];
+        post?: never;
+        /**
+         * DELETE_api_cases_id
+         * @description DELETE_api_cases_id
+         */
+        delete: operations["DELETE_api_cases_id"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_cases_id_close
+         * @description POST_api_cases_id_close
+         */
+        post: operations["POST_api_cases_id_close"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_cases_id_reopen
+         * @description POST_api_cases_id_reopen
+         */
+        post: operations["POST_api_cases_id_reopen"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/hold": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_cases_id_hold
+         * @description POST_api_cases_id_hold
+         */
+        post: operations["POST_api_cases_id_hold"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_cases_id_restore
+         * @description POST_api_cases_id_restore
+         */
+        post: operations["POST_api_cases_id_restore"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/custody": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_cases_id_custody
+         * @description GET_api_cases_id_custody
+         */
+        get: operations["GET_api_cases_id_custody"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/package": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_cases_id_package
+         * @description GET_api_cases_id_package
+         */
+        get: operations["GET_api_cases_id_package"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_cases_id_evidence
+         * @description POST_api_cases_id_evidence
+         */
+        post: operations["POST_api_cases_id_evidence"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/evidence/{evidenceId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * DELETE_api_cases_id_evidence_evidenceId
+         * @description DELETE_api_cases_id_evidence_evidenceId
+         */
+        delete: operations["DELETE_api_cases_id_evidence_evidenceId"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/evidence/{evidenceId}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_cases_id_evidence_evidenceId_download
+         * @description GET_api_cases_id_evidence_evidenceId_download
+         */
+        get: operations["GET_api_cases_id_evidence_evidenceId_download"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/incidents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_cases_id_incidents
+         * @description POST_api_cases_id_incidents
+         */
+        post: operations["POST_api_cases_id_incidents"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/incidents/{linkId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * DELETE_api_cases_id_incidents_linkId
+         * @description DELETE_api_cases_id_incidents_linkId
+         */
+        delete: operations["DELETE_api_cases_id_incidents_linkId"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/entities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_cases_id_entities
+         * @description POST_api_cases_id_entities
+         */
+        post: operations["POST_api_cases_id_entities"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/entities/{linkId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * DELETE_api_cases_id_entities_linkId
+         * @description DELETE_api_cases_id_entities_linkId
+         */
+        delete: operations["DELETE_api_cases_id_entities_linkId"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_cases_id_members
+         * @description POST_api_cases_id_members
+         */
+        post: operations["POST_api_cases_id_members"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/members/{memberId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * DELETE_api_cases_id_members_memberId
+         * @description DELETE_api_cases_id_members_memberId
+         */
+        delete: operations["DELETE_api_cases_id_members_memberId"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_cases_id_notes
+         * @description POST_api_cases_id_notes
+         */
+        post: operations["POST_api_cases_id_notes"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/notes/{noteId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * DELETE_api_cases_id_notes_noteId
+         * @description DELETE_api_cases_id_notes_noteId
+         */
+        delete: operations["DELETE_api_cases_id_notes_noteId"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_cases_id_tasks
+         * @description POST_api_cases_id_tasks
+         */
+        post: operations["POST_api_cases_id_tasks"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/tasks/{taskId}/done": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_cases_id_tasks_taskId_done
+         * @description POST_api_cases_id_tasks_taskId_done
+         */
+        post: operations["POST_api_cases_id_tasks_taskId_done"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/tasks/{taskId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * DELETE_api_cases_id_tasks_taskId
+         * @description DELETE_api_cases_id_tasks_taskId
+         */
+        delete: operations["DELETE_api_cases_id_tasks_taskId"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/objects/upload/{token}": {
         parameters: {
             query?: never;
@@ -3127,6 +3579,35 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AddCaseEntityRequest: {
+            /** Format: uuid */
+            entityId: string;
+            note?: null | string;
+        };
+        AddCaseEvidenceRequest: {
+            /** Format: uuid */
+            fileId: string;
+            label?: null | string;
+        };
+        AddCaseIncidentRequest: {
+            /** Format: uuid */
+            incidentId: string;
+        };
+        AddCaseMemberRequest: {
+            /** Format: uuid */
+            userId: string;
+            role?: components["schemas"]["CaseMemberRole"];
+        };
+        AddCaseNoteRequest: {
+            body: string;
+        };
+        AddCaseTaskRequest: {
+            title: string;
+            /** Format: uuid */
+            assigneeId?: null | string;
+            /** Format: date-time */
+            dueAt?: null | string;
+        };
         AddClosureRequest: {
             /** Format: date */
             date: string;
@@ -3176,6 +3657,199 @@ export interface components {
             email: string;
             reason: null | string;
         };
+        CaseChildAdded: {
+            /** Format: uuid */
+            id: string;
+        };
+        CaseChildRemoved: {
+            /** Format: uuid */
+            id: string;
+        };
+        CaseCustodyResponse: {
+            /** Format: uuid */
+            caseId: string;
+            events: components["schemas"]["CustodyEventView"][];
+        };
+        CaseDetail: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            summary: string;
+            status: components["schemas"]["CaseStatus"];
+            priority: components["schemas"]["CasePriority"];
+            /** Format: uuid */
+            leadId: null | string;
+            lead: null | string;
+            disposition: null | components["schemas"]["CaseDisposition"];
+            /** Format: date-time */
+            closedAt: null | string;
+            closureNote: null | string;
+            legalHold: boolean;
+            canManage: boolean;
+            canWork: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            deletedAt: null | string;
+            incidents: components["schemas"]["CaseIncidentView"][];
+            entities: components["schemas"]["CaseEntityView"][];
+            members: components["schemas"]["CaseMemberView"][];
+            tasks: components["schemas"]["CaseTaskView"][];
+            notes: components["schemas"]["CaseNoteView"][];
+            evidence: components["schemas"]["CaseEvidenceView"][];
+            /** Format: int32 */
+            custodyEvents: number | string;
+        };
+        /** @enum {unknown} */
+        CaseDisposition: "Unfounded" | "Resolved" | "ReferredToPolice" | "Prosecuted" | "Other" | null;
+        CaseEntityView: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            entityId: null | string;
+            displayName: null | string;
+            kind: null | string;
+            status: null | string;
+            note: null | string;
+            restricted: boolean;
+            /** Format: date-time */
+            addedAt: string;
+        };
+        CaseEvidenceDownload: {
+            url: string;
+            /** Format: int32 */
+            expiresInSeconds: number | string;
+            fileName: string;
+            contentType: string;
+        };
+        CaseEvidenceView: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            fileId: string;
+            fileName: null | string;
+            contentType: null | string;
+            fileStatus: null | string;
+            label: null | string;
+            /** Format: uuid */
+            addedBy: string;
+            addedByLabel: null | string;
+            /** Format: date-time */
+            addedAt: string;
+        };
+        CaseIncidentView: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            incidentId: string;
+            /** Format: uuid */
+            siteId: string;
+            title: null | string;
+            category: null | string;
+            status: null | string;
+            /** Format: date-time */
+            occurredAt: null | string;
+            /** Format: date-time */
+            addedAt: string;
+        };
+        CaseListResponse: {
+            items: components["schemas"]["CaseSummary"][];
+            /** Format: int32 */
+            total: number | string;
+            /** Format: int32 */
+            nextOffset: null | number | string;
+        };
+        /** @enum {unknown} */
+        CaseMemberRole: "Lead" | "Investigator" | "Reviewer";
+        CaseMemberView: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            userId: string;
+            user: null | string;
+            role: components["schemas"]["CaseMemberRole"];
+            /** Format: date-time */
+            addedAt: string;
+        };
+        CaseMutated: {
+            /** Format: uuid */
+            id: string;
+            status: components["schemas"]["CaseStatus"];
+            priority: components["schemas"]["CasePriority"];
+            legalHold: boolean;
+            /** Format: date-time */
+            deletedAt: null | string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        CaseNoteView: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            authorId: string;
+            author: null | string;
+            body: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        CaseOpened: {
+            /** Format: uuid */
+            id: string;
+        };
+        CasePackage: {
+            /** Format: date-time */
+            exportedAt: string;
+            /** Format: uuid */
+            exportedBy: string;
+            exportedByLabel: null | string;
+            case: components["schemas"]["CaseDetail"];
+            custody: components["schemas"]["CustodyEventView"][];
+        };
+        /** @enum {unknown} */
+        CasePriority: "Low" | "Medium" | "High" | "Critical";
+        /** @enum {unknown} */
+        CaseStatus: "Open" | "Closed";
+        CaseSummary: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            status: components["schemas"]["CaseStatus"];
+            priority: components["schemas"]["CasePriority"];
+            /** Format: uuid */
+            leadId: null | string;
+            lead: null | string;
+            /** Format: int32 */
+            incidentCount: number | string;
+            /** Format: int32 */
+            openTasks: number | string;
+            legalHold: boolean;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            deletedAt: null | string;
+        };
+        CaseTaskMutated: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            doneAt: null | string;
+        };
+        CaseTaskView: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            /** Format: uuid */
+            assigneeId: null | string;
+            assignee: null | string;
+            /** Format: date-time */
+            dueAt: null | string;
+            /** Format: date-time */
+            doneAt: null | string;
+            /** Format: date-time */
+            createdAt: string;
+        };
         CheckItemRequest: {
             /** Format: uuid */
             templateId: string;
@@ -3217,6 +3891,10 @@ export interface components {
         CheckoutRequest: {
             planId: string;
             returnPath: string;
+        };
+        CloseCaseRequest: {
+            disposition: components["schemas"]["CaseDisposition"];
+            note?: null | string;
         };
         CloseIncidentRequest: {
             reason: string;
@@ -3316,6 +3994,22 @@ export interface components {
         CreateWebhookRequest: {
             url: string;
             events?: null | string[];
+        };
+        /** @enum {unknown} */
+        CustodyAction: "Added" | "Downloaded" | "Exported" | "Removed" | "HoldPlaced" | "HoldReleased";
+        CustodyEventView: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            fileId: string;
+            action: components["schemas"]["CustodyAction"];
+            /** Format: uuid */
+            actorId: string;
+            actorTier: string;
+            actor: null | string;
+            detail: null | string;
+            /** Format: date-time */
+            at: string;
         };
         EntityChildRemoved: {
             /** Format: uuid */
@@ -3685,6 +4379,12 @@ export interface components {
             /** Format: uuid */
             newParentId: string;
         };
+        OpenCaseRequest: {
+            title: string;
+            summary?: null | string;
+            priority?: components["schemas"]["CasePriority"];
+            incidentIds?: null | string[];
+        };
         OperatorAddExceptionRequest: {
             value: string;
             reason: string;
@@ -3794,6 +4494,9 @@ export interface components {
             logGrants: boolean;
             logReads: boolean;
         };
+        SetCaseHoldRequest: {
+            hold: boolean;
+        };
         SetEntityHoldRequest: {
             hold: boolean;
         };
@@ -3805,6 +4508,9 @@ export interface components {
         };
         SetIncidentHoldRequest: {
             hold: boolean;
+        };
+        SetTaskDoneRequest: {
+            done: boolean;
         };
         SettingResponse: {
             /** Format: uuid */
@@ -3862,6 +4568,13 @@ export interface components {
         SwitchOrgRequest: {
             /** Format: uuid */
             orgId: string;
+        };
+        UpdateCaseRequest: {
+            title: string;
+            summary: null | string;
+            priority: components["schemas"]["CasePriority"];
+            /** Format: uuid */
+            leadId: null | string;
         };
         UpdateConnectorRequest: {
             name: string;
@@ -8276,6 +8989,839 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EntityChildRemoved"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_cases: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["CaseStatus"];
+                priority?: components["schemas"]["CasePriority"];
+                incidentId?: string;
+                entityId?: string;
+                mine?: boolean;
+                q?: string;
+                trash?: boolean;
+                limit?: number | string;
+                offset?: number | string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseListResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_cases: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpenCaseRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseOpened"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_cases_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    PUT_api_cases_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCaseRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    DELETE_api_cases_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_cases_id_close: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CloseCaseRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_cases_id_reopen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_cases_id_hold: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetCaseHoldRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_cases_id_restore: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_cases_id_custody: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseCustodyResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_cases_id_package: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CasePackage"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_cases_id_evidence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddCaseEvidenceRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseChildAdded"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    DELETE_api_cases_id_evidence_evidenceId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                evidenceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseChildRemoved"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_cases_id_evidence_evidenceId_download: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                evidenceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseEvidenceDownload"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_cases_id_incidents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddCaseIncidentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseChildAdded"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    DELETE_api_cases_id_incidents_linkId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                linkId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseChildRemoved"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_cases_id_entities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddCaseEntityRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseChildAdded"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    DELETE_api_cases_id_entities_linkId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                linkId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseChildRemoved"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_cases_id_members: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddCaseMemberRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseChildAdded"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    DELETE_api_cases_id_members_memberId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                memberId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseChildRemoved"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_cases_id_notes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddCaseNoteRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseChildAdded"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    DELETE_api_cases_id_notes_noteId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                noteId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseChildRemoved"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_cases_id_tasks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddCaseTaskRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseChildAdded"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_cases_id_tasks_taskId_done: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                taskId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetTaskDoneRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseTaskMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    DELETE_api_cases_id_tasks_taskId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                taskId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseChildRemoved"];
                 };
             };
             /** @description Not Found */

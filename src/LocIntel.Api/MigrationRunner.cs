@@ -61,6 +61,8 @@ public sealed class MigrationRunner(
             .Database.MigrateAsync(ct);
         await sp.GetRequiredService<LocIntel.Modules.Entities.Data.EntitiesDbContext>()
             .Database.MigrateAsync(ct);
+        await sp.GetRequiredService<LocIntel.Modules.Cases.Data.CasesDbContext>()
+            .Database.MigrateAsync(ct);
         await sp.GetRequiredService<LocIntel.Platform.Infra.PlatformDbContext>()
             .Database.MigrateAsync(ct);
 
@@ -107,7 +109,7 @@ public sealed class MigrationRunner(
                     END;
                 END IF;
             END $$;
-            GRANT USAGE ON SCHEMA tenancy, identity, entitlements, audit, storage, platform, ingest, checklists, incidents, entities TO app_user;
+            GRANT USAGE ON SCHEMA tenancy, identity, entitlements, audit, storage, platform, ingest, checklists, incidents, entities, cases TO app_user;
             GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA tenancy TO app_user;
             GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA identity TO app_user;
             GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA entitlements TO app_user;
@@ -118,6 +120,7 @@ public sealed class MigrationRunner(
             GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA checklists TO app_user;
             GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA incidents TO app_user;
             GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA entities TO app_user;
+            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA cases TO app_user;
             """,
             ct
         );

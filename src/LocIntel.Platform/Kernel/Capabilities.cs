@@ -32,6 +32,10 @@ public static class Capabilities
     /// </summary>
     public const string EntitiesRead = "entities:read";
     public const string EntitiesManage = "entities:manage";
+
+    /// <summary>Investigations: cases:read reaches cases you are on or whose incidents are in scope; cases:manage runs them.</summary>
+    public const string CasesRead = "cases:read";
+    public const string CasesManage = "cases:manage";
     public const string AuditRead = "audit:read";
     public const string AuditManage = "audit:manage";
     public const string EntitlementsManage = "entitlements:manage";
@@ -59,6 +63,8 @@ public static class Capabilities
         IncidentsManage,
         EntitiesRead,
         EntitiesManage,
+        CasesRead,
+        CasesManage,
         AuditRead,
         AuditManage,
         EntitlementsManage,

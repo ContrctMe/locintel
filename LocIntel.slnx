@@ -14,6 +14,7 @@
   </Folder>
   <Folder Name="/src/Modules/">
     <Project Path="src/Modules/LocIntel.Modules.Audit/LocIntel.Modules.Audit.csproj" />
+    <Project Path="src/Modules/LocIntel.Modules.Cases/LocIntel.Modules.Cases.csproj" />
     <Project Path="src/Modules/LocIntel.Modules.Checklists/LocIntel.Modules.Checklists.csproj" />
     <Project Path="src/Modules/LocIntel.Modules.Entities/LocIntel.Modules.Entities.csproj" />
     <Project Path="src/Modules/LocIntel.Modules.Entitlements/LocIntel.Modules.Entitlements.csproj" />

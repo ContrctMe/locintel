@@ -37,6 +37,11 @@ public static class EntitiesModule
                     );
             }
         );
+        services.AddScoped<
+            LocIntel.Contracts.Entities.IEntityDirectory,
+            Entities.EntityDirectory
+        >();
+        services.AddScoped<LocIntel.Contracts.IOrgDataExporter, EntitiesExporter>();
         return services;
     }
 }

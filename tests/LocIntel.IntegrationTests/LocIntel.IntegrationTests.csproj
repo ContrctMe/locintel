@@ -30,5 +30,6 @@
     <ProjectReference Include="..\..\src\Integrations\LocIntel.Integrations.Stripe\LocIntel.Integrations.Stripe.csproj" />
     <ProjectReference Include="..\..\src\Modules\LocIntel.Modules.Incidents\LocIntel.Modules.Incidents.csproj" />
     <ProjectReference Include="..\..\src\Modules\LocIntel.Modules.Entities\LocIntel.Modules.Entities.csproj" />
+    <ProjectReference Include="..\..\src\Modules\LocIntel.Modules.Cases\LocIntel.Modules.Cases.csproj" />
   </ItemGroup>
 </Project>

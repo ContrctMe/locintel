@@ -33,6 +33,7 @@ public static class IncidentsModule
             }
         );
         services.AddScoped<IIncidentDirectory, IncidentDirectory>();
+        services.AddScoped<LocIntel.Contracts.IOrgDataExporter, IncidentsExporter>();
         return services;
     }
 }

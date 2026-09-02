@@ -21,6 +21,7 @@ public class ModuleBoundaryTests
         typeof(Modules.Checklists.ChecklistsModule).Assembly,
         typeof(Modules.Incidents.IncidentsModule).Assembly,
         typeof(Modules.Entities.EntitiesModule).Assembly,
+        typeof(Modules.Cases.CasesModule).Assembly,
     ];
 
     private const string ModulePrefix = "LocIntel.Modules.";
