@@ -1,6 +1,8 @@
+using System.Text.Json;
 using LocIntel.Contracts;
 using LocIntel.Modules.Tenancy.Data;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -55,20 +57,13 @@ public static class ProcessOrgClosureHandler
                 org.IsPlatform
             )
         );
-        await bus.PublishAsync(
-            new RecordDomainAudit("org.offboarded", """{"source":"self-serve-closure"}"""),
-            new DeliveryOptions
-            {
-                TenantId = org.Id.Value.ToString(),
-                Headers = { ["locintel-actor-tier"] = "system" },
-            }
+        await bus.AuditAsync(
+            org.Id,
+            AuditActor.System,
+            "org.offboarded",
+            new { source = "self-serve-closure" }
         );
-        await bus.PublishForOrgAsync(orgId, new PurgeOrgSites());
-        await bus.PublishForOrgAsync(orgId, new PurgeOrgFiles());
-        await bus.PublishForOrgAsync(orgId, new PurgeOrgEntitlements());
-        await bus.PublishForOrgAsync(orgId, new PurgeOrgIngest());
-        await bus.PublishForOrgAsync(orgId, new PurgeOrgWebhooks());
-        await bus.PublishForOrgAsync(orgId, new OrganizationDeleted(org.Id, org.ExternalId));
+        await OrgPurgeFanOut.PublishAsync(bus, orgId, org.ExternalId);
     }
 }
 

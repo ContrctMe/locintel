@@ -324,3 +324,24 @@ jurisdiction.
   vendor, tells the buyer, extends the window, and gives up after
   `MaxEscalations`. The fixture collapses windows to zero and starts
   broadcasts at one recipient so escalation is testable.
+- 2026-09-02: **Template sync, upstream is the base** (merge of
+  `template-renamed`, upstream `2088a25`). The fork tracks the template by
+  renaming each upstream snapshot with `tools/init.py` onto a parallel
+  branch parented on the fork's own init commit, then merging it
+  (`tools/sync-upstream.sh`). Rule for every sync: conflicts resolve in
+  upstream's favour and fork code is re-seated on what upstream lifted -
+  never the reverse. This sync adopted: the module catalog (the seven
+  product modules register there, nowhere else), `AuditAsync` in place of
+  five per-module audit helpers and seven inline publishes, the
+  `PerOrgSweepService` base for the entity-retention and SLA sweeps, the
+  Platform SMS seam (the fork keeps only the Twilio adapter, the
+  preferences, and the fan-out), whole `SiteInfo`, and the two tenancy
+  shapes: `request_events`, `request_recipients` and `quotes` are
+  `ITwoPartyScoped` (migration `PlatformTenancyShapes` swaps their
+  policies onto `EnableTwoPartyRls`; the property is `CounterpartyOrgId`
+  because the shape names it, `VendorOrgId` stays as a non-null read
+  accessor) and `vendor_profiles` is `IPublishedCatalogScoped` (its
+  policies were already the shape's). `requests` keeps its hand-written
+  policy: a broadcast is readable by every recipient, a third party the
+  two-party shape cannot express. `vendor_credentials` likewise (reads
+  follow the profile's published flag).

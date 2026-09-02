@@ -1,7 +1,6 @@
 using LocIntel.Contracts;
 using LocIntel.Platform.Kernel;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Wolverine;
 
 namespace LocIntel.Api;
@@ -17,13 +16,23 @@ namespace LocIntel.Api;
 public sealed class DevBootstrap(
     IServiceProvider services,
     ReadinessState readiness,
-    ILogger<DevBootstrap> logger,
-    IConfiguration configuration
+    IConfiguration configuration,
+    ILogger<DevBootstrap> logger
 ) : BackgroundService
 {
     public const string EmulatorUserId = "user_01DEVALICE00000000000000";
     public const string EmulatorOrgId = "org_01DEVACME000000000000000";
     public const string EmulatorOperatorId = "user_01DEVOPERATOR0000000000";
+
+    // The seeded memberships must be keyed the way the ACTIVE provider mints
+    // ids, or the dev user signs in as a brand-new orgless person. With
+    // Auth:Provider=local (LOCINTEL_AUTH=local: a password-less boot for
+    // browser smoke runs) LocalAuthProvider mints "local_{email}", so seed
+    // that instead of the emulator's user_… ids.
+    private string Provider => configuration["Auth:Provider"] ?? "local";
+
+    private string ExternalIdFor(string email, string emulatorId) =>
+        Provider == "workos" ? emulatorId : email;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -49,12 +58,7 @@ public sealed class DevBootstrap(
         await using var scope = services.CreateAsyncScope();
         var sp = scope.ServiceProvider;
 
-        // seed keyed to the emulator's PINNED ids - login just matches; the
-        // password-less local provider (LOCINTEL_AUTH=local) keys users as
-        // local_{email}, so the same people sign in either way
-        var provider = configuration["Auth:Provider"] ?? "local";
-        string Subject(string pinned, string email) =>
-            provider == "local" ? $"local_{email}" : pinned;
+        // seed keyed to the emulator's PINNED ids - login just matches
         var tenancy = sp.GetRequiredService<LocIntel.Modules.Tenancy.Data.TenancyDbContext>();
         var org = await tenancy.Organizations.FirstOrDefaultAsync(o => o.Slug == "acme-dev", ct);
         if (org is null)
@@ -103,8 +107,8 @@ public sealed class DevBootstrap(
         await SeedOwnerAsync(
             sp,
             org.Id,
-            provider,
-            Subject(EmulatorUserId, "alice@acme.test"),
+            Provider,
+            ExternalIdFor("alice@acme.test", EmulatorUserId),
             "alice@acme.test",
             "Alice Dev",
             "Owner",
@@ -132,8 +136,8 @@ public sealed class DevBootstrap(
         await SeedOwnerAsync(
             sp,
             platformOrg.Id,
-            provider,
-            Subject(EmulatorOperatorId, "operator@locintel.local"),
+            Provider,
+            ExternalIdFor("operator@locintel.local", EmulatorOperatorId),
             "operator@locintel.local",
             "LocIntel Operator",
             "Operator",

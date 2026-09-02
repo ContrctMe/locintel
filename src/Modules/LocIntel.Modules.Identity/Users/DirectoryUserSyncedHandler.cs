@@ -2,6 +2,7 @@ using LocIntel.Contracts;
 using LocIntel.Modules.Identity.Data;
 using LocIntel.Platform.Auth;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
 using Microsoft.EntityFrameworkCore;
 using Wolverine;
 using Wolverine.Attributes;
@@ -97,16 +98,5 @@ public static class DirectoryUserSyncedHandler
         OrgId org,
         string action,
         string email
-    ) =>
-        await bus.PublishAsync(
-            new RecordDomainAudit(
-                action,
-                System.Text.Json.JsonSerializer.Serialize(new { email, source = "directory" })
-            ),
-            new DeliveryOptions
-            {
-                TenantId = org.Value.ToString(),
-                Headers = { ["locintel-actor-tier"] = "system" },
-            }
-        );
+    ) => await bus.AuditAsync(org, AuditActor.System, action, new { email, source = "directory" });
 }

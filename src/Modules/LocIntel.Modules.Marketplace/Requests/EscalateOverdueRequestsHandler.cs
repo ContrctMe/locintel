@@ -4,6 +4,7 @@ using LocIntel.Modules.Marketplace.Data;
 using LocIntel.Modules.Marketplace.Marketplace;
 using LocIntel.Modules.Marketplace.Vendors;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Wolverine;
@@ -57,7 +58,7 @@ public static class EscalateOverdueRequestsHandler
             {
                 var already = await db
                     .Recipients.Where(x => x.RequestId == row.Id)
-                    .Select(x => x.VendorOrgId)
+                    .Select(x => x.CounterpartyOrgId)
                     .ToListAsync(ct);
                 var next = (
                     await VendorMatcher.MatchAsync(
@@ -80,7 +81,7 @@ public static class EscalateOverdueRequestsHandler
                         {
                             Id = Guid.CreateVersion7(),
                             OrgId = org,
-                            VendorOrgId = vendorOrg,
+                            CounterpartyOrgId = vendorOrg,
                             RequestId = row.Id,
                         }
                     );
@@ -107,7 +108,7 @@ public static class EscalateOverdueRequestsHandler
                 {
                     Id = Guid.CreateVersion7(),
                     OrgId = org,
-                    VendorOrgId = row.VendorOrgId,
+                    CounterpartyOrgId = row.VendorOrgId,
                     RequestId = row.Id,
                     ActorOrgId = org,
                     ActorId = Guid.Empty,
@@ -165,23 +166,16 @@ public static class EscalateOverdueRequestsHandler
                     ),
                     new DeliveryOptions { TenantId = vendor.Value.ToString() }
                 );
-            await bus.PublishAsync(
-                new RecordDomainAudit(
-                    "marketplace.request_escalated",
-                    JsonSerializer.Serialize(
-                        new
-                        {
-                            row.Id,
-                            row.EscalationCount,
-                            Added = added,
-                            Exhausted = exhausted,
-                        }
-                    )
-                ),
-                new DeliveryOptions
+            await bus.AuditAsync(
+                org,
+                AuditActor.System,
+                "marketplace.request_escalated",
+                new
                 {
-                    TenantId = org.Value.ToString(),
-                    Headers = { ["locintel-actor-tier"] = "system" },
+                    row.Id,
+                    row.EscalationCount,
+                    Added = added,
+                    Exhausted = exhausted,
                 }
             );
         }

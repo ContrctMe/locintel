@@ -35,6 +35,10 @@ namespace LocIntel.Modules.Marketplace.Migrations
                         .HasColumnType("numeric(14,2)")
                         .HasColumnName("amount");
 
+                    b.Property<Guid>("CounterpartyOrgId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("vendor_org_id");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -76,13 +80,9 @@ namespace LocIntel.Modules.Marketplace.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("valid_until");
 
-                    b.Property<Guid>("VendorOrgId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("vendor_org_id");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("RequestId", "VendorOrgId")
+                    b.HasIndex("RequestId", "CounterpartyOrgId")
                         .IsUnique();
 
                     b.ToTable("quotes", "marketplace");
@@ -111,6 +111,10 @@ namespace LocIntel.Modules.Marketplace.Migrations
                         .HasColumnType("character varying(2000)")
                         .HasColumnName("body");
 
+                    b.Property<Guid?>("CounterpartyOrgId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("vendor_org_id");
+
                     b.Property<double?>("DistanceFromSiteMeters")
                         .HasColumnType("double precision")
                         .HasColumnName("distance_from_site_m");
@@ -137,10 +141,6 @@ namespace LocIntel.Modules.Marketplace.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("request_id");
 
-                    b.Property<Guid?>("VendorOrgId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("vendor_org_id");
-
                     b.HasKey("Id");
 
                     b.HasIndex("RequestId", "At");
@@ -153,6 +153,10 @@ namespace LocIntel.Modules.Marketplace.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<Guid>("CounterpartyOrgId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("vendor_org_id");
 
                     b.Property<DateTimeOffset>("NotifiedAt")
                         .HasColumnType("timestamp with time zone")
@@ -176,13 +180,9 @@ namespace LocIntel.Modules.Marketplace.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("status");
 
-                    b.Property<Guid>("VendorOrgId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("vendor_org_id");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("RequestId", "VendorOrgId")
+                    b.HasIndex("RequestId", "CounterpartyOrgId")
                         .IsUnique();
 
                     b.ToTable("request_recipients", "marketplace");

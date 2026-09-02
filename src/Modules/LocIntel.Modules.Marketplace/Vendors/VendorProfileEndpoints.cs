@@ -1,3 +1,4 @@
+using LocIntel.Contracts;
 using LocIntel.Modules.Marketplace.Data;
 using LocIntel.Modules.Marketplace.Marketplace;
 using LocIntel.Modules.Marketplace.Vendors.Api;
@@ -94,9 +95,9 @@ public static class VendorProfileEndpoints
         if (created)
             db.Profiles.Add(profile);
         await db.SaveChangesAsync(ct);
-        await MarketplaceAudit.PublishAsync(
-            bus,
-            actor,
+        await bus.AuditAsync(
+            actor.Org,
+            actor.Audit,
             created ? "vendor.profile_created" : "vendor.profile_updated",
             new { profile.Name, profile.Categories }
         );
@@ -126,9 +127,9 @@ public static class VendorProfileEndpoints
         profile.Published = request.Published;
         profile.UpdatedAt = time.GetUtcNow();
         await db.SaveChangesAsync(ct);
-        await MarketplaceAudit.PublishAsync(
-            bus,
-            actor,
+        await bus.AuditAsync(
+            actor.Org,
+            actor.Audit,
             request.Published ? "vendor.profile_published" : "vendor.profile_unpublished",
             new { profile.Name }
         );

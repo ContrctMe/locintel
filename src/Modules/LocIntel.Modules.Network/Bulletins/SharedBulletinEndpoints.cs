@@ -189,9 +189,9 @@ public static class SharedBulletinEndpoints
                 ),
                 new DeliveryOptions { TenantId = org.Value.ToString() }
             );
-        await ShareEndpoints.Audit(
-            bus,
-            actor,
+        await bus.AuditAsync(
+            actor.Org,
+            actor.Audit,
             "network.bulletin_published",
             new
             {
@@ -230,9 +230,9 @@ public static class SharedBulletinEndpoints
         {
             bulletin.WithdrawnAt = DateTimeOffset.UtcNow;
             await db.SaveChangesAsync(ct);
-            await ShareEndpoints.Audit(
-                bus,
-                actor,
+            await bus.AuditAsync(
+                actor.Org,
+                actor.Audit,
                 "network.bulletin_withdrawn",
                 new { bulletin.Id }
             );
@@ -287,9 +287,9 @@ public static class SharedBulletinEndpoints
             ),
             new DeliveryOptions { TenantId = actor.Org.Value.ToString() }
         );
-        await ShareEndpoints.Audit(
-            bus,
-            actor,
+        await bus.AuditAsync(
+            actor.Org,
+            actor.Audit,
             "network.bulletin_imported",
             new { bulletin.Id, bulletin.ShareId }
         );

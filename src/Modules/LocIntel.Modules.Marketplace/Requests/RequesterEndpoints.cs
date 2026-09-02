@@ -186,9 +186,9 @@ public static class RequesterEndpoints
         };
         db.Requests.Add(row);
         await db.SaveChangesAsync(ct);
-        await MarketplaceAudit.PublishAsync(
-            bus,
-            actor,
+        await bus.AuditAsync(
+            actor.Org,
+            actor.Audit,
             "marketplace.request_created",
             new
             {
@@ -307,7 +307,7 @@ public static class RequesterEndpoints
                     {
                         Id = Guid.CreateVersion7(),
                         OrgId = row.OrgId,
-                        VendorOrgId = vendorOrg,
+                        CounterpartyOrgId = vendorOrg,
                         RequestId = row.Id,
                     }
                 );
@@ -346,9 +346,9 @@ public static class RequesterEndpoints
                 ),
                 new DeliveryOptions { TenantId = vendorOrg.Value.ToString() }
             );
-        await MarketplaceAudit.PublishAsync(
-            bus,
-            actor.Value,
+        await bus.AuditAsync(
+            actor.Value.Org,
+            actor.Value.Audit,
             "marketplace.request_submitted",
             new { row.Id }
         );
@@ -400,9 +400,9 @@ public static class RequesterEndpoints
                 ),
                 new DeliveryOptions { TenantId = row.VendorOrgId!.Value.Value.ToString() }
             );
-        await MarketplaceAudit.PublishAsync(
-            bus,
-            actor.Value,
+        await bus.AuditAsync(
+            actor.Value.Org,
+            actor.Value.Audit,
             "marketplace.request_cancelled",
             new { row.Id, row.CancelReason }
         );
@@ -443,9 +443,9 @@ public static class RequesterEndpoints
             ),
             new DeliveryOptions { TenantId = row.VendorOrgId!.Value.Value.ToString() }
         );
-        await MarketplaceAudit.PublishAsync(
-            bus,
-            actor.Value,
+        await bus.AuditAsync(
+            actor.Value.Org,
+            actor.Value.Audit,
             "marketplace.request_verified",
             new { row.Id }
         );
@@ -489,9 +489,9 @@ public static class RequesterEndpoints
             ),
             new DeliveryOptions { TenantId = row.VendorOrgId!.Value.Value.ToString() }
         );
-        await MarketplaceAudit.PublishAsync(
-            bus,
-            actor.Value,
+        await bus.AuditAsync(
+            actor.Value.Org,
+            actor.Value.Audit,
             "marketplace.request_disputed",
             new { row.Id, row.DisputeReason }
         );
@@ -519,7 +519,7 @@ public static class RequesterEndpoints
         {
             Id = Guid.CreateVersion7(),
             OrgId = row!.OrgId,
-            VendorOrgId = row.VendorOrgId,
+            CounterpartyOrgId = row.VendorOrgId,
             RequestId = row.Id,
             ActorOrgId = actor!.Value.Org,
             ActorId = actor.Value.Id,
@@ -572,7 +572,7 @@ public static class RequesterEndpoints
             other.Status = QuoteStatus.Rejected;
             other.UpdatedAt = now;
         }
-        row.VendorOrgId = winner.VendorOrgId;
+        row.VendorOrgId = winner.CounterpartyOrgId;
         row.BudgetAmount = winner.Amount;
         row.Currency = winner.Currency;
         row.Status = RequestStatus.Accepted;
@@ -608,9 +608,9 @@ public static class RequesterEndpoints
                 ),
                 new DeliveryOptions { TenantId = other.VendorOrgId.Value.ToString() }
             );
-        await MarketplaceAudit.PublishAsync(
-            bus,
-            actor.Value,
+        await bus.AuditAsync(
+            actor.Value.Org,
+            actor.Value.Audit,
             "marketplace.quote_accepted",
             new
             {

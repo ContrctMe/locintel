@@ -50,9 +50,9 @@ public static class CaseMemberEndpoints
             access.Case.LeadId = request.UserId;
         access.Case.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
-        await CaseAudit.PublishAsync(
-            bus,
-            access.Actor,
+        await bus.AuditAsync(
+            access.Actor.Org,
+            access.Actor.Audit,
             "case.member_added",
             new
             {
@@ -91,9 +91,9 @@ public static class CaseMemberEndpoints
             access.Case.LeadId = null;
         access.Case.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
-        await CaseAudit.PublishAsync(
-            bus,
-            access.Actor,
+        await bus.AuditAsync(
+            access.Actor.Org,
+            access.Actor.Audit,
             "case.member_removed",
             new { CaseId = id, member.UserId }
         );

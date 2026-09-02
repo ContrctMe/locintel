@@ -3,10 +3,15 @@ using LocIntel.Contracts;
 using LocIntel.Modules.Checklists.Data;
 using LocIntel.Platform.Kernel;
 using Microsoft.EntityFrameworkCore;
+using Wolverine.Attributes;
 
 namespace LocIntel.Modules.Checklists;
 
-/// <summary>Checklists' slice of the offboarding export: templates and the completion trail.</summary>
+/// <summary>
+/// Checklists' slice of the offboarding export. It was missing entirely
+/// until the module catalog exposed it: an org's data export silently
+/// omitted every template and completion record it had.
+/// </summary>
 public sealed class ChecklistsExporter(ChecklistsDbContext db) : IOrgDataExporter
 {
     public string Section => "checklists";
@@ -41,5 +46,24 @@ public sealed class ChecklistsExporter(ChecklistsDbContext db) : IOrgDataExporte
             new { templates, checks },
             new JsonSerializerOptions(JsonSerializerDefaults.Web) { WriteIndented = true }
         );
+    }
+}
+
+/// <summary>Envelope-tenanted purge of the org's checklist rows.</summary>
+public static class PurgeOrgChecklistsHandler
+{
+    [Transactional]
+    public static async Task Handle(
+        PurgeOrgChecklists _,
+        ChecklistsDbContext db,
+        ITenantContext tenant,
+        CancellationToken ct
+    )
+    {
+        var org =
+            tenant.OrgId
+            ?? throw new InvalidOperationException("purge arrived with no tenant on the envelope");
+        await db.Checks.IgnoreQueryFilters().Where(c => c.OrgId == org).ExecuteDeleteAsync(ct);
+        await db.Templates.IgnoreQueryFilters().Where(t => t.OrgId == org).ExecuteDeleteAsync(ct);
     }
 }

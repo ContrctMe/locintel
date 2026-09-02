@@ -5,6 +5,7 @@ its own schema, DbContext, migration history, and registration checklist.
 Usage: python3 tools/new-module.py Bookings
 """
 import pathlib
+import subprocess
 import re
 import sys
 
@@ -107,23 +108,97 @@ public static class {name}Module
                     TenantSessionInterceptor.Instance,
                     sp.GetRequiredService<LocIntel.Platform.Audit.AuditSaveChangesInterceptor>());
         }});
+        services.AddScoped<LocIntel.Contracts.IOrgDataExporter, {name}Exporter>();
         return services;
     }}
 }}
 """)
 
-print(f"""created {module_dir}
+# The architecture guard requires EVERY module to contribute an org data
+# export section (a module without one drops out of offboarding silently),
+# so scaffold it rather than leave a generated module failing the build.
+(module_dir / "Offboarding.cs").write_text(f"""using System.Text.Json;
+using LocIntel.Contracts;
+using LocIntel.Platform.Kernel;
 
-Finish the wiring (each is one line):
- 1. dotnet sln add src/Modules/LocIntel.Modules.{name}
- 2. dotnet add src/LocIntel.Api reference src/Modules/LocIntel.Modules.{name}
- 3. Program.cs:  builder.Services.Add{name}Module();
- 4. Program.cs:  opts.Discovery.IncludeAssembly(typeof({name}Module).Assembly);
- 5. tests/LocIntel.ArchitectureTests ModuleBoundaryTests: add typeof(Modules.{name}.{name}Module).Assembly
- 6. src/LocIntel.Api/MigrationRunner.cs: migrate {name}DbContext + add "{schema}" to BOTH grant lines
- 7. tests ApiFixture: migrate {name}DbContext + GRANT on schema "{schema}"
- 8. First migration (RLS checklist in the new-migration skill):
+namespace LocIntel.Modules.{name};
+
+/// <summary>
+/// {name}'s slice of the offboarding export (ADR 25). Every module ships one:
+/// a module without an exporter drops out of an org's data export silently,
+/// which is data loss on offboarding. An architecture test enforces it.
+/// </summary>
+public sealed class {name}Exporter : IOrgDataExporter
+{{
+    public string Section => "{schema}";
+
+    // TODO: inject {name}DbContext and project this module's rows for the org,
+    // using IgnoreQueryFilters() with an explicit OrgId predicate.
+    public Task<string> ExportJsonAsync(OrgId org, CancellationToken ct = default) =>
+        Task.FromResult(
+            JsonSerializer.Serialize(
+                new {{ }},
+                new JsonSerializerOptions(JsonSerializerDefaults.Web) {{ WriteIndented = true }}
+            )
+        );
+}}
+""")
+
+def edit(path, anchor, addition, label):
+    """Apply a wiring edit, or say precisely what to do by hand."""
+    p = root / path
+    text = p.read_text()
+    if addition.strip() in text:
+        print(f"  = {label} (already present)")
+        return
+    if anchor not in text:
+        print(f"  ! {label}: anchor not found - add by hand: {addition.strip()}")
+        return
+    p.write_text(text.replace(anchor, anchor + addition, 1))
+    print(f"  + {label}")
+
+print(f"created {module_dir}")
+print("wiring:")
+subprocess.run(["dotnet", "sln", "add", f"src/Modules/LocIntel.Modules.{name}"],
+               cwd=root, capture_output=True)
+print("  + solution")
+subprocess.run(["dotnet", "add", "src/LocIntel.Api", "reference",
+                f"src/Modules/LocIntel.Modules.{name}"], cwd=root, capture_output=True)
+print("  + LocIntel.Api project reference")
+
+edit("src/LocIntel.Api/Program.cs",
+     "using LocIntel.Modules.Audit;",
+     f"\nusing LocIntel.Modules.{name};",
+     "Program.cs using")
+edit("src/LocIntel.Api/Program.cs",
+     "builder.Services.AddChecklistsModule();",
+     f"\nbuilder.Services.Add{name}Module();",
+     "Program.cs module registration")
+edit("src/LocIntel.Api/Program.cs",
+     "    opts.Discovery.IncludeAssembly(typeof(TenancyModule).Assembly);",
+     f"\n    opts.Discovery.IncludeAssembly(typeof({name}Module).Assembly);",
+     "Program.cs Wolverine discovery")
+# formatting-proof anchor: the list terminator, not a formatted entry
+catalog = root / "src/LocIntel.Api/ModuleCatalog.cs"
+catalog_text = catalog.read_text()
+entry = f'        new("{schema}", "{schema}", typeof(LocIntel.Modules.{name}.Data.{name}DbContext)),\n'
+if entry.strip() in catalog_text:
+    print("  = ModuleCatalog entry (already present)")
+elif "\n    ];" in catalog_text:
+    catalog.write_text(catalog_text.replace("\n    ];", "\n" + entry + "    ];", 1))
+    print("  + ModuleCatalog entry (migrations, grants, RLS coverage, round-trip, fixture)")
+else:
+    print(f"  ! ModuleCatalog: add by hand: {entry.strip()}")
+
+print(f"""
+left to do:
+ 1. First migration (RLS checklist in the new-migration skill):
     dotnet ef migrations add Initial --project src/Modules/LocIntel.Modules.{name} --startup-project src/Modules/LocIntel.Modules.{name}
+ 2. Fill in {name}Exporter.ExportJsonAsync (it currently exports an empty object).
+ 3. If this module owns tenant rows, add a PurgeOrg{name} message + handler and
+    publish it from OrgPurgeFanOut, or the rows outlive the org.
 
 Remember (CLAUDE.md): one Wolverine handler class per message; [Transactional(typeof({name}DbContext))]
-on endpoints whose chain touches another module's DbContext (injecting IScopeResolver counts).""")
+on endpoints whose chain touches another module's DbContext (injecting IScopeResolver counts).
+The catalog entry is what makes migrations, grants, RLS coverage, round-trips and
+the fixture pick this module up - an architecture test fails if it is missing.""")

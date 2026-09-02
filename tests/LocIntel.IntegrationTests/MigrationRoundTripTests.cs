@@ -27,24 +27,9 @@ public sealed class MigrationDbFixture : IAsyncLifetime
 
 public class MigrationRoundTripTests(MigrationDbFixture fixture) : IClassFixture<MigrationDbFixture>
 {
+    // from the one catalog: a new module is round-tripped automatically
     public static TheoryData<string> Modules =>
-        [
-            "tenancy",
-            "identity",
-            "entitlements",
-            "audit",
-            "storage",
-            "platform",
-            "ingest",
-            "checklists",
-            "incidents",
-            "entities",
-            "cases",
-            "marketplace",
-            "alerts",
-            "network",
-            "patrols",
-        ];
+        [.. LocIntel.Api.ModuleCatalog.AllWithPlatform.Select(m => m.Name)];
 
     [Theory]
     [MemberData(nameof(Modules))]
@@ -66,34 +51,19 @@ public class MigrationRoundTripTests(MigrationDbFixture fixture) : IClassFixture
         Assert.Equal(applied, (await db.Database.GetAppliedMigrationsAsync()).ToList());
     }
 
+    // resolved from the catalog through the generic builder below - no
+    // per-module switch arm to forget when a module is added
     private LocIntel.Platform.Data.ModuleDbContext CreateContext(string module)
     {
-        var cs = fixture.ConnectionString;
-        return module switch
-        {
-            "tenancy" => Build<LocIntel.Modules.Tenancy.Data.TenancyDbContext>(cs, module),
-            "identity" => Build<LocIntel.Modules.Identity.Data.IdentityDbContext>(cs, module),
-            "entitlements" => Build<LocIntel.Modules.Entitlements.Data.EntitlementsDbContext>(
-                cs,
-                module
-            ),
-            "audit" => Build<LocIntel.Modules.Audit.Data.AuditDbContext>(cs, module),
-            "storage" => Build<LocIntel.Modules.Storage.Data.StorageDbContext>(cs, module),
-            "platform" => Build<LocIntel.Platform.Infra.PlatformDbContext>(cs, module),
-            "ingest" => Build<LocIntel.Modules.Ingest.Data.IngestDbContext>(cs, module),
-            "checklists" => Build<LocIntel.Modules.Checklists.Data.ChecklistsDbContext>(cs, module),
-            "incidents" => Build<LocIntel.Modules.Incidents.Data.IncidentsDbContext>(cs, module),
-            "entities" => Build<LocIntel.Modules.Entities.Data.EntitiesDbContext>(cs, module),
-            "cases" => Build<LocIntel.Modules.Cases.Data.CasesDbContext>(cs, module),
-            "marketplace" => Build<LocIntel.Modules.Marketplace.Data.MarketplaceDbContext>(
-                cs,
-                module
-            ),
-            "alerts" => Build<LocIntel.Modules.Alerts.Data.AlertsDbContext>(cs, module),
-            "network" => Build<LocIntel.Modules.Network.Data.NetworkDbContext>(cs, module),
-            "patrols" => Build<LocIntel.Modules.Patrols.Data.PatrolsDbContext>(cs, module),
-            _ => throw new ArgumentOutOfRangeException(nameof(module)),
-        };
+        var descriptor = LocIntel.Api.ModuleCatalog.AllWithPlatform.Single(m => m.Name == module);
+        var build = typeof(MigrationRoundTripTests)
+            .GetMethod(
+                nameof(Build),
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static
+            )!
+            .MakeGenericMethod(descriptor.DbContextType);
+        return (LocIntel.Platform.Data.ModuleDbContext)
+            build.Invoke(null, [fixture.ConnectionString, descriptor.Schema])!;
     }
 
     private static T Build<T>(string cs, string schema)

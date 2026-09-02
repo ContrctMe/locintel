@@ -309,6 +309,34 @@ switch (builder.Configuration["Intelligence:Provider"] ?? "local")
         );
 }
 
+// SMS egress (a seam, not a feature): "off" is the default and is safe in
+// Production - a fork that needs texting registers its own adapter here.
+switch (builder.Configuration["Notifications:Sms"] ?? "off")
+{
+    case "twilio":
+        builder.Services.Configure<LocIntel.Integrations.Twilio.TwilioOptions>(
+            builder.Configuration.GetSection("Notifications:Twilio")
+        );
+        builder.Services.AddHttpClient<
+            ISmsTransport,
+            LocIntel.Integrations.Twilio.TwilioSmsTransport
+        >();
+        break;
+    case "off":
+        builder.Services.AddSingleton<ISmsTransport, NoSmsTransport>();
+        break;
+    case "local" when !builder.Environment.IsProduction():
+        builder.Services.AddSingleton<LocalSmsCatcher>();
+        builder.Services.AddSingleton<ISmsTransport>(sp =>
+            sp.GetRequiredService<LocalSmsCatcher>()
+        );
+        break;
+    default:
+        throw new InvalidOperationException(
+            "Notifications:Sms must be 'off', 'twilio', or 'local' (dev/test only)."
+        );
+}
+
 switch (builder.Configuration["Notifications:Transport"] ?? "local")
 {
     case "smtp":
@@ -331,37 +359,6 @@ switch (builder.Configuration["Notifications:Transport"] ?? "local")
     default:
         throw new InvalidOperationException(
             "Notifications:Transport 'local' is dev/test only (ADR 32); configure 'smtp' or a fork adapter in Production."
-        );
-}
-
-// SMS (blueprint transports): off by default and allowed off in production -
-// a fork without a phone channel loses nothing. "local" captures for dev/test.
-switch (builder.Configuration["Notifications:Sms"] ?? "off")
-{
-    case "twilio":
-        builder.Services.Configure<LocIntel.Integrations.Twilio.TwilioOptions>(
-            builder.Configuration.GetSection("Notifications:Twilio")
-        );
-        builder.Services.AddHttpClient<
-            LocIntel.Platform.Notifications.ISmsTransport,
-            LocIntel.Integrations.Twilio.TwilioSmsTransport
-        >();
-        break;
-    case "local" when !builder.Environment.IsProduction():
-        builder.Services.AddSingleton<LocIntel.Platform.Notifications.LocalSmsCatcher>();
-        builder.Services.AddSingleton<LocIntel.Platform.Notifications.ISmsTransport>(sp =>
-            sp.GetRequiredService<LocIntel.Platform.Notifications.LocalSmsCatcher>()
-        );
-        break;
-    case "off":
-        builder.Services.AddSingleton<
-            LocIntel.Platform.Notifications.ISmsTransport,
-            LocIntel.Platform.Notifications.NoSmsTransport
-        >();
-        break;
-    default:
-        throw new InvalidOperationException(
-            "Notifications:Sms must be 'off', 'local' (dev/test only), or 'twilio'."
         );
 }
 
@@ -602,7 +599,7 @@ if (role == "api")
         app.MapGet(
                 "/dev/sms",
                 (IServiceProvider sp) =>
-                    sp.GetService<LocIntel.Platform.Notifications.LocalSmsCatcher>() is { } catcher
+                    sp.GetService<LocalSmsCatcher>() is { } catcher
                         ? Results.Ok(catcher.Sent)
                         : Results.NotFound()
             )

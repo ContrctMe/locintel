@@ -9,11 +9,13 @@ namespace LocIntel.Modules.Marketplace.Requests;
 /// have coordinates), deliveries. Denormalizes both org ids for the
 /// two-party policy. Append-only. At is a UTC instant.
 /// </summary>
-public sealed class RequestEvent
+public sealed class RequestEvent : ITwoPartyScoped
 {
     public required Guid Id { get; init; }
     public required OrgId OrgId { get; init; }
-    public OrgId? VendorOrgId { get; init; }
+
+    /// <summary>The vendor party, when the request has one (ITwoPartyScoped's counterparty).</summary>
+    public OrgId? CounterpartyOrgId { get; init; }
     public required Guid RequestId { get; init; }
     public required OrgId ActorOrgId { get; init; }
     public required Guid ActorId { get; init; }

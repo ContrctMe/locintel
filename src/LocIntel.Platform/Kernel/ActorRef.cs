@@ -1,3 +1,5 @@
+using LocIntel.Platform.Messaging;
+
 namespace LocIntel.Platform.Kernel;
 
 /// <summary>
@@ -17,4 +19,7 @@ public readonly record struct ActorRef(OrgId Org, Guid Id, string Tier)
         };
 
     public bool IsService => Tier == "service";
+
+    /// <summary>The same actor as the audit trail attributes it (tier + id on the envelope).</summary>
+    public AuditActor Audit => new(Tier, Id);
 }

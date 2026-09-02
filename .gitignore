@@ -5,7 +5,10 @@ obj/
 .vs/
 
 # Node
-routeTree.gen.ts
+# routeTree.gen.ts is COMMITTED on purpose: router.tsx imports it, so a fresh
+# checkout fails `pnpm typecheck` until someone runs a build. The Vite plugin
+# regenerates it on dev/build, so a stale one shows up as a diff.
+
 node_modules/
 dist/
 .tanstack/

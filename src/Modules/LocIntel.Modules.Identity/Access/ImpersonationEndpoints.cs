@@ -2,6 +2,7 @@ using LocIntel.Contracts;
 using LocIntel.Modules.Identity.Auth;
 using LocIntel.Modules.Identity.Data;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
@@ -132,19 +133,10 @@ public static class ImpersonationEndpoints
         string operatorEmail,
         DateTimeOffset? expiresAt
     ) =>
-        await bus.PublishAsync(
-            new RecordDomainAudit(
-                action,
-                System.Text.Json.JsonSerializer.Serialize(new { operatorEmail, expiresAt })
-            ),
-            new DeliveryOptions
-            {
-                TenantId = org.Value.ToString(),
-                Headers =
-                {
-                    ["locintel-actor-tier"] = "user",
-                    ["locintel-actor-id"] = operatorId.ToString(),
-                },
-            }
+        await bus.AuditAsync(
+            org,
+            AuditActor.User(operatorId),
+            action,
+            new { operatorEmail, expiresAt }
         );
 }

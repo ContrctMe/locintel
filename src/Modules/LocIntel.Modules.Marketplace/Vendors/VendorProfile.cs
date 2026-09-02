@@ -11,7 +11,7 @@ namespace LocIntel.Modules.Marketplace.Vendors;
 /// IOrgScoped: the context adds the two-sided "Tenant" filter itself.
 /// Deletion: unpublish (tier 1); never deleted.
 /// </summary>
-public sealed class VendorProfile
+public sealed class VendorProfile : IPublishedCatalogScoped
 {
     public required Guid Id { get; init; }
     public required OrgId OrgId { get; init; }

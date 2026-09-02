@@ -1,7 +1,9 @@
+using System.Text.Json;
 using LocIntel.Contracts;
 using LocIntel.Modules.Tenancy.Data;
 using LocIntel.Modules.Tenancy.Hierarchy;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
 using Microsoft.EntityFrameworkCore;
 using Wolverine;
 using Wolverine.Attributes;
@@ -101,19 +103,16 @@ public static class SiteChangeRequestedHandler
             {
                 site.Status = SiteStatus.Closed;
                 await db.SaveChangesAsync(ct);
-                await bus.PublishAsync(
-                    new RecordDomainAudit(
-                        "site.closed",
-                        System.Text.Json.JsonSerializer.Serialize(
-                            new
-                            {
-                                siteId = site.Id.Value,
-                                site.Name,
-                                source = "ingest",
-                            }
-                        )
-                    ),
-                    new DeliveryOptions { TenantId = org.Value.ToString() }
+                await bus.AuditAsync(
+                    org,
+                    AuditActor.System,
+                    "site.closed",
+                    new
+                    {
+                        siteId = site.Id.Value,
+                        site.Name,
+                        source = "ingest",
+                    }
                 );
                 break;
             }

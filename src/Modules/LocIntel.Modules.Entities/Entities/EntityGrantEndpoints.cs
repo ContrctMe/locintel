@@ -65,9 +65,9 @@ public static class EntityGrantEndpoints
         };
         db.Grants.Add(grant);
         await db.SaveChangesAsync(ct);
-        await EntityAudit.PublishAsync(
-            bus,
-            actor.Value,
+        await bus.AuditAsync(
+            actor.Value.Org,
+            actor.Value.Audit,
             "entity.access_granted",
             new
             {
@@ -110,9 +110,9 @@ public static class EntityGrantEndpoints
             return Results.NotFound();
         db.Grants.Remove(grant);
         await db.SaveChangesAsync(ct);
-        await EntityAudit.PublishAsync(
-            bus,
-            actor!.Value,
+        await bus.AuditAsync(
+            actor!.Value.Org,
+            actor!.Value.Audit,
             "entity.access_revoked",
             new { EntityId = entity!.Id, grant.UserId }
         );

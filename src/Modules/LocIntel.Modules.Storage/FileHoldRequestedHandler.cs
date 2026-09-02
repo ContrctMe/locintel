@@ -3,6 +3,7 @@ using LocIntel.Contracts;
 using LocIntel.Contracts.Storage;
 using LocIntel.Modules.Storage.Data;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
 using Microsoft.EntityFrameworkCore;
 using Wolverine;
 using Wolverine.Attributes;
@@ -37,22 +38,15 @@ public static class FileHoldRequestedHandler
             return;
         file.LegalHold = message.Hold;
         await db.SaveChangesAsync(ct);
-        await bus.PublishAsync(
-            new RecordDomainAudit(
-                message.Hold ? "file.hold_placed" : "file.hold_released",
-                JsonSerializer.Serialize(
-                    new
-                    {
-                        file.Id,
-                        file.Name,
-                        message.Reason,
-                    }
-                )
-            ),
-            new DeliveryOptions
+        await bus.AuditAsync(
+            org,
+            AuditActor.System,
+            message.Hold ? "file.hold_placed" : "file.hold_released",
+            new
             {
-                TenantId = org.Value.ToString(),
-                Headers = { ["locintel-actor-tier"] = "system" },
+                file.Id,
+                file.Name,
+                message.Reason,
             }
         );
     }

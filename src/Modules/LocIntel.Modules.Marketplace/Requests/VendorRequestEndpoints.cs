@@ -46,7 +46,7 @@ public static class VendorRequestEndpoints
                     r.VendorOrgId == null
                     && db.Recipients.Any(x =>
                         x.RequestId == r.Id
-                        && x.VendorOrgId == actor.Org
+                        && x.CounterpartyOrgId == actor.Org
                         && x.Status != RecipientStatus.Declined
                     )
                 )
@@ -150,7 +150,7 @@ public static class VendorRequestEndpoints
         {
             // one recipient bowing out leaves the request open for the others
             var recipient = await db.Recipients.FirstAsync(
-                x => x.RequestId == id && x.VendorOrgId == actor!.Value.Org,
+                x => x.RequestId == id && x.CounterpartyOrgId == actor!.Value.Org,
                 ct
             );
             recipient.Status = RecipientStatus.Declined;
@@ -158,7 +158,7 @@ public static class VendorRequestEndpoints
             var own = await db.Quotes.FirstOrDefaultAsync(
                 q =>
                     q.RequestId == id
-                    && q.VendorOrgId == actor!.Value.Org
+                    && q.CounterpartyOrgId == actor!.Value.Org
                     && q.Status == QuoteStatus.Submitted,
                 ct
             );
@@ -396,7 +396,7 @@ public static class VendorRequestEndpoints
         )
             return Results.Conflict(new { error = "renew expired credentials before quoting" });
         var quote = await db.Quotes.FirstOrDefaultAsync(
-            q => q.RequestId == id && q.VendorOrgId == actor!.Value.Org,
+            q => q.RequestId == id && q.CounterpartyOrgId == actor!.Value.Org,
             ct
         );
         if (quote is null)
@@ -405,7 +405,7 @@ public static class VendorRequestEndpoints
             {
                 Id = Guid.CreateVersion7(),
                 OrgId = row.OrgId,
-                VendorOrgId = actor!.Value.Org,
+                CounterpartyOrgId = actor!.Value.Org,
                 RequestId = row.Id,
                 Amount = request.Amount,
                 Currency = row.Currency,
@@ -421,7 +421,7 @@ public static class VendorRequestEndpoints
         quote.Status = QuoteStatus.Submitted;
         quote.UpdatedAt = now;
         var recipient = await db.Recipients.FirstAsync(
-            x => x.RequestId == id && x.VendorOrgId == actor!.Value.Org,
+            x => x.RequestId == id && x.CounterpartyOrgId == actor!.Value.Org,
             ct
         );
         recipient.Status = RecipientStatus.Quoted;
@@ -441,9 +441,9 @@ public static class VendorRequestEndpoints
             ),
             new DeliveryOptions { TenantId = row.OrgId.Value.ToString() }
         );
-        await MarketplaceAudit.PublishAsync(
-            bus,
-            actor.Value,
+        await bus.AuditAsync(
+            actor.Value.Org,
+            actor.Value.Audit,
             "marketplace.quote_submitted",
             new { RequestId = id, quote.Amount }
         );
@@ -521,9 +521,9 @@ public static class VendorRequestEndpoints
             new SendOrgNotice(noticeSubject, noticeLines, "marketplace", noticeSubject),
             new DeliveryOptions { TenantId = row.OrgId.Value.ToString() }
         );
-        await MarketplaceAudit.PublishAsync(
-            bus,
-            actor,
+        await bus.AuditAsync(
+            actor.Org,
+            actor.Audit,
             auditEvent,
             new { row.Id, Status = status.ToString() }
         );
@@ -545,7 +545,7 @@ public static class VendorRequestEndpoints
             OrgId = row.OrgId,
             // a recipient's event (a decline to quote) is between it and the
             // buyer; after award the vendor party is the awarded vendor
-            VendorOrgId = row.VendorOrgId ?? actor.Org,
+            CounterpartyOrgId = row.VendorOrgId ?? actor.Org,
             RequestId = row.Id,
             ActorOrgId = actor.Org,
             ActorId = actor.Id,
@@ -583,7 +583,7 @@ public static class VendorRequestEndpoints
                         r.VendorOrgId == null
                         && db.Recipients.Any(x =>
                             x.RequestId == r.Id
-                            && x.VendorOrgId == actor.Org
+                            && x.CounterpartyOrgId == actor.Org
                             && x.Status != RecipientStatus.Declined
                         )
                     )

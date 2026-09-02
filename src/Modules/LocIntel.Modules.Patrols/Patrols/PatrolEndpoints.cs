@@ -172,9 +172,9 @@ public static class PatrolEndpoints
         };
         db.Patrols.Add(patrol);
         await db.SaveChangesAsync(ct);
-        await PatrolAudit.PublishAsync(
-            bus,
-            actor,
+        await bus.AuditAsync(
+            actor.Org,
+            actor.Audit,
             "patrol.started",
             new
             {
@@ -269,7 +269,12 @@ public static class PatrolEndpoints
         patrol.EndedAt = DateTimeOffset.UtcNow;
         patrol.Summary = string.IsNullOrWhiteSpace(request.Summary) ? null : request.Summary.Trim();
         await db.SaveChangesAsync(ct);
-        await PatrolAudit.PublishAsync(bus, actor!.Value, "patrol.completed", new { patrol.Id });
+        await bus.AuditAsync(
+            actor!.Value.Org,
+            actor!.Value.Audit,
+            "patrol.completed",
+            new { patrol.Id }
+        );
         return Results.Ok(new PatrolMutated(patrol.Id, patrol.Status, patrol.EndedAt));
     }
 
@@ -297,7 +302,12 @@ public static class PatrolEndpoints
             ? "Abandoned"
             : $"Abandoned: {request.Reason.Trim()}";
         await db.SaveChangesAsync(ct);
-        await PatrolAudit.PublishAsync(bus, actor!.Value, "patrol.abandoned", new { patrol.Id });
+        await bus.AuditAsync(
+            actor!.Value.Org,
+            actor!.Value.Audit,
+            "patrol.abandoned",
+            new { patrol.Id }
+        );
         return Results.Ok(new PatrolMutated(patrol.Id, patrol.Status, patrol.EndedAt));
     }
 

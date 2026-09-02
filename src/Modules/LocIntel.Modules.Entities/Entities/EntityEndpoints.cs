@@ -159,9 +159,9 @@ public static class EntityEndpoints
         );
 
         // the fifth audit kind (blueprint): who looked at a person record
-        await EntityAudit.PublishAsync(
-            bus,
-            actor,
+        await bus.AuditAsync(
+            actor.Org,
+            actor.Audit,
             "entity.viewed",
             new { entity.Id, Kind = entity.Kind.ToString() }
         );
@@ -231,9 +231,9 @@ public static class EntityEndpoints
         };
         db.Entities.Add(entity);
         await db.SaveChangesAsync(ct);
-        await EntityAudit.PublishAsync(
-            bus,
-            actor,
+        await bus.AuditAsync(
+            actor.Org,
+            actor.Audit,
             "entity.created",
             new
             {
@@ -275,7 +275,12 @@ public static class EntityEndpoints
         entity.ExpiresAt = request.ExpiresAt;
         entity.UpdatedAt = now;
         await db.SaveChangesAsync(ct);
-        await EntityAudit.PublishAsync(bus, actor!.Value, "entity.updated", new { entity.Id });
+        await bus.AuditAsync(
+            actor!.Value.Org,
+            actor!.Value.Audit,
+            "entity.updated",
+            new { entity.Id }
+        );
         return Results.Ok(Mutated(entity));
     }
 
@@ -306,9 +311,9 @@ public static class EntityEndpoints
         entity!.Status = request.Status;
         entity.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
-        await EntityAudit.PublishAsync(
-            bus,
-            actor!.Value,
+        await bus.AuditAsync(
+            actor!.Value.Org,
+            actor!.Value.Audit,
             "entity.status_changed",
             new { entity.Id, Status = entity.Status.ToString() }
         );
@@ -334,9 +339,9 @@ public static class EntityEndpoints
         entity!.LegalHold = request.Hold;
         entity.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
-        await EntityAudit.PublishAsync(
-            bus,
-            actor!.Value,
+        await bus.AuditAsync(
+            actor!.Value.Org,
+            actor!.Value.Audit,
             request.Hold ? "entity.hold_set" : "entity.hold_cleared",
             new { entity.Id }
         );
@@ -363,7 +368,12 @@ public static class EntityEndpoints
         entity.DeletedAt = DateTimeOffset.UtcNow;
         entity.UpdatedAt = entity.DeletedAt.Value;
         await db.SaveChangesAsync(ct);
-        await EntityAudit.PublishAsync(bus, actor!.Value, "entity.deleted", new { entity.Id });
+        await bus.AuditAsync(
+            actor!.Value.Org,
+            actor!.Value.Audit,
+            "entity.deleted",
+            new { entity.Id }
+        );
         return Results.Ok(Mutated(entity));
     }
 
@@ -397,7 +407,7 @@ public static class EntityEndpoints
             entity.ExpiresAt = now.AddDays(30);
         entity.UpdatedAt = now;
         await db.SaveChangesAsync(ct);
-        await EntityAudit.PublishAsync(bus, actor, "entity.restored", new { entity.Id });
+        await bus.AuditAsync(actor.Org, actor.Audit, "entity.restored", new { entity.Id });
         return Results.Ok(Mutated(entity));
     }
 

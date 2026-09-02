@@ -1,3 +1,4 @@
+using System.Reflection;
 using LocIntel.Platform.Billing;
 using LocIntel.Platform.Entitlements;
 
@@ -67,5 +68,34 @@ public class PlanCatalogTests
         );
         Assert.NotNull(PlanCatalog.Find("growth"));
         Assert.Null(PlanCatalog.Find("imaginary"));
+    }
+
+    [Fact]
+    public void Every_declared_entitlement_constant_has_a_definition()
+    {
+        // a const can be referenced from code while missing from Definitions,
+        // and the miss only shows as a 500 at first use (a fork hit this).
+        // Reflection over the constants makes it a build failure instead.
+        var constants = typeof(EntitlementCatalog)
+            .GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy)
+            .Where(f =>
+                f is { IsLiteral: true, IsInitOnly: false } && f.FieldType == typeof(string)
+            )
+            .ToArray();
+
+        Assert.NotEmpty(constants);
+        var undefined = constants
+            .Select(f => (name: f.Name, code: (string)f.GetRawConstantValue()!))
+            .Where(x => !EntitlementCatalog.Definitions.ContainsKey(x.code))
+            .Select(x => $"{x.name} (\"{x.code}\")")
+            .Order()
+            .ToArray();
+
+        Assert.True(
+            undefined.Length == 0,
+            "entitlement constants with no EntitlementCatalog.Definitions entry - "
+                + "each throws at first use, not at startup: "
+                + string.Join(", ", undefined)
+        );
     }
 }

@@ -1,5 +1,6 @@
 using LocIntel.Modules.Tenancy.Data;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
 using LocIntel.Platform.Scheduling;
 using Microsoft.EntityFrameworkCore;
 using Wolverine;

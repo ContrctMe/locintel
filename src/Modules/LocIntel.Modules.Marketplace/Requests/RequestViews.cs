@@ -35,8 +35,8 @@ public static class RequestViews
             .OrderBy(x => x.NotifiedAt)
             .ToListAsync(ct);
         var vendorIds = quotes
-            .Select(q => q.VendorOrgId)
-            .Concat(recipients.Select(x => x.VendorOrgId))
+            .Select(q => q.CounterpartyOrgId)
+            .Concat(recipients.Select(x => x.CounterpartyOrgId))
             .Distinct()
             .ToArray();
         var vendorNames = await db
@@ -109,7 +109,7 @@ public static class RequestViews
                 ))
                 .ToList(),
             quotes
-                .Where(q => mine || q.VendorOrgId == readerOrg)
+                .Where(q => mine || q.CounterpartyOrgId == readerOrg)
                 .Select(q => new QuoteView(
                     q.Id,
                     q.VendorOrgId.Value,
@@ -123,7 +123,7 @@ public static class RequestViews
                 ))
                 .ToList(),
             recipients
-                .Where(x => mine || x.VendorOrgId == readerOrg)
+                .Where(x => mine || x.CounterpartyOrgId == readerOrg)
                 .Select(x => new RecipientView(
                     x.VendorOrgId.Value,
                     vendorNames.GetValueOrDefault(x.VendorOrgId),
@@ -187,7 +187,7 @@ public static class RequestViews
         {
             Id = Guid.CreateVersion7(),
             OrgId = request.OrgId,
-            VendorOrgId = request.VendorOrgId,
+            CounterpartyOrgId = request.VendorOrgId,
             RequestId = request.Id,
             ActorOrgId = actor.Org,
             ActorId = actor.Id,

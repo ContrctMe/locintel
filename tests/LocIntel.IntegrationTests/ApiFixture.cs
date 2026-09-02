@@ -1,3 +1,5 @@
+using System.Net.Http.Json;
+using System.Text.Json;
 using LocIntel.Modules.Audit.Data;
 using LocIntel.Modules.Entitlements.Data;
 using LocIntel.Modules.Identity.Access;
@@ -49,106 +51,51 @@ public class ApiFixture : IAsyncLifetime
     public const string Operator = "operator@locintel.local"; // member: platform org
     public OrgId PlatformOrg { get; } = OrgId.New();
 
+    private static LocIntel.Platform.Data.ModuleDbContext CreateCatalogContext(
+        LocIntel.Platform.Modules.ModuleDescriptor module,
+        string connectionString
+    )
+    {
+        var build = typeof(ApiFixture)
+            .GetMethod(
+                nameof(CreateModuleContext),
+                System.Reflection.BindingFlags.NonPublic
+                    | System.Reflection.BindingFlags.Public
+                    | System.Reflection.BindingFlags.Static
+            )!
+            .MakeGenericMethod(module.DbContextType);
+        return (LocIntel.Platform.Data.ModuleDbContext)
+            build.Invoke(null, [connectionString, module.Schema])!;
+    }
+
     public virtual async Task InitializeAsync()
     {
         await _postgres.StartAsync();
 
         var adminCs = _postgres.GetConnectionString();
-        await using (var tenancy = CreateTenancyContext(adminCs))
-            await tenancy.Database.MigrateAsync();
-        await using (var identity = CreateIdentityContext(adminCs))
-            await identity.Database.MigrateAsync();
-        await using (var ents = CreateEntitlementsContext(adminCs))
-            await ents.Database.MigrateAsync();
-        await using (var audit = CreateAuditContext(adminCs))
-            await audit.Database.MigrateAsync();
-        await using (var storage = CreateModuleContext<StorageDbContext>(adminCs, "storage"))
-            await storage.Database.MigrateAsync();
-        await using (var platform = CreateModuleContext<PlatformDbContext>(adminCs, "platform"))
-            await platform.Database.MigrateAsync();
-        await using (var ingest = CreateModuleContext<IngestDbContext>(adminCs, "ingest"))
-            await ingest.Database.MigrateAsync();
-        await using (
-            var checklists =
-                CreateModuleContext<LocIntel.Modules.Checklists.Data.ChecklistsDbContext>(
-                    adminCs,
-                    "checklists"
-                )
-        )
-            await checklists.Database.MigrateAsync();
-        await using (
-            var incidents = CreateModuleContext<LocIntel.Modules.Incidents.Data.IncidentsDbContext>(
-                adminCs,
-                "incidents"
-            )
-        )
-            await incidents.Database.MigrateAsync();
-        await using (
-            var entities = CreateModuleContext<LocIntel.Modules.Entities.Data.EntitiesDbContext>(
-                adminCs,
-                "entities"
-            )
-        )
-            await entities.Database.MigrateAsync();
-        await using (
-            var cases = CreateModuleContext<LocIntel.Modules.Cases.Data.CasesDbContext>(
-                adminCs,
-                "cases"
-            )
-        )
-            await cases.Database.MigrateAsync();
-        await using (
-            var marketplace =
-                CreateModuleContext<LocIntel.Modules.Marketplace.Data.MarketplaceDbContext>(
-                    adminCs,
-                    "marketplace"
-                )
-        )
-            await marketplace.Database.MigrateAsync();
-        await using (
-            var alerts = CreateModuleContext<LocIntel.Modules.Alerts.Data.AlertsDbContext>(
-                adminCs,
-                "alerts"
-            )
-        )
-            await alerts.Database.MigrateAsync();
-        await using (
-            var network = CreateModuleContext<LocIntel.Modules.Network.Data.NetworkDbContext>(
-                adminCs,
-                "network"
-            )
-        )
-            await network.Database.MigrateAsync();
-        await using (
-            var patrols = CreateModuleContext<LocIntel.Modules.Patrols.Data.PatrolsDbContext>(
-                adminCs,
-                "patrols"
-            )
-        )
-            await patrols.Database.MigrateAsync();
+        // migrate + grant straight from the module catalog, so a new module
+        // needs no fixture edit (a fork found Checklists missing from lists
+        // exactly like these)
+        foreach (var module in LocIntel.Api.ModuleCatalog.AllWithPlatform)
+        {
+            await using var context = CreateCatalogContext(module, adminCs);
+            await context.Database.MigrateAsync();
+        }
 
+        var grants = string.Join(
+            "\n",
+            LocIntel.Api.ModuleCatalog.Schemas.Select(schema =>
+                $"GRANT USAGE ON SCHEMA {schema} TO app_user; "
+                + $"GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA {schema} TO app_user;"
+            )
+        );
         await _postgres.ExecScriptAsync(
             """
             CREATE ROLE app_user LOGIN PASSWORD 'app_user' NOSUPERUSER;
             -- Wolverine owns its envelope schema; the app creates it at startup
             GRANT CREATE ON DATABASE postgres TO app_user;
-            GRANT USAGE ON SCHEMA tenancy, identity, entitlements, audit, storage, platform, ingest, checklists, incidents, entities, cases, marketplace, alerts, network, patrols TO app_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA tenancy TO app_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA identity TO app_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA checklists TO app_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA entitlements TO app_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA audit TO app_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA storage TO app_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA platform TO app_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ingest TO app_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA incidents TO app_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA entities TO app_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA cases TO app_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA marketplace TO app_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA alerts TO app_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA network TO app_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA patrols TO app_user;
-            """
+            {GRANTS}
+            """.Replace("{GRANTS}", grants)
         );
         AppConnectionString = new Npgsql.NpgsqlConnectionStringBuilder(adminCs)
         {
@@ -400,10 +347,72 @@ public class ApiFixture : IAsyncLifetime
     {
         await using var scope = Factory.Services.CreateAsyncScope();
         var bus = scope.ServiceProvider.GetRequiredService<Wolverine.IMessageBus>();
-        await LocIntel.Modules.Tenancy.TenantedMessaging.PublishForOrgAsync(bus, OrgA, message);
+        await LocIntel.Platform.Messaging.TenantedMessaging.PublishForOrgAsync(bus, OrgA, message);
     }
 
     public Task<HttpClient> OperatorClient() => LoginAsync(Operator);
+
+    /// <summary>
+    /// The org's hierarchy root, creating it if absent. Eighteen test classes
+    /// wrote this dance out; idempotence matters as much as brevity, because
+    /// a seed that creates rather than reuses is how order-dependent tests
+    /// are born (see RandomOrderer).
+    /// </summary>
+    public static async Task<Guid> EnsureRootAsync(
+        HttpClient client,
+        string name = "Test Org",
+        string[]? levels = null
+    )
+    {
+        var existing = await client.GetAsync("/api/hierarchy");
+        if (existing.IsSuccessStatusCode)
+            return (await existing.Content.ReadFromJsonAsync<JsonElement>())
+                .GetProperty("nodes")
+                .EnumerateArray()
+                .First(n => n.GetProperty("depth").GetInt32() == 0)
+                .GetProperty("id")
+                .GetGuid();
+
+        var created = await client.PostAsJsonAsync(
+            "/api/hierarchy",
+            new { name, levels = levels ?? ["Region"] }
+        );
+        created.EnsureSuccessStatusCode();
+        return (await created.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("rootNodeId")
+            .GetGuid();
+    }
+
+    /// <summary>
+    /// A site with this name under the org's root, reused if it already
+    /// exists. Returns its id.
+    /// </summary>
+    public static async Task<Guid> EnsureSiteAsync(
+        HttpClient client,
+        string name,
+        string timeZone = "Etc/UTC",
+        double? latitude = null,
+        double? longitude = null
+    )
+    {
+        foreach (var site in (await GetItemsAsync(client, "/api/sites")).EnumerateArray())
+            if (site.GetProperty("name").GetString() == name)
+                return site.GetProperty("id").GetGuid();
+
+        var created = await client.PostAsJsonAsync(
+            "/api/sites",
+            new
+            {
+                nodeId = await EnsureRootAsync(client),
+                name,
+                timeZone,
+                latitude,
+                longitude,
+            }
+        );
+        created.EnsureSuccessStatusCode();
+        return (await created.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+    }
 
     /// <summary>Unwrap a paged list envelope ({ items, total, nextOffset }) to its items.</summary>
     public static async Task<System.Text.Json.JsonElement> GetItemsAsync(

@@ -258,9 +258,9 @@ public static class IncidentEndpoints
         };
         db.Incidents.Add(incident);
         await db.SaveChangesAsync(ct);
-        await IncidentAudit.PublishAsync(
-            bus,
-            actor,
+        await bus.AuditAsync(
+            actor.Org,
+            actor.Audit,
             "incident.reported",
             new
             {
@@ -348,9 +348,9 @@ public static class IncidentEndpoints
         incident.Tags = CleanTags(request.Tags);
         incident.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
-        await IncidentAudit.PublishAsync(
-            bus,
-            actor!.Value,
+        await bus.AuditAsync(
+            actor!.Value.Org,
+            actor!.Value.Audit,
             "incident.updated",
             new { incident.Id }
         );
@@ -390,9 +390,9 @@ public static class IncidentEndpoints
         incident.ClosureReason = request.Reason.Trim();
         incident.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
-        await IncidentAudit.PublishAsync(
-            bus,
-            actor.Value,
+        await bus.AuditAsync(
+            actor.Value.Org,
+            actor.Value.Audit,
             "incident.closed",
             new { incident.Id, incident.ClosureReason }
         );
@@ -429,9 +429,9 @@ public static class IncidentEndpoints
         incident.ClosureReason = null;
         incident.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
-        await IncidentAudit.PublishAsync(
-            bus,
-            actor!.Value,
+        await bus.AuditAsync(
+            actor!.Value.Org,
+            actor!.Value.Audit,
             "incident.reopened",
             new { incident.Id }
         );
@@ -465,9 +465,9 @@ public static class IncidentEndpoints
         incident!.LegalHold = request.Hold;
         incident.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
-        await IncidentAudit.PublishAsync(
-            bus,
-            actor!.Value,
+        await bus.AuditAsync(
+            actor!.Value.Org,
+            actor!.Value.Audit,
             request.Hold ? "incident.hold_set" : "incident.hold_cleared",
             new { incident.Id }
         );
@@ -502,9 +502,9 @@ public static class IncidentEndpoints
         incident.DeletedAt = DateTimeOffset.UtcNow;
         incident.UpdatedAt = incident.DeletedAt.Value;
         await db.SaveChangesAsync(ct);
-        await IncidentAudit.PublishAsync(
-            bus,
-            actor!.Value,
+        await bus.AuditAsync(
+            actor!.Value.Org,
+            actor!.Value.Audit,
             "incident.deleted",
             new { incident.Id }
         );
@@ -537,7 +537,7 @@ public static class IncidentEndpoints
         incident.DeletedAt = null;
         incident.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
-        await IncidentAudit.PublishAsync(bus, actor, "incident.restored", new { incident.Id });
+        await bus.AuditAsync(actor.Org, actor.Audit, "incident.restored", new { incident.Id });
         return Results.Ok(Mutated(incident));
     }
 

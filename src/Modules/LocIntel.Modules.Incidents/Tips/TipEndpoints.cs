@@ -5,6 +5,7 @@ using LocIntel.Modules.Incidents.Data;
 using LocIntel.Modules.Incidents.Incidents;
 using LocIntel.Modules.Incidents.Tips.Api;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Wolverine;
@@ -94,22 +95,15 @@ public static class TipEndpoints
         };
         db.Incidents.Add(incident);
         await db.SaveChangesAsync(ct);
-        await bus.PublishAsync(
-            new RecordDomainAudit(
-                "incident.tip_received",
-                JsonSerializer.Serialize(
-                    new
-                    {
-                        incident.Id,
-                        incident.SiteId,
-                        Category = incident.Category.ToString(),
-                    }
-                )
-            ),
-            new DeliveryOptions
+        await bus.AuditAsync(
+            org.Value,
+            new AuditActor("guest", null),
+            "incident.tip_received",
+            new
             {
-                TenantId = org.Value.Value.ToString(),
-                Headers = { ["locintel-actor-tier"] = "guest" },
+                incident.Id,
+                incident.SiteId,
+                Category = incident.Category.ToString(),
             }
         );
         await bus.PublishAsync(

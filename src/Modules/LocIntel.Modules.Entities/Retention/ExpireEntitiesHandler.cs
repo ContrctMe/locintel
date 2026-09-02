@@ -2,6 +2,7 @@ using System.Text.Json;
 using LocIntel.Contracts;
 using LocIntel.Modules.Entities.Data;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
 using Microsoft.EntityFrameworkCore;
 using Wolverine;
 
@@ -40,18 +41,11 @@ public static class ExpireEntitiesHandler
             entity.UpdatedAt = now;
         }
         await db.SaveChangesAsync(ct);
-        await bus.PublishAsync(
-            new RecordDomainAudit(
-                "entity.expired",
-                JsonSerializer.Serialize(
-                    new { Ids = expired.Select(e => e.Id), Count = expired.Count }
-                )
-            ),
-            new DeliveryOptions
-            {
-                TenantId = org.Value.ToString(),
-                Headers = { ["locintel-actor-tier"] = "system" },
-            }
+        await bus.AuditAsync(
+            org,
+            AuditActor.System,
+            "entity.expired",
+            new { Ids = expired.Select(e => e.Id), Count = expired.Count }
         );
     }
 }

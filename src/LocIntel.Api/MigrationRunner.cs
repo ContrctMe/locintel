@@ -43,36 +43,12 @@ public sealed class MigrationRunner(
         await using var scope = services.CreateAsyncScope();
         var sp = scope.ServiceProvider;
 
-        await sp.GetRequiredService<LocIntel.Modules.Tenancy.Data.TenancyDbContext>()
-            .Database.MigrateAsync(ct);
-        await sp.GetRequiredService<LocIntel.Modules.Identity.Data.IdentityDbContext>()
-            .Database.MigrateAsync(ct);
-        await sp.GetRequiredService<LocIntel.Modules.Entitlements.Data.EntitlementsDbContext>()
-            .Database.MigrateAsync(ct);
-        await sp.GetRequiredService<LocIntel.Modules.Audit.Data.AuditDbContext>()
-            .Database.MigrateAsync(ct);
-        await sp.GetRequiredService<LocIntel.Modules.Storage.Data.StorageDbContext>()
-            .Database.MigrateAsync(ct);
-        await sp.GetRequiredService<LocIntel.Modules.Checklists.Data.ChecklistsDbContext>()
-            .Database.MigrateAsync(ct);
-        await sp.GetRequiredService<LocIntel.Modules.Ingest.Data.IngestDbContext>()
-            .Database.MigrateAsync(ct);
-        await sp.GetRequiredService<LocIntel.Modules.Incidents.Data.IncidentsDbContext>()
-            .Database.MigrateAsync(ct);
-        await sp.GetRequiredService<LocIntel.Modules.Entities.Data.EntitiesDbContext>()
-            .Database.MigrateAsync(ct);
-        await sp.GetRequiredService<LocIntel.Modules.Cases.Data.CasesDbContext>()
-            .Database.MigrateAsync(ct);
-        await sp.GetRequiredService<LocIntel.Modules.Marketplace.Data.MarketplaceDbContext>()
-            .Database.MigrateAsync(ct);
-        await sp.GetRequiredService<LocIntel.Modules.Alerts.Data.AlertsDbContext>()
-            .Database.MigrateAsync(ct);
-        await sp.GetRequiredService<LocIntel.Modules.Network.Data.NetworkDbContext>()
-            .Database.MigrateAsync(ct);
-        await sp.GetRequiredService<LocIntel.Modules.Patrols.Data.PatrolsDbContext>()
-            .Database.MigrateAsync(ct);
-        await sp.GetRequiredService<LocIntel.Platform.Infra.PlatformDbContext>()
-            .Database.MigrateAsync(ct);
+        // every module, from the one catalog - a module cannot be forgotten here
+        foreach (var module in ModuleCatalog.AllWithPlatform)
+        {
+            var context = (DbContext)sp.GetRequiredService(module.DbContextType);
+            await context.Database.MigrateAsync(ct);
+        }
 
         // App role provisioning is idempotent and re-runs every migrate, so
         // grants always cover tables the latest migrations just created.
@@ -84,6 +60,15 @@ public sealed class MigrationRunner(
         await db.Database.ExecuteSqlAsync(
             $"SELECT set_config('locintel.app_password', {password}, true)",
             ct
+        );
+        // grants derive from the module catalog, so a new module's schema is
+        // covered the moment it is registered - never a forgotten GRANT line
+        var grants = string.Join(
+            "\n            ",
+            ModuleCatalog.Schemas.Select(schema =>
+                $"GRANT USAGE ON SCHEMA {schema} TO app_user; "
+                + $"GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA {schema} TO app_user;"
+            )
         );
         await db.Database.ExecuteSqlRawAsync(
             """
@@ -117,23 +102,8 @@ public sealed class MigrationRunner(
                     END;
                 END IF;
             END $$;
-            GRANT USAGE ON SCHEMA tenancy, identity, entitlements, audit, storage, platform, ingest, checklists, incidents, entities, cases, marketplace, alerts, network, patrols TO app_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA tenancy TO app_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA identity TO app_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA entitlements TO app_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA audit TO app_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA storage TO app_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA platform TO app_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ingest TO app_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA checklists TO app_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA incidents TO app_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA entities TO app_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA cases TO app_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA marketplace TO app_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA alerts TO app_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA network TO app_user;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA patrols TO app_user;
-            """,
+            {GRANTS}
+            """.Replace("{GRANTS}", grants),
             ct
         );
         await tx.CommitAsync(ct);

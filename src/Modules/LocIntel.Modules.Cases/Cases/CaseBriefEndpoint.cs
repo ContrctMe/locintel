@@ -111,9 +111,9 @@ public static class CaseBriefEndpoint
             ),
             ct
         );
-        await CaseAudit.PublishAsync(
-            bus,
-            access.Actor,
+        await bus.AuditAsync(
+            access.Actor.Org,
+            access.Actor.Audit,
             "case.brief_drafted",
             new { @case.Id, intelligence.Provider }
         );

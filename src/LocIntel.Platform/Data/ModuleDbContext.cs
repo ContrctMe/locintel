@@ -75,6 +75,10 @@ public abstract class ModuleDbContext(DbContextOptions options, ITenantContext t
         {
             if (typeof(IOrgScoped).IsAssignableFrom(entity.ClrType))
                 InvokeFilter(nameof(AddTenantFilter), entity.ClrType, modelBuilder);
+            if (typeof(ITwoPartyScoped).IsAssignableFrom(entity.ClrType))
+                InvokeFilter(nameof(AddTwoPartyFilter), entity.ClrType, modelBuilder);
+            if (typeof(IPublishedCatalogScoped).IsAssignableFrom(entity.ClrType))
+                InvokeFilter(nameof(AddPublishedCatalogFilter), entity.ClrType, modelBuilder);
             if (typeof(ISoftDeletable).IsAssignableFrom(entity.ClrType))
                 InvokeFilter(nameof(AddSoftDeleteFilter), entity.ClrType, modelBuilder);
         }
@@ -89,6 +93,23 @@ public abstract class ModuleDbContext(DbContextOptions options, ITenantContext t
     private void AddTenantFilter<TEntity>(ModelBuilder modelBuilder)
         where TEntity : class, IOrgScoped =>
         modelBuilder.Entity<TEntity>().HasQueryFilter(TenantFilter, e => e.OrgId == CurrentOrg);
+
+    // both sides see the row; the SAME filter name as the single-owner one,
+    // so a fork cannot accidentally stack two tenant filters on one entity
+    private void AddTwoPartyFilter<TEntity>(ModelBuilder modelBuilder)
+        where TEntity : class, ITwoPartyScoped =>
+        modelBuilder
+            .Entity<TEntity>()
+            .HasQueryFilter(
+                TenantFilter,
+                e => e.OrgId == CurrentOrg || e.CounterpartyOrgId == CurrentOrg
+            );
+
+    private void AddPublishedCatalogFilter<TEntity>(ModelBuilder modelBuilder)
+        where TEntity : class, IPublishedCatalogScoped =>
+        modelBuilder
+            .Entity<TEntity>()
+            .HasQueryFilter(TenantFilter, e => e.Published || e.OrgId == CurrentOrg);
 
     private void AddSoftDeleteFilter<TEntity>(ModelBuilder modelBuilder)
         where TEntity : class, ISoftDeletable =>

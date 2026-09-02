@@ -21,8 +21,12 @@ public sealed class LocalAuthProvider
     > _invitations = new();
     private int _sequence;
 
+    // MUST match the subject ExchangeCodeAsync mints for the same person -
+    // they disagreed ($"local_{email}" here vs the bare email at login), so a
+    // provisioned or invited user could never match their own login and got a
+    // second, org-less account instead.
     public Task<string> EnsureUserAsync(string email, CancellationToken ct = default) =>
-        Task.FromResult($"local_{email}"); // local logins accept any email already
+        Task.FromResult(email);
 
     public Task<string> CreateOrganizationAsync(string name, CancellationToken ct = default) =>
         Task.FromResult($"local_org_{Interlocked.Increment(ref _sequence):D6}");

@@ -2,6 +2,7 @@ using LocIntel.Contracts;
 using LocIntel.Modules.Audit.Data;
 using LocIntel.Platform.Audit;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -50,25 +51,8 @@ public static class PurgeAuditDataHandler
 }
 
 /// <summary>Daily enumerator (ADR 24 fan-out, same shape as the horizon roll and meter compaction).</summary>
-public sealed class AuditRetentionService(IServiceProvider services) : BackgroundService
+public sealed class AuditRetentionService(IServiceProvider services)
+    : PerOrgSweepService<PurgeAuditData>(services)
 {
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-    {
-        using var timer = new PeriodicTimer(TimeSpan.FromHours(24));
-        try
-        {
-            do
-            {
-                await using var scope = services.CreateAsyncScope();
-                var orgs = scope.ServiceProvider.GetRequiredService<IOrganizationLookup>();
-                var bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
-                foreach (var orgId in await orgs.ListIdsAsync(stoppingToken))
-                    await bus.PublishAsync(
-                        new PurgeAuditData(),
-                        new DeliveryOptions { TenantId = orgId.Value.ToString() }
-                    );
-            } while (await timer.WaitForNextTickAsync(stoppingToken));
-        }
-        catch (OperationCanceledException) { } // shutdown
-    }
+    protected override TimeSpan Interval => TimeSpan.FromHours(24);
 }

@@ -4,6 +4,7 @@ using System.Text.Json;
 using LocIntel.Contracts;
 using LocIntel.Modules.Storage.Data;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
 using LocIntel.Platform.Storage;
 using Microsoft.EntityFrameworkCore;
 using Wolverine;
@@ -93,22 +94,11 @@ public static class ExportOrgDataHandler
             }
         );
 
-        await bus.PublishAsync(
-            new RecordDomainAudit(
-                "org.exported",
-                JsonSerializer.Serialize(
-                    new { fileId = id, sections = exporters.Select(e => e.Section).Order() }
-                )
-            ),
-            new DeliveryOptions
-            {
-                TenantId = org.Value.ToString(),
-                Headers =
-                {
-                    ["locintel-actor-tier"] = "user",
-                    ["locintel-actor-id"] = message.RequestedBy.ToString(),
-                },
-            }
+        await bus.AuditAsync(
+            org,
+            AuditActor.User(message.RequestedBy),
+            "org.exported",
+            new { fileId = id, sections = exporters.Select(e => e.Section).Order() }
         );
     }
 }

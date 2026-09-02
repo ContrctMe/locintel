@@ -84,6 +84,33 @@ decisions log has one entry per slice) and `git log --reverse b93b3e3..`.
 - Attaching a file to anything requires the Files page first; an inline upload control in the ticket flow would remove a step from every attach dialog.
 - No dedicated notification transport for SMS or push existed; `ISmsTransport` + `NoSmsTransport` + `LocalSmsCatcher` (`src/LocIntel.Platform/Notifications/`) and the `Kind`/`Sms` extension of `SendOrgNotice` (`4fbfc74`) are generic and can be lifted.
 
+## Status after the first sync (2026-09-02)
+
+Upstream shipped every item above (commits `c72cded`..`2088a25`). The fork
+merged them with `tools/sync-upstream.sh`, resolving all 35 conflicts in
+upstream's favour and re-seating its own code on the lifted pieces:
+
+| Lifted upstream | What the fork deleted or moved onto it |
+|---|---|
+| `ModuleCatalog` | seven module lines in Program.cs, MigrationRunner, ApiFixture, three test registries |
+| `AuditAsync` / `AuditActor` | `IncidentAudit`, `CaseAudit`, `EntityAudit`, `MarketplaceAudit`, `PatrolAudit`, a private Network helper, seven inline publishes |
+| `PerOrgSweepService` | `EntityRetentionService`, `RequestSlaService` (now three lines each) |
+| `ITwoPartyScoped` / `EnableTwoPartyRls` | hand filters and policies on `request_events`, `request_recipients`, `quotes` |
+| `IPublishedCatalogScoped` | the hand filter on `vendor_profiles` |
+| `ISmsTransport` seam | the fork's identical port and catcher; Twilio adapter and preferences stay |
+| whole `SiteInfo` | the fork's three extensions |
+| `LOCINTEL_AUTH=local` boot | the fork's own AppHost and DevBootstrap variant |
+
+Two things the shapes could not absorb, worth a look upstream: a row
+readable by a *list* of counterparties (a broadcast request and its
+recipients), and a required counterparty - `ITwoPartyScoped.CounterpartyOrgId`
+is nullable by design, so a table whose column is NOT NULL carries a
+nullable CLR property plus `IsRequired()`.
+
+One flake surfaced under the shuffled full suite: `AccountTests`' outbox
+wait (60 x 100 ms) timed out once with seven more modules feeding the
+outbox; the fork widened it to the fixture's own bound (300 x 100 ms).
+
 ## Suggested prompt for the template session
 
 > Read `/Users/jarod/coding/locintel/docs/template-feedback.md`. For each item marked **lift**, inspect the named files in that repo and port the generic parts into the template's Platform or Contracts with tests; for the init-script and wiring items, change the tooling as proposed; for the rest, update the skills and CLAUDE.md. Keep the template's own tests order-independent and run the full suite after each change.

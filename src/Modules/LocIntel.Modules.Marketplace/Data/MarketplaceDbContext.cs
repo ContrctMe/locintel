@@ -54,7 +54,6 @@ public sealed class MarketplaceDbContext(
             b.HasIndex(x => x.OrgId).IsUnique();
             b.HasIndex(x => x.Published);
             // catalog read: published to everyone, unpublished to the owner
-            b.HasQueryFilter(TenantFilter, p => p.Published || p.OrgId == CurrentOrg);
         });
 
         modelBuilder.Entity<VendorCredential>(b =>
@@ -168,7 +167,7 @@ public sealed class MarketplaceDbContext(
                 r =>
                     r.OrgId == CurrentOrg
                     || r.VendorOrgId == CurrentOrg
-                    || Recipients.Any(x => x.RequestId == r.Id && x.VendorOrgId == CurrentOrg)
+                    || Recipients.Any(x => x.RequestId == r.Id && x.CounterpartyOrgId == CurrentOrg)
             );
         });
 
@@ -178,7 +177,7 @@ public sealed class MarketplaceDbContext(
             b.HasKey(x => x.Id);
             b.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
             b.Property(x => x.OrgId).HasColumnName("org_id");
-            b.Property(x => x.VendorOrgId).HasColumnName("vendor_org_id");
+            b.Property(x => x.CounterpartyOrgId).HasColumnName("vendor_org_id");
             b.Property(x => x.RequestId).HasColumnName("request_id");
             b.Property(x => x.ActorOrgId).HasColumnName("actor_org_id");
             b.Property(x => x.ActorId).HasColumnName("actor_id");
@@ -189,10 +188,6 @@ public sealed class MarketplaceDbContext(
             b.Property(x => x.DistanceFromSiteMeters).HasColumnName("distance_from_site_m");
             b.Property(x => x.At).HasColumnName("at");
             b.HasIndex(x => new { x.RequestId, x.At });
-            b.HasQueryFilter(
-                TenantFilter,
-                e => e.OrgId == CurrentOrg || e.VendorOrgId == CurrentOrg
-            );
         });
 
         modelBuilder.Entity<RequestRecipient>(b =>
@@ -201,7 +196,7 @@ public sealed class MarketplaceDbContext(
             b.HasKey(x => x.Id);
             b.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
             b.Property(x => x.OrgId).HasColumnName("org_id");
-            b.Property(x => x.VendorOrgId).HasColumnName("vendor_org_id");
+            b.Property(x => x.CounterpartyOrgId).HasColumnName("vendor_org_id").IsRequired();
             b.Property(x => x.RequestId).HasColumnName("request_id");
             b.Property(x => x.Status)
                 .HasColumnName("status")
@@ -209,11 +204,7 @@ public sealed class MarketplaceDbContext(
                 .HasMaxLength(20);
             b.Property(x => x.NotifiedAt).HasColumnName("notified_at");
             b.Property(x => x.RespondedAt).HasColumnName("responded_at");
-            b.HasIndex(x => new { x.RequestId, x.VendorOrgId }).IsUnique();
-            b.HasQueryFilter(
-                TenantFilter,
-                x => x.OrgId == CurrentOrg || x.VendorOrgId == CurrentOrg
-            );
+            b.HasIndex(x => new { x.RequestId, x.CounterpartyOrgId }).IsUnique();
         });
 
         modelBuilder.Entity<Quote>(b =>
@@ -222,7 +213,7 @@ public sealed class MarketplaceDbContext(
             b.HasKey(x => x.Id);
             b.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
             b.Property(x => x.OrgId).HasColumnName("org_id");
-            b.Property(x => x.VendorOrgId).HasColumnName("vendor_org_id");
+            b.Property(x => x.CounterpartyOrgId).HasColumnName("vendor_org_id").IsRequired();
             b.Property(x => x.RequestId).HasColumnName("request_id");
             b.Property(x => x.Amount).HasColumnName("amount").HasPrecision(14, 2);
             b.Property(x => x.Currency).HasColumnName("currency").HasMaxLength(3);
@@ -235,11 +226,7 @@ public sealed class MarketplaceDbContext(
             b.Property(x => x.SubmittedBy).HasColumnName("submitted_by");
             b.Property(x => x.CreatedAt).HasColumnName("created_at");
             b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
-            b.HasIndex(x => new { x.RequestId, x.VendorOrgId }).IsUnique();
-            b.HasQueryFilter(
-                TenantFilter,
-                x => x.OrgId == CurrentOrg || x.VendorOrgId == CurrentOrg
-            );
+            b.HasIndex(x => new { x.RequestId, x.CounterpartyOrgId }).IsUnique();
         });
     }
 }

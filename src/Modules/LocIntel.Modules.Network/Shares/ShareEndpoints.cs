@@ -178,7 +178,12 @@ public static class ShareEndpoints
             }
         );
         await db.SaveChangesAsync(ct);
-        await Audit(bus, actor, "network.share_created", new { share.Id, share.Name });
+        await bus.AuditAsync(
+            actor.Org,
+            actor.Audit,
+            "network.share_created",
+            new { share.Id, share.Name }
+        );
         return Results.Ok(new ShareCreated(share.Id));
     }
 
@@ -243,9 +248,9 @@ public static class ShareEndpoints
             new ShareInvitationRequested(share.Id, share.Name, share.OwnerName, actor.Id),
             new DeliveryOptions { TenantId = invitee.Id.Value.ToString() }
         );
-        await Audit(
-            bus,
-            actor,
+        await bus.AuditAsync(
+            actor.Org,
+            actor.Audit,
             "network.member_invited",
             new
             {
@@ -291,7 +296,7 @@ public static class ShareEndpoints
             member.JoinedAt = now;
         }
         await db.SaveChangesAsync(ct);
-        await Audit(bus, actor, "network.share_joined", new { ShareId = id });
+        await bus.AuditAsync(actor.Org, actor.Audit, "network.share_joined", new { ShareId = id });
         return Results.Ok(new ShareMutated(id, access.Status));
     }
 
@@ -326,7 +331,7 @@ public static class ShareEndpoints
         if (member is not null)
             member.Status = MembershipStatus.Left;
         await db.SaveChangesAsync(ct);
-        await Audit(bus, actor, "network.share_left", new { ShareId = id });
+        await bus.AuditAsync(actor.Org, actor.Audit, "network.share_left", new { ShareId = id });
         return Results.Ok(new ShareMutated(id, access.Status));
     }
 
@@ -367,7 +372,12 @@ public static class ShareEndpoints
             new ShareAccessRevoked(id),
             new DeliveryOptions { TenantId = target.Value.ToString() }
         );
-        await Audit(bus, actor, "network.member_removed", new { ShareId = id, OrgId = orgId });
+        await bus.AuditAsync(
+            actor.Org,
+            actor.Audit,
+            "network.member_removed",
+            new { ShareId = id, OrgId = orgId }
+        );
         return Results.Ok(new MemberRemoved(orgId));
     }
 
@@ -395,7 +405,7 @@ public static class ShareEndpoints
         share.Status = ShareStatus.Closed;
         share.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
-        await Audit(bus, actor, "network.share_closed", new { ShareId = id });
+        await bus.AuditAsync(actor.Org, actor.Audit, "network.share_closed", new { ShareId = id });
         return Results.Ok(new ShareMutated(id, access!.Status));
     }
 
@@ -430,23 +440,4 @@ public static class ShareEndpoints
                 },
                 statusCode: StatusCodes.Status402PaymentRequired
             );
-
-    internal static ValueTask Audit(
-        IMessageBus bus,
-        ActorRef actor,
-        string eventName,
-        object payload
-    ) =>
-        bus.PublishAsync(
-            new RecordDomainAudit(eventName, JsonSerializer.Serialize(payload)),
-            new DeliveryOptions
-            {
-                TenantId = actor.Org.Value.ToString(),
-                Headers =
-                {
-                    ["locintel-actor-tier"] = actor.Tier,
-                    ["locintel-actor-id"] = actor.Id.ToString(),
-                },
-            }
-        );
 }

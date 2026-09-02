@@ -40,7 +40,7 @@ public class RlsCoverageTests(ApiFixture fixture) : IClassFixture<ApiFixture>
             FROM pg_class c
             JOIN pg_namespace n ON n.oid = c.relnamespace
             WHERE c.relkind IN ('r', 'p')
-              AND n.nspname IN ('tenancy','identity','entitlements','audit','storage','ingest','checklists','incidents','entities','cases','marketplace','alerts','network','patrols')
+              AND n.nspname = ANY(@schemas)
               AND EXISTS (
                   SELECT 1 FROM information_schema.columns col
                   WHERE col.table_schema = n.nspname AND col.table_name = c.relname
@@ -49,6 +49,7 @@ public class RlsCoverageTests(ApiFixture fixture) : IClassFixture<ApiFixture>
             """,
             conn
         );
+        cmd.Parameters.AddWithValue("schemas", LocIntel.Api.ModuleCatalog.Schemas.ToArray());
         var offenders = new List<string>();
         await using var reader = await cmd.ExecuteReaderAsync();
         while (await reader.ReadAsync())

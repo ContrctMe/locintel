@@ -121,8 +121,9 @@ public class AccountTests(ApiFixture fixture) : IClassFixture<ApiFixture>
             new { name = "Solo Co", slug = "solo-co" }
         );
         Assert.True(created.IsSuccessStatusCode, await created.Content.ReadAsStringAsync());
-        // founder membership + Owner arrive via the outbox
-        for (var i = 0; i < 60; i++)
+        // founder membership + Owner arrive via the outbox; the bound matches
+        // the fixture's own sync wait - six seconds flaked under full-suite load
+        for (var i = 0; i < 300; i++)
         {
             var check = await lastManager.GetFromJsonAsync<JsonElement>("/me");
             if (check.GetProperty("organizations").GetArrayLength() > 0)

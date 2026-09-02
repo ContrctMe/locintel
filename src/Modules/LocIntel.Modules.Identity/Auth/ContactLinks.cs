@@ -3,6 +3,7 @@ using LocIntel.Contracts;
 using LocIntel.Modules.Identity.Data;
 using LocIntel.Platform.Entitlements;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
 using LocIntel.Platform.Notifications;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -140,20 +141,11 @@ public static class ContactLinks
                     $"{publicHost.Replace("{slug}", slug)}/contact/redeem?token={Uri.EscapeDataString(token)}";
 
                 await bus.PublishAsync(new SendContactLink(email, url, directoryEntry.Name));
-                await bus.PublishAsync(
-                    new RecordDomainAudit(
-                        "contact.invited",
-                        System.Text.Json.JsonSerializer.Serialize(new { contactId = contact.Id })
-                    ),
-                    new DeliveryOptions
-                    {
-                        TenantId = org.Value.ToString(),
-                        Headers =
-                        {
-                            ["locintel-actor-tier"] = "user",
-                            ["locintel-actor-id"] = userId.ToString(),
-                        },
-                    }
+                await bus.AuditAsync(
+                    org,
+                    AuditActor.User(userId),
+                    "contact.invited",
+                    new { contactId = contact.Id }
                 );
                 return Results.Ok(new { contactId = contact.Id });
             }
@@ -294,20 +286,11 @@ public static class ContactManagementEndpoints
             return Results.NotFound();
         contact.RevokedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
-        await bus.PublishAsync(
-            new RecordDomainAudit(
-                "contact.revoked",
-                System.Text.Json.JsonSerializer.Serialize(new { contactId = id })
-            ),
-            new DeliveryOptions
-            {
-                TenantId = org.Value.ToString(),
-                Headers =
-                {
-                    ["locintel-actor-tier"] = "user",
-                    ["locintel-actor-id"] = userId.ToString(),
-                },
-            }
+        await bus.AuditAsync(
+            org,
+            AuditActor.User(userId),
+            "contact.revoked",
+            new { contactId = id }
         );
         return Results.NoContent();
     }

@@ -82,9 +82,9 @@ public static class RouteEndpoints
         };
         db.Routes.Add(route);
         await db.SaveChangesAsync(ct);
-        await PatrolAudit.PublishAsync(
-            bus,
-            actor,
+        await bus.AuditAsync(
+            actor.Org,
+            actor.Audit,
             "patrol.route_created",
             new
             {
@@ -120,9 +120,9 @@ public static class RouteEndpoints
         route.Archived = request.Archived;
         route.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
-        await PatrolAudit.PublishAsync(
-            bus,
-            actor!.Value,
+        await bus.AuditAsync(
+            actor!.Value.Org,
+            actor!.Value.Audit,
             request.Archived ? "patrol.route_archived" : "patrol.route_updated",
             new { route.Id }
         );

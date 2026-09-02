@@ -1,3 +1,4 @@
+using LocIntel.Contracts;
 using LocIntel.Contracts.Entities;
 using LocIntel.Contracts.Incidents;
 using LocIntel.Modules.Cases.Cases.Api;
@@ -42,9 +43,9 @@ public static class CaseLinkEndpoints
         db.Incidents.Add(link);
         access.Case.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
-        await CaseAudit.PublishAsync(
-            bus,
-            access.Actor,
+        await bus.AuditAsync(
+            access.Actor.Org,
+            access.Actor.Audit,
             "case.incident_added",
             new { CaseId = id, IncidentId = incident.Id }
         );
@@ -76,9 +77,9 @@ public static class CaseLinkEndpoints
         db.Incidents.Remove(link);
         access!.Case.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
-        await CaseAudit.PublishAsync(
-            bus,
-            access.Actor,
+        await bus.AuditAsync(
+            access.Actor.Org,
+            access.Actor.Audit,
             "case.incident_removed",
             new { CaseId = id, link.IncidentId }
         );
@@ -120,9 +121,9 @@ public static class CaseLinkEndpoints
         db.Entities.Add(link);
         access.Case.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
-        await CaseAudit.PublishAsync(
-            bus,
-            access.Actor,
+        await bus.AuditAsync(
+            access.Actor.Org,
+            access.Actor.Audit,
             "case.entity_added",
             new { CaseId = id, request.EntityId }
         );
@@ -151,9 +152,9 @@ public static class CaseLinkEndpoints
         db.Entities.Remove(link);
         access!.Case.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
-        await CaseAudit.PublishAsync(
-            bus,
-            access.Actor,
+        await bus.AuditAsync(
+            access.Actor.Org,
+            access.Actor.Audit,
             "case.entity_removed",
             new { CaseId = id, link.EntityId }
         );

@@ -1,3 +1,4 @@
+using LocIntel.Contracts;
 using LocIntel.Contracts.Entities;
 using LocIntel.Contracts.Incidents;
 using LocIntel.Modules.Entities.Data;
@@ -63,9 +64,9 @@ public static class EntityLinkEndpoints
         db.Links.Add(link);
         entity.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
-        await EntityAudit.PublishAsync(
-            bus,
-            actor.Value,
+        await bus.AuditAsync(
+            actor.Value.Org,
+            actor.Value.Audit,
             "entity.linked",
             new
             {
@@ -123,9 +124,9 @@ public static class EntityLinkEndpoints
         db.Links.Remove(link); // tier 3
         entity!.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
-        await EntityAudit.PublishAsync(
-            bus,
-            actor!.Value,
+        await bus.AuditAsync(
+            actor!.Value.Org,
+            actor!.Value.Audit,
             "entity.unlinked",
             new { EntityId = entity.Id, link.IncidentId }
         );

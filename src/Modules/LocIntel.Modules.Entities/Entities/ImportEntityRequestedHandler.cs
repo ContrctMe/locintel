@@ -3,6 +3,7 @@ using LocIntel.Contracts;
 using LocIntel.Contracts.Entities;
 using LocIntel.Modules.Entities.Data;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
 using Wolverine;
 using Wolverine.Attributes;
 
@@ -47,20 +48,11 @@ public static class ImportEntityRequestedHandler
         };
         db.Entities.Add(entity);
         await db.SaveChangesAsync(ct);
-        await bus.PublishAsync(
-            new RecordDomainAudit(
-                "entity.imported",
-                JsonSerializer.Serialize(new { entity.Id, Kind = entity.Kind.ToString() })
-            ),
-            new DeliveryOptions
-            {
-                TenantId = org.Value.ToString(),
-                Headers =
-                {
-                    ["locintel-actor-tier"] = "user",
-                    ["locintel-actor-id"] = message.RequestedBy.ToString(),
-                },
-            }
+        await bus.AuditAsync(
+            org,
+            AuditActor.User(message.RequestedBy),
+            "entity.imported",
+            new { entity.Id, Kind = entity.Kind.ToString() }
         );
     }
 }

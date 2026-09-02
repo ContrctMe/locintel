@@ -2,6 +2,7 @@ using System.Text.Json;
 using LocIntel.Contracts;
 using LocIntel.Modules.Tenancy.Data;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Wolverine;
@@ -239,24 +240,8 @@ public static class LifecycleEndpoints
         await db.SaveChangesAsync(ct);
 
         // the audit record goes first: purge handlers race it, the trail survives it
-        await bus.PublishAsync(
-            new RecordDomainAudit("org.offboarded", "{}"),
-            new DeliveryOptions
-            {
-                TenantId = org.Id.Value.ToString(),
-                Headers =
-                {
-                    ["locintel-actor-tier"] = "user",
-                    ["locintel-actor-id"] = operatorId.ToString(),
-                },
-            }
-        );
-        await bus.PublishForOrgAsync(target, new PurgeOrgSites());
-        await bus.PublishForOrgAsync(target, new PurgeOrgFiles());
-        await bus.PublishForOrgAsync(target, new PurgeOrgEntitlements());
-        await bus.PublishForOrgAsync(target, new PurgeOrgIngest());
-        await bus.PublishForOrgAsync(target, new PurgeOrgWebhooks());
-        await bus.PublishForOrgAsync(target, new OrganizationDeleted(org.Id, org.ExternalId));
+        await bus.AuditAsync(org.Id, AuditActor.User(operatorId), "org.offboarded", new { });
+        await OrgPurgeFanOut.PublishAsync(bus, target, org.ExternalId);
         return Results.NoContent();
     }
 }

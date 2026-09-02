@@ -4,6 +4,7 @@ using LocIntel.Modules.Alerts.Alerts;
 using LocIntel.Modules.Alerts.Bulletins.Api;
 using LocIntel.Modules.Alerts.Data;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -210,26 +211,15 @@ public static class BulletinEndpoints
             ),
             new DeliveryOptions { TenantId = actor.Org.Value.ToString() }
         );
-        await bus.PublishAsync(
-            new RecordDomainAudit(
-                "bulletin.issued",
-                JsonSerializer.Serialize(
-                    new
-                    {
-                        bulletin.Id,
-                        Kind = bulletin.Kind.ToString(),
-                        bulletin.Title,
-                    }
-                )
-            ),
-            new DeliveryOptions
+        await bus.AuditAsync(
+            actor.Org,
+            actor.Audit,
+            "bulletin.issued",
+            new
             {
-                TenantId = actor.Org.Value.ToString(),
-                Headers =
-                {
-                    ["locintel-actor-tier"] = actor.Tier,
-                    ["locintel-actor-id"] = actor.Id.ToString(),
-                },
+                bulletin.Id,
+                Kind = bulletin.Kind.ToString(),
+                bulletin.Title,
             }
         );
         return Results.Ok(new BulletinIssued(bulletin.Id, bulletin.ExpiresAt));
@@ -263,21 +253,7 @@ public static class BulletinEndpoints
         bulletin.WithdrawnAt = DateTimeOffset.UtcNow;
         bulletin.WithdrawnBy = actor.Id;
         await db.SaveChangesAsync(ct);
-        await bus.PublishAsync(
-            new RecordDomainAudit(
-                "bulletin.withdrawn",
-                JsonSerializer.Serialize(new { bulletin.Id })
-            ),
-            new DeliveryOptions
-            {
-                TenantId = actor.Org.Value.ToString(),
-                Headers =
-                {
-                    ["locintel-actor-tier"] = actor.Tier,
-                    ["locintel-actor-id"] = actor.Id.ToString(),
-                },
-            }
-        );
+        await bus.AuditAsync(actor.Org, actor.Audit, "bulletin.withdrawn", new { bulletin.Id });
         return Results.Ok(new BulletinMutated(bulletin.Id, bulletin.Status, bulletin.WithdrawnAt));
     }
 

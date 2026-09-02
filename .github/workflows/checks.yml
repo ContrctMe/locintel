@@ -61,7 +61,14 @@ jobs:
           dotnet-version: 10.0.x
       - run: dotnet build tests/LocIntel.IntegrationTests -c Release
       - name: Integration shard ${{ matrix.shard }}/2 (real PostgreSQL via Testcontainers)
-        run: CONFIGURATION=Release tools/run-integration-shard.sh ${{ matrix.shard }} 2
+        # A fresh shuffle seed each run: order-dependence between tests is
+        # invisible until something perturbs the order (a fork's rename did
+        # exactly that and surfaced two at once). The seed is echoed so a
+        # failure can be replayed exactly: LOCINTEL_TEST_SHUFFLE=<seed>.
+        run: |
+          export LOCINTEL_TEST_SHUFFLE=$RANDOM
+          echo "test order seed: $LOCINTEL_TEST_SHUFFLE (replay with LOCINTEL_TEST_SHUFFLE=$LOCINTEL_TEST_SHUFFLE)"
+          CONFIGURATION=Release tools/run-integration-shard.sh ${{ matrix.shard }} 2
       - uses: actions/upload-artifact@v4
         if: always()
         with:

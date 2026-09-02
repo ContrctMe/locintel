@@ -201,9 +201,9 @@ public static class CaseEndpoints
             db.Incidents.Add(NewLink(@case, incident, actor));
         }
         await db.SaveChangesAsync(ct);
-        await CaseAudit.PublishAsync(
-            bus,
-            actor,
+        await bus.AuditAsync(
+            actor.Org,
+            actor.Audit,
             "case.opened",
             new
             {
@@ -247,7 +247,12 @@ public static class CaseEndpoints
         @case.LeadId = request.LeadId;
         @case.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
-        await CaseAudit.PublishAsync(bus, access.Actor, "case.updated", new { @case.Id });
+        await bus.AuditAsync(
+            access.Actor.Org,
+            access.Actor.Audit,
+            "case.updated",
+            new { @case.Id }
+        );
         return Results.Ok(Mutated(@case));
     }
 
@@ -277,9 +282,9 @@ public static class CaseEndpoints
         @case.ClosureNote = string.IsNullOrWhiteSpace(request.Note) ? null : request.Note.Trim();
         @case.UpdatedAt = @case.ClosedAt.Value;
         await db.SaveChangesAsync(ct);
-        await CaseAudit.PublishAsync(
-            bus,
-            access.Actor,
+        await bus.AuditAsync(
+            access.Actor.Org,
+            access.Actor.Audit,
             "case.closed",
             new { @case.Id, Disposition = @case.Disposition.ToString() }
         );
@@ -311,7 +316,12 @@ public static class CaseEndpoints
         @case.ClosureNote = null;
         @case.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
-        await CaseAudit.PublishAsync(bus, access.Actor, "case.reopened", new { @case.Id });
+        await bus.AuditAsync(
+            access.Actor.Org,
+            access.Actor.Audit,
+            "case.reopened",
+            new { @case.Id }
+        );
         return Results.Ok(Mutated(@case));
     }
 
@@ -356,9 +366,9 @@ public static class CaseEndpoints
                 new FileHoldRequested(fileId, request.Hold, reason),
                 new DeliveryOptions { TenantId = @case.OrgId.Value.ToString() }
             );
-        await CaseAudit.PublishAsync(
-            bus,
-            access.Actor,
+        await bus.AuditAsync(
+            access.Actor.Org,
+            access.Actor.Audit,
             request.Hold ? "case.hold_set" : "case.hold_cleared",
             new { @case.Id, Files = fileIds.Count }
         );
@@ -388,7 +398,12 @@ public static class CaseEndpoints
         @case.DeletedAt = DateTimeOffset.UtcNow;
         @case.UpdatedAt = @case.DeletedAt.Value;
         await db.SaveChangesAsync(ct);
-        await CaseAudit.PublishAsync(bus, access.Actor, "case.deleted", new { @case.Id });
+        await bus.AuditAsync(
+            access.Actor.Org,
+            access.Actor.Audit,
+            "case.deleted",
+            new { @case.Id }
+        );
         return Results.Ok(Mutated(@case));
     }
 
@@ -413,7 +428,12 @@ public static class CaseEndpoints
         @case.DeletedAt = null;
         @case.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
-        await CaseAudit.PublishAsync(bus, access.Actor, "case.restored", new { @case.Id });
+        await bus.AuditAsync(
+            access.Actor.Org,
+            access.Actor.Audit,
+            "case.restored",
+            new { @case.Id }
+        );
         return Results.Ok(Mutated(@case));
     }
 
@@ -463,9 +483,9 @@ public static class CaseEndpoints
         foreach (var fileId in fileIds)
             CustodyLog.Record(db, @case, fileId, CustodyAction.Exported, access.Actor, "package");
         await db.SaveChangesAsync(ct);
-        await CaseAudit.PublishAsync(
-            bus,
-            access.Actor,
+        await bus.AuditAsync(
+            access.Actor.Org,
+            access.Actor.Audit,
             "case.package_exported",
             new { @case.Id, Files = fileIds.Count }
         );

@@ -5,22 +5,35 @@
 // provider remains for bare `dotnet run` and the test suites.
 var builder = DistributedApplication.CreateBuilder(args);
 
+// LOCINTEL_AUTH=local boots WITHOUT the WorkOS emulator, using the local auth
+// provider - the same one the test suites use. A browser smoke run can then
+// sign in by hint alone, and an automated smoke should never be typing
+// credentials into a login form. The default stays "workos" so ordinary dev
+// keeps exercising the real adapter against the emulator (ADR 14 parity).
+var localAuth = string.Equals(
+    Environment.GetEnvironmentVariable("LOCINTEL_AUTH"),
+    "local",
+    StringComparison.OrdinalIgnoreCase
+);
+
 var postgres = builder
     .AddPostgres("postgres")
     .WithDataVolume("locintel-pgdata")
     .AddDatabase("locintel");
 
-var workos = builder
-    .AddContainer("workos", "ghcr.io/workos/emulate", "latest")
-    .WithHttpEndpoint(port: 4100, targetPort: 4100)
-    .WithBindMount(
-        "../../workos-emulate.config.yaml",
-        "/app/workos-emulate.config.yaml",
-        isReadOnly: true
-    )
-    .WithArgs("--host", "0.0.0.0", "--interactive"); // serve real login pages
+var workos = localAuth
+    ? null
+    : builder
+        .AddContainer("workos", "ghcr.io/workos/emulate", "latest")
+        .WithHttpEndpoint(port: 4100, targetPort: 4100)
+        .WithBindMount(
+            "../../workos-emulate.config.yaml",
+            "/app/workos-emulate.config.yaml",
+            isReadOnly: true
+        )
+        .WithArgs("--host", "0.0.0.0", "--interactive"); // serve real login pages
 
-var workosEndpoint = workos.GetEndpoint("http");
+var workosEndpoint = workos?.GetEndpoint("http");
 
 // The migrate role (ADR 38): owner credentials, applies migrations,
 // provisions the app role, exits. api/worker wait for it to COMPLETE and
@@ -35,27 +48,26 @@ var migrate = builder
     .WaitFor(postgres)
     .WithEnvironment("ROLE", "migrate");
 
-// LOCINTEL_AUTH=local swaps the WorkOS emulator for the password-less local
-// provider (any email signs in) - for browser smoke runs and demos where
-// nobody should be typing credentials.
-var authProvider = Environment.GetEnvironmentVariable("LOCINTEL_AUTH") ?? "workos";
-
-var api = builder
+var apiBuilder = builder
     .AddProject<Projects.LocIntel_Api>("api")
     .WithReference(postgres)
     .WaitForCompletion(migrate)
     .WithEnvironment("ROLE", "api")
     .WithEnvironment("Database__AppUser", "app_user")
-    .WithEnvironment("Database__AppPassword", "app_user")
-    .WithEnvironment("Auth__Provider", authProvider);
-if (authProvider == "workos")
-    api = api.WaitFor(workos)
+    .WithEnvironment("Database__AppPassword", "app_user");
+
+if (workos is not null && workosEndpoint is not null)
+    apiBuilder = apiBuilder
+        .WaitFor(workos)
+        .WithEnvironment("Auth__Provider", "workos")
         .WithEnvironment("Auth__WorkOS__ApiKey", "sk_test_default")
         .WithEnvironment("Auth__WorkOS__ClientId", "client_locintel_dev")
         .WithEnvironment("Auth__WorkOS__ApiBaseUrl", workosEndpoint);
-api = api
+else
+    apiBuilder = apiBuilder.WithEnvironment("Auth__Provider", "local");
+
 // WaitFor(api) waits for HEALTHY: 503 until dev bootstrap finishes
-.WithHttpHealthCheck("/healthz");
+var api = apiBuilder.WithHttpHealthCheck("/healthz");
 
 builder
     .AddNpmApp("console", "../../web/apps/console", "dev")

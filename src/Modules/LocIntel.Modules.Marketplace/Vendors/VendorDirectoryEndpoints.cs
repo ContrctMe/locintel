@@ -1,3 +1,4 @@
+using LocIntel.Contracts;
 using LocIntel.Modules.Marketplace.Data;
 using LocIntel.Modules.Marketplace.Marketplace;
 using LocIntel.Modules.Marketplace.Vendors.Api;
@@ -169,9 +170,9 @@ public static class VendorDirectoryEndpoints
         if (created)
             db.Preferred.Add(row);
         await db.SaveChangesAsync(ct);
-        await MarketplaceAudit.PublishAsync(
-            bus,
-            actor,
+        await bus.AuditAsync(
+            actor.Org,
+            actor.Audit,
             request.Blocked ? "marketplace.vendor_blocked" : "marketplace.vendor_preferred",
             new { VendorOrgId = vendorOrg.Value }
         );

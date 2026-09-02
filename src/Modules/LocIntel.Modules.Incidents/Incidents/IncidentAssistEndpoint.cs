@@ -1,3 +1,4 @@
+using LocIntel.Contracts;
 using LocIntel.Modules.Incidents.Data;
 using LocIntel.Modules.Incidents.Incidents.Api;
 using LocIntel.Platform.Data;
@@ -72,9 +73,9 @@ public static class IncidentAssistEndpoint
         var severity = Enum.TryParse<IncidentSeverity>(suggestion.Severity, true, out var s)
             ? s
             : incident.Severity;
-        await IncidentAudit.PublishAsync(
-            bus,
-            actor,
+        await bus.AuditAsync(
+            actor.Org,
+            actor.Audit,
             "incident.assist_requested",
             new
             {

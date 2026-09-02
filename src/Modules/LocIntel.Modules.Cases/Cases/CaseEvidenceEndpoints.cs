@@ -70,9 +70,9 @@ public static class CaseEvidenceEndpoints
                 new FileHoldRequested(file.Id, true, $"case {@case.Id}"),
                 new DeliveryOptions { TenantId = @case.OrgId.Value.ToString() }
             );
-        await CaseAudit.PublishAsync(
-            bus,
-            access.Actor,
+        await bus.AuditAsync(
+            access.Actor.Org,
+            access.Actor.Audit,
             "case.evidence_added",
             new
             {
@@ -113,9 +113,9 @@ public static class CaseEvidenceEndpoints
         CustodyLog.Record(db, @case, item.FileId, CustodyAction.Removed, access.Actor);
         @case.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
-        await CaseAudit.PublishAsync(
-            bus,
-            access.Actor,
+        await bus.AuditAsync(
+            access.Actor.Org,
+            access.Actor.Audit,
             "case.evidence_removed",
             new { CaseId = id, item.FileId }
         );
@@ -153,9 +153,9 @@ public static class CaseEvidenceEndpoints
             return Results.NotFound();
         CustodyLog.Record(db, access.Case, item.FileId, CustodyAction.Downloaded, access.Actor);
         await db.SaveChangesAsync(ct);
-        await CaseAudit.PublishAsync(
-            bus,
-            access.Actor,
+        await bus.AuditAsync(
+            access.Actor.Org,
+            access.Actor.Audit,
             "case.evidence_downloaded",
             new { CaseId = id, item.FileId }
         );

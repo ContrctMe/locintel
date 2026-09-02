@@ -333,9 +333,9 @@ public static class ImportEndpoints
         batch.Status = ImportStatus.Committed;
         batch.CommittedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
-        await IncidentAudit.PublishAsync(
-            bus,
-            actor,
+        await bus.AuditAsync(
+            actor.Org,
+            actor.Audit,
             "incident.import_committed",
             new
             {

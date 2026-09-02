@@ -2,6 +2,7 @@ using System.Text.Json;
 using LocIntel.Contracts;
 using LocIntel.Modules.Audit.Data;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Wolverine;
@@ -155,26 +156,15 @@ public static class AuditEndpoints
         config.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
 
-        await bus.PublishAsync(
-            new RecordDomainAudit(
-                "audit.config_changed",
-                JsonSerializer.Serialize(
-                    new
-                    {
-                        before,
-                        after = new { request.LogGrants, request.LogReads },
-                        changedBy = userId,
-                    }
-                )
-            ),
-            new DeliveryOptions
+        await bus.AuditAsync(
+            org,
+            AuditActor.User(userId),
+            "audit.config_changed",
+            new
             {
-                TenantId = org.Value.ToString(),
-                Headers =
-                {
-                    ["locintel-actor-tier"] = "user",
-                    ["locintel-actor-id"] = userId.ToString(),
-                },
+                before,
+                after = new { request.LogGrants, request.LogReads },
+                changedBy = userId,
             }
         );
         return Results.NoContent();

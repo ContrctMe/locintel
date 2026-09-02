@@ -31,6 +31,7 @@ public static class ChecklistsModule
             }
         );
         services.AddScoped<LocIntel.Contracts.IOrgDataExporter, ChecklistsExporter>();
+
         return services;
     }
 }

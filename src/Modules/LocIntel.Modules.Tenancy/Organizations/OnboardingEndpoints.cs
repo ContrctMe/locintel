@@ -2,6 +2,7 @@ using LocIntel.Contracts;
 using LocIntel.Modules.Tenancy.Data;
 using LocIntel.Platform.Auth;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Wolverine;
@@ -80,20 +81,11 @@ public static class OnboardingEndpoints
             new ProvisionFounderMembership(userId, org.Id),
             new DeliveryOptions { TenantId = org.Id.Value.ToString() }
         );
-        await bus.PublishAsync(
-            new RecordDomainAudit(
-                "org.created",
-                System.Text.Json.JsonSerializer.Serialize(new { org.Name, org.Slug })
-            ),
-            new DeliveryOptions
-            {
-                TenantId = org.Id.Value.ToString(),
-                Headers =
-                {
-                    ["locintel-actor-tier"] = "user",
-                    ["locintel-actor-id"] = userId.ToString(),
-                },
-            }
+        await bus.AuditAsync(
+            org.Id,
+            AuditActor.User(userId),
+            "org.created",
+            new { org.Name, org.Slug }
         );
         return Results.Ok(new { orgId = org.Id.Value, org.Slug });
     }
@@ -144,20 +136,11 @@ public static class OrgSettingsEndpoints
                 org.IsPlatform
             )
         );
-        await bus.PublishAsync(
-            new RecordDomainAudit(
-                "org.renamed",
-                System.Text.Json.JsonSerializer.Serialize(new { from = previous, to = org.Name })
-            ),
-            new DeliveryOptions
-            {
-                TenantId = org.Id.Value.ToString(),
-                Headers =
-                {
-                    ["locintel-actor-tier"] = "user",
-                    ["locintel-actor-id"] = userId.ToString(),
-                },
-            }
+        await bus.AuditAsync(
+            org.Id,
+            AuditActor.User(userId),
+            "org.renamed",
+            new { from = previous, to = org.Name }
         );
         return Results.Ok(new { org.Name });
     }
