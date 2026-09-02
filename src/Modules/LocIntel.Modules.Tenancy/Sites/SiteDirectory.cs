@@ -14,7 +14,15 @@ public sealed class SiteDirectory(TenancyDbContext db) : ISiteDirectory
             from s in db.Sites
             join n in db.HierarchyNodes on s.NodeId equals n.Id
             where s.Id == id
-            select new SiteInfo(s.Id.Value, s.Name, s.Path.ToString(), s.TimeZone, n.HierarchyId)
+            select new SiteInfo(
+                s.Id.Value,
+                s.Name,
+                s.Path.ToString(),
+                s.TimeZone,
+                n.HierarchyId,
+                s.Latitude,
+                s.Longitude
+            )
         ).FirstOrDefaultAsync(ct);
     }
 }

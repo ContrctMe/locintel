@@ -40,6 +40,7 @@ public class MigrationRoundTripTests(MigrationDbFixture fixture) : IClassFixture
             "incidents",
             "entities",
             "cases",
+            "marketplace",
         ];
 
     [Theory]
@@ -81,6 +82,10 @@ public class MigrationRoundTripTests(MigrationDbFixture fixture) : IClassFixture
             "incidents" => Build<LocIntel.Modules.Incidents.Data.IncidentsDbContext>(cs, module),
             "entities" => Build<LocIntel.Modules.Entities.Data.EntitiesDbContext>(cs, module),
             "cases" => Build<LocIntel.Modules.Cases.Data.CasesDbContext>(cs, module),
+            "marketplace" => Build<LocIntel.Modules.Marketplace.Data.MarketplaceDbContext>(
+                cs,
+                module
+            ),
             _ => throw new ArgumentOutOfRangeException(nameof(module)),
         };
     }

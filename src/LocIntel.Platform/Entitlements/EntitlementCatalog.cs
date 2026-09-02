@@ -58,6 +58,9 @@ public static class EntitlementCatalog
     /// <summary>Enterprise SSO + directory sync self-service (ADR 41's boolean gate on the admin portal).</summary>
     public const string SsoEnabled = "sso.enabled";
 
+    /// <summary>The fulfillment marketplace, requester side: raising requests to vendors (boolean gate; vendors need no plan).</summary>
+    public const string MarketplaceEnabled = "marketplace.enabled";
+
     public static readonly IReadOnlyDictionary<string, EntitlementDescriptor> Definitions =
         new Dictionary<string, EntitlementDescriptor>
         {
@@ -94,6 +97,12 @@ public static class EntitlementCatalog
                 "true"
             ),
             [SsoEnabled] = new(SsoEnabled, EntitlementShape.Boolean, LimitPolicy.Block, "false"),
+            [MarketplaceEnabled] = new(
+                MarketplaceEnabled,
+                EntitlementShape.Boolean,
+                LimitPolicy.Block,
+                "true"
+            ),
         };
 
     /// <summary>Grace allows this fraction over the ceiling before blocking (ADR 9).</summary>

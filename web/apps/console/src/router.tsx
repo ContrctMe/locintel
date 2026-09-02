@@ -13,7 +13,11 @@ import { HierarchyPage } from './pages/hierarchy';
 import { IncidentDetailPage } from './pages/incident-detail';
 import { IncidentsPage } from './pages/incidents';
 import { IngestPage } from './pages/ingest';
+import { MarketplacePage } from './pages/marketplace';
+import { MarketplaceVendorsPage } from './pages/marketplace-vendors';
 import { MembersPage } from './pages/members';
+import { RequestDetailPage } from './pages/request-detail';
+import { VendorPortalPage, VendorRequestPage } from './pages/vendor-portal';
 import { OperatorPage } from './pages/operator';
 import { RolesPage } from './pages/roles';
 import { SettingsPage } from './pages/settings';
@@ -40,6 +44,11 @@ const routes = [
   createRoute({ getParentRoute: () => rootRoute, path: '/cases/$caseId', component: CaseDetailPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/entities', component: EntitiesPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/entities/$entityId', component: EntityDetailPage }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/marketplace', component: MarketplacePage }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/marketplace/vendors', component: MarketplaceVendorsPage }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/marketplace/requests/$requestId', component: RequestDetailPage }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/vendor', component: VendorPortalPage }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/vendor/requests/$requestId', component: VendorRequestPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/files', component: FilesPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/hierarchy', component: HierarchyPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/ingest', component: IngestPage }),

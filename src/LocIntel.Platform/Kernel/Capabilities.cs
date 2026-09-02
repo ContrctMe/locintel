@@ -36,6 +36,20 @@ public static class Capabilities
     /// <summary>Investigations: cases:read reaches cases you are on or whose incidents are in scope; cases:manage runs them.</summary>
     public const string CasesRead = "cases:read";
     public const string CasesManage = "cases:manage";
+
+    /// <summary>
+    /// Marketplace, requester side: read requests in scope; manage raises,
+    /// submits, cancels, verifies, disputes, and curates preferred vendors.
+    /// </summary>
+    public const string MarketplaceRead = "marketplace:read";
+    public const string MarketplaceManage = "marketplace:manage";
+
+    /// <summary>
+    /// Marketplace, vendor side (held inside a VENDOR org): manage the
+    /// profile and credentials; fulfill works the incoming requests.
+    /// </summary>
+    public const string VendorManage = "vendor:manage";
+    public const string VendorFulfill = "vendor:fulfill";
     public const string AuditRead = "audit:read";
     public const string AuditManage = "audit:manage";
     public const string EntitlementsManage = "entitlements:manage";
@@ -65,6 +79,10 @@ public static class Capabilities
         EntitiesManage,
         CasesRead,
         CasesManage,
+        MarketplaceRead,
+        MarketplaceManage,
+        VendorManage,
+        VendorFulfill,
         AuditRead,
         AuditManage,
         EntitlementsManage,

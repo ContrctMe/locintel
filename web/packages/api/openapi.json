@@ -7029,6 +7029,1381 @@
         }
       }
     },
+    "/api/marketplace/vendors": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Marketplace.Vendors.VendorDirectoryEndpoints"
+        ],
+        "summary": "GET_api_marketplace_vendors",
+        "description": "GET_api_marketplace_vendors",
+        "operationId": "GET_api_marketplace_vendors",
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/ServiceCategory"
+            }
+          },
+          {
+            "name": "area",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "preferredOnly",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VendorListResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/marketplace/vendors/{orgId}": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Marketplace.Vendors.VendorDirectoryEndpoints"
+        ],
+        "summary": "GET_api_marketplace_vendors_orgId",
+        "description": "GET_api_marketplace_vendors_orgId",
+        "operationId": "GET_api_marketplace_vendors_orgId",
+        "parameters": [
+          {
+            "name": "orgId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VendorProfileView"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/marketplace/preferred": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Marketplace.Vendors.VendorDirectoryEndpoints"
+        ],
+        "summary": "GET_api_marketplace_preferred",
+        "description": "GET_api_marketplace_preferred",
+        "operationId": "GET_api_marketplace_preferred",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PreferredVendorView"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Marketplace.Vendors.VendorDirectoryEndpoints"
+        ],
+        "summary": "POST_api_marketplace_preferred",
+        "description": "POST_api_marketplace_preferred",
+        "operationId": "POST_api_marketplace_preferred",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetPreferredVendorRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferredVendorSaved"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/marketplace/preferred/{id}": {
+      "delete": {
+        "tags": [
+          "LocIntel.Modules.Marketplace.Vendors.VendorDirectoryEndpoints"
+        ],
+        "summary": "DELETE_api_marketplace_preferred_id",
+        "description": "DELETE_api_marketplace_preferred_id",
+        "operationId": "DELETE_api_marketplace_preferred_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferredVendorRemoved"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/vendor/profile": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Marketplace.Vendors.VendorProfileEndpoints"
+        ],
+        "summary": "GET_api_vendor_profile",
+        "description": "GET_api_vendor_profile",
+        "operationId": "GET_api_vendor_profile",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VendorProfileView"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "LocIntel.Modules.Marketplace.Vendors.VendorProfileEndpoints"
+        ],
+        "summary": "PUT_api_vendor_profile",
+        "description": "PUT_api_vendor_profile",
+        "operationId": "PUT_api_vendor_profile",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertVendorProfileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VendorProfileView"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/vendor/profile/publish": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Marketplace.Vendors.VendorProfileEndpoints"
+        ],
+        "summary": "POST_api_vendor_profile_publish",
+        "description": "POST_api_vendor_profile_publish",
+        "operationId": "POST_api_vendor_profile_publish",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishVendorProfileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VendorProfileView"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/vendor/credentials": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Marketplace.Vendors.VendorProfileEndpoints"
+        ],
+        "summary": "POST_api_vendor_credentials",
+        "description": "POST_api_vendor_credentials",
+        "operationId": "POST_api_vendor_credentials",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddCredentialRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CredentialCreated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/vendor/credentials/{id}": {
+      "delete": {
+        "tags": [
+          "LocIntel.Modules.Marketplace.Vendors.VendorProfileEndpoints"
+        ],
+        "summary": "DELETE_api_vendor_credentials_id",
+        "description": "DELETE_api_vendor_credentials_id",
+        "operationId": "DELETE_api_vendor_credentials_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CredentialRemoved"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/marketplace/requests": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Marketplace.Requests.RequesterEndpoints"
+        ],
+        "summary": "GET_api_marketplace_requests",
+        "description": "GET_api_marketplace_requests",
+        "operationId": "GET_api_marketplace_requests",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/RequestStatus"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/ServiceCategory"
+            }
+          },
+          {
+            "name": "siteId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "incidentId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "caseId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestListResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Marketplace.Requests.RequesterEndpoints"
+        ],
+        "summary": "POST_api_marketplace_requests",
+        "description": "POST_api_marketplace_requests",
+        "operationId": "POST_api_marketplace_requests",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestCreated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/marketplace/requests/{id}": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Marketplace.Requests.RequesterEndpoints"
+        ],
+        "summary": "GET_api_marketplace_requests_id",
+        "description": "GET_api_marketplace_requests_id",
+        "operationId": "GET_api_marketplace_requests_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "LocIntel.Modules.Marketplace.Requests.RequesterEndpoints"
+        ],
+        "summary": "PUT_api_marketplace_requests_id",
+        "description": "PUT_api_marketplace_requests_id",
+        "operationId": "PUT_api_marketplace_requests_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/marketplace/requests/{id}/submit": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Marketplace.Requests.RequesterEndpoints"
+        ],
+        "summary": "POST_api_marketplace_requests_id_submit",
+        "description": "POST_api_marketplace_requests_id_submit",
+        "operationId": "POST_api_marketplace_requests_id_submit",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/marketplace/requests/{id}/cancel": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Marketplace.Requests.RequesterEndpoints"
+        ],
+        "summary": "POST_api_marketplace_requests_id_cancel",
+        "description": "POST_api_marketplace_requests_id_cancel",
+        "operationId": "POST_api_marketplace_requests_id_cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/marketplace/requests/{id}/verify": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Marketplace.Requests.RequesterEndpoints"
+        ],
+        "summary": "POST_api_marketplace_requests_id_verify",
+        "description": "POST_api_marketplace_requests_id_verify",
+        "operationId": "POST_api_marketplace_requests_id_verify",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/marketplace/requests/{id}/dispute": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Marketplace.Requests.RequesterEndpoints"
+        ],
+        "summary": "POST_api_marketplace_requests_id_dispute",
+        "description": "POST_api_marketplace_requests_id_dispute",
+        "operationId": "POST_api_marketplace_requests_id_dispute",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/marketplace/requests/{id}/messages": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Marketplace.Requests.RequesterEndpoints"
+        ],
+        "summary": "POST_api_marketplace_requests_id_messages",
+        "description": "POST_api_marketplace_requests_id_messages",
+        "operationId": "POST_api_marketplace_requests_id_messages",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MessageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestEventCreated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/vendor/requests": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Marketplace.Requests.VendorRequestEndpoints"
+        ],
+        "summary": "GET_api_vendor_requests",
+        "description": "GET_api_vendor_requests",
+        "operationId": "GET_api_vendor_requests",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/RequestStatus"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestListResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/vendor/requests/{id}": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Marketplace.Requests.VendorRequestEndpoints"
+        ],
+        "summary": "GET_api_vendor_requests_id",
+        "description": "GET_api_vendor_requests_id",
+        "operationId": "GET_api_vendor_requests_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/vendor/requests/{id}/accept": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Marketplace.Requests.VendorRequestEndpoints"
+        ],
+        "summary": "POST_api_vendor_requests_id_accept",
+        "description": "POST_api_vendor_requests_id_accept",
+        "operationId": "POST_api_vendor_requests_id_accept",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/vendor/requests/{id}/decline": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Marketplace.Requests.VendorRequestEndpoints"
+        ],
+        "summary": "POST_api_vendor_requests_id_decline",
+        "description": "POST_api_vendor_requests_id_decline",
+        "operationId": "POST_api_vendor_requests_id_decline",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/vendor/requests/{id}/start": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Marketplace.Requests.VendorRequestEndpoints"
+        ],
+        "summary": "POST_api_vendor_requests_id_start",
+        "description": "POST_api_vendor_requests_id_start",
+        "operationId": "POST_api_vendor_requests_id_start",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/vendor/requests/{id}/complete": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Marketplace.Requests.VendorRequestEndpoints"
+        ],
+        "summary": "POST_api_vendor_requests_id_complete",
+        "description": "POST_api_vendor_requests_id_complete",
+        "operationId": "POST_api_vendor_requests_id_complete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/vendor/requests/{id}/messages": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Marketplace.Requests.VendorRequestEndpoints"
+        ],
+        "summary": "POST_api_vendor_requests_id_messages",
+        "description": "POST_api_vendor_requests_id_messages",
+        "operationId": "POST_api_vendor_requests_id_messages",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MessageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestEventCreated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/vendor/requests/{id}/check-in": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Marketplace.Requests.VendorRequestEndpoints"
+        ],
+        "summary": "POST_api_vendor_requests_id_check_in",
+        "description": "POST_api_vendor_requests_id_check_in",
+        "operationId": "POST_api_vendor_requests_id_check_in",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckInRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestEventCreated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/vendor/requests/{id}/check-out": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Marketplace.Requests.VendorRequestEndpoints"
+        ],
+        "summary": "POST_api_vendor_requests_id_check_out",
+        "description": "POST_api_vendor_requests_id_check_out",
+        "operationId": "POST_api_vendor_requests_id_check_out",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckInRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestEventCreated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/vendor/requests/{id}/delivery": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Marketplace.Requests.VendorRequestEndpoints"
+        ],
+        "summary": "POST_api_vendor_requests_id_delivery",
+        "description": "POST_api_vendor_requests_id_delivery",
+        "operationId": "POST_api_vendor_requests_id_delivery",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MessageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestEventCreated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
     "/objects/upload/{token}": {
       "put": {
         "tags": [
@@ -7575,6 +8950,38 @@
           "date": {
             "type": "string",
             "format": "date"
+          }
+        }
+      },
+      "AddCredentialRequest": {
+        "required": [
+          "kind",
+          "label",
+          "expiresAt"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/CredentialKind"
+          },
+          "label": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "number": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "jurisdiction": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -8510,6 +9917,37 @@
           }
         }
       },
+      "CheckInRequest": {
+        "required": [
+          "latitude",
+          "longitude"
+        ],
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "longitude": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "CheckItemRequest": {
         "required": [
           "templateId",
@@ -8719,6 +10157,17 @@
           }
         }
       },
+      "CompleteRequest": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "CreateApiKeyRequest": {
         "required": [
           "name",
@@ -8920,6 +10369,97 @@
           }
         }
       },
+      "CreateRequest": {
+        "required": [
+          "vendorOrgId",
+          "category",
+          "urgency",
+          "siteId",
+          "title",
+          "startsAt"
+        ],
+        "type": "object",
+        "properties": {
+          "vendorOrgId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "category": {
+            "$ref": "#/components/schemas/ServiceCategory"
+          },
+          "urgency": {
+            "$ref": "#/components/schemas/RequestUrgency"
+          },
+          "siteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "details": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "spec": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "endsAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "rrule": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "budgetAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "currency": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "incidentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "caseId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
       "CreateRoleRequest": {
         "required": [
           "name",
@@ -9081,6 +10621,80 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "CredentialCreated": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "CredentialKind": {
+        "enum": [
+          "License",
+          "Insurance",
+          "Certification"
+        ]
+      },
+      "CredentialRemoved": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "CredentialView": {
+        "required": [
+          "id",
+          "kind",
+          "label",
+          "number",
+          "jurisdiction",
+          "expiresAt",
+          "expired"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/CredentialKind"
+          },
+          "label": {
+            "type": "string"
+          },
+          "number": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "jurisdiction": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expired": {
+            "type": "boolean"
           }
         }
       },
@@ -10521,6 +12135,17 @@
           }
         }
       },
+      "MessageRequest": {
+        "required": [
+          "body"
+        ],
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string"
+          }
+        }
+      },
       "MoveNodeRequest": {
         "required": [
           "newParentId"
@@ -10633,6 +12258,77 @@
         "properties": {
           "returnPath": {
             "type": "string"
+          }
+        }
+      },
+      "PreferredVendorRemoved": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "PreferredVendorSaved": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "PreferredVendorView": {
+        "required": [
+          "id",
+          "vendorOrgId",
+          "vendorName",
+          "categories",
+          "notes",
+          "blocked",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "vendorOrgId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "vendorName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "blocked": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -10834,6 +12530,17 @@
           }
         }
       },
+      "PublishVendorProfileRequest": {
+        "required": [
+          "published"
+        ],
+        "type": "object",
+        "properties": {
+          "published": {
+            "type": "boolean"
+          }
+        }
+      },
       "PutSettingRequest": {
         "required": [
           "value"
@@ -10841,6 +12548,17 @@
         "type": "object",
         "properties": {
           "value": {
+            "type": "string"
+          }
+        }
+      },
+      "ReasonRequest": {
+        "required": [
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
             "type": "string"
           }
         }
@@ -10947,6 +12665,535 @@
           }
         }
       },
+      "RequestCreated": {
+        "required": [
+          "id",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RequestStatus"
+          }
+        }
+      },
+      "RequestDetail": {
+        "required": [
+          "id",
+          "vendorOrgId",
+          "vendorName",
+          "requesterName",
+          "category",
+          "urgency",
+          "status",
+          "siteId",
+          "siteName",
+          "siteTimeZone",
+          "siteLatitude",
+          "siteLongitude",
+          "title",
+          "details",
+          "spec",
+          "startsAt",
+          "endsAt",
+          "rrule",
+          "budgetAmount",
+          "currency",
+          "incidentId",
+          "caseId",
+          "createdAt",
+          "updatedAt",
+          "submittedAt",
+          "acceptedAt",
+          "declineReason",
+          "startedAt",
+          "completedAt",
+          "completionSummary",
+          "verifiedAt",
+          "disputeReason",
+          "cancelledAt",
+          "cancelReason",
+          "canManage",
+          "events"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "vendorOrgId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "vendorName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "requesterName": {
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/components/schemas/ServiceCategory"
+          },
+          "urgency": {
+            "$ref": "#/components/schemas/RequestUrgency"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RequestStatus"
+          },
+          "siteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "siteName": {
+            "type": "string"
+          },
+          "siteTimeZone": {
+            "type": "string"
+          },
+          "siteLatitude": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "siteLongitude": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "title": {
+            "type": "string"
+          },
+          "details": {
+            "type": "string"
+          },
+          "spec": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "rrule": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "budgetAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "incidentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "caseId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "submittedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "acceptedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "declineReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "startedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "completionSummary": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "verifiedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "disputeReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "cancelledAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "cancelReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "canManage": {
+            "type": "boolean"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RequestEventView"
+            }
+          }
+        }
+      },
+      "RequestEventCreated": {
+        "required": [
+          "id",
+          "distanceFromSiteMeters",
+          "withinGeofence"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "distanceFromSiteMeters": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "withinGeofence": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          }
+        }
+      },
+      "RequestEventKind": {
+        "enum": [
+          "Message",
+          "StatusChange",
+          "CheckIn",
+          "CheckOut",
+          "Delivery"
+        ]
+      },
+      "RequestEventView": {
+        "required": [
+          "id",
+          "side",
+          "actorId",
+          "actor",
+          "kind",
+          "body",
+          "latitude",
+          "longitude",
+          "distanceFromSiteMeters",
+          "withinGeofence",
+          "at"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "side": {
+            "type": "string"
+          },
+          "actorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "actor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "kind": {
+            "$ref": "#/components/schemas/RequestEventKind"
+          },
+          "body": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "latitude": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "longitude": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "distanceFromSiteMeters": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "withinGeofence": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RequestListResponse": {
+        "required": [
+          "items",
+          "total",
+          "nextOffset"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RequestSummary"
+            }
+          },
+          "total": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "nextOffset": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "RequestMutated": {
+        "required": [
+          "id",
+          "status",
+          "updatedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RequestStatus"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RequestStatus": {
+        "enum": [
+          "Draft",
+          "Submitted",
+          "Accepted",
+          "Declined",
+          "InProgress",
+          "Completed",
+          "Verified",
+          "Disputed",
+          "Cancelled"
+        ]
+      },
+      "RequestSummary": {
+        "required": [
+          "id",
+          "vendorOrgId",
+          "vendorName",
+          "requesterName",
+          "category",
+          "urgency",
+          "status",
+          "siteId",
+          "siteName",
+          "title",
+          "startsAt",
+          "endsAt",
+          "budgetAmount",
+          "currency",
+          "updatedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "vendorOrgId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "vendorName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "requesterName": {
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/components/schemas/ServiceCategory"
+          },
+          "urgency": {
+            "$ref": "#/components/schemas/RequestUrgency"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RequestStatus"
+          },
+          "siteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "siteName": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "budgetAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RequestUrgency": {
+        "enum": [
+          "Emergency",
+          "Scheduled",
+          "Standing"
+        ]
+      },
       "RetentionSweepQueued": {
         "required": [
           "queuedAt",
@@ -10981,6 +13228,23 @@
             "format": "int32"
           }
         }
+      },
+      "ServiceCategory": {
+        "enum": [
+          "GuardService",
+          "MobilePatrol",
+          "AlarmResponse",
+          "Investigation",
+          "CctvInstall",
+          "AccessControl",
+          "BoardUp",
+          "Restoration",
+          "LegalSupport",
+          "EquipmentSupply",
+          "KeyHolding",
+          "Other",
+          null
+        ]
       },
       "SetAuditConfigRequest": {
         "required": [
@@ -11049,6 +13313,37 @@
         "properties": {
           "hold": {
             "type": "boolean"
+          }
+        }
+      },
+      "SetPreferredVendorRequest": {
+        "required": [
+          "vendorOrgId"
+        ],
+        "type": "object",
+        "properties": {
+          "vendorOrgId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "categories": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ServiceCategory"
+            }
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "blocked": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -11492,6 +13787,75 @@
           }
         }
       },
+      "UpdateRequest": {
+        "required": [
+          "urgency",
+          "title",
+          "startsAt",
+          "details",
+          "spec",
+          "endsAt",
+          "rrule",
+          "budgetAmount",
+          "currency"
+        ],
+        "type": "object",
+        "properties": {
+          "urgency": {
+            "$ref": "#/components/schemas/RequestUrgency"
+          },
+          "title": {
+            "type": "string"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "details": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "spec": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "endsAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "rrule": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "budgetAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "currency": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "UpdateRoleRequest": {
         "required": [
           "name",
@@ -11596,6 +13960,272 @@
               "string"
             ],
             "format": "uint32"
+          }
+        }
+      },
+      "UpsertVendorProfileRequest": {
+        "required": [
+          "name",
+          "description",
+          "categories",
+          "serviceAreas",
+          "latitude",
+          "longitude",
+          "serviceRadiusKm",
+          "contactEmail",
+          "contactPhone"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ServiceCategory"
+            }
+          },
+          "serviceAreas": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "latitude": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "longitude": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "serviceRadiusKm": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "contactEmail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "contactPhone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "VendorListResponse": {
+        "required": [
+          "items",
+          "total",
+          "nextOffset"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VendorSummary"
+            }
+          },
+          "total": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "nextOffset": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "VendorProfileView": {
+        "required": [
+          "orgId",
+          "name",
+          "description",
+          "categories",
+          "serviceAreas",
+          "latitude",
+          "longitude",
+          "serviceRadiusKm",
+          "contactEmail",
+          "contactPhone",
+          "published",
+          "updatedAt",
+          "credentials"
+        ],
+        "type": "object",
+        "properties": {
+          "orgId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "serviceAreas": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "latitude": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "longitude": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "serviceRadiusKm": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "contactEmail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "contactPhone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "published": {
+            "type": "boolean"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "credentials": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CredentialView"
+            }
+          }
+        }
+      },
+      "VendorSummary": {
+        "required": [
+          "orgId",
+          "name",
+          "description",
+          "categories",
+          "serviceAreas",
+          "validCredentials",
+          "expiredCredentials",
+          "preferred",
+          "blocked"
+        ],
+        "type": "object",
+        "properties": {
+          "orgId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "serviceAreas": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "validCredentials": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "expiredCredentials": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "preferred": {
+            "type": "boolean"
+          },
+          "blocked": {
+            "type": "boolean"
           }
         }
       }
@@ -11742,6 +14372,18 @@
     },
     {
       "name": "LocIntel.Modules.Cases.Cases.CaseTaskEndpoints"
+    },
+    {
+      "name": "LocIntel.Modules.Marketplace.Vendors.VendorDirectoryEndpoints"
+    },
+    {
+      "name": "LocIntel.Modules.Marketplace.Vendors.VendorProfileEndpoints"
+    },
+    {
+      "name": "LocIntel.Modules.Marketplace.Requests.RequesterEndpoints"
+    },
+    {
+      "name": "LocIntel.Modules.Marketplace.Requests.VendorRequestEndpoints"
     },
     {
       "name": "LocIntel.Api"

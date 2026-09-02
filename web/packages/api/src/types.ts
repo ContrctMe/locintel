@@ -2812,6 +2812,522 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/marketplace/vendors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_marketplace_vendors
+         * @description GET_api_marketplace_vendors
+         */
+        get: operations["GET_api_marketplace_vendors"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/marketplace/vendors/{orgId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_marketplace_vendors_orgId
+         * @description GET_api_marketplace_vendors_orgId
+         */
+        get: operations["GET_api_marketplace_vendors_orgId"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/marketplace/preferred": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_marketplace_preferred
+         * @description GET_api_marketplace_preferred
+         */
+        get: operations["GET_api_marketplace_preferred"];
+        put?: never;
+        /**
+         * POST_api_marketplace_preferred
+         * @description POST_api_marketplace_preferred
+         */
+        post: operations["POST_api_marketplace_preferred"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/marketplace/preferred/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * DELETE_api_marketplace_preferred_id
+         * @description DELETE_api_marketplace_preferred_id
+         */
+        delete: operations["DELETE_api_marketplace_preferred_id"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vendor/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_vendor_profile
+         * @description GET_api_vendor_profile
+         */
+        get: operations["GET_api_vendor_profile"];
+        /**
+         * PUT_api_vendor_profile
+         * @description PUT_api_vendor_profile
+         */
+        put: operations["PUT_api_vendor_profile"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vendor/profile/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_vendor_profile_publish
+         * @description POST_api_vendor_profile_publish
+         */
+        post: operations["POST_api_vendor_profile_publish"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vendor/credentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_vendor_credentials
+         * @description POST_api_vendor_credentials
+         */
+        post: operations["POST_api_vendor_credentials"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vendor/credentials/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * DELETE_api_vendor_credentials_id
+         * @description DELETE_api_vendor_credentials_id
+         */
+        delete: operations["DELETE_api_vendor_credentials_id"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/marketplace/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_marketplace_requests
+         * @description GET_api_marketplace_requests
+         */
+        get: operations["GET_api_marketplace_requests"];
+        put?: never;
+        /**
+         * POST_api_marketplace_requests
+         * @description POST_api_marketplace_requests
+         */
+        post: operations["POST_api_marketplace_requests"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/marketplace/requests/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_marketplace_requests_id
+         * @description GET_api_marketplace_requests_id
+         */
+        get: operations["GET_api_marketplace_requests_id"];
+        /**
+         * PUT_api_marketplace_requests_id
+         * @description PUT_api_marketplace_requests_id
+         */
+        put: operations["PUT_api_marketplace_requests_id"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/marketplace/requests/{id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_marketplace_requests_id_submit
+         * @description POST_api_marketplace_requests_id_submit
+         */
+        post: operations["POST_api_marketplace_requests_id_submit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/marketplace/requests/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_marketplace_requests_id_cancel
+         * @description POST_api_marketplace_requests_id_cancel
+         */
+        post: operations["POST_api_marketplace_requests_id_cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/marketplace/requests/{id}/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_marketplace_requests_id_verify
+         * @description POST_api_marketplace_requests_id_verify
+         */
+        post: operations["POST_api_marketplace_requests_id_verify"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/marketplace/requests/{id}/dispute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_marketplace_requests_id_dispute
+         * @description POST_api_marketplace_requests_id_dispute
+         */
+        post: operations["POST_api_marketplace_requests_id_dispute"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/marketplace/requests/{id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_marketplace_requests_id_messages
+         * @description POST_api_marketplace_requests_id_messages
+         */
+        post: operations["POST_api_marketplace_requests_id_messages"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vendor/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_vendor_requests
+         * @description GET_api_vendor_requests
+         */
+        get: operations["GET_api_vendor_requests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vendor/requests/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_vendor_requests_id
+         * @description GET_api_vendor_requests_id
+         */
+        get: operations["GET_api_vendor_requests_id"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vendor/requests/{id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_vendor_requests_id_accept
+         * @description POST_api_vendor_requests_id_accept
+         */
+        post: operations["POST_api_vendor_requests_id_accept"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vendor/requests/{id}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_vendor_requests_id_decline
+         * @description POST_api_vendor_requests_id_decline
+         */
+        post: operations["POST_api_vendor_requests_id_decline"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vendor/requests/{id}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_vendor_requests_id_start
+         * @description POST_api_vendor_requests_id_start
+         */
+        post: operations["POST_api_vendor_requests_id_start"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vendor/requests/{id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_vendor_requests_id_complete
+         * @description POST_api_vendor_requests_id_complete
+         */
+        post: operations["POST_api_vendor_requests_id_complete"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vendor/requests/{id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_vendor_requests_id_messages
+         * @description POST_api_vendor_requests_id_messages
+         */
+        post: operations["POST_api_vendor_requests_id_messages"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vendor/requests/{id}/check-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_vendor_requests_id_check_in
+         * @description POST_api_vendor_requests_id_check_in
+         */
+        post: operations["POST_api_vendor_requests_id_check_in"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vendor/requests/{id}/check-out": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_vendor_requests_id_check_out
+         * @description POST_api_vendor_requests_id_check_out
+         */
+        post: operations["POST_api_vendor_requests_id_check_out"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vendor/requests/{id}/delivery": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_vendor_requests_id_delivery
+         * @description POST_api_vendor_requests_id_delivery
+         */
+        post: operations["POST_api_vendor_requests_id_delivery"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/objects/upload/{token}": {
         parameters: {
             query?: never;
@@ -3612,6 +4128,14 @@ export interface components {
             /** Format: date */
             date: string;
         };
+        AddCredentialRequest: {
+            kind: components["schemas"]["CredentialKind"];
+            label: string;
+            /** Format: date-time */
+            expiresAt: string;
+            number?: null | string;
+            jurisdiction?: null | string;
+        };
         AddGrantExceptionRequest: {
             /** Format: uuid */
             userId: string;
@@ -3850,6 +4374,13 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
         };
+        CheckInRequest: {
+            /** Format: double */
+            latitude: number | string;
+            /** Format: double */
+            longitude: number | string;
+            note?: null | string;
+        };
         CheckItemRequest: {
             /** Format: uuid */
             templateId: string;
@@ -3905,6 +4436,9 @@ export interface components {
             /** Format: date-time */
             purgesAt: null | string;
         };
+        CompleteRequest: {
+            summary?: null | string;
+        };
         CreateApiKeyRequest: {
             name: string;
             /** Format: uuid */
@@ -3957,6 +4491,31 @@ export interface components {
             name: string;
             slug: string;
         };
+        CreateRequest: {
+            /** Format: uuid */
+            vendorOrgId: string;
+            category: components["schemas"]["ServiceCategory"];
+            urgency: components["schemas"]["RequestUrgency"];
+            /** Format: uuid */
+            siteId: string;
+            title: string;
+            /** Format: date-time */
+            startsAt: string;
+            details?: null | string;
+            spec?: null | {
+                [key: string]: string;
+            };
+            /** Format: date-time */
+            endsAt?: null | string;
+            rrule?: null | string;
+            /** Format: double */
+            budgetAmount?: null | number | string;
+            currency?: null | string;
+            /** Format: uuid */
+            incidentId?: null | string;
+            /** Format: uuid */
+            caseId?: null | string;
+        };
         CreateRoleRequest: {
             name: string;
             grants: components["schemas"]["GrantSpec"][];
@@ -3994,6 +4553,27 @@ export interface components {
         CreateWebhookRequest: {
             url: string;
             events?: null | string[];
+        };
+        CredentialCreated: {
+            /** Format: uuid */
+            id: string;
+        };
+        /** @enum {unknown} */
+        CredentialKind: "License" | "Insurance" | "Certification";
+        CredentialRemoved: {
+            /** Format: uuid */
+            id: string;
+        };
+        CredentialView: {
+            /** Format: uuid */
+            id: string;
+            kind: components["schemas"]["CredentialKind"];
+            label: string;
+            number: null | string;
+            jurisdiction: null | string;
+            /** Format: date-time */
+            expiresAt: string;
+            expired: boolean;
         };
         /** @enum {unknown} */
         CustodyAction: "Added" | "Downloaded" | "Exported" | "Removed" | "HoldPlaced" | "HoldReleased";
@@ -4375,6 +4955,9 @@ export interface components {
             joinedAt: string;
             roles: string[];
         };
+        MessageRequest: {
+            body: string;
+        };
         MoveNodeRequest: {
             /** Format: uuid */
             newParentId: string;
@@ -4405,6 +4988,26 @@ export interface components {
         };
         PortalRequest: {
             returnPath: string;
+        };
+        PreferredVendorRemoved: {
+            /** Format: uuid */
+            id: string;
+        };
+        PreferredVendorSaved: {
+            /** Format: uuid */
+            id: string;
+        };
+        PreferredVendorView: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            vendorOrgId: string;
+            vendorName: null | string;
+            categories: string[];
+            notes: null | string;
+            blocked: boolean;
+            /** Format: date-time */
+            createdAt: string;
         };
         PublicOpenWindow: {
             /** Format: date-time */
@@ -4453,8 +5056,14 @@ export interface components {
             url: string;
             embedSnippet: string;
         };
+        PublishVendorProfileRequest: {
+            published: boolean;
+        };
         PutSettingRequest: {
             value: string;
+        };
+        ReasonRequest: {
+            reason: string;
         };
         RenameNodeRequest: {
             name: string;
@@ -4480,6 +5089,139 @@ export interface components {
             policeReportNumber?: null | string;
             tags?: null | string[];
         };
+        RequestCreated: {
+            /** Format: uuid */
+            id: string;
+            status: components["schemas"]["RequestStatus"];
+        };
+        RequestDetail: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            vendorOrgId: string;
+            vendorName: null | string;
+            requesterName: string;
+            category: components["schemas"]["ServiceCategory"];
+            urgency: components["schemas"]["RequestUrgency"];
+            status: components["schemas"]["RequestStatus"];
+            /** Format: uuid */
+            siteId: string;
+            siteName: string;
+            siteTimeZone: string;
+            /** Format: double */
+            siteLatitude: null | number | string;
+            /** Format: double */
+            siteLongitude: null | number | string;
+            title: string;
+            details: string;
+            spec: {
+                [key: string]: string;
+            };
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: null | string;
+            rrule: null | string;
+            /** Format: double */
+            budgetAmount: null | number | string;
+            currency: string;
+            /** Format: uuid */
+            incidentId: null | string;
+            /** Format: uuid */
+            caseId: null | string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            submittedAt: null | string;
+            /** Format: date-time */
+            acceptedAt: null | string;
+            declineReason: null | string;
+            /** Format: date-time */
+            startedAt: null | string;
+            /** Format: date-time */
+            completedAt: null | string;
+            completionSummary: null | string;
+            /** Format: date-time */
+            verifiedAt: null | string;
+            disputeReason: null | string;
+            /** Format: date-time */
+            cancelledAt: null | string;
+            cancelReason: null | string;
+            canManage: boolean;
+            events: components["schemas"]["RequestEventView"][];
+        };
+        RequestEventCreated: {
+            /** Format: uuid */
+            id: string;
+            /** Format: double */
+            distanceFromSiteMeters: null | number | string;
+            withinGeofence: null | boolean;
+        };
+        /** @enum {unknown} */
+        RequestEventKind: "Message" | "StatusChange" | "CheckIn" | "CheckOut" | "Delivery";
+        RequestEventView: {
+            /** Format: uuid */
+            id: string;
+            side: string;
+            /** Format: uuid */
+            actorId: string;
+            actor: null | string;
+            kind: components["schemas"]["RequestEventKind"];
+            body: null | string;
+            /** Format: double */
+            latitude: null | number | string;
+            /** Format: double */
+            longitude: null | number | string;
+            /** Format: double */
+            distanceFromSiteMeters: null | number | string;
+            withinGeofence: null | boolean;
+            /** Format: date-time */
+            at: string;
+        };
+        RequestListResponse: {
+            items: components["schemas"]["RequestSummary"][];
+            /** Format: int32 */
+            total: number | string;
+            /** Format: int32 */
+            nextOffset: null | number | string;
+        };
+        RequestMutated: {
+            /** Format: uuid */
+            id: string;
+            status: components["schemas"]["RequestStatus"];
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        /** @enum {unknown} */
+        RequestStatus: "Draft" | "Submitted" | "Accepted" | "Declined" | "InProgress" | "Completed" | "Verified" | "Disputed" | "Cancelled";
+        RequestSummary: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            vendorOrgId: string;
+            vendorName: null | string;
+            requesterName: string;
+            category: components["schemas"]["ServiceCategory"];
+            urgency: components["schemas"]["RequestUrgency"];
+            status: components["schemas"]["RequestStatus"];
+            /** Format: uuid */
+            siteId: string;
+            siteName: string;
+            title: string;
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: null | string;
+            /** Format: double */
+            budgetAmount: null | number | string;
+            currency: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        /** @enum {unknown} */
+        RequestUrgency: "Emergency" | "Scheduled" | "Standing";
         RetentionSweepQueued: {
             /** Format: date-time */
             queuedAt: string;
@@ -4490,6 +5232,8 @@ export interface components {
             /** Format: int32 */
             overlapHours?: null | number | string;
         };
+        /** @enum {unknown} */
+        ServiceCategory: "GuardService" | "MobilePatrol" | "AlarmResponse" | "Investigation" | "CctvInstall" | "AccessControl" | "BoardUp" | "Restoration" | "LegalSupport" | "EquipmentSupply" | "KeyHolding" | "Other" | null;
         SetAuditConfigRequest: {
             logGrants: boolean;
             logReads: boolean;
@@ -4508,6 +5252,14 @@ export interface components {
         };
         SetIncidentHoldRequest: {
             hold: boolean;
+        };
+        SetPreferredVendorRequest: {
+            /** Format: uuid */
+            vendorOrgId: string;
+            categories?: null | components["schemas"]["ServiceCategory"][];
+            notes?: null | string;
+            /** @default false */
+            blocked: boolean;
         };
         SetTaskDoneRequest: {
             done: boolean;
@@ -4612,6 +5364,22 @@ export interface components {
         UpdateProfileRequest: {
             name: string;
         };
+        UpdateRequest: {
+            urgency: components["schemas"]["RequestUrgency"];
+            title: string;
+            /** Format: date-time */
+            startsAt: string;
+            details: null | string;
+            spec: null | {
+                [key: string]: string;
+            };
+            /** Format: date-time */
+            endsAt: null | string;
+            rrule: null | string;
+            /** Format: double */
+            budgetAmount: null | number | string;
+            currency: null | string;
+        };
         UpdateRoleRequest: {
             name: string;
             grants: components["schemas"]["GrantSpec"][];
@@ -4631,6 +5399,61 @@ export interface components {
             attributes?: null | Record<string, never>;
             /** Format: uint32 */
             version?: null | number | string;
+        };
+        UpsertVendorProfileRequest: {
+            name: string;
+            description: null | string;
+            categories: components["schemas"]["ServiceCategory"][];
+            serviceAreas: null | string[];
+            /** Format: double */
+            latitude: null | number | string;
+            /** Format: double */
+            longitude: null | number | string;
+            /** Format: double */
+            serviceRadiusKm: null | number | string;
+            contactEmail: null | string;
+            contactPhone: null | string;
+        };
+        VendorListResponse: {
+            items: components["schemas"]["VendorSummary"][];
+            /** Format: int32 */
+            total: number | string;
+            /** Format: int32 */
+            nextOffset: null | number | string;
+        };
+        VendorProfileView: {
+            /** Format: uuid */
+            orgId: string;
+            name: string;
+            description: string;
+            categories: string[];
+            serviceAreas: string[];
+            /** Format: double */
+            latitude: null | number | string;
+            /** Format: double */
+            longitude: null | number | string;
+            /** Format: double */
+            serviceRadiusKm: null | number | string;
+            contactEmail: null | string;
+            contactPhone: null | string;
+            published: boolean;
+            /** Format: date-time */
+            updatedAt: string;
+            credentials: components["schemas"]["CredentialView"][];
+        };
+        VendorSummary: {
+            /** Format: uuid */
+            orgId: string;
+            name: string;
+            description: string;
+            categories: string[];
+            serviceAreas: string[];
+            /** Format: int32 */
+            validCredentials: number | string;
+            /** Format: int32 */
+            expiredCredentials: number | string;
+            preferred: boolean;
+            blocked: boolean;
         };
     };
     responses: never;
@@ -9822,6 +10645,964 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CaseChildRemoved"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_marketplace_vendors: {
+        parameters: {
+            query?: {
+                category?: components["schemas"]["ServiceCategory"];
+                area?: string;
+                q?: string;
+                preferredOnly?: boolean;
+                limit?: number | string;
+                offset?: number | string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorListResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_marketplace_vendors_orgId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orgId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorProfileView"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_marketplace_preferred: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreferredVendorView"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_marketplace_preferred: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetPreferredVendorRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreferredVendorSaved"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    DELETE_api_marketplace_preferred_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreferredVendorRemoved"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_vendor_profile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorProfileView"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    PUT_api_vendor_profile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpsertVendorProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorProfileView"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_vendor_profile_publish: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublishVendorProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorProfileView"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_vendor_credentials: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddCredentialRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CredentialCreated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    DELETE_api_vendor_credentials_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CredentialRemoved"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_marketplace_requests: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["RequestStatus"];
+                category?: components["schemas"]["ServiceCategory"];
+                siteId?: string;
+                incidentId?: string;
+                caseId?: string;
+                limit?: number | string;
+                offset?: number | string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestListResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_marketplace_requests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestCreated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_marketplace_requests_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    PUT_api_marketplace_requests_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_marketplace_requests_id_submit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_marketplace_requests_id_cancel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_marketplace_requests_id_verify: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_marketplace_requests_id_dispute: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_marketplace_requests_id_messages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestEventCreated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_vendor_requests: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["RequestStatus"];
+                limit?: number | string;
+                offset?: number | string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestListResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_vendor_requests_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_vendor_requests_id_accept: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_vendor_requests_id_decline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_vendor_requests_id_start: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_vendor_requests_id_complete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompleteRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_vendor_requests_id_messages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestEventCreated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_vendor_requests_id_check_in: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckInRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestEventCreated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_vendor_requests_id_check_out: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckInRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestEventCreated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_vendor_requests_id_delivery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestEventCreated"];
                 };
             };
             /** @description Not Found */

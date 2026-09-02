@@ -342,6 +342,114 @@ public class TenantIsolationTests(ApiFixture fixture) : IClassFixture<ApiFixture
         );
     }
 
+    [Fact]
+    public async Task Marketplace_rows_are_sealed_to_their_two_parties()
+    {
+        // org B is the vendor here; a THIRD org (the platform org, via the
+        // operator) must see neither side of the request
+        var vendor = await fixture.LoginAsync(ApiFixture.UserB);
+        (
+            await vendor.PutAsJsonAsync(
+                "/api/vendor/profile",
+                new { name = "Isolation Vendor", categories = new[] { "KeyHolding" } }
+            )
+        ).EnsureSuccessStatusCode();
+        (
+            await vendor.PostAsJsonAsync("/api/vendor/profile/publish", new { published = true })
+        ).EnsureSuccessStatusCode();
+        var clientA = await fixture.LoginAsync(ApiFixture.UserA);
+        var hierarchy = await clientA.GetAsync("/api/hierarchy");
+        Guid rootId;
+        if (hierarchy.StatusCode == HttpStatusCode.OK)
+            rootId = (await hierarchy.Content.ReadFromJsonAsync<JsonElement>())
+                .GetProperty("nodes")
+                .EnumerateArray()
+                .First(n => n.GetProperty("depth").GetInt32() == 0)
+                .GetProperty("id")
+                .GetGuid();
+        else
+        {
+            var created = await clientA.PostAsJsonAsync(
+                "/api/hierarchy",
+                new { name = "Org A", levels = new[] { "Region" } }
+            );
+            created.EnsureSuccessStatusCode();
+            rootId = (await created.Content.ReadFromJsonAsync<JsonElement>())
+                .GetProperty("rootNodeId")
+                .GetGuid();
+        }
+        var site = await clientA.PostAsJsonAsync(
+            "/api/sites",
+            new
+            {
+                nodeId = rootId,
+                name = "Sealed Store",
+                timeZone = "Etc/UTC",
+            }
+        );
+        site.EnsureSuccessStatusCode();
+        var siteId = (await site.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id")
+            .GetGuid();
+        var created2 = await clientA.PostAsJsonAsync(
+            "/api/marketplace/requests",
+            new
+            {
+                vendorOrgId = fixture.OrgB.Value,
+                category = "KeyHolding",
+                urgency = "Scheduled",
+                siteId,
+                title = "Sealed request",
+                startsAt = DateTimeOffset.UtcNow.AddDays(1),
+            }
+        );
+        created2.EnsureSuccessStatusCode();
+        var id = (await created2.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id")
+            .GetGuid();
+        (
+            await clientA.PostAsync($"/api/marketplace/requests/{id}/submit", null)
+        ).EnsureSuccessStatusCode();
+
+        var third = await fixture.OperatorClient();
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (await third.GetAsync($"/api/marketplace/requests/{id}")).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (await third.GetAsync($"/api/vendor/requests/{id}")).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (await third.PostAsync($"/api/vendor/requests/{id}/accept", null)).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (
+                await third.PostAsJsonAsync(
+                    $"/api/marketplace/requests/{id}/cancel",
+                    new { reason = "x" }
+                )
+            ).StatusCode
+        );
+        // the vendor cannot act through the buyer's side, nor the buyer through the vendor's
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (await vendor.GetAsync($"/api/marketplace/requests/{id}")).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (await clientA.GetAsync($"/api/vendor/requests/{id}")).StatusCode
+        );
+        (
+            await clientA.PostAsJsonAsync(
+                $"/api/marketplace/requests/{id}/cancel",
+                new { reason = "done" }
+            )
+        ).EnsureSuccessStatusCode();
+    }
+
     private sealed record SettingDto(Guid Id, string Key, string Value);
 
     [Fact]

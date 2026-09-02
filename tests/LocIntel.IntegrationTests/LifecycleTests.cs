@@ -63,6 +63,7 @@ public class LifecycleTests(ApiFixture fixture) : IClassFixture<ApiFixture>
                 "identity.json",
                 "incidents.json",
                 "ingest.json",
+                "marketplace.json",
                 "storage.json",
                 "tenancy.json",
             ],

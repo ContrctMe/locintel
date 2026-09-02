@@ -18,6 +18,8 @@ const NAV_GROUPS = [
       { to: '/cases', label: 'Cases', capability: 'cases:read' },
       { to: '/entities', label: 'People & vehicles', capability: 'entities:read' },
       { to: '/checklists', label: 'Checklists', capability: 'checklists:complete' },
+      { to: '/marketplace', label: 'Marketplace', capability: 'marketplace:read' },
+      { to: '/vendor', label: 'Vendor portal', capability: 'vendor:fulfill' },
       { to: '/files', label: 'Files', capability: 'files:read' },
       { to: '/ingest', label: 'Ingest', capability: 'ingest:manage' },
     ],

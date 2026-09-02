@@ -183,3 +183,20 @@ jurisdiction.
   JSON document (PDF later). Offboarding exporters added for Checklists,
   Incidents, Entities, and Cases - the lifecycle test enumerates every
   module's section and none of the fork's modules had one.
+- 2026-09-01: **Marketplace v1 shipped** (schema `marketplace`; requester
+  capabilities `marketplace:read|manage`, vendor capabilities
+  `vendor:manage|fulfill`; entitlement `marketplace.enabled` is the first
+  real gate-1 402 in the fork). Vendors are ORGANIZATIONS with a published
+  `vendor_profiles` row (the first cross-org read policy: owner writes,
+  everyone reads once published) and credentials with expiry (expired ones
+  block accepting new work). Requests are two-party rows (`org_id` +
+  `vendor_org_id`, RLS `two_party` policy mirrored by the context's own
+  "Tenant" filter); site facts are snapshotted onto the request because the
+  vendor's tenant context can never read the requester's Tenancy rows. Flow
+  is direct-to-vendor, no payments, no bidding: Draft > Submitted >
+  Accepted/Declined > InProgress > Completed > Verified/Disputed, Cancelled
+  from the early states. Timeline events carry check-in/out positions with
+  haversine distance to the site (250 m geofence). Notices to the other org
+  go through `SendOrgNotice`. Preferred/blocked lists per requester org.
+  Test hygiene: GatesTests restores `sites.max` (xUnit's in-class order is a
+  hash of the test name and the fork rename reshuffled it).

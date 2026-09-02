@@ -1,0 +1,42 @@
+using LocIntel.Modules.Marketplace.Marketplace;
+
+namespace LocIntel.Modules.Marketplace.Requests.Api;
+
+public sealed record RequestDetail(
+    Guid Id,
+    Guid VendorOrgId,
+    string? VendorName,
+    string RequesterName,
+    ServiceCategory Category,
+    RequestUrgency Urgency,
+    RequestStatus Status,
+    Guid SiteId,
+    string SiteName,
+    string SiteTimeZone,
+    double? SiteLatitude,
+    double? SiteLongitude,
+    string Title,
+    string Details,
+    Dictionary<string, string> Spec,
+    DateTimeOffset StartsAt,
+    DateTimeOffset? EndsAt,
+    string? Rrule,
+    decimal? BudgetAmount,
+    string Currency,
+    Guid? IncidentId,
+    Guid? CaseId,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset UpdatedAt,
+    DateTimeOffset? SubmittedAt,
+    DateTimeOffset? AcceptedAt,
+    string? DeclineReason,
+    DateTimeOffset? StartedAt,
+    DateTimeOffset? CompletedAt,
+    string? CompletionSummary,
+    DateTimeOffset? VerifiedAt,
+    string? DisputeReason,
+    DateTimeOffset? CancelledAt,
+    string? CancelReason,
+    bool CanManage,
+    IReadOnlyList<RequestEventView> Events
+);
