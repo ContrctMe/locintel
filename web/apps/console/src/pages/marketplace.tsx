@@ -12,7 +12,7 @@ import { can, useMe } from '../session';
 export type RequestSummary = {
   id: string; vendorOrgId: string | null; vendorName: string | null; mode: string; requesterName: string; category: string;
   urgency: string; status: string; siteId: string; siteName: string; title: string; startsAt: string;
-  endsAt: string | null; budgetAmount: number | null; currency: string; updatedAt: string;
+  endsAt: string | null; budgetAmount: number | null; currency: string; updatedAt: string; responseDueAt: string | null;
 };
 export type VendorSummary = {
   orgId: string; name: string; description: string; categories: string[]; serviceAreas: string[];

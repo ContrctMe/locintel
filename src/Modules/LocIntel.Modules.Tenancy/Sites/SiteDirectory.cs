@@ -21,7 +21,8 @@ public sealed class SiteDirectory(TenancyDbContext db) : ISiteDirectory
                 s.TimeZone,
                 n.HierarchyId,
                 s.Latitude,
-                s.Longitude
+                s.Longitude,
+                s.CountryCode
             )
         ).FirstOrDefaultAsync(ct);
     }

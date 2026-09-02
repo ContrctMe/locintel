@@ -3,11 +3,13 @@ using LocIntel.Contracts;
 using LocIntel.Modules.Marketplace.Data;
 using LocIntel.Modules.Marketplace.Marketplace;
 using LocIntel.Modules.Marketplace.Requests.Api;
+using LocIntel.Modules.Marketplace.Vendors;
 using LocIntel.Platform.Entitlements;
 using LocIntel.Platform.Kernel;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Wolverine;
 using Wolverine.Attributes;
 using Wolverine.Http;
@@ -123,8 +125,22 @@ public static class RequesterEndpoints
             if (await db.Preferred.AnyAsync(p => p.VendorOrgId == direct && p.Blocked, ct))
                 return Results.BadRequest(new { error = "that vendor is blocked by your org" });
         }
-        else if (!await MatchingVendors(db, actor.Org, request.Category).AnyAsync(ct))
-            return Results.Conflict(new { error = "no published vendor offers this category" });
+        else if (
+            (
+                await VendorMatcher.MatchAsync(
+                    db,
+                    actor.Org,
+                    request.Category,
+                    site.Latitude,
+                    site.Longitude,
+                    site.CountryCode,
+                    ct
+                )
+            ).Count == 0
+        )
+            return Results.Conflict(
+                new { error = "no published vendor serves this category at that site" }
+            );
         if (
             Validate(
                 request.Title,
@@ -153,6 +169,7 @@ public static class RequesterEndpoints
             SiteTimeZone = site.TimeZone,
             SiteLatitude = site.Latitude,
             SiteLongitude = site.Longitude,
+            SiteCountryCode = site.CountryCode,
             Path = new LTree(site.Path),
             RequesterName = requester?.Name ?? "Requester",
             Title = request.Title.Trim(),
@@ -239,6 +256,7 @@ public static class RequesterEndpoints
         IPrincipalAccessor accessor,
         IScopeResolver scopes,
         IEntitlements entitlements,
+        IOptions<MarketplaceOptions> options,
         IMessageBus bus,
         CancellationToken ct
     )
@@ -266,11 +284,23 @@ public static class RequesterEndpoints
         {
             // broadcast: every matching vendor gets a recipient row (which is
             // what lets them see the request) - preferred vendors first, ten at most
-            recipients = await MatchingVendors(db, actor.Value.Org, row.Category)
-                .Take(10)
-                .ToListAsync(ct);
+            recipients = (
+                await VendorMatcher.MatchAsync(
+                    db,
+                    actor.Value.Org,
+                    row.Category,
+                    row.SiteLatitude,
+                    row.SiteLongitude,
+                    row.SiteCountryCode,
+                    ct
+                )
+            )
+                .Take(options.Value.InitialRecipients)
+                .ToList();
             if (recipients.Count == 0)
-                return Results.Conflict(new { error = "no published vendor offers this category" });
+                return Results.Conflict(
+                    new { error = "no published vendor serves this category at that site" }
+                );
             foreach (var vendorOrg in recipients)
                 db.Recipients.Add(
                     new RequestRecipient
@@ -284,6 +314,7 @@ public static class RequesterEndpoints
         }
         row.Status = RequestStatus.Submitted;
         row.SubmittedAt = now;
+        row.ResponseDueAt = now + options.Value.Window(row.Urgency);
         row.UpdatedAt = now;
         db.Events.Add(
             RequestViews.StatusEvent(
@@ -592,20 +623,37 @@ public static class RequesterEndpoints
         return Results.Ok(RequestViews.Mutated(row));
     }
 
-    /// <summary>Published vendors offering the category, not blocked by this org, preferred ones first.</summary>
-    internal static IQueryable<OrgId> MatchingVendors(
+    /// <summary>Run the org's SLA sweep now (the worker runs it every five minutes).</summary>
+    [Transactional(typeof(MarketplaceDbContext))]
+    [WolverinePost("/api/marketplace/requests/sla/sweep")]
+    [ProducesResponseType(typeof(SlaSweepQueued), StatusCodes.Status200OK)]
+    public static async Task<IResult> Sweep(
         MarketplaceDbContext db,
-        OrgId requester,
-        ServiceCategory category
+        IPrincipalAccessor accessor,
+        IScopeResolver scopes,
+        IMessageBus bus,
+        TimeProvider time,
+        CancellationToken ct
     )
     {
-        var name = category.ToString();
-        return db
-            .Profiles.Where(p => p.Published && p.OrgId != requester && p.Categories.Contains(name))
-            .Where(p => !db.Preferred.Any(x => x.VendorOrgId == p.OrgId && x.Blocked))
-            .OrderByDescending(p => db.Preferred.Any(x => x.VendorOrgId == p.OrgId && !x.Blocked))
-            .ThenBy(p => p.Name)
-            .Select(p => p.OrgId);
+        if (ActorRef.From(accessor.Current) is not { } actor)
+            return Results.Unauthorized();
+        if (!await scopes.CanAsync(accessor.Current, Capabilities.MarketplaceManage, ct))
+            return Results.Unauthorized();
+        var now = time.GetUtcNow();
+        var overdue = await db.Requests.CountAsync(
+            r =>
+                r.OrgId == actor.Org
+                && r.Status == RequestStatus.Submitted
+                && r.ResponseDueAt != null
+                && r.ResponseDueAt <= now,
+            ct
+        );
+        await bus.PublishAsync(
+            new EscalateOverdueRequests(),
+            new DeliveryOptions { TenantId = actor.Org.Value.ToString() }
+        );
+        return Results.Ok(new SlaSweepQueued(now, overdue));
     }
 
     /// <summary>The requester side of a row: in the reader's org AND site scope, or a 404.</summary>

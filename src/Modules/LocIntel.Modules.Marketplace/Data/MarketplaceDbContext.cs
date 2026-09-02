@@ -116,6 +116,7 @@ public sealed class MarketplaceDbContext(
             b.Property(x => x.SiteTimeZone).HasColumnName("site_time_zone").HasMaxLength(64);
             b.Property(x => x.SiteLatitude).HasColumnName("site_latitude");
             b.Property(x => x.SiteLongitude).HasColumnName("site_longitude");
+            b.Property(x => x.SiteCountryCode).HasColumnName("site_country_code").HasMaxLength(2);
             b.Property(x => x.Path).HasColumnName("path");
             b.Property(x => x.RequesterName).HasColumnName("requester_name").HasMaxLength(200);
             b.Property(x => x.Title).HasColumnName("title").HasMaxLength(200);
@@ -132,6 +133,10 @@ public sealed class MarketplaceDbContext(
             b.Property(x => x.CreatedAt).HasColumnName("created_at");
             b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
             b.Property(x => x.SubmittedAt).HasColumnName("submitted_at");
+            b.Property(x => x.ResponseDueAt).HasColumnName("response_due_at");
+            b.Property(x => x.EscalatedAt).HasColumnName("escalated_at");
+            b.Property(x => x.EscalationCount).HasColumnName("escalation_count");
+            b.HasIndex(x => new { x.Status, x.ResponseDueAt });
             b.Property(x => x.AcceptedAt).HasColumnName("accepted_at");
             b.Property(x => x.DeclineReason).HasColumnName("decline_reason").HasMaxLength(1000);
             b.Property(x => x.StartedAt).HasColumnName("started_at");

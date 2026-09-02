@@ -59,7 +59,7 @@ export function VendorPortalPage() {
                   <TableCell className="text-sm">{r.siteName}</TableCell>
                   <TableCell className="text-sm">{r.urgency}</TableCell>
                   <TableCell><RequestStatusBadge status={r.status} /></TableCell>
-                  <TableCell className="text-sm">{fmtDateTime(r.startsAt)}</TableCell>
+                  <TableCell className="text-sm">{fmtDateTime(r.startsAt)}{r.status === 'Submitted' && r.responseDueAt && <div className="text-xs text-muted-foreground">respond by {fmtDateTime(r.responseDueAt)}</div>}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

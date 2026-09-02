@@ -9,8 +9,15 @@ namespace LocIntel.Modules.Marketplace;
 
 public static class MarketplaceModule
 {
-    public static IServiceCollection AddMarketplaceModule(this IServiceCollection services)
+    public static IServiceCollection AddMarketplaceModule(
+        this IServiceCollection services,
+        Microsoft.Extensions.Configuration.IConfiguration configuration,
+        bool runBackgroundWork = false
+    )
     {
+        services.Configure<Marketplace.MarketplaceOptions>(configuration.GetSection("Marketplace"));
+        if (runBackgroundWork)
+            services.AddHostedService<Requests.RequestSlaService>();
         services.AddDbContextWithWolverineIntegration<MarketplaceDbContext>(
             (sp, options) =>
             {

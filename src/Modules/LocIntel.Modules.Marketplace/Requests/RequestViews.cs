@@ -80,6 +80,9 @@ public static class RequestViews
             request.CreatedAt,
             request.UpdatedAt,
             request.SubmittedAt,
+            request.ResponseDueAt,
+            request.EscalatedAt,
+            request.EscalationCount,
             request.AcceptedAt,
             request.DeclineReason,
             request.StartedAt,
@@ -168,7 +171,8 @@ public static class RequestViews
                 r.EndsAt,
                 r.BudgetAmount,
                 r.Currency,
-                r.UpdatedAt
+                r.UpdatedAt,
+                r.ResponseDueAt
             ))
             .ToListAsync(ct);
         return new RequestListResponse(

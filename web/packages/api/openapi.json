@@ -8343,6 +8343,36 @@
         }
       }
     },
+    "/api/marketplace/requests/sla/sweep": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Marketplace.Requests.RequesterEndpoints"
+        ],
+        "summary": "POST_api_marketplace_requests_sla_sweep",
+        "description": "POST_api_marketplace_requests_sla_sweep",
+        "operationId": "POST_api_marketplace_requests_sla_sweep",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SlaSweepQueued"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/vendor/requests": {
       "get": {
         "tags": [
@@ -16222,6 +16252,9 @@
           "createdAt",
           "updatedAt",
           "submittedAt",
+          "responseDueAt",
+          "escalatedAt",
+          "escalationCount",
           "acceptedAt",
           "declineReason",
           "startedAt",
@@ -16367,6 +16400,28 @@
               "string"
             ],
             "format": "date-time"
+          },
+          "responseDueAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "escalatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "escalationCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           },
           "acceptedAt": {
             "type": [
@@ -16659,7 +16714,8 @@
           "endsAt",
           "budgetAmount",
           "currency",
-          "updatedAt"
+          "updatedAt",
+          "responseDueAt"
         ],
         "type": "object",
         "properties": {
@@ -16730,6 +16786,13 @@
           },
           "updatedAt": {
             "type": "string",
+            "format": "date-time"
+          },
+          "responseDueAt": {
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "date-time"
           }
         }
@@ -17680,6 +17743,27 @@
           "Closed",
           null
         ]
+      },
+      "SlaSweepQueued": {
+        "required": [
+          "queuedAt",
+          "overdue"
+        ],
+        "type": "object",
+        "properties": {
+          "queuedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "overdue": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
       },
       "SsoPortalLinkResponse": {
         "required": [

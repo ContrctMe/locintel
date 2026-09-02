@@ -210,7 +210,7 @@ builder.Services.AddChecklistsModule();
 builder.Services.AddIncidentsModule();
 builder.Services.AddEntitiesModule(runBackgroundWork: role == "worker");
 builder.Services.AddCasesModule();
-builder.Services.AddMarketplaceModule();
+builder.Services.AddMarketplaceModule(builder.Configuration, runBackgroundWork: role == "worker");
 builder.Services.AddAlertsModule();
 builder.Services.AddNetworkModule();
 builder.Services.AddPatrolsModule();

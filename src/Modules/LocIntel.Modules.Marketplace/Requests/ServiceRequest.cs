@@ -30,6 +30,7 @@ public sealed class ServiceRequest
     public required string SiteTimeZone { get; init; }
     public double? SiteLatitude { get; init; }
     public double? SiteLongitude { get; init; }
+    public string? SiteCountryCode { get; init; }
     public required LTree Path { get; init; }
     public required string RequesterName { get; init; }
     public required string Title { get; set; }
@@ -48,6 +49,11 @@ public sealed class ServiceRequest
     public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? SubmittedAt { get; set; }
+
+    /// <summary>When a response (accept, quote, or decline) is due; the SLA sweep escalates past it. UTC instant.</summary>
+    public DateTimeOffset? ResponseDueAt { get; set; }
+    public DateTimeOffset? EscalatedAt { get; set; }
+    public int EscalationCount { get; set; }
     public DateTimeOffset? AcceptedAt { get; set; }
     public string? DeclineReason { get; set; }
     public DateTimeOffset? StartedAt { get; set; }

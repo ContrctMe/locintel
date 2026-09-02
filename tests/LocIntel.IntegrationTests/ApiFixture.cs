@@ -259,6 +259,10 @@ public class ApiFixture : IAsyncLifetime
             builder.UseSetting("ConnectionStrings:locintel", appCs);
             builder.UseSetting("Auth:Provider", "local");
             builder.UseSetting("Notifications:Sms", "local"); // the catcher, so tests can read texts
+            // SLA windows collapse to zero and broadcasts start narrow, so escalation is testable
+            builder.UseSetting("Marketplace:EmergencyResponseMinutes", "0");
+            builder.UseSetting("Marketplace:ScheduledResponseMinutes", "0");
+            builder.UseSetting("Marketplace:InitialRecipients", "1");
             builder.UseSetting("Audit:PolicyCacheTtlSeconds", "1");
             builder.UseSetting("Storage:LocalRoot", _storageRoot);
             builder.UseSetting("Secrets:LocalMasterKey", Convert.ToBase64String(new byte[32])); // dev/test wrapper key

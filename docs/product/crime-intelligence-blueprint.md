@@ -312,3 +312,15 @@ jurisdiction.
   opted in and raises a Notification when unread grows (no push service;
   a real push channel remains fork territory). Phone verification is
   deferred.
+- 2026-09-02: **Marketplace routing and SLA shipped** (migration `Routing`).
+  `VendorMatcher` reaches only vendors that serve the site: service areas
+  must include the site's country (`SiteInfo` now carries `CountryCode`),
+  a vendor with a base and radius must have the site inside it, vendors
+  with neither serve anywhere; preferred first, then nearest. Broadcasts
+  start with `InitialRecipients` and every submitted request gets a
+  `response_due_at` per urgency. The SLA sweep (worker every five minutes,
+  or `POST /api/marketplace/requests/sla/sweep`) widens an unanswered
+  broadcast to the next vendors (SMS for emergencies), reminds a direct
+  vendor, tells the buyer, extends the window, and gives up after
+  `MaxEscalations`. The fixture collapses windows to zero and starts
+  broadcasts at one recipient so escalation is testable.

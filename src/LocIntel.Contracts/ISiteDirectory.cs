@@ -12,7 +12,8 @@ public sealed record SiteInfo(
     string TimeZone,
     Guid HierarchyId,
     double? Latitude = null,
-    double? Longitude = null
+    double? Longitude = null,
+    string? CountryCode = null
 );
 
 /// <summary>

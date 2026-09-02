@@ -3316,6 +3316,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/marketplace/requests/sla/sweep": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_marketplace_requests_sla_sweep
+         * @description POST_api_marketplace_requests_sla_sweep
+         */
+        post: operations["POST_api_marketplace_requests_sla_sweep"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/vendor/requests": {
         parameters: {
             query?: never;
@@ -6341,6 +6361,12 @@ export interface components {
             /** Format: date-time */
             submittedAt: null | string;
             /** Format: date-time */
+            responseDueAt: null | string;
+            /** Format: date-time */
+            escalatedAt: null | string;
+            /** Format: int32 */
+            escalationCount: number | string;
+            /** Format: date-time */
             acceptedAt: null | string;
             declineReason: null | string;
             /** Format: date-time */
@@ -6429,6 +6455,8 @@ export interface components {
             currency: string;
             /** Format: date-time */
             updatedAt: string;
+            /** Format: date-time */
+            responseDueAt: null | string;
         };
         /** @enum {unknown} */
         RequestUrgency: "Emergency" | "Scheduled" | "Standing";
@@ -6675,6 +6703,12 @@ export interface components {
         };
         /** @enum {unknown} */
         SiteStatus: "ComingSoon" | "Open" | "TemporarilyClosed" | "Closed" | null;
+        SlaSweepQueued: {
+            /** Format: date-time */
+            queuedAt: string;
+            /** Format: int32 */
+            overdue: number | string;
+        };
         SsoPortalLinkResponse: {
             url: string;
         };
@@ -13028,6 +13062,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RequestMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_marketplace_requests_sla_sweep: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SlaSweepQueued"];
                 };
             };
             /** @description Not Found */

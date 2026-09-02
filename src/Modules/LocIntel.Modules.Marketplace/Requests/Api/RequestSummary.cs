@@ -18,5 +18,6 @@ public sealed record RequestSummary(
     DateTimeOffset? EndsAt,
     decimal? BudgetAmount,
     string Currency,
-    DateTimeOffset UpdatedAt
+    DateTimeOffset UpdatedAt,
+    DateTimeOffset? ResponseDueAt
 );

@@ -13,7 +13,7 @@ export type RequestDetail = {
   siteLatitude: number | null; siteLongitude: number | null; title: string; details: string;
   spec: Record<string, string>; startsAt: string; endsAt: string | null; rrule: string | null;
   budgetAmount: number | null; currency: string; incidentId: string | null; caseId: string | null;
-  submittedAt: string | null; acceptedAt: string | null; declineReason: string | null;
+  submittedAt: string | null; responseDueAt: string | null; escalatedAt: string | null; escalationCount: number; acceptedAt: string | null; declineReason: string | null;
   completedAt: string | null; completionSummary: string | null; verifiedAt: string | null;
   disputeReason: string | null; cancelledAt: string | null; cancelReason: string | null; canManage: boolean;
   events: { id: string; side: string; actor: string | null; kind: string; body: string | null;
@@ -41,6 +41,9 @@ export function RequestFacts({ r, side }: { r: RequestDetail; side: 'requester' 
           <Field label="Starts">{fmtDateTime(r.startsAt)}</Field>
           <Field label="Ends">{r.endsAt ? fmtDateTime(r.endsAt) : '—'}</Field>
           {r.rrule && <Field label="Recurs">{r.rrule} ({r.siteTimeZone})</Field>}
+          {r.status === 'Submitted' && r.responseDueAt && (
+            <Field label="Response due">{fmtDateTime(r.responseDueAt)}{r.escalationCount > 0 && ` · escalated ${r.escalationCount}×`}</Field>
+          )}
           <Field label="Budget">{r.budgetAmount == null ? '—' : `${r.currency} ${r.budgetAmount.toLocaleString()}`}</Field>
           {r.incidentId && <Field label="Incident"><Link to="/incidents/$incidentId" params={{ incidentId: r.incidentId }} className="hover:underline">Open</Link></Field>}
           {r.caseId && <Field label="Case"><Link to="/cases/$caseId" params={{ caseId: r.caseId }} className="hover:underline">Open</Link></Field>}
