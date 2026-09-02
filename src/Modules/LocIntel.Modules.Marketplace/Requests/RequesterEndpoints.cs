@@ -160,7 +160,7 @@ public static class RequesterEndpoints
         {
             Id = Guid.CreateVersion7(),
             OrgId = actor.Org,
-            VendorOrgId = vendorOrg,
+            CounterpartyOrgId = vendorOrg,
             Mode = vendorOrg is null ? RequestMode.Broadcast : RequestMode.Direct,
             Category = request.Category,
             Urgency = request.Urgency,
@@ -273,12 +273,12 @@ public static class RequesterEndpoints
         if (row.Mode == RequestMode.Direct)
         {
             var vendor = await db.Profiles.FirstOrDefaultAsync(
-                p => p.OrgId == row.VendorOrgId && p.Published,
+                p => p.OrgId == row.CounterpartyOrgId && p.Published,
                 ct
             );
             if (vendor is null)
                 return Results.Conflict(new { error = "the vendor is no longer published" });
-            recipients = [row.VendorOrgId!.Value];
+            recipients = [row.CounterpartyOrgId!.Value];
         }
         else
         {
@@ -398,7 +398,7 @@ public static class RequesterEndpoints
                     "marketplace",
                     $"Request cancelled: {row.Title}"
                 ),
-                new DeliveryOptions { TenantId = row.VendorOrgId!.Value.Value.ToString() }
+                new DeliveryOptions { TenantId = row.CounterpartyOrgId!.Value.Value.ToString() }
             );
         await bus.AuditAsync(
             actor.Value.Org,
@@ -441,7 +441,7 @@ public static class RequesterEndpoints
                 "marketplace",
                 $"Work verified: {row.Title}"
             ),
-            new DeliveryOptions { TenantId = row.VendorOrgId!.Value.Value.ToString() }
+            new DeliveryOptions { TenantId = row.CounterpartyOrgId!.Value.Value.ToString() }
         );
         await bus.AuditAsync(
             actor.Value.Org,
@@ -487,7 +487,7 @@ public static class RequesterEndpoints
                 "marketplace",
                 $"Work disputed: {row.Title}"
             ),
-            new DeliveryOptions { TenantId = row.VendorOrgId!.Value.Value.ToString() }
+            new DeliveryOptions { TenantId = row.CounterpartyOrgId!.Value.Value.ToString() }
         );
         await bus.AuditAsync(
             actor.Value.Org,
@@ -519,7 +519,7 @@ public static class RequesterEndpoints
         {
             Id = Guid.CreateVersion7(),
             OrgId = row!.OrgId,
-            CounterpartyOrgId = row.VendorOrgId,
+            CounterpartyOrgId = row.CounterpartyOrgId,
             RequestId = row.Id,
             ActorOrgId = actor!.Value.Org,
             ActorId = actor.Value.Id,
@@ -572,7 +572,7 @@ public static class RequesterEndpoints
             other.Status = QuoteStatus.Rejected;
             other.UpdatedAt = now;
         }
-        row.VendorOrgId = winner.CounterpartyOrgId;
+        row.CounterpartyOrgId = winner.CounterpartyOrgId;
         row.BudgetAmount = winner.Amount;
         row.Currency = winner.Currency;
         row.Status = RequestStatus.Accepted;
@@ -596,7 +596,7 @@ public static class RequesterEndpoints
                 "marketplace",
                 $"Quote accepted: {row.Title}"
             ),
-            new DeliveryOptions { TenantId = winner.VendorOrgId.Value.ToString() }
+            new DeliveryOptions { TenantId = winner.CounterpartyOrgId.Value.ToString() }
         );
         foreach (var other in losers)
             await bus.PublishAsync(
@@ -606,7 +606,7 @@ public static class RequesterEndpoints
                     "marketplace",
                     $"Quote not selected: {row.Title}"
                 ),
-                new DeliveryOptions { TenantId = other.VendorOrgId.Value.ToString() }
+                new DeliveryOptions { TenantId = other.CounterpartyOrgId.Value.ToString() }
             );
         await bus.AuditAsync(
             actor.Value.Org,
@@ -616,7 +616,7 @@ public static class RequesterEndpoints
             {
                 row.Id,
                 QuoteId = quoteId,
-                VendorOrgId = winner.VendorOrgId.Value,
+                VendorOrgId = winner.CounterpartyOrgId.Value,
                 winner.Amount,
             }
         );

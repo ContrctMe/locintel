@@ -96,7 +96,7 @@ public sealed class MarketplaceDbContext(
             b.HasKey(x => x.Id);
             b.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
             b.Property(x => x.OrgId).HasColumnName("org_id");
-            b.Property(x => x.VendorOrgId).HasColumnName("vendor_org_id");
+            b.Property(x => x.CounterpartyOrgId).HasColumnName("vendor_org_id");
             b.Property(x => x.Mode).HasColumnName("mode").HasConversion<string>().HasMaxLength(20);
             b.Property(x => x.Category)
                 .HasColumnName("category")
@@ -154,21 +154,20 @@ public sealed class MarketplaceDbContext(
                 x.Status,
                 x.UpdatedAt,
             });
+            // owner, awarded vendor, and every broadcast recipient can read a
+            // request; only the two parties may write it (Platform recipient-list shape)
+            AddRecipientListFilter<ServiceRequest>(
+                modelBuilder,
+                r => Recipients.Any(x => x.RequestId == r.Id && x.CounterpartyOrgId == CurrentOrg)
+            );
             b.HasIndex(x => new
             {
-                x.VendorOrgId,
+                x.CounterpartyOrgId,
                 x.Status,
                 x.UpdatedAt,
             });
             b.HasIndex(x => x.Path).HasMethod("gist");
             // two-party, plus the vendors a broadcast was sent to (before award)
-            b.HasQueryFilter(
-                TenantFilter,
-                r =>
-                    r.OrgId == CurrentOrg
-                    || r.VendorOrgId == CurrentOrg
-                    || Recipients.Any(x => x.RequestId == r.Id && x.CounterpartyOrgId == CurrentOrg)
-            );
         });
 
         modelBuilder.Entity<RequestEvent>(b =>
@@ -196,7 +195,7 @@ public sealed class MarketplaceDbContext(
             b.HasKey(x => x.Id);
             b.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
             b.Property(x => x.OrgId).HasColumnName("org_id");
-            b.Property(x => x.CounterpartyOrgId).HasColumnName("vendor_org_id").IsRequired();
+            b.Property(x => x.CounterpartyOrgId).HasColumnName("vendor_org_id");
             b.Property(x => x.RequestId).HasColumnName("request_id");
             b.Property(x => x.Status)
                 .HasColumnName("status")
@@ -213,7 +212,7 @@ public sealed class MarketplaceDbContext(
             b.HasKey(x => x.Id);
             b.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
             b.Property(x => x.OrgId).HasColumnName("org_id");
-            b.Property(x => x.CounterpartyOrgId).HasColumnName("vendor_org_id").IsRequired();
+            b.Property(x => x.CounterpartyOrgId).HasColumnName("vendor_org_id");
             b.Property(x => x.RequestId).HasColumnName("request_id");
             b.Property(x => x.Amount).HasColumnName("amount").HasPrecision(14, 2);
             b.Property(x => x.Currency).HasColumnName("currency").HasMaxLength(3);

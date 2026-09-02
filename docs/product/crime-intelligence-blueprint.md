@@ -345,3 +345,18 @@ jurisdiction.
   policy: a broadcast is readable by every recipient, a third party the
   two-party shape cannot express. `vendor_credentials` likewise (reads
   follow the profile's published flag).
+- 2026-09-02: **Second template sync** (upstream `700787e`, round-two
+  items 9-14 all landed). `requests` moves onto the new recipient-list
+  shape (`ITwoPartyScoped` + `AddRecipientListFilter`, migration
+  `RecipientListShape` swaps its policy onto `EnableRecipientListRls`;
+  same predicate: owner or awarded vendor may write, every broadcast
+  recipient may read). `quotes` and `request_recipients` move to
+  `IRequiredCounterpartyScoped`, dropping the nullable-plus-accessor
+  workaround; `ServiceRequest.VendorOrgId` is now `CounterpartyOrgId`
+  (the API records keep `vendorOrgId`). Network stays hand-written on
+  purpose: its reads depend on membership STATUS (a removed member loses
+  access) and its member and bulletin rows are written by the member or
+  publisher, not the owner - neither fits the shape yet. Public-app routes
+  now regenerate with `pnpm --filter public run routes`; the sync script
+  captures its parent before `init.py` runs, because the upstream init
+  now commits and moves `template-renamed` itself.

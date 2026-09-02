@@ -20,7 +20,7 @@ public static class RequestViews
         CancellationToken ct
     )
     {
-        var vendorName = request.VendorOrgId is { } vendorOrg
+        var vendorName = request.CounterpartyOrgId is { } vendorOrg
             ? await db
                 .Profiles.Where(p => p.OrgId == vendorOrg)
                 .Select(p => p.Name)
@@ -55,7 +55,7 @@ public static class RequestViews
         );
         return new RequestDetail(
             request.Id,
-            request.VendorOrgId?.Value,
+            request.CounterpartyOrgId?.Value,
             vendorName,
             request.Mode,
             request.RequesterName,
@@ -112,8 +112,8 @@ public static class RequestViews
                 .Where(q => mine || q.CounterpartyOrgId == readerOrg)
                 .Select(q => new QuoteView(
                     q.Id,
-                    q.VendorOrgId.Value,
-                    vendorNames.GetValueOrDefault(q.VendorOrgId),
+                    q.CounterpartyOrgId.Value,
+                    vendorNames.GetValueOrDefault(q.CounterpartyOrgId),
                     q.Amount,
                     q.Currency,
                     q.Notes,
@@ -125,8 +125,8 @@ public static class RequestViews
             recipients
                 .Where(x => mine || x.CounterpartyOrgId == readerOrg)
                 .Select(x => new RecipientView(
-                    x.VendorOrgId.Value,
-                    vendorNames.GetValueOrDefault(x.VendorOrgId),
+                    x.CounterpartyOrgId.Value,
+                    vendorNames.GetValueOrDefault(x.CounterpartyOrgId),
                     x.Status,
                     x.NotifiedAt
                 ))
@@ -152,11 +152,11 @@ public static class RequestViews
             .Take(take)
             .Select(r => new RequestSummary(
                 r.Id,
-                r.VendorOrgId == null ? null : r.VendorOrgId.Value.Value,
-                r.VendorOrgId == null
+                r.CounterpartyOrgId == null ? null : r.CounterpartyOrgId.Value.Value,
+                r.CounterpartyOrgId == null
                     ? null
                     : db
-                        .Profiles.Where(p => p.OrgId == r.VendorOrgId)
+                        .Profiles.Where(p => p.OrgId == r.CounterpartyOrgId)
                         .Select(p => p.Name)
                         .FirstOrDefault(),
                 r.Mode,
@@ -187,7 +187,7 @@ public static class RequestViews
         {
             Id = Guid.CreateVersion7(),
             OrgId = request.OrgId,
-            CounterpartyOrgId = request.VendorOrgId,
+            CounterpartyOrgId = request.CounterpartyOrgId,
             RequestId = request.Id,
             ActorOrgId = actor.Org,
             ActorId = actor.Id,

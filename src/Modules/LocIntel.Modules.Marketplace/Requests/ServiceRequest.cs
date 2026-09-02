@@ -6,7 +6,7 @@ namespace LocIntel.Modules.Marketplace.Requests;
 
 /// <summary>
 /// The two-party row (blueprint: marketplace tenancy). OrgId is the
-/// requester, VendorOrgId the fulfiller; RLS and the context's "Tenant"
+/// requester, CounterpartyOrgId the fulfiller; RLS and the context's "Tenant"
 /// filter admit EITHER org, and each side's endpoints narrow to their own
 /// role. Site facts are snapshotted at creation (name, zone, coordinates,
 /// ancestor path) because the vendor's tenant context can never read the
@@ -14,13 +14,14 @@ namespace LocIntel.Modules.Marketplace.Requests;
 /// Temporal: StartsAt/EndsAt and the *At stamps are UTC instants; Rrule is
 /// a wall-clock recurring rule in the site's zone (ADR 26/27).
 /// </summary>
-public sealed class ServiceRequest
+public sealed class ServiceRequest : ITwoPartyScoped
 {
     public required Guid Id { get; init; }
     public required OrgId OrgId { get; init; }
 
     /// <summary>Null while a Broadcast request is out for quotes; set when the buyer awards one.</summary>
-    public OrgId? VendorOrgId { get; set; }
+    /// <summary>The awarded vendor (ITwoPartyScoped's counterparty); null until award.</summary>
+    public OrgId? CounterpartyOrgId { get; set; }
     public RequestMode Mode { get; init; } = RequestMode.Direct;
     public required ServiceCategory Category { get; init; }
     public required RequestUrgency Urgency { get; set; }

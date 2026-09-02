@@ -12,12 +12,26 @@ COUNT="${2:?shard count required}"
 CONFIGURATION="${CONFIGURATION:-Debug}"
 PROJECT="tests/LocIntel.IntegrationTests"
 
+# Theory cases arrive as Class.Method(arg: "value"), and an argument can
+# contain dots and slashes (an open-redirect test's "https://evil.com" did),
+# so arguments must be cut BEFORE the trailing .Method - stripping the last
+# dot-segment first mangles the class name and puts "/" into the filter,
+# which MSBuild rejects as an invalid property.
 classes=$(
   dotnet test "$PROJECT" -c "$CONFIGURATION" --no-build --list-tests 2>/dev/null |
-    grep -E '^\s+LocIntel\.IntegrationTests\.' |
-    sed -E 's/^\s+//; s/\.[^.]+$//' |
+    grep -E '^[[:space:]]+LocIntel\.IntegrationTests\.' |
+    sed -E 's/^[[:space:]]+//; s/\(.*$//; s/\.[^.]+$//' |
     sort -u
 )
+
+# A class name is letters, digits, underscores and dots - nothing else. If a
+# future test shape defeats the parse again, fail here with the offending
+# line rather than emitting a filter that breaks the build far from the cause.
+if bad=$(printf '%s\n' "$classes" | grep -vE '^[A-Za-z0-9_.]+$' | head -3) && [ -n "$bad" ]; then
+  echo "shard: could not parse test class names from --list-tests:" >&2
+  printf '  %s\n' "$bad" >&2
+  exit 1
+fi
 
 filter=""
 i=0

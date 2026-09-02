@@ -41,9 +41,9 @@ public static class VendorRequestEndpoints
         var query = db.Requests.Where(r =>
             r.Status != RequestStatus.Draft
             && (
-                r.VendorOrgId == actor.Org
+                r.CounterpartyOrgId == actor.Org
                 || (
-                    r.VendorOrgId == null
+                    r.CounterpartyOrgId == null
                     && db.Recipients.Any(x =>
                         x.RequestId == r.Id
                         && x.CounterpartyOrgId == actor.Org
@@ -209,7 +209,7 @@ public static class VendorRequestEndpoints
         var (row, actor, error) = await Load(id, db, accessor, scopes, ct);
         if (error is not null)
             return error;
-        if (row!.Status != RequestStatus.Accepted || row.VendorOrgId != actor!.Value.Org)
+        if (row!.Status != RequestStatus.Accepted || row.CounterpartyOrgId != actor!.Value.Org)
             return Results.Conflict(
                 new { error = "only accepted requests assigned to you can be started" }
             );
@@ -246,7 +246,7 @@ public static class VendorRequestEndpoints
         var (row, actor, error) = await Load(id, db, accessor, scopes, ct);
         if (error is not null)
             return error;
-        if (row!.Status != RequestStatus.InProgress || row.VendorOrgId != actor!.Value.Org)
+        if (row!.Status != RequestStatus.InProgress || row.CounterpartyOrgId != actor!.Value.Org)
             return Results.Conflict(new { error = "only your work in progress can be completed" });
         var now = time.GetUtcNow();
         var summary = string.IsNullOrWhiteSpace(request.Summary) ? null : request.Summary.Trim();
@@ -545,7 +545,7 @@ public static class VendorRequestEndpoints
             OrgId = row.OrgId,
             // a recipient's event (a decline to quote) is between it and the
             // buyer; after award the vendor party is the awarded vendor
-            CounterpartyOrgId = row.VendorOrgId ?? actor.Org,
+            CounterpartyOrgId = row.CounterpartyOrgId ?? actor.Org,
             RequestId = row.Id,
             ActorOrgId = actor.Org,
             ActorId = actor.Id,
@@ -557,7 +557,9 @@ public static class VendorRequestEndpoints
         };
 
     private static string VendorName(MarketplaceDbContext db, ServiceRequest row) =>
-        db.Profiles.Where(p => p.OrgId == row.VendorOrgId).Select(p => p.Name).FirstOrDefault()
+        db.Profiles.Where(p => p.OrgId == row.CounterpartyOrgId)
+            .Select(p => p.Name)
+            .FirstOrDefault()
         ?? "The vendor";
 
     /// <summary>The vendor side of a row: addressed to the caller's org and past Draft, or a 404.</summary>
@@ -578,9 +580,9 @@ public static class VendorRequestEndpoints
                 r.Id == id
                 && r.Status != RequestStatus.Draft
                 && (
-                    r.VendorOrgId == actor.Org
+                    r.CounterpartyOrgId == actor.Org
                     || (
-                        r.VendorOrgId == null
+                        r.CounterpartyOrgId == null
                         && db.Recipients.Any(x =>
                             x.RequestId == r.Id
                             && x.CounterpartyOrgId == actor.Org

@@ -108,7 +108,7 @@ public static class EscalateOverdueRequestsHandler
                 {
                     Id = Guid.CreateVersion7(),
                     OrgId = org,
-                    CounterpartyOrgId = row.VendorOrgId,
+                    CounterpartyOrgId = row.CounterpartyOrgId,
                     RequestId = row.Id,
                     ActorOrgId = org,
                     ActorId = Guid.Empty,
@@ -151,7 +151,7 @@ public static class EscalateOverdueRequestsHandler
                 ),
                 new DeliveryOptions { TenantId = org.Value.ToString() }
             );
-            if (row.Mode == RequestMode.Direct && row.VendorOrgId is { } vendor && !exhausted)
+            if (row.Mode == RequestMode.Direct && row.CounterpartyOrgId is { } vendor && !exhausted)
                 await bus.PublishAsync(
                     new SendOrgNotice(
                         $"Reminder: {row.Title} awaits your response",

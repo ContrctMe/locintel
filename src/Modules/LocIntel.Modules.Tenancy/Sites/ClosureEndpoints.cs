@@ -1,3 +1,4 @@
+using LocIntel.Contracts;
 using LocIntel.Modules.Tenancy.Data;
 using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Messaging;
@@ -164,22 +165,11 @@ public static class ClosureEndpoints
     )
     {
         var actor = accessor.Current as Principal.User;
-        return bus.PublishAsync(
-                new LocIntel.Contracts.RecordDomainAudit(
-                    eventName,
-                    System.Text.Json.JsonSerializer.Serialize(
-                        new { siteId = site.Id.Value, date = date.ToString("yyyy-MM-dd") }
-                    )
-                ),
-                new DeliveryOptions
-                {
-                    TenantId = site.OrgId.Value.ToString(),
-                    Headers =
-                    {
-                        ["locintel-actor-tier"] = "user",
-                        ["locintel-actor-id"] = actor?.UserId.ToString() ?? "",
-                    },
-                }
+        return bus.AuditAsync(
+                site.OrgId,
+                actor is { } user ? AuditActor.User(user.UserId) : AuditActor.System,
+                eventName,
+                new { siteId = site.Id.Value, date = date.ToString("yyyy-MM-dd") }
             )
             .AsTask();
     }

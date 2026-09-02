@@ -1,6 +1,8 @@
+using LocIntel.Contracts;
 using LocIntel.Modules.Tenancy.Data;
 using LocIntel.Platform.Entitlements;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Wolverine.Attributes;
@@ -227,20 +229,11 @@ public static class HierarchyEndpoints
     )
     {
         var actor = accessor.Current as Principal.User;
-        await bus.PublishAsync(
-            new LocIntel.Contracts.RecordDomainAudit(
-                eventName,
-                System.Text.Json.JsonSerializer.Serialize(payload)
-            ),
-            new Wolverine.DeliveryOptions
-            {
-                TenantId = node.OrgId.Value.ToString(),
-                Headers =
-                {
-                    ["locintel-actor-tier"] = "user",
-                    ["locintel-actor-id"] = actor?.UserId.ToString() ?? "",
-                },
-            }
+        await bus.AuditAsync(
+            node.OrgId,
+            actor is { } user ? AuditActor.User(user.UserId) : AuditActor.System,
+            eventName,
+            payload
         );
     }
 
@@ -318,27 +311,16 @@ public static class HierarchyEndpoints
         // Intent-level audit (ADR 12): a reorg is a business event, not just
         // row diffs - record WHAT happened in business language.
         var actor = accessor.Current as Principal.User;
-        await bus.PublishAsync(
-            new LocIntel.Contracts.RecordDomainAudit(
-                "hierarchy.node_moved",
-                System.Text.Json.JsonSerializer.Serialize(
-                    new
-                    {
-                        nodeId = node.Id,
-                        nodeName = node.Name,
-                        from = oldPrefix,
-                        to = newPrefix,
-                    }
-                )
-            ),
-            new Wolverine.DeliveryOptions
+        await bus.AuditAsync(
+            node.OrgId,
+            actor is { } mover ? AuditActor.User(mover.UserId) : AuditActor.System,
+            "hierarchy.node_moved",
+            new
             {
-                TenantId = node.OrgId.Value.ToString(),
-                Headers =
-                {
-                    ["locintel-actor-tier"] = "user",
-                    ["locintel-actor-id"] = actor?.UserId.ToString() ?? "",
-                },
+                nodeId = node.Id,
+                nodeName = node.Name,
+                from = oldPrefix,
+                to = newPrefix,
             }
         );
         return Results.NoContent();

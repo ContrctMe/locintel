@@ -38,7 +38,7 @@ public sealed class MarketplaceExporter(MarketplaceDbContext db) : IOrgDataExpor
             .ToListAsync(ct);
         var requests = await db
             .Requests.IgnoreQueryFilters()
-            .Where(r => r.OrgId == org || r.VendorOrgId == org)
+            .Where(r => r.OrgId == org || r.CounterpartyOrgId == org)
             .Select(r => new
             {
                 r.Id,

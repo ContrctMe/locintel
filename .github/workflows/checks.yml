@@ -113,11 +113,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Typecheck
+      - name: Regenerate the public app's route tree
+        # routeTree.gen.ts is committed so a fresh checkout typechecks, which
+        # means it can go STALE: a fork adding a route gets three misleading
+        # type errors until something regenerates it. Same treatment as
+        # openapi.json - regenerate, then fail on drift.
         working-directory: web
         run: |
           pnpm install --frozen-lockfile
-          pnpm typecheck
+          pnpm --filter public run routes
+      - name: Route tree drift is a build failure
+        run: git diff --exit-code web/apps/public/src/routeTree.gen.ts
+      - name: Typecheck
+        working-directory: web
+        run: pnpm typecheck
       - name: Lint (ADR 20 barrel rule)
         working-directory: web
         run: pnpm lint

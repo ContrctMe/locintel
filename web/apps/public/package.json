@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
+    "routes": "tsr generate",
     "build": "vite build",
     "typecheck": "tsc --noEmit -p .",
     "test": "vitest run"
@@ -18,6 +19,7 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
+    "@tanstack/router-cli": "^1.167.33",
     "@types/leaflet": "^1.9.22",
     "@types/node": "^26.4.0",
     "@types/react": "^19.2.0",

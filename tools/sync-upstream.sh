@@ -11,9 +11,11 @@
 #
 #   tools/sync-upstream.sh [<template repo path or url>] [<ref>]
 #
-# First run: add the template as a remote named "template" and create
-# template-renamed from the fork's own init commit (the commit produced by
-# tools/init.py), e.g.  git branch template-renamed <init-commit>.
+# tools/init.py performs the first-run bootstrap: it adds the source repo as
+# the "template" remote and creates template-renamed at the fork's init
+# commit. If you forked by hand, do that once yourself:
+#   git remote add template <template repo path or url>
+#   git branch template-renamed <the commit that renamed the template>
 # Every run after that: fetch, rename, snapshot, merge. Resolve conflicts in
 # upstream's favour, then re-seat the fork's code on whatever upstream lifted.
 set -euo pipefail
@@ -34,6 +36,11 @@ git rev-parse --verify -q template-renamed >/dev/null \
 
 git fetch -q template
 upstream=$(git rev-parse --short "$ref")
+# the parent is captured HERE: init.py, run inside the worktree below, commits
+# its rename and force-moves template-renamed to that commit (its first-run
+# bootstrap), which would otherwise parent the snapshot on upstream history
+# and turn the merge base back into the original fork point
+parent=$(git rev-parse template-renamed)
 last=$(git log -1 --format=%s template-renamed | grep -oE '[0-9a-f]{7,}' | head -1 || true)
 if [ "$last" = "$upstream" ]; then
   echo "template-renamed already holds $upstream; nothing to sync"
@@ -49,7 +56,7 @@ git worktree add -q --detach "$wt" "$ref"
   dotnet csharpier format . >/dev/null
   git add -A
   tree=$(git write-tree)
-  commit=$(git commit-tree "$tree" -p template-renamed \
+  commit=$(git commit-tree "$tree" -p "$parent" \
     -m "template $ref $upstream, renamed to $product (init.py + csharpier)")
   git branch -f template-renamed "$commit"
 )

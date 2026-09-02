@@ -216,17 +216,15 @@ public class HygieneTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         rename.EnsureSuccessStatusCode();
 
         JsonElement me = default;
-        for (var i = 0; i < 50; i++) // read model learns via the event
-        {
-            me = await owner.GetFromJsonAsync<JsonElement>("/me");
-            if (
-                me.GetProperty("organizations")
+        // read model learns via the event
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+                (me = await owner.GetFromJsonAsync<JsonElement>("/me"))
+                    .GetProperty("organizations")
                     .EnumerateArray()
-                    .Any(o => o.GetProperty("name").GetString() == "Org B Renamed")
-            )
-                break;
-            await Task.Delay(100);
-        }
+                    .Any(o => o.GetProperty("name").GetString() == "Org B Renamed"),
+            "the org read model to show the renamed org"
+        );
         Assert.Contains(
             me.GetProperty("organizations").EnumerateArray(),
             o => o.GetProperty("name").GetString() == "Org B Renamed"

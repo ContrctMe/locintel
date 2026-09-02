@@ -24,3 +24,6 @@ dist/
 .DS_Store
 .idea/
 src/Premise.Api/Internal/Generated/
+
+# test runner output (the shard script writes .trx here)
+TestResults/

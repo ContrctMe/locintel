@@ -189,6 +189,45 @@ cleanup). It has no product-specific logic - the name comes from the
 currently documents by hand: add the source as the `template` remote and
 create `template-renamed` at the init commit.
 
+## Round three (after the second sync, 2026-09-02)
+
+Round two landed in full and merged with three conflicts. What the second
+sync surfaced:
+
+### 15. `sync-upstream.sh` parents the snapshot on the wrong commit
+
+`tools/init.py` now commits its rename and force-moves `template-renamed`
+to that commit (its first-run bootstrap). `sync-upstream.sh` runs `init.py`
+inside a worktree of the SAME repo, so by the time it reaches
+`git commit-tree ... -p template-renamed` the branch already points at the
+fresh init commit, whose parent is upstream history. The snapshot then
+merges against the original fork point and every renamed file conflicts
+(33 on this sync, versus 3 with the right parent). Fix in this repo's copy:
+capture `parent=$(git rev-parse template-renamed)` before the worktree
+work and pass that. Worth a test: the second sync of a fork, not just the
+first.
+
+### 16. The recipient-list shape needs a status predicate and member writes
+
+Network could not adopt it: `shares`, `share_members` and `shared_bulletins`
+gate reads on the membership row's STATUS (a removed member keeps its
+`share_access` row, for the audit trail, but loses access), and
+`share_members` / `shared_bulletins` are written by the member or the
+publisher, never the parent's owner. Two extensions would cover it: an
+optional recipient-row predicate (`recipientPredicate: "status <> 'Removed'"`)
+and a `WITH CHECK` variant naming the recipient row's own org column.
+Files: `src/Modules/LocIntel.Modules.Network/Data/NetworkDbContext.cs`,
+`Migrations/20260902042111_Initial.cs`.
+
+### 17. 21 hand-rolled outbox waits remain in the template's own tests
+
+Item 13 added `WaitUntilAsync` and converted the founder-membership wait,
+but `LifecycleTests`, `IngestTests`, `BillingTests` (three each),
+`HierarchyAndTimeTests`, `GatesTests`, `DirectorySyncTests` (two each) and
+five more classes still carry `for (var i = 0; i < N; i++)` loops with
+bounds of 20-100. The fork's own tests have none. Finish the sweep, or add
+the loop shape to `HygieneTests` so it cannot come back.
+
 ## Suggested prompt for the template session
 
-> Read `/Users/jarod/coding/locintel/docs/template-feedback.md`, section "Round two" (items 9-14; round one is already merged). For each item marked **lift**, inspect the named files in that repo and port the generic parts into the template's Platform, Contracts or tools with tests; for the rest, make the change the item proposes. Keep the suite shuffled and green after each change, and note in the commit message which item it closes.
+> Read `/Users/jarod/coding/locintel/docs/template-feedback.md`, section "Round three" (items 15-17; rounds one and two are merged). Item 15 is a bug in `tools/sync-upstream.sh` with the fix described - apply it and add a test that syncs a fork twice. Item 16 extends `EnableRecipientListRls` / `AddRecipientListFilter`; port it with adversarial tests. Item 17 is a sweep of the template's own tests. Keep the suite shuffled and green after each change, and note in the commit message which item it closes.
