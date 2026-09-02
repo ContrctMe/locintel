@@ -111,6 +111,84 @@ One flake surfaced under the shuffled full suite: `AccountTests`' outbox
 wait (60 x 100 ms) timed out once with seven more modules feeding the
 outbox; the fork widened it to the fixture's own bound (300 x 100 ms).
 
+## Round two (after the first sync, 2026-09-02)
+
+Everything in round one landed and measured well (see the status table
+above). These are the second-order items the sync itself surfaced, in
+priority order. Items marked **lift** are generic code already in this repo.
+
+### 9. A recipient-list tenancy shape (**lift**)
+
+A row readable by its owner, an optional counterparty, AND every org in a
+side table: a broadcast request and its recipients, a share and its
+members. The two-party shape cannot express it, so the fork hand-writes it
+twice:
+
+- `src/Modules/LocIntel.Modules.Marketplace/Data/MarketplaceDbContext.cs`
+  (the `requests` filter, `Recipients.Any(...)`) and the matching policy in
+  `Migrations/20260902080547_Rfq.cs`
+- `src/Modules/LocIntel.Modules.Network/Data/NetworkDbContext.cs` (the
+  `shares` / `share_members` / `shared_bulletins` one-hop reads through
+  `share_access`) and `Migrations/20260902042111_Initial.cs`
+
+Proposal: `EnableRecipientListRls(schema, table, recipientsTable,
+foreignKeyColumn, recipientOrgColumn)` in `RlsMigrationExtensions`, and a
+`ModuleDbContext` helper that adds the matching query filter given the
+recipients `DbSet`. The invariant worth asserting in the adversarial test:
+the recipients table itself must never reference the parent's policy (a
+policy referencing its own table recurses), and the WITH CHECK must not let
+a recipient write the parent row before award.
+
+### 10. A required counterparty on `ITwoPartyScoped`
+
+`CounterpartyOrgId` is nullable by design. Two of the three fork tables that
+adopted it have a NOT NULL column, so each carries `required OrgId?
+CounterpartyOrgId` plus `.IsRequired()` in the context and a non-null read
+accessor (`src/Modules/LocIntel.Modules.Marketplace/Requests/Quote.cs`,
+`RequestRecipient.cs`). Either a second interface with a non-nullable
+property (the filter can accept both) or a note in the skill that this is
+the intended pattern.
+
+### 11. Route-tree regeneration is a build side effect
+
+Committing `web/apps/public/src/routeTree.gen.ts` fixed the fresh-checkout
+typecheck, but a fork that adds a route (this one added `routes/tips.tsx`)
+gets three misleading type errors until a full `vite build` regenerates the
+file. Give `web/apps/public/package.json` a `routes` script that runs the
+generator alone, and have CI fail on a dirty `routeTree.gen.ts` after
+build - the same treatment `openapi.json` already gets.
+
+### 12. Two audit sites the helper missed
+
+`AuditAsync` retired 27 hand-written publishes, but
+`src/Modules/LocIntel.Modules.Tenancy/Hierarchy/Endpoints.cs` and
+`src/Modules/LocIntel.Modules.Tenancy/Sites/ClosureEndpoints.cs` still spell
+the `locintel-actor-tier` headers by hand (`Audit/Handlers.cs` reads them,
+which is fine). An architecture test that forbids the header literal
+outside Platform, Contracts and the composition root keeps it retired.
+
+### 13. Outbox waits are per-test loops with per-test bounds
+
+32 `for (var i = 0; i < N; i++) { ...; await Task.Delay(100); }` loops in
+`tests/LocIntel.IntegrationTests`, with N ranging 20-100. The shuffled full
+suite exposed one at 60 (`AccountTests`) that a fork's extra outbox traffic
+pushed past its bound. One fixture helper, `WaitUntilAsync(Func<Task<bool>>)`
+with a single generous bound and a message naming the predicate, replaces
+them all and gives a timeout a readable failure instead of a downstream
+assert.
+
+### 14. Ship the sync story (**lift**)
+
+ADR 36 calls the fork one-way. `tools/sync-upstream.sh` in this repo is the
+missing half: it renames each upstream snapshot with `tools/init.py` onto a
+`template-renamed` branch parented on the fork's init commit, then merges,
+so conflicts appear only where both sides changed the same lines (35 of 111
+touched files on the first sync, most of them upstream's own audit
+cleanup). It has no product-specific logic - the name comes from the
+`.slnx`. Lift it, amend ADR 36, and have `init.py` do the bootstrap it
+currently documents by hand: add the source as the `template` remote and
+create `template-renamed` at the init commit.
+
 ## Suggested prompt for the template session
 
-> Read `/Users/jarod/coding/locintel/docs/template-feedback.md`. For each item marked **lift**, inspect the named files in that repo and port the generic parts into the template's Platform or Contracts with tests; for the init-script and wiring items, change the tooling as proposed; for the rest, update the skills and CLAUDE.md. Keep the template's own tests order-independent and run the full suite after each change.
+> Read `/Users/jarod/coding/locintel/docs/template-feedback.md`, section "Round two" (items 9-14; round one is already merged). For each item marked **lift**, inspect the named files in that repo and port the generic parts into the template's Platform, Contracts or tools with tests; for the rest, make the change the item proposes. Keep the suite shuffled and green after each change, and note in the commit message which item it closes.
