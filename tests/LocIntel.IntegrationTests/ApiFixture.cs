@@ -1,8 +1,3 @@
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.AspNetCore.Mvc.Testing.Handlers;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using LocIntel.Modules.Audit.Data;
 using LocIntel.Modules.Entitlements.Data;
 using LocIntel.Modules.Identity.Access;
@@ -14,6 +9,11 @@ using LocIntel.Modules.Tenancy.Data;
 using LocIntel.Modules.Tenancy.Organizations;
 using LocIntel.Platform.Infra;
 using LocIntel.Platform.Kernel;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.Mvc.Testing.Handlers;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.PostgreSql;
 
 namespace LocIntel.IntegrationTests;
@@ -76,13 +76,20 @@ public class ApiFixture : IAsyncLifetime
                 )
         )
             await checklists.Database.MigrateAsync();
+        await using (
+            var incidents = CreateModuleContext<LocIntel.Modules.Incidents.Data.IncidentsDbContext>(
+                adminCs,
+                "incidents"
+            )
+        )
+            await incidents.Database.MigrateAsync();
 
         await _postgres.ExecScriptAsync(
             """
             CREATE ROLE app_user LOGIN PASSWORD 'app_user' NOSUPERUSER;
             -- Wolverine owns its envelope schema; the app creates it at startup
             GRANT CREATE ON DATABASE postgres TO app_user;
-            GRANT USAGE ON SCHEMA tenancy, identity, entitlements, audit, storage, platform, ingest, checklists TO app_user;
+            GRANT USAGE ON SCHEMA tenancy, identity, entitlements, audit, storage, platform, ingest, checklists, incidents TO app_user;
             GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA tenancy TO app_user;
             GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA identity TO app_user;
             GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA checklists TO app_user;
@@ -91,6 +98,7 @@ public class ApiFixture : IAsyncLifetime
             GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA storage TO app_user;
             GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA platform TO app_user;
             GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ingest TO app_user;
+            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA incidents TO app_user;
             """
         );
         AppConnectionString = new Npgsql.NpgsqlConnectionStringBuilder(adminCs)

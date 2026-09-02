@@ -6,6 +6,8 @@ import { ChecklistsPage } from './pages/checklists';
 import { DashboardPage } from './pages/dashboard';
 import { DevelopersPage } from './pages/developers';
 import { HierarchyPage } from './pages/hierarchy';
+import { IncidentDetailPage } from './pages/incident-detail';
+import { IncidentsPage } from './pages/incidents';
 import { IngestPage } from './pages/ingest';
 import { MembersPage } from './pages/members';
 import { OperatorPage } from './pages/operator';
@@ -28,6 +30,8 @@ const routes = [
   createRoute({ getParentRoute: () => rootRoute, path: '/sites', component: SitesPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/sites/$siteId', component: SiteDetailPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/checklists', component: ChecklistsPage }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/incidents', component: IncidentsPage }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/incidents/$incidentId', component: IncidentDetailPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/files', component: FilesPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/hierarchy', component: HierarchyPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/ingest', component: IngestPage }),

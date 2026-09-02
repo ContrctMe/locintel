@@ -17,6 +17,7 @@
     <Project Path="src/Modules/LocIntel.Modules.Checklists/LocIntel.Modules.Checklists.csproj" />
     <Project Path="src/Modules/LocIntel.Modules.Entitlements/LocIntel.Modules.Entitlements.csproj" />
     <Project Path="src/Modules/LocIntel.Modules.Identity/LocIntel.Modules.Identity.csproj" />
+    <Project Path="src/Modules/LocIntel.Modules.Incidents/LocIntel.Modules.Incidents.csproj" />
     <Project Path="src/Modules/LocIntel.Modules.Ingest/LocIntel.Modules.Ingest.csproj" />
     <Project Path="src/Modules/LocIntel.Modules.Storage/LocIntel.Modules.Storage.csproj" />
     <Project Path="src/Modules/LocIntel.Modules.Tenancy/LocIntel.Modules.Tenancy.csproj" />

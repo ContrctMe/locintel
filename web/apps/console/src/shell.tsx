@@ -14,6 +14,7 @@ const NAV_GROUPS = [
       { to: '/', label: 'Dashboard', capability: null },
       { to: '/sites', label: 'Sites', capability: 'sites:read' },
       { to: '/hierarchy', label: 'Hierarchy', capability: 'hierarchy:manage' },
+      { to: '/incidents', label: 'Incidents', capability: 'incidents:read' },
       { to: '/checklists', label: 'Checklists', capability: 'checklists:complete' },
       { to: '/files', label: 'Files', capability: 'files:read' },
       { to: '/ingest', label: 'Ingest', capability: 'ingest:manage' },

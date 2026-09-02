@@ -4415,6 +4415,730 @@
         }
       }
     },
+    "/api/incidents/{id}/attachments": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Incidents.Incidents.IncidentAttachmentEndpoints"
+        ],
+        "summary": "POST_api_incidents_id_attachments",
+        "description": "POST_api_incidents_id_attachments",
+        "operationId": "POST_api_incidents_id_attachments",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AttachFileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentAttachmentCreated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/incidents/{id}/attachments/{attachmentId}": {
+      "delete": {
+        "tags": [
+          "LocIntel.Modules.Incidents.Incidents.IncidentAttachmentEndpoints"
+        ],
+        "summary": "DELETE_api_incidents_id_attachments_attachmentId",
+        "description": "DELETE_api_incidents_id_attachments_attachmentId",
+        "operationId": "DELETE_api_incidents_id_attachments_attachmentId",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "attachmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentChildRemoved"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/incidents": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Incidents.Incidents.IncidentEndpoints"
+        ],
+        "summary": "GET_api_incidents",
+        "description": "GET_api_incidents",
+        "operationId": "GET_api_incidents",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/IncidentStatus"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/IncidentCategory"
+            }
+          },
+          {
+            "name": "severity",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/IncidentSeverity"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "trash",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentListResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Incidents.Incidents.IncidentEndpoints"
+        ],
+        "summary": "POST_api_incidents",
+        "description": "POST_api_incidents",
+        "operationId": "POST_api_incidents",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportIncidentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentCreated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/incidents/{id}": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Incidents.Incidents.IncidentEndpoints"
+        ],
+        "summary": "GET_api_incidents_id",
+        "description": "GET_api_incidents_id",
+        "operationId": "GET_api_incidents_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "LocIntel.Modules.Incidents.Incidents.IncidentEndpoints"
+        ],
+        "summary": "PUT_api_incidents_id",
+        "description": "PUT_api_incidents_id",
+        "operationId": "PUT_api_incidents_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateIncidentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "LocIntel.Modules.Incidents.Incidents.IncidentEndpoints"
+        ],
+        "summary": "DELETE_api_incidents_id",
+        "description": "DELETE_api_incidents_id",
+        "operationId": "DELETE_api_incidents_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/incidents/{id}/close": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Incidents.Incidents.IncidentEndpoints"
+        ],
+        "summary": "POST_api_incidents_id_close",
+        "description": "POST_api_incidents_id_close",
+        "operationId": "POST_api_incidents_id_close",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloseIncidentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/incidents/{id}/reopen": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Incidents.Incidents.IncidentEndpoints"
+        ],
+        "summary": "POST_api_incidents_id_reopen",
+        "description": "POST_api_incidents_id_reopen",
+        "operationId": "POST_api_incidents_id_reopen",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/incidents/{id}/hold": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Incidents.Incidents.IncidentEndpoints"
+        ],
+        "summary": "POST_api_incidents_id_hold",
+        "description": "POST_api_incidents_id_hold",
+        "operationId": "POST_api_incidents_id_hold",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetIncidentHoldRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/incidents/{id}/restore": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Incidents.Incidents.IncidentEndpoints"
+        ],
+        "summary": "POST_api_incidents_id_restore",
+        "description": "POST_api_incidents_id_restore",
+        "operationId": "POST_api_incidents_id_restore",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/incidents/{id}/notes": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Incidents.Incidents.IncidentNoteEndpoints"
+        ],
+        "summary": "POST_api_incidents_id_notes",
+        "description": "POST_api_incidents_id_notes",
+        "operationId": "POST_api_incidents_id_notes",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddIncidentNoteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentNoteCreated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/incidents/{id}/notes/{noteId}": {
+      "delete": {
+        "tags": [
+          "LocIntel.Modules.Incidents.Incidents.IncidentNoteEndpoints"
+        ],
+        "summary": "DELETE_api_incidents_id_notes_noteId",
+        "description": "DELETE_api_incidents_id_notes_noteId",
+        "operationId": "DELETE_api_incidents_id_notes_noteId",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "noteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentChildRemoved"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/incidents/stats": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Incidents.Incidents.IncidentStatsEndpoint"
+        ],
+        "summary": "GET_api_incidents_stats",
+        "description": "GET_api_incidents_stats",
+        "operationId": "GET_api_incidents_stats",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "siteId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentStatsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
     "/objects/upload/{token}": {
       "put": {
         "tags": [
@@ -4900,6 +5624,17 @@
           }
         }
       },
+      "AddIncidentNoteRequest": {
+        "required": [
+          "body"
+        ],
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string"
+          }
+        }
+      },
       "AssignRoleRequest": {
         "required": [
           "userId"
@@ -4911,6 +5646,24 @@
             "format": "uuid"
           },
           "scopePath": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "AttachFileRequest": {
+        "required": [
+          "fileId"
+        ],
+        "type": "object",
+        "properties": {
+          "fileId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "label": {
             "type": [
               "null",
               "string"
@@ -5166,6 +5919,17 @@
             "type": "string"
           },
           "returnPath": {
+            "type": "string"
+          }
+        }
+      },
+      "CloseIncidentRequest": {
+        "required": [
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
             "type": "string"
           }
         }
@@ -5618,6 +6382,581 @@
           },
           "orgName": {
             "type": "string"
+          }
+        }
+      },
+      "IncidentAttachmentCreated": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "IncidentAttachmentView": {
+        "required": [
+          "id",
+          "fileId",
+          "fileName",
+          "contentType",
+          "fileStatus",
+          "label",
+          "addedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fileId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fileName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "contentType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "fileStatus": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "label": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "IncidentCategory": {
+        "enum": [
+          "Theft",
+          "OrganizedRetailCrime",
+          "InternalTheft",
+          "Fraud",
+          "Robbery",
+          "Burglary",
+          "Assault",
+          "Threat",
+          "Vandalism",
+          "Trespass",
+          "Disturbance",
+          "Safety",
+          "Other"
+        ]
+      },
+      "IncidentChildRemoved": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "IncidentCount": {
+        "required": [
+          "key",
+          "count",
+          "loss"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "count": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "loss": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "IncidentCreated": {
+        "required": [
+          "id",
+          "businessDate"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "businessDate": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "IncidentDetail": {
+        "required": [
+          "id",
+          "siteId",
+          "path",
+          "category",
+          "severity",
+          "status",
+          "source",
+          "title",
+          "narrative",
+          "locationDetail",
+          "occurredAt",
+          "businessDate",
+          "reportedAt",
+          "reportedBy",
+          "reporter",
+          "lossAmount",
+          "recoveredAmount",
+          "currency",
+          "policeReportNumber",
+          "tags",
+          "closedAt",
+          "closureReason",
+          "legalHold",
+          "updatedAt",
+          "deletedAt",
+          "notes",
+          "attachments"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "siteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "path": {
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/components/schemas/IncidentCategory"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/IncidentSeverity"
+          },
+          "status": {
+            "$ref": "#/components/schemas/IncidentStatus"
+          },
+          "source": {
+            "$ref": "#/components/schemas/IncidentSource"
+          },
+          "title": {
+            "type": "string"
+          },
+          "narrative": {
+            "type": "string"
+          },
+          "locationDetail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "businessDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "reportedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reportedBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reporter": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lossAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "recoveredAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "policeReportNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "closedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "closureReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "legalHold": {
+            "type": "boolean"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deletedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncidentNoteView"
+            }
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncidentAttachmentView"
+            }
+          }
+        }
+      },
+      "IncidentListResponse": {
+        "required": [
+          "items",
+          "total",
+          "nextOffset"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncidentSummary"
+            }
+          },
+          "total": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "nextOffset": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "IncidentMutated": {
+        "required": [
+          "id",
+          "status",
+          "legalHold",
+          "businessDate",
+          "deletedAt",
+          "updatedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/IncidentStatus"
+          },
+          "legalHold": {
+            "type": "boolean"
+          },
+          "businessDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "deletedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "IncidentNoteCreated": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "IncidentNoteView": {
+        "required": [
+          "id",
+          "authorId",
+          "author",
+          "body",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "authorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "author": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "body": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "IncidentSeverity": {
+        "enum": [
+          "Low",
+          "Medium",
+          "High",
+          "Critical"
+        ]
+      },
+      "IncidentSource": {
+        "enum": [
+          "Console",
+          "Api",
+          "Tip",
+          "Import"
+        ]
+      },
+      "IncidentStatsResponse": {
+        "required": [
+          "from",
+          "to",
+          "total",
+          "open",
+          "totalLoss",
+          "byCategory",
+          "bySeverity",
+          "bySite",
+          "byBusinessDate"
+        ],
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "format": "date"
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          },
+          "total": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "open": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalLoss": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "byCategory": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncidentCount"
+            }
+          },
+          "bySeverity": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncidentCount"
+            }
+          },
+          "bySite": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncidentCount"
+            }
+          },
+          "byBusinessDate": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncidentCount"
+            }
+          }
+        }
+      },
+      "IncidentStatus": {
+        "enum": [
+          "Open",
+          "Closed"
+        ]
+      },
+      "IncidentSummary": {
+        "required": [
+          "id",
+          "siteId",
+          "category",
+          "severity",
+          "status",
+          "title",
+          "occurredAt",
+          "businessDate",
+          "lossAmount",
+          "legalHold",
+          "deletedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "siteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "category": {
+            "$ref": "#/components/schemas/IncidentCategory"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/IncidentSeverity"
+          },
+          "status": {
+            "$ref": "#/components/schemas/IncidentStatus"
+          },
+          "title": {
+            "type": "string"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "businessDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "lossAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "legalHold": {
+            "type": "boolean"
+          },
+          "deletedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         }
       },
@@ -6182,6 +7521,86 @@
           }
         }
       },
+      "ReportIncidentRequest": {
+        "required": [
+          "siteId",
+          "category",
+          "severity",
+          "title",
+          "occurredAt"
+        ],
+        "type": "object",
+        "properties": {
+          "siteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "category": {
+            "$ref": "#/components/schemas/IncidentCategory"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/IncidentSeverity"
+          },
+          "title": {
+            "type": "string"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "narrative": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "locationDetail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lossAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "recoveredAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "currency": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "policeReportNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "tags": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "RotateApiKeyRequest": {
         "type": "object",
         "properties": {
@@ -6212,6 +7631,17 @@
         }
       },
       "SetHoldRequest": {
+        "required": [
+          "hold"
+        ],
+        "type": "object",
+        "properties": {
+          "hold": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SetIncidentHoldRequest": {
         "required": [
           "hold"
         ],
@@ -6485,6 +7915,88 @@
           }
         }
       },
+      "UpdateIncidentRequest": {
+        "required": [
+          "category",
+          "severity",
+          "title",
+          "occurredAt",
+          "narrative",
+          "locationDetail",
+          "lossAmount",
+          "recoveredAmount",
+          "currency",
+          "policeReportNumber",
+          "tags"
+        ],
+        "type": "object",
+        "properties": {
+          "category": {
+            "$ref": "#/components/schemas/IncidentCategory"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/IncidentSeverity"
+          },
+          "title": {
+            "type": "string"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "narrative": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "locationDetail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lossAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "recoveredAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "currency": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "policeReportNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "tags": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "UpdateProfileRequest": {
         "required": [
           "name"
@@ -6707,6 +8219,18 @@
     },
     {
       "name": "LocIntel.Modules.Checklists.Checklists.ChecklistEndpoints"
+    },
+    {
+      "name": "LocIntel.Modules.Incidents.Incidents.IncidentAttachmentEndpoints"
+    },
+    {
+      "name": "LocIntel.Modules.Incidents.Incidents.IncidentEndpoints"
+    },
+    {
+      "name": "LocIntel.Modules.Incidents.Incidents.IncidentNoteEndpoints"
+    },
+    {
+      "name": "LocIntel.Modules.Incidents.Incidents.IncidentStatsEndpoint"
     },
     {
       "name": "LocIntel.Api"

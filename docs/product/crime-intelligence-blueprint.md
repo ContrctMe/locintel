@@ -150,3 +150,11 @@ jurisdiction.
   **retail loss prevention**. **Entities ship in v1** with the need-to-know
   gate and read audit built alongside. Primary jurisdiction **United
   States** (CCPA, BIPA, state guard/PI licensing, CJIS avoidance).
+- 2026-09-01: **Incidents module shipped** (schema `incidents`; capabilities
+  `incidents:read|report|manage`). Facts stamp `hierarchy_id` + ltree `path`
+  + `business_date`; tier-2 soft delete with `legal_hold` refusing deletion;
+  notes (tier 2) and attachment links to Storage files (tier 3). `SiteInfo`
+  now carries `HierarchyId`. Lessons: Wolverine emits an untyped 200 stub
+  for any endpoint without a declared 200 type, so "no content" mutations
+  echo a typed `IncidentMutated` instead of 204; the migration round-trip
+  test had never covered Checklists - both modules are in it now.

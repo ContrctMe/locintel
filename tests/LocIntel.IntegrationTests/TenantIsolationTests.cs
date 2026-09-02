@@ -1,9 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
 using LocIntel.Modules.Tenancy.Data;
 using LocIntel.Platform.Kernel;
+using Microsoft.EntityFrameworkCore;
 
 namespace LocIntel.IntegrationTests;
 
@@ -122,6 +122,101 @@ public class TenantIsolationTests(ApiFixture fixture) : IClassFixture<ApiFixture
         Assert.Equal(
             HttpStatusCode.NotFound,
             (await clientB.GetAsync("/api/hierarchy")).StatusCode
+        );
+    }
+
+    [Fact]
+    public async Task Incidents_are_tenant_isolated()
+    {
+        var clientA = await fixture.LoginAsync(ApiFixture.UserA);
+        var hierarchy = await clientA.GetAsync("/api/hierarchy");
+        Guid rootId;
+        if (hierarchy.StatusCode == HttpStatusCode.OK)
+            rootId = (await hierarchy.Content.ReadFromJsonAsync<JsonElement>())
+                .GetProperty("nodes")
+                .EnumerateArray()
+                .First(n => n.GetProperty("depth").GetInt32() == 0)
+                .GetProperty("id")
+                .GetGuid();
+        else
+        {
+            var created = await clientA.PostAsJsonAsync(
+                "/api/hierarchy",
+                new { name = "Org A", levels = new[] { "Region" } }
+            );
+            created.EnsureSuccessStatusCode();
+            rootId = (await created.Content.ReadFromJsonAsync<JsonElement>())
+                .GetProperty("rootNodeId")
+                .GetGuid();
+        }
+        var site = await clientA.PostAsJsonAsync(
+            "/api/sites",
+            new
+            {
+                nodeId = rootId,
+                name = "Incident Store",
+                timeZone = "Etc/UTC",
+            }
+        );
+        site.EnsureSuccessStatusCode();
+        var siteId = (await site.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id")
+            .GetGuid();
+        var reported = await clientA.PostAsJsonAsync(
+            "/api/incidents",
+            new
+            {
+                siteId,
+                category = "Theft",
+                severity = "Low",
+                title = "Isolated incident",
+                occurredAt = DateTimeOffset.UtcNow,
+            }
+        );
+        reported.EnsureSuccessStatusCode();
+        var id = (await reported.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id")
+            .GetGuid();
+
+        var clientB = await fixture.LoginAsync(ApiFixture.UserB);
+        // every id-addressed replay: 404, never 200, never 403
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (await clientB.GetAsync($"/api/incidents/{id}")).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (
+                await clientB.PostAsJsonAsync($"/api/incidents/{id}/close", new { reason = "x" })
+            ).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (
+                await clientB.PostAsJsonAsync($"/api/incidents/{id}/hold", new { hold = true })
+            ).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (await clientB.DeleteAsync($"/api/incidents/{id}")).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (await clientB.PostAsync($"/api/incidents/{id}/restore", null)).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (
+                await clientB.PostAsJsonAsync(
+                    $"/api/incidents/{id}/attachments",
+                    new { fileId = Guid.NewGuid() }
+                )
+            ).StatusCode
+        );
+        var list = await clientB.GetFromJsonAsync<JsonElement>("/api/incidents");
+        Assert.DoesNotContain(
+            list.GetProperty("items").EnumerateArray(),
+            i => i.GetProperty("id").GetGuid() == id
         );
     }
 

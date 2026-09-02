@@ -29,4 +29,8 @@
     <ProjectReference Include="..\Modules\LocIntel.Modules.Storage\LocIntel.Modules.Storage.csproj" />
     <ProjectReference Include="..\Modules\LocIntel.Modules.Ingest\LocIntel.Modules.Ingest.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Modules\LocIntel.Modules.Incidents\LocIntel.Modules.Incidents.csproj" />
+  </ItemGroup>
 </Project>

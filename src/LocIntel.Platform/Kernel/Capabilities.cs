@@ -19,6 +19,11 @@ public static class Capabilities
     public const string IngestManage = "ingest:manage";
     public const string ChecklistsManage = "checklists:manage";
     public const string ChecklistsComplete = "checklists:complete";
+
+    /// <summary>Incidents (the crime-intelligence fact table): see, file, and manage.</summary>
+    public const string IncidentsRead = "incidents:read";
+    public const string IncidentsReport = "incidents:report";
+    public const string IncidentsManage = "incidents:manage";
     public const string AuditRead = "audit:read";
     public const string AuditManage = "audit:manage";
     public const string EntitlementsManage = "entitlements:manage";
@@ -41,6 +46,9 @@ public static class Capabilities
         IngestManage,
         ChecklistsManage,
         ChecklistsComplete,
+        IncidentsRead,
+        IncidentsReport,
+        IncidentsManage,
         AuditRead,
         AuditManage,
         EntitlementsManage,

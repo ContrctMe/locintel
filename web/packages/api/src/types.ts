@@ -1916,6 +1916,238 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/incidents/{id}/attachments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_incidents_id_attachments
+         * @description POST_api_incidents_id_attachments
+         */
+        post: operations["POST_api_incidents_id_attachments"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/incidents/{id}/attachments/{attachmentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * DELETE_api_incidents_id_attachments_attachmentId
+         * @description DELETE_api_incidents_id_attachments_attachmentId
+         */
+        delete: operations["DELETE_api_incidents_id_attachments_attachmentId"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/incidents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_incidents
+         * @description GET_api_incidents
+         */
+        get: operations["GET_api_incidents"];
+        put?: never;
+        /**
+         * POST_api_incidents
+         * @description POST_api_incidents
+         */
+        post: operations["POST_api_incidents"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/incidents/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_incidents_id
+         * @description GET_api_incidents_id
+         */
+        get: operations["GET_api_incidents_id"];
+        /**
+         * PUT_api_incidents_id
+         * @description PUT_api_incidents_id
+         */
+        put: operations["PUT_api_incidents_id"];
+        post?: never;
+        /**
+         * DELETE_api_incidents_id
+         * @description DELETE_api_incidents_id
+         */
+        delete: operations["DELETE_api_incidents_id"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/incidents/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_incidents_id_close
+         * @description POST_api_incidents_id_close
+         */
+        post: operations["POST_api_incidents_id_close"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/incidents/{id}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_incidents_id_reopen
+         * @description POST_api_incidents_id_reopen
+         */
+        post: operations["POST_api_incidents_id_reopen"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/incidents/{id}/hold": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_incidents_id_hold
+         * @description POST_api_incidents_id_hold
+         */
+        post: operations["POST_api_incidents_id_hold"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/incidents/{id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_incidents_id_restore
+         * @description POST_api_incidents_id_restore
+         */
+        post: operations["POST_api_incidents_id_restore"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/incidents/{id}/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_incidents_id_notes
+         * @description POST_api_incidents_id_notes
+         */
+        post: operations["POST_api_incidents_id_notes"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/incidents/{id}/notes/{noteId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * DELETE_api_incidents_id_notes_noteId
+         * @description DELETE_api_incidents_id_notes_noteId
+         */
+        delete: operations["DELETE_api_incidents_id_notes_noteId"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/incidents/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_incidents_stats
+         * @description GET_api_incidents_stats
+         */
+        get: operations["GET_api_incidents_stats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/objects/upload/{token}": {
         parameters: {
             query?: never;
@@ -2697,10 +2929,18 @@ export interface components {
             expiresAt: string;
             scopePath?: null | string;
         };
+        AddIncidentNoteRequest: {
+            body: string;
+        };
         AssignRoleRequest: {
             /** Format: uuid */
             userId: string;
             scopePath?: null | string;
+        };
+        AttachFileRequest: {
+            /** Format: uuid */
+            fileId: string;
+            label?: null | string;
         };
         AttributeDefinitionResponse: {
             /** Format: uuid */
@@ -2765,6 +3005,9 @@ export interface components {
         CheckoutRequest: {
             planId: string;
             returnPath: string;
+        };
+        CloseIncidentRequest: {
+            reason: string;
         };
         ClosureStatusResponse: {
             /** Format: date-time */
@@ -2879,6 +3122,155 @@ export interface components {
             /** Format: date-time */
             expiresAt: string;
             orgName: string;
+        };
+        IncidentAttachmentCreated: {
+            /** Format: uuid */
+            id: string;
+        };
+        IncidentAttachmentView: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            fileId: string;
+            fileName: null | string;
+            contentType: null | string;
+            fileStatus: null | string;
+            label: null | string;
+            /** Format: date-time */
+            addedAt: string;
+        };
+        /** @enum {unknown} */
+        IncidentCategory: "Theft" | "OrganizedRetailCrime" | "InternalTheft" | "Fraud" | "Robbery" | "Burglary" | "Assault" | "Threat" | "Vandalism" | "Trespass" | "Disturbance" | "Safety" | "Other";
+        IncidentChildRemoved: {
+            /** Format: uuid */
+            id: string;
+        };
+        IncidentCount: {
+            key: string;
+            /** Format: int32 */
+            count: number | string;
+            /** Format: double */
+            loss: number | string;
+        };
+        IncidentCreated: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date */
+            businessDate: string;
+        };
+        IncidentDetail: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            siteId: string;
+            path: string;
+            category: components["schemas"]["IncidentCategory"];
+            severity: components["schemas"]["IncidentSeverity"];
+            status: components["schemas"]["IncidentStatus"];
+            source: components["schemas"]["IncidentSource"];
+            title: string;
+            narrative: string;
+            locationDetail: null | string;
+            /** Format: date-time */
+            occurredAt: string;
+            /** Format: date */
+            businessDate: string;
+            /** Format: date-time */
+            reportedAt: string;
+            /** Format: uuid */
+            reportedBy: string;
+            reporter: null | string;
+            /** Format: double */
+            lossAmount: null | number | string;
+            /** Format: double */
+            recoveredAmount: null | number | string;
+            currency: string;
+            policeReportNumber: null | string;
+            tags: string[];
+            /** Format: date-time */
+            closedAt: null | string;
+            closureReason: null | string;
+            legalHold: boolean;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            deletedAt: null | string;
+            notes: components["schemas"]["IncidentNoteView"][];
+            attachments: components["schemas"]["IncidentAttachmentView"][];
+        };
+        IncidentListResponse: {
+            items: components["schemas"]["IncidentSummary"][];
+            /** Format: int32 */
+            total: number | string;
+            /** Format: int32 */
+            nextOffset: null | number | string;
+        };
+        IncidentMutated: {
+            /** Format: uuid */
+            id: string;
+            status: components["schemas"]["IncidentStatus"];
+            legalHold: boolean;
+            /** Format: date */
+            businessDate: string;
+            /** Format: date-time */
+            deletedAt: null | string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        IncidentNoteCreated: {
+            /** Format: uuid */
+            id: string;
+        };
+        IncidentNoteView: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            authorId: string;
+            author: null | string;
+            body: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        /** @enum {unknown} */
+        IncidentSeverity: "Low" | "Medium" | "High" | "Critical";
+        /** @enum {unknown} */
+        IncidentSource: "Console" | "Api" | "Tip" | "Import";
+        IncidentStatsResponse: {
+            /** Format: date */
+            from: string;
+            /** Format: date */
+            to: string;
+            /** Format: int32 */
+            total: number | string;
+            /** Format: int32 */
+            open: number | string;
+            /** Format: double */
+            totalLoss: number | string;
+            byCategory: components["schemas"]["IncidentCount"][];
+            bySeverity: components["schemas"]["IncidentCount"][];
+            bySite: components["schemas"]["IncidentCount"][];
+            byBusinessDate: components["schemas"]["IncidentCount"][];
+        };
+        /** @enum {unknown} */
+        IncidentStatus: "Open" | "Closed";
+        IncidentSummary: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            siteId: string;
+            category: components["schemas"]["IncidentCategory"];
+            severity: components["schemas"]["IncidentSeverity"];
+            status: components["schemas"]["IncidentStatus"];
+            title: string;
+            /** Format: date-time */
+            occurredAt: string;
+            /** Format: date */
+            businessDate: string;
+            /** Format: double */
+            lossAmount: null | number | string;
+            legalHold: boolean;
+            /** Format: date-time */
+            deletedAt: null | string;
         };
         InviteMemberRequest: {
             email: string;
@@ -3020,6 +3412,24 @@ export interface components {
         RenameOrgRequest: {
             name: string;
         };
+        ReportIncidentRequest: {
+            /** Format: uuid */
+            siteId: string;
+            category: components["schemas"]["IncidentCategory"];
+            severity: components["schemas"]["IncidentSeverity"];
+            title: string;
+            /** Format: date-time */
+            occurredAt: string;
+            narrative?: null | string;
+            locationDetail?: null | string;
+            /** Format: double */
+            lossAmount?: null | number | string;
+            /** Format: double */
+            recoveredAmount?: null | number | string;
+            currency?: null | string;
+            policeReportNumber?: null | string;
+            tags?: null | string[];
+        };
         RotateApiKeyRequest: {
             /** Format: int32 */
             overlapHours?: null | number | string;
@@ -3029,6 +3439,9 @@ export interface components {
             logReads: boolean;
         };
         SetHoldRequest: {
+            hold: boolean;
+        };
+        SetIncidentHoldRequest: {
             hold: boolean;
         };
         SettingResponse: {
@@ -3094,6 +3507,22 @@ export interface components {
             apiKey?: null | string;
             /** Format: int32 */
             syncIntervalHours?: null | number | string;
+        };
+        UpdateIncidentRequest: {
+            category: components["schemas"]["IncidentCategory"];
+            severity: components["schemas"]["IncidentSeverity"];
+            title: string;
+            /** Format: date-time */
+            occurredAt: string;
+            narrative: null | string;
+            locationDetail: null | string;
+            /** Format: double */
+            lossAmount: null | number | string;
+            /** Format: double */
+            recoveredAmount: null | number | string;
+            currency: null | string;
+            policeReportNumber: null | string;
+            tags: null | string[];
         };
         UpdateProfileRequest: {
             name: string;
@@ -6575,6 +7004,475 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IResult"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_incidents_id_attachments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AttachFileRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncidentAttachmentCreated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    DELETE_api_incidents_id_attachments_attachmentId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                attachmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncidentChildRemoved"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_incidents: {
+        parameters: {
+            query?: {
+                siteId?: string;
+                status?: components["schemas"]["IncidentStatus"];
+                category?: components["schemas"]["IncidentCategory"];
+                severity?: components["schemas"]["IncidentSeverity"];
+                from?: string;
+                to?: string;
+                q?: string;
+                trash?: boolean;
+                limit?: number | string;
+                offset?: number | string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncidentListResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_incidents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportIncidentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncidentCreated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_incidents_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncidentDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    PUT_api_incidents_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateIncidentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncidentMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    DELETE_api_incidents_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncidentMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_incidents_id_close: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CloseIncidentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncidentMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_incidents_id_reopen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncidentMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_incidents_id_hold: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetIncidentHoldRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncidentMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_incidents_id_restore: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncidentMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_incidents_id_notes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddIncidentNoteRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncidentNoteCreated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    DELETE_api_incidents_id_notes_noteId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                noteId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncidentChildRemoved"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_incidents_stats: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+                siteId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncidentStatsResponse"];
                 };
             };
             /** @description Not Found */

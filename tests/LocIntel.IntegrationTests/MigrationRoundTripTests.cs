@@ -28,7 +28,17 @@ public sealed class MigrationDbFixture : IAsyncLifetime
 public class MigrationRoundTripTests(MigrationDbFixture fixture) : IClassFixture<MigrationDbFixture>
 {
     public static TheoryData<string> Modules =>
-        ["tenancy", "identity", "entitlements", "audit", "storage", "platform", "ingest"];
+        [
+            "tenancy",
+            "identity",
+            "entitlements",
+            "audit",
+            "storage",
+            "platform",
+            "ingest",
+            "checklists",
+            "incidents",
+        ];
 
     [Theory]
     [MemberData(nameof(Modules))]
@@ -65,6 +75,8 @@ public class MigrationRoundTripTests(MigrationDbFixture fixture) : IClassFixture
             "storage" => Build<LocIntel.Modules.Storage.Data.StorageDbContext>(cs, module),
             "platform" => Build<LocIntel.Platform.Infra.PlatformDbContext>(cs, module),
             "ingest" => Build<LocIntel.Modules.Ingest.Data.IngestDbContext>(cs, module),
+            "checklists" => Build<LocIntel.Modules.Checklists.Data.ChecklistsDbContext>(cs, module),
+            "incidents" => Build<LocIntel.Modules.Incidents.Data.IncidentsDbContext>(cs, module),
             _ => throw new ArgumentOutOfRangeException(nameof(module)),
         };
     }

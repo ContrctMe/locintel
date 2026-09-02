@@ -2,14 +2,6 @@ using System.Globalization;
 using System.Reflection;
 using System.Threading.RateLimiting;
 using JasperFx;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.DataProtection;
-using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.EntityFrameworkCore;
-using OpenTelemetry.Logs;
-using OpenTelemetry.Metrics;
-using OpenTelemetry.Resources;
-using OpenTelemetry.Trace;
 using LocIntel.Api;
 using LocIntel.Integrations.WorkOS;
 using LocIntel.Modules.Audit;
@@ -17,6 +9,7 @@ using LocIntel.Modules.Checklists;
 using LocIntel.Modules.Entitlements;
 using LocIntel.Modules.Identity;
 using LocIntel.Modules.Identity.Auth;
+using LocIntel.Modules.Incidents;
 using LocIntel.Modules.Ingest;
 using LocIntel.Modules.Storage;
 using LocIntel.Modules.Tenancy;
@@ -28,6 +21,14 @@ using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Notifications;
 using LocIntel.Platform.Secrets;
 using LocIntel.Platform.Storage;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.EntityFrameworkCore;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Wolverine;
 using Wolverine.Http;
 using Wolverine.Postgresql;
@@ -200,6 +201,7 @@ builder.Services.AddAuditModule(runBackgroundWork: role == "worker");
 builder.Services.AddStorageModule(runBackgroundWork: role == "worker");
 builder.Services.AddIngestModule(runBackgroundWork: role == "worker");
 builder.Services.AddChecklistsModule();
+builder.Services.AddIncidentsModule();
 
 // Platform infra context (idempotency, ADR 29)
 builder.Services.AddDbContext<PlatformDbContext>(
@@ -414,6 +416,7 @@ builder.UseWolverine(opts =>
     opts.Discovery.IncludeAssembly(typeof(StorageModule).Assembly);
     opts.Discovery.IncludeAssembly(typeof(IngestModule).Assembly);
     opts.Discovery.IncludeAssembly(typeof(LocIntel.Modules.Checklists.ChecklistsModule).Assembly);
+    opts.Discovery.IncludeAssembly(typeof(IncidentsModule).Assembly);
 });
 
 if (role == "migrate")

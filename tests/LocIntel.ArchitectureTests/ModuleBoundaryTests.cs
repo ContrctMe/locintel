@@ -19,6 +19,7 @@ public class ModuleBoundaryTests
         typeof(Modules.Storage.StorageModule).Assembly,
         typeof(Modules.Ingest.IngestModule).Assembly,
         typeof(Modules.Checklists.ChecklistsModule).Assembly,
+        typeof(Modules.Incidents.IncidentsModule).Assembly,
     ];
 
     private const string ModulePrefix = "LocIntel.Modules.";
@@ -122,7 +123,11 @@ public class ModuleBoundaryTests
         var result = Types
             .InAssembly(typeof(Contracts.AssemblyMarker).Assembly)
             .ShouldNot()
-            .HaveDependencyOnAny(ModulePrefix + "*", "LocIntel.Api", "Microsoft.EntityFrameworkCore")
+            .HaveDependencyOnAny(
+                ModulePrefix + "*",
+                "LocIntel.Api",
+                "Microsoft.EntityFrameworkCore"
+            )
             .GetResult();
         Assert.True(result.IsSuccessful, "Contracts carry DTOs and integration events only.");
     }

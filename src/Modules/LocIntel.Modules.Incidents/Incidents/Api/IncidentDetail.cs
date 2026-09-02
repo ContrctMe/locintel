@@ -1,0 +1,31 @@
+namespace LocIntel.Modules.Incidents.Incidents.Api;
+
+public sealed record IncidentDetail(
+    Guid Id,
+    Guid SiteId,
+    string Path,
+    IncidentCategory Category,
+    IncidentSeverity Severity,
+    IncidentStatus Status,
+    IncidentSource Source,
+    string Title,
+    string Narrative,
+    string? LocationDetail,
+    DateTimeOffset OccurredAt,
+    DateOnly BusinessDate,
+    DateTimeOffset ReportedAt,
+    Guid ReportedBy,
+    string? Reporter,
+    decimal? LossAmount,
+    decimal? RecoveredAmount,
+    string Currency,
+    string? PoliceReportNumber,
+    string[] Tags,
+    DateTimeOffset? ClosedAt,
+    string? ClosureReason,
+    bool LegalHold,
+    DateTimeOffset UpdatedAt,
+    DateTimeOffset? DeletedAt,
+    IReadOnlyList<IncidentNoteView> Notes,
+    IReadOnlyList<IncidentAttachmentView> Attachments
+);
