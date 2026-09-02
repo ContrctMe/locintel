@@ -10998,7 +10998,8 @@
       "AlertKind": {
         "enum": [
           "HighSeverityIncident",
-          "BulletinIssued"
+          "BulletinIssued",
+          "RepeatOffender"
         ]
       },
       "AlertListResponse": {

@@ -292,3 +292,10 @@ jurisdiction.
   vendor, budget, and Accepted, rejects the others, and hands off to the
   existing fulfillment flow. Vendors see only their own quote; buyers see
   all. Console: broadcast option, quotes card with Award, vendor quote form.
+- 2026-09-02: **Repeat-offender alerts and printable package.** Entities
+  publishes `EntityLinked` (with the entity's link count) on every new
+  entity-incident link; Alerts raises a `RepeatOffender` feed alert (one
+  per entity+incident, Medium at 2 links, High at 3+) on the incident's
+  path and notifies managers. The prosecution package is now a print-ready
+  console page (`/cases/{id}/package`, browser print-to-PDF); fetching it
+  is the export and logs custody on every file, as before.

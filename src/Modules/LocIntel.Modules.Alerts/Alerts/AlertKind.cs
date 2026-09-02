@@ -7,4 +7,5 @@ public enum AlertKind
 {
     HighSeverityIncident,
     BulletinIssued,
+    RepeatOffender,
 }

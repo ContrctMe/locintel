@@ -4946,7 +4946,7 @@ export interface components {
             body: string;
         };
         /** @enum {unknown} */
-        AlertKind: "HighSeverityIncident" | "BulletinIssued";
+        AlertKind: "HighSeverityIncident" | "BulletinIssued" | "RepeatOffender";
         AlertListResponse: {
             items: components["schemas"]["AlertView"][];
             /** Format: int32 */

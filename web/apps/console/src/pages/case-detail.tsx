@@ -97,15 +97,6 @@ export function CaseDetailPage() {
     mutationFn: () => api.post(`/api/cases/${caseId}/notes`, { body: brief!.text }),
     invalidate: [key], success: 'Brief filed as a note', onSuccess: () => setBrief(null),
   });
-  const exportPackage = useApiMutation({
-    mutationFn: () => api.get<unknown>(`/api/cases/${caseId}/package`),
-    invalidate: [['cases']],
-    success: 'Package exported (custody logged)',
-    onSuccess: (pkg) => {
-      const blob = new Blob([JSON.stringify(pkg, null, 2)], { type: 'application/json' });
-      window.open(URL.createObjectURL(blob), '_blank', 'noopener');
-    },
-  });
 
   if (!c) return <p className="text-sm text-muted-foreground">Loading…</p>;
   const manage = c.canManage;
@@ -154,9 +145,7 @@ export function CaseDetailPage() {
             <Button variant="outline" disabled={hold.isPending} onClick={() => hold.mutate(!c.legalHold)}>
               {c.legalHold ? 'Release legal hold' : 'Place legal hold'}
             </Button>
-            <Button variant="outline" disabled={exportPackage.isPending} onClick={() => exportPackage.mutate()}>
-              Export package
-            </Button>
+            <Link to="/cases/$caseId/package" params={{ caseId }}><Button variant="outline">Print package</Button></Link>
             <Button variant="outline" disabled={draftBrief.isPending} onClick={() => draftBrief.mutate()}>
               {draftBrief.isPending ? 'Drafting…' : 'Draft brief'}
             </Button>

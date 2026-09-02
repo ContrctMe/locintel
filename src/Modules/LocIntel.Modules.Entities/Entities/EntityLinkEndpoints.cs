@@ -1,3 +1,4 @@
+using LocIntel.Contracts.Entities;
 using LocIntel.Contracts.Incidents;
 using LocIntel.Modules.Entities.Data;
 using LocIntel.Modules.Entities.Entities.Api;
@@ -72,6 +73,21 @@ public static class EntityLinkEndpoints
                 incident.Id,
                 Role = link.Role.ToString(),
             }
+        );
+        var linkCount = await db.Links.CountAsync(l => l.EntityId == entity.Id, ct);
+        await bus.PublishAsync(
+            new EntityLinked(
+                entity.Id,
+                entity.Kind.ToString(),
+                entity.DisplayName,
+                incident.Id,
+                incident.Title,
+                incident.SiteId,
+                incident.Path,
+                linkCount,
+                actor.Value.Id
+            ),
+            new DeliveryOptions { TenantId = entity.OrgId.Value.ToString() }
         );
         return Results.Ok(new EntityLinkCreated(link.Id));
     }

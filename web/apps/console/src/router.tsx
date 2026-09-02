@@ -5,6 +5,7 @@ import { AlertsPage } from './pages/alerts';
 import { AnalyticsPage } from './pages/analytics';
 import { AuditPage } from './pages/audit';
 import { CaseDetailPage } from './pages/case-detail';
+import { CasePackagePage } from './pages/case-package';
 import { CasesPage } from './pages/cases';
 import { ChecklistsPage } from './pages/checklists';
 import { DashboardPage } from './pages/dashboard';
@@ -49,6 +50,7 @@ const routes = [
   createRoute({ getParentRoute: () => rootRoute, path: '/analytics', component: AnalyticsPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/cases', component: CasesPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/cases/$caseId', component: CaseDetailPage }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/cases/$caseId/package', component: CasePackagePage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/entities', component: EntitiesPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/entities/$entityId', component: EntityDetailPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/network', component: NetworkPage }),

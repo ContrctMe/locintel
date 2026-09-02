@@ -257,6 +257,64 @@ public class AlertTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         );
     }
 
+    [Fact]
+    public async Task Second_link_of_an_entity_raises_a_repeat_offender_alert()
+    {
+        var owner = await fixture.LoginAsync(ApiFixture.UserA);
+        var rootId = await RootAsync(owner);
+        var siteId = await SiteAsync(owner, rootId, "Repeat Store");
+        var first = await IncidentAsync(owner, siteId, "First visit", "Theft", "Low");
+        var second = await IncidentAsync(owner, siteId, "Second visit", "Theft", "Low");
+        var entity = await owner.PostAsJsonAsync(
+            "/api/entities",
+            new { kind = "Person", displayName = "Returning Regular" }
+        );
+        var entityId = (await entity.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id")
+            .GetGuid();
+        (
+            await owner.PostAsJsonAsync(
+                $"/api/entities/{entityId}/links",
+                new { incidentId = first, role = "Suspect" }
+            )
+        ).EnsureSuccessStatusCode();
+        (
+            await owner.PostAsJsonAsync(
+                $"/api/entities/{entityId}/links",
+                new { incidentId = second, role = "Suspect" }
+            )
+        ).EnsureSuccessStatusCode();
+
+        JsonElement match = default;
+        var found = false;
+        for (var i = 0; i < 50 && !found; i++)
+        {
+            await Task.Delay(100);
+            var feed = await owner.GetFromJsonAsync<JsonElement>("/api/alerts");
+            foreach (var a in feed.GetProperty("items").EnumerateArray())
+                if (
+                    a.GetProperty("kind").GetString() == "RepeatOffender"
+                    && a.GetProperty("entityId").ValueKind == JsonValueKind.String
+                    && a.GetProperty("entityId").GetGuid() == entityId
+                )
+                {
+                    match = a;
+                    found = true;
+                }
+        }
+        Assert.True(found, "the second link should raise a repeat-offender alert");
+        Assert.Contains("linked to 2 incidents", match.GetProperty("title").GetString());
+        Assert.Equal(second, match.GetProperty("incidentId").GetGuid());
+        // the first link alone never alerted
+        var all = await owner.GetFromJsonAsync<JsonElement>("/api/alerts");
+        Assert.Single(
+            all.GetProperty("items").EnumerateArray(),
+            a =>
+                a.GetProperty("kind").GetString() == "RepeatOffender"
+                && a.GetProperty("entityId").GetGuid() == entityId
+        );
+    }
+
     private static async Task<Guid> RootAsync(HttpClient client)
     {
         var hierarchy = await client.GetAsync("/api/hierarchy");
