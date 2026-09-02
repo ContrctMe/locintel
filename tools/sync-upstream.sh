@@ -42,16 +42,25 @@ if [ "$last" = "$upstream" ]; then
   exit 0
 fi
 
+# Capture the parent BEFORE the worktree work. init.py's fork bootstrap
+# force-moves template-renamed, and a worktree shares this repo's refs - so
+# reading the branch after running it parented the snapshot on the fresh init
+# commit instead of the previous snapshot. The merge base then fell back to
+# the original fork point and every renamed file conflicted (33 versus 3).
+# --snapshot stops init.py touching refs at all; this capture means the
+# script stays correct even if that ever regresses.
+parent=$(git rev-parse template-renamed)
+
 wt=$(mktemp -d "${TMPDIR:-/tmp}/template-renamed.XXXXXX")
 trap 'git worktree remove --force "$wt" >/dev/null 2>&1 || true' EXIT
 git worktree add -q --detach "$wt" "$ref"
 (
   cd "$wt"
-  python3 tools/init.py "$product" >/dev/null
+  python3 tools/init.py "$product" --snapshot >/dev/null
   dotnet csharpier format . >/dev/null
   git add -A
   tree=$(git write-tree)
-  commit=$(git commit-tree "$tree" -p template-renamed \
+  commit=$(git commit-tree "$tree" -p "$parent" \
     -m "template $ref $upstream, renamed to $product (init.py + csharpier)")
   git branch -f template-renamed "$commit"
 )

@@ -129,7 +129,11 @@ don't restate them here.
 - New module: `python3 tools/new-module.py <Name>` (prints the wiring list)
 - Fork init: `python3 tools/init.py <ProductName>` (one-way rename; also adds
   the `template` remote and creates `template-renamed` at the init commit)
-- Pull the template forward into a fork: `tools/sync-upstream.sh` (ADR 36)
+- Pull the template forward into a fork: `tools/sync-upstream.sh` (ADR 36).
+  It replays upstream through `init.py --snapshot` (rename only — no
+  verification, no git bootstrap; the fork bootstrap inside a worktree would
+  corrupt the branch the sync is building). Covered by
+  `tests/sync-upstream.test.sh`, which syncs twice.
 
 ## For forks
 

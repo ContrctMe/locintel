@@ -45,18 +45,18 @@ public class BillingTests(ApiFixture fixture) : IClassFixture<ApiFixture>
 
     private async Task WaitForPlan(HttpClient client, string? planId)
     {
-        for (var i = 0; i < 100; i++)
-        {
-            var billing = await client.GetFromJsonAsync<JsonElement>("/api/billing");
-            var current =
-                billing.GetProperty("planId").ValueKind == JsonValueKind.Null
-                    ? null
-                    : billing.GetProperty("planId").GetString();
-            if (current == planId)
-                return;
-            await Task.Delay(100);
-        }
-        Assert.Fail($"plan never became '{planId}'");
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+            {
+                var billing = await client.GetFromJsonAsync<JsonElement>("/api/billing");
+                return (
+                        billing.GetProperty("planId").ValueKind == JsonValueKind.Null
+                            ? null
+                            : billing.GetProperty("planId").GetString()
+                    ) == planId;
+            },
+            $"the subscription to reach plan {planId}"
+        );
     }
 
     [Fact]
@@ -145,12 +145,10 @@ public class BillingTests(ApiFixture fixture) : IClassFixture<ApiFixture>
 
         // cancellation strips plan rows back to defaults; custody still holds
         await PostWebhook(fixture.OrgA.Value, "scale", "Canceled");
-        for (var i = 0; i < 100; i++)
-        {
-            if (await EffectiveValue(owner, "hierarchy.depth") == "4")
-                break;
-            await Task.Delay(100);
-        }
+        await ApiFixture.WaitUntilAsync(
+            async () => await EffectiveValue(owner, "hierarchy.depth") == "4",
+            "entitlements to fall back to the catalog default after cancellation"
+        );
         Assert.Equal("4", await EffectiveValue(owner, "hierarchy.depth")); // catalog default
         Assert.Equal("3", await EffectiveValue(owner, "sites.max")); // operator row survives
         var canceled = await owner.GetFromJsonAsync<JsonElement>("/api/billing");
@@ -184,13 +182,7 @@ public class BillingTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         var orgId = (await created.Content.ReadFromJsonAsync<JsonElement>())
             .GetProperty("orgId")
             .GetGuid();
-        for (var i = 0; i < 100; i++)
-        {
-            var me = await owner.GetFromJsonAsync<JsonElement>("/me");
-            if (me.GetProperty("organizations").GetArrayLength() > 0)
-                break;
-            await Task.Delay(100);
-        }
+        await ApiFixture.WaitForMembershipAsync(owner);
         (await owner.PostAsJsonAsync("/auth/switch-org", new { orgId })).EnsureSuccessStatusCode();
 
         await PostWebhook(orgId, "growth", "Active");

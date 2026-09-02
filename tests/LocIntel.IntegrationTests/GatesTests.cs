@@ -57,13 +57,7 @@ public class GatesTests(ApiFixture fixture) : IClassFixture<ApiFixture>
             .GetProperty("orgId")
             .GetGuid();
         // membership lands via the outbox; switch once it is visible
-        for (var i = 0; i < 100; i++)
-        {
-            var me = await owner.GetFromJsonAsync<JsonElement>("/me");
-            if (me.GetProperty("organizations").GetArrayLength() > 0)
-                break;
-            await Task.Delay(100);
-        }
+        await ApiFixture.WaitForMembershipAsync(owner);
         (await owner.PostAsJsonAsync("/auth/switch-org", new { orgId })).EnsureSuccessStatusCode();
 
         var created = await owner.PostAsJsonAsync(

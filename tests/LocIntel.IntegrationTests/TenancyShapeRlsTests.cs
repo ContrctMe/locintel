@@ -237,4 +237,147 @@ public class TenancyShapeRlsTests(ApiFixture fixture) : IClassFixture<ApiFixture
         Assert.Equal(0, await CountAsync(reader, "loop_parent_probe"));
         Assert.Equal(0, await CountAsync(reader, "loop_recipients_probe"));
     }
+
+    // ---- item 16: status-gated recipients, and recipient-written rows ----
+
+    private async Task SetupShareAsync(bool writableByRecipient)
+    {
+        // drop the DEPENDENT table first: share_probe's policy references
+        // share_access_probe, and Postgres refuses to drop a table a policy
+        // still names - the same ordering trap the migration skill warns
+        // about for Down()
+        await using (var admin = new NpgsqlConnection(fixture.PostgresConnectionString))
+        {
+            await admin.OpenAsync();
+            await using var drop = new NpgsqlCommand(
+                "DROP TABLE IF EXISTS platform.share_probe",
+                admin
+            );
+            await drop.ExecuteNonQueryAsync();
+        }
+
+        await SetupAsync(
+            "share_access_probe",
+            "id uuid primary key, share_id uuid not null, org_id uuid not null, status text not null",
+            RlsMigrationExtensions.TwoPartySql("platform", "share_access_probe", "org_id")
+        );
+        await SetupAsync(
+            "share_probe",
+            "id uuid primary key, org_id uuid not null, note text",
+            RlsMigrationExtensions.RecipientListSql(
+                "platform",
+                "share_probe",
+                "share_access_probe",
+                "share_id",
+                "org_id",
+                counterpartyColumn: null,
+                orgColumn: "org_id",
+                recipientPredicate: "status <> 'Removed'",
+                writableByRecipient: writableByRecipient
+            )
+        );
+    }
+
+    private async Task SeedShareAsync(Guid shareId, Guid member, string status)
+    {
+        await using (var owner = await AsOrg(OrgOwner))
+        {
+            await using var share = new NpgsqlCommand(
+                "INSERT INTO platform.share_probe VALUES ($1, $2, 'original')",
+                owner
+            );
+            share.Parameters.AddWithValue(shareId);
+            share.Parameters.AddWithValue(OrgOwner);
+            await share.ExecuteNonQueryAsync();
+        }
+
+        // the access row is single-owner: each org owns its own, so it is
+        // written as that org (the owner writing it would violate the access
+        // table's own policy - which is the point of anchoring visibility on
+        // a single-owner table)
+        await using var recipient = await AsOrg(member);
+        await using var access = new NpgsqlCommand(
+            "INSERT INTO platform.share_access_probe VALUES (gen_random_uuid(), $1, $2, $3)",
+            recipient
+        );
+        access.Parameters.AddWithValue(shareId);
+        access.Parameters.AddWithValue(member);
+        access.Parameters.AddWithValue(status);
+        await access.ExecuteNonQueryAsync();
+    }
+
+    [Fact]
+    public async Task A_removed_recipient_keeps_its_row_but_loses_read_access()
+    {
+        await SetupShareAsync(writableByRecipient: false);
+        await SeedShareAsync(Guid.NewGuid(), OrgCounterparty, "Active");
+        await SeedShareAsync(Guid.NewGuid(), OrgStranger, "Removed");
+
+        await using (var active = await AsOrg(OrgCounterparty))
+            Assert.Equal(1, await CountAsync(active, "share_probe"));
+
+        // the access row still EXISTS for the audit trail - the predicate is
+        // what stops it granting anything
+        await using (var removed = await AsOrg(OrgStranger))
+        {
+            Assert.Equal(0, await CountAsync(removed, "share_probe"));
+            Assert.Equal(1, await CountAsync(removed, "share_access_probe"));
+        }
+    }
+
+    [Fact]
+    public async Task Recipients_can_write_when_the_policy_says_so_but_removed_ones_cannot()
+    {
+        await SetupShareAsync(writableByRecipient: true);
+        await SeedShareAsync(Guid.NewGuid(), OrgCounterparty, "Active");
+        await SeedShareAsync(Guid.NewGuid(), OrgStranger, "Removed");
+
+        // an active member authors the row (a share member editing membership)
+        await using (var active = await AsOrg(OrgCounterparty))
+        {
+            await using var edit = new NpgsqlCommand(
+                "UPDATE platform.share_probe SET note = 'by member'",
+                active
+            );
+            Assert.Equal(1, await edit.ExecuteNonQueryAsync());
+        }
+
+        // the removed one cannot write either: the SAME gated lookup guards
+        // WITH CHECK, so revoking access revokes writes, not just reads
+        await using (var removed = await AsOrg(OrgStranger))
+        {
+            await using var edit = new NpgsqlCommand(
+                "UPDATE platform.share_probe SET note = 'by removed member'",
+                removed
+            );
+            Assert.Equal(0, await edit.ExecuteNonQueryAsync()); // invisible, so nothing to update
+        }
+
+        await using (var owner = await AsOrg(OrgOwner))
+        {
+            await using var read = new NpgsqlCommand(
+                "SELECT count(*) FROM platform.share_probe WHERE note = 'by removed member'",
+                owner
+            );
+            Assert.Equal(0L, (long)(await read.ExecuteScalarAsync())!);
+        }
+    }
+
+    [Fact]
+    public async Task Recipient_writes_stay_refused_when_the_policy_does_not_grant_them()
+    {
+        // the default: listing grants READ only, even for an active member
+        await SetupShareAsync(writableByRecipient: false);
+        await SeedShareAsync(Guid.NewGuid(), OrgCounterparty, "Active");
+
+        await using var active = await AsOrg(OrgCounterparty);
+        await using var edit = new NpgsqlCommand(
+            "UPDATE platform.share_probe SET note = 'should not stick'",
+            active
+        );
+        var refused = await Assert.ThrowsAsync<PostgresException>(() =>
+            edit.ExecuteNonQueryAsync()
+        );
+        Assert.Equal("42501", refused.SqlState);
+    }
 }

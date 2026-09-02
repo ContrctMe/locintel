@@ -113,22 +113,23 @@ public class WebhookTests(ApiFixture fixture) : IClassFixture<ApiFixture>
             Assert.Equal(2, received.Count);
 
             List<JsonElement> rows = [];
-            for (var i = 0; i < 50; i++)
-            {
-                rows =
-                [
-                    .. (
-                        await owner.GetFromJsonAsync<JsonElement>(
-                            $"/api/webhooks/{endpointId}/deliveries"
+            await ApiFixture.WaitUntilAsync(
+                async () =>
+                {
+                    rows =
+                    [
+                        .. (
+                            await owner.GetFromJsonAsync<JsonElement>(
+                                $"/api/webhooks/{endpointId}/deliveries"
+                            )
                         )
-                    )
-                        .EnumerateArray()
-                        .Where(d => d.GetProperty("eventName").GetString() == "webhook.ping"),
-                ];
-                if (rows.Count >= 2)
-                    break;
-                await Task.Delay(100);
-            }
+                            .EnumerateArray()
+                            .Where(d => d.GetProperty("eventName").GetString() == "webhook.ping"),
+                    ];
+                    return rows.Count >= 2;
+                },
+                "both webhook ping deliveries to be recorded"
+            );
             Assert.Contains(
                 rows,
                 r => !r.GetProperty("ok").GetBoolean() && r.GetProperty("attempt").GetInt32() == 1

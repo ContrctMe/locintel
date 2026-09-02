@@ -135,8 +135,13 @@ public abstract class ModuleDbContext(DbContextOptions options, ITenantContext t
     ///     r => Recipients.Any(x => x.RequestId == r.Id &amp;&amp; x.CounterpartyOrgId == CurrentOrg));
     /// </code>
     ///
-    /// Read-only by design, matching the policy's WITH CHECK: being on the
-    /// list never authorises writing the parent.
+    /// Gate the lookup on the recipient row's own state where membership can
+    /// lapse - `&amp;&amp; a.Status != MembershipStatus.Removed` - because a
+    /// removal usually KEEPS the row for the audit trail, so listing alone
+    /// cannot mean access.
+    ///
+    /// Read-only unless the policy was written with
+    /// <c>writableByRecipient</c>; the filter governs reads either way.
     /// </summary>
     protected void AddRecipientListFilter<TEntity>(
         ModelBuilder modelBuilder,
@@ -151,6 +156,28 @@ public abstract class ModuleDbContext(DbContextOptions options, ITenantContext t
             );
         var combined = Expression.OrElse(
             new Rebind(standard.Parameters[0], entity).Visit(standard.Body)!,
+            new Rebind(visibleToRecipient.Parameters[0], entity).Visit(visibleToRecipient.Body)!
+        );
+        modelBuilder
+            .Entity<TEntity>()
+            .HasQueryFilter(TenantFilter, Expression.Lambda<Func<TEntity, bool>>(combined, entity));
+    }
+
+    /// <summary>
+    /// The same shape for a SINGLE-OWNER parent - a share and its members,
+    /// where there is no counterparty. Separate name because C# cannot
+    /// overload on the type constraint alone.
+    /// </summary>
+    protected void AddOwnerAndRecipientsFilter<TEntity>(
+        ModelBuilder modelBuilder,
+        Expression<Func<TEntity, bool>> visibleToRecipient
+    )
+        where TEntity : class, IOrgScoped
+    {
+        var entity = Expression.Parameter(typeof(TEntity), "e");
+        var owner = (Expression<Func<TEntity, bool>>)(e => e.OrgId == CurrentOrg);
+        var combined = Expression.OrElse(
+            new Rebind(owner.Parameters[0], entity).Visit(owner.Body)!,
             new Rebind(visibleToRecipient.Parameters[0], entity).Visit(visibleToRecipient.Body)!
         );
         modelBuilder

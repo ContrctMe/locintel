@@ -239,16 +239,19 @@ public class HygieneTests(ApiFixture fixture) : IClassFixture<ApiFixture>
 
     private static async Task<Guid> PollOrg(HttpClient client, string slug)
     {
-        for (var i = 0; i < 60; i++)
-        {
-            var me = await client.GetFromJsonAsync<JsonElement>("/me");
-            var org = me.GetProperty("organizations")
-                .EnumerateArray()
-                .FirstOrDefault(o => o.GetProperty("slug").GetString() == slug);
-            if (org.ValueKind == JsonValueKind.Object)
-                return org.GetProperty("id").GetGuid();
-            await Task.Delay(100);
-        }
+        JsonElement org = default;
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+            {
+                org = (await client.GetFromJsonAsync<JsonElement>("/me"))
+                    .GetProperty("organizations")
+                    .EnumerateArray()
+                    .FirstOrDefault(o => o.GetProperty("slug").GetString() == slug);
+                return org.ValueKind == JsonValueKind.Object;
+            },
+            $"the org '{slug}' to appear in the membership read model"
+        );
+        return org.GetProperty("id").GetGuid();
         throw new TimeoutException($"org '{slug}' never appeared");
     }
 }

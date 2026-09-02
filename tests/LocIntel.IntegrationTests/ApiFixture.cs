@@ -249,13 +249,14 @@ public class ApiFixture : IAsyncLifetime
                 )
             );
         }
-        for (var i = 0; i < 100; i++)
-        {
-            await using var check = CreateIdentityContext(adminCs);
-            if (await check.OrgDirectory.CountAsync() >= 3)
-                break;
-            await Task.Delay(100);
-        }
+        await WaitUntilAsync(
+            async () =>
+            {
+                await using var check = CreateIdentityContext(adminCs);
+                return await check.OrgDirectory.CountAsync() >= 3;
+            },
+            "the seeded orgs to reach the org directory read model"
+        );
     }
 
     /// <summary>Subclass hook (e.g. the WorkOS-emulator fixture overrides auth settings).</summary>
@@ -422,7 +423,8 @@ public class ApiFixture : IAsyncLifetime
     public static async Task WaitUntilAsync(
         Func<Task<bool>> condition,
         string what,
-        TimeSpan? timeout = null
+        TimeSpan? timeout = null,
+        Func<Task<string>>? diagnostics = null
     )
     {
         var limit = timeout ?? TimeSpan.FromSeconds(30);
@@ -434,7 +436,11 @@ public class ApiFixture : IAsyncLifetime
             await Task.Delay(100);
         } while (DateTimeOffset.UtcNow < deadline);
 
-        Assert.Fail($"timed out after {limit.TotalSeconds:0}s waiting for {what}");
+        // gathered ONLY on failure - an outbox wait that times out is usually
+        // explained by a dead letter, and paying for that on every poll would
+        // be absurd
+        var detail = diagnostics is null ? "" : $"; {await diagnostics()}";
+        Assert.Fail($"timed out after {limit.TotalSeconds:0}s waiting for {what}{detail}");
     }
 
     /// <summary>

@@ -25,13 +25,7 @@ public class OrgClosureTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         var orgId = (await created.Content.ReadFromJsonAsync<JsonElement>())
             .GetProperty("orgId")
             .GetGuid();
-        for (var i = 0; i < 100; i++)
-        {
-            var me = await owner.GetFromJsonAsync<JsonElement>("/me");
-            if (me.GetProperty("organizations").GetArrayLength() > 0)
-                break;
-            await Task.Delay(100);
-        }
+        await ApiFixture.WaitForMembershipAsync(owner);
         (await owner.PostAsJsonAsync("/auth/switch-org", new { orgId })).EnsureSuccessStatusCode();
         return (owner, orgId);
     }
