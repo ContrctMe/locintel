@@ -54,8 +54,8 @@ if (authProvider == "workos")
         .WithEnvironment("Auth__WorkOS__ClientId", "client_locintel_dev")
         .WithEnvironment("Auth__WorkOS__ApiBaseUrl", workosEndpoint);
 api = api
-    // WaitFor(api) waits for HEALTHY: 503 until dev bootstrap finishes
-    .WithHttpHealthCheck("/healthz");
+// WaitFor(api) waits for HEALTHY: 503 until dev bootstrap finishes
+.WithHttpHealthCheck("/healthz");
 
 builder
     .AddNpmApp("console", "../../web/apps/console", "dev")

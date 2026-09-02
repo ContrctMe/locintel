@@ -2168,6 +2168,90 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/incidents/imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_incidents_imports
+         * @description GET_api_incidents_imports
+         */
+        get: operations["GET_api_incidents_imports"];
+        put?: never;
+        /**
+         * POST_api_incidents_imports
+         * @description POST_api_incidents_imports
+         */
+        post: operations["POST_api_incidents_imports"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/incidents/imports/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_incidents_imports_id
+         * @description GET_api_incidents_imports_id
+         */
+        get: operations["GET_api_incidents_imports_id"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/incidents/imports/{id}/commit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_incidents_imports_id_commit
+         * @description POST_api_incidents_imports_id_commit
+         */
+        post: operations["POST_api_incidents_imports_id_commit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/incidents/imports/{id}/discard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_incidents_imports_id_discard
+         * @description POST_api_incidents_imports_id_discard
+         */
+        post: operations["POST_api_incidents_imports_id_discard"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/entities": {
         parameters: {
             query?: never;
@@ -5526,10 +5610,68 @@ export interface components {
             expiresAt: string;
             orgName: string;
         };
+        ImportBatchDetail: {
+            batch: components["schemas"]["ImportBatchView"];
+            rows: components["schemas"]["ImportRowView"][];
+        };
+        ImportBatchListResponse: {
+            items: components["schemas"]["ImportBatchView"][];
+        };
+        ImportBatchMutated: {
+            /** Format: uuid */
+            id: string;
+            status: components["schemas"]["ImportStatus"];
+        };
+        ImportBatchView: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            fileId: string;
+            fileName: string;
+            status: components["schemas"]["ImportStatus"];
+            /** Format: int32 */
+            total: number | string;
+            /** Format: int32 */
+            valid: number | string;
+            /** Format: int32 */
+            invalid: number | string;
+            /** Format: uuid */
+            createdBy: string;
+            creator: null | string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            committedAt: null | string;
+        };
+        ImportCommitted: {
+            /** Format: uuid */
+            id: string;
+            /** Format: int32 */
+            created: number | string;
+        };
         ImportQueued: {
             /** Format: uuid */
             bulletinId: string;
         };
+        ImportRowView: {
+            /** Format: int32 */
+            rowNumber: number | string;
+            siteRef: string;
+            /** Format: uuid */
+            siteId: null | string;
+            category: null | components["schemas"]["IncidentCategory"];
+            severity: null | components["schemas"]["IncidentSeverity"];
+            /** Format: date-time */
+            occurredAt: null | string;
+            title: string;
+            /** Format: double */
+            lossAmount: null | number | string;
+            errors: string[];
+            /** Format: uuid */
+            incidentId: null | string;
+        };
+        /** @enum {unknown} */
+        ImportStatus: "Staged" | "Committed" | "Discarded";
         IncidentAttachmentCreated: {
             /** Format: uuid */
             id: string;
@@ -6379,6 +6521,10 @@ export interface components {
         SsoStatusResponse: {
             available: boolean;
             entitled: boolean;
+        };
+        StageImportRequest: {
+            /** Format: uuid */
+            fileId: string;
         };
         StageUploadRequest: {
             /** Format: uuid */
@@ -10507,6 +10653,161 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IncidentStatsResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_incidents_imports: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportBatchListResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_incidents_imports: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StageImportRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportBatchView"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_incidents_imports_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportBatchDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_incidents_imports_id_commit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportCommitted"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_incidents_imports_id_discard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportBatchMutated"];
                 };
             };
             /** @description Not Found */

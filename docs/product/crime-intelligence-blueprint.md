@@ -261,3 +261,11 @@ jurisdiction.
   tips. Two fixes came out of it: entitlement labels for the new plan
   keys, and the vendor profile form seeding its state before the query
   resolved.
+- 2026-09-02: **Incident CSV import shipped** (Incidents module, feature
+  folder `Imports`; migration `ImportBatches`). Stage parses a Clean
+  Storage file with the CSV parser now shared from `Platform.Text`
+  (moved out of Ingest), resolves sites by external id or name, validates
+  every row and applies gate 3 per row; commit lands valid rows as
+  incidents with Source = Import (stamps as usual; no IncidentReported
+  events - history is not news); discard deletes the staged rows. Console:
+  Import CSV dialog on the incidents page with preview of invalid rows.

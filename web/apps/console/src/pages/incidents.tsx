@@ -72,7 +72,10 @@ export function IncidentsPage() {
     <div className="max-w-5xl space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">Incidents</h1>
-        {can(me, 'incidents:report') && sites && <ReportDialog sites={sites} />}
+        <div className="flex gap-2">
+          {can(me, 'incidents:manage') && <ImportDialog />}
+          {can(me, 'incidents:report') && sites && <ReportDialog sites={sites} />}
+        </div>
       </div>
       <div className="flex flex-wrap gap-2">
         <Input className="w-56" placeholder="Search title or narrative" value={q}
@@ -252,6 +255,82 @@ function ReportDialog({ sites }: { sites: Site[] }) {
           onClick={() => report.mutate()}>
           Report
         </Button>
+      </div>
+    </FormDialog>
+  );
+}
+
+type ImportBatch = { id: string; fileName: string; status: string; total: number; valid: number; invalid: number; createdAt: string };
+type ImportDetail = { batch: ImportBatch; rows: { rowNumber: number; siteRef: string; title: string; errors: string[] }[] };
+type StoredFile = { id: string; name: string; status: string };
+
+/** Historical incidents from CSV (stage, preview, commit - ADR 18's shape). Upload on the Files page first. */
+function ImportDialog() {
+  const [open, setOpen] = useState(false);
+  const [fileId, setFileId] = useState('');
+  const [batchId, setBatchId] = useState('');
+  const { data: files } = useQuery({
+    queryKey: ['files', 'picker'],
+    queryFn: async () => (await api.get<Page<StoredFile>>('/api/files?limit=200')).items,
+    enabled: open,
+  });
+  const { data: detail } = useQuery({
+    queryKey: ['incidents', 'import', batchId],
+    queryFn: () => api.get<ImportDetail>(`/api/incidents/imports/${batchId}`),
+    enabled: !!batchId,
+  });
+  const stage = useApiMutation({
+    mutationFn: () => api.post<ImportBatch>('/api/incidents/imports', { fileId }),
+    onSuccess: (b) => setBatchId(b.id),
+    errorFallback: 'Could not stage the file',
+  });
+  const commit = useApiMutation({
+    mutationFn: () => api.post<{ created: number }>(`/api/incidents/imports/${batchId}/commit`),
+    invalidate: [['incidents']],
+    success: 'Incidents imported',
+    onSuccess: () => { setOpen(false); setBatchId(''); },
+  });
+  const discard = useApiMutation({
+    mutationFn: () => api.post(`/api/incidents/imports/${batchId}/discard`),
+    onSuccess: () => setBatchId(''),
+  });
+  const invalid = detail?.rows.filter((r) => r.errors.length > 0) ?? [];
+  return (
+    <FormDialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setBatchId(''); }} title="Import incidents from CSV"
+      description="Columns: site, occurred_at, category, severity, title, narrative, loss_amount, police_report, tags. Nothing lands until you commit."
+      trigger={<Button variant="outline">Import CSV</Button>}>
+      <div className="space-y-3">
+        {!batchId ? (
+          <>
+            <div className="space-y-1">
+              <Label htmlFor="imp-file">File (upload on the Files page first)</Label>
+              <Select id="imp-file" value={fileId} onChange={(e) => setFileId(e.target.value)}>
+                <option value="">Choose…</option>
+                {files?.filter((f) => f.status === 'Clean').map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+              </Select>
+            </div>
+            <Button className="w-full" disabled={!fileId || stage.isPending} onClick={() => stage.mutate()}>Stage and preview</Button>
+          </>
+        ) : detail ? (
+          <>
+            <p className="text-sm">
+              <span className="font-medium">{detail.batch.fileName}</span>: {detail.batch.total} rows · {detail.batch.valid} will land · {detail.batch.invalid} invalid
+            </p>
+            {invalid.length > 0 && (
+              <div className="max-h-48 space-y-1 overflow-auto rounded-md border p-2 text-xs">
+                {invalid.slice(0, 50).map((r) => (
+                  <div key={r.rowNumber}><span className="font-medium">Row {r.rowNumber}</span> {r.siteRef} · {r.title || '(no title)'}: <span className="text-destructive">{r.errors.join('; ')}</span></div>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-2">
+              <Button className="flex-1" disabled={detail.batch.valid === 0 || commit.isPending} onClick={() => commit.mutate()}>Commit {detail.batch.valid} incidents</Button>
+              <Button variant="outline" disabled={discard.isPending} onClick={() => discard.mutate()}>Discard</Button>
+            </div>
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">Staging…</p>
+        )}
       </div>
     </FormDialog>
   );

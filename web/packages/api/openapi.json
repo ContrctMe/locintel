@@ -5179,6 +5179,197 @@
         }
       }
     },
+    "/api/incidents/imports": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Incidents.Imports.ImportEndpoints"
+        ],
+        "summary": "POST_api_incidents_imports",
+        "description": "POST_api_incidents_imports",
+        "operationId": "POST_api_incidents_imports",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StageImportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportBatchView"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Incidents.Imports.ImportEndpoints"
+        ],
+        "summary": "GET_api_incidents_imports",
+        "description": "GET_api_incidents_imports",
+        "operationId": "GET_api_incidents_imports",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportBatchListResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/incidents/imports/{id}": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Incidents.Imports.ImportEndpoints"
+        ],
+        "summary": "GET_api_incidents_imports_id",
+        "description": "GET_api_incidents_imports_id",
+        "operationId": "GET_api_incidents_imports_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportBatchDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/incidents/imports/{id}/commit": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Incidents.Imports.ImportEndpoints"
+        ],
+        "summary": "POST_api_incidents_imports_id_commit",
+        "description": "POST_api_incidents_imports_id_commit",
+        "operationId": "POST_api_incidents_imports_id_commit",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportCommitted"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/incidents/imports/{id}/discard": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Incidents.Imports.ImportEndpoints"
+        ],
+        "summary": "POST_api_incidents_imports_id_discard",
+        "description": "POST_api_incidents_imports_id_discard",
+        "operationId": "POST_api_incidents_imports_id_discard",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportBatchMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/entities": {
       "get": {
         "tags": [
@@ -13470,6 +13661,152 @@
           }
         }
       },
+      "ImportBatchDetail": {
+        "required": [
+          "batch",
+          "rows"
+        ],
+        "type": "object",
+        "properties": {
+          "batch": {
+            "$ref": "#/components/schemas/ImportBatchView"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportRowView"
+            }
+          }
+        }
+      },
+      "ImportBatchListResponse": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportBatchView"
+            }
+          }
+        }
+      },
+      "ImportBatchMutated": {
+        "required": [
+          "id",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ImportStatus"
+          }
+        }
+      },
+      "ImportBatchView": {
+        "required": [
+          "id",
+          "fileId",
+          "fileName",
+          "status",
+          "total",
+          "valid",
+          "invalid",
+          "createdBy",
+          "creator",
+          "createdAt",
+          "committedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fileId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ImportStatus"
+          },
+          "total": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "valid": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "invalid": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "creator": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "committedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "ImportCommitted": {
+        "required": [
+          "id",
+          "created"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "created": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "ImportQueued": {
         "required": [
           "bulletinId"
@@ -13481,6 +13818,100 @@
             "format": "uuid"
           }
         }
+      },
+      "ImportRowView": {
+        "required": [
+          "rowNumber",
+          "siteRef",
+          "siteId",
+          "category",
+          "severity",
+          "occurredAt",
+          "title",
+          "lossAmount",
+          "errors",
+          "incidentId"
+        ],
+        "type": "object",
+        "properties": {
+          "rowNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "siteRef": {
+            "type": "string"
+          },
+          "siteId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "category": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/IncidentCategory"
+              }
+            ]
+          },
+          "severity": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/IncidentSeverity"
+              }
+            ]
+          },
+          "occurredAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "title": {
+            "type": "string"
+          },
+          "lossAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "incidentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "ImportStatus": {
+        "enum": [
+          "Staged",
+          "Committed",
+          "Discarded"
+        ]
       },
       "IncidentAttachmentCreated": {
         "required": [
@@ -16798,6 +17229,18 @@
           }
         }
       },
+      "StageImportRequest": {
+        "required": [
+          "fileId"
+        ],
+        "type": "object",
+        "properties": {
+          "fileId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
       "StageUploadRequest": {
         "required": [
           "fileId"
@@ -17680,6 +18123,9 @@
     },
     {
       "name": "LocIntel.Modules.Incidents.Incidents.IncidentStatsEndpoint"
+    },
+    {
+      "name": "LocIntel.Modules.Incidents.Imports.ImportEndpoints"
     },
     {
       "name": "LocIntel.Modules.Entities.Entities.EntityEndpoints"

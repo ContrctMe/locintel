@@ -1,3 +1,4 @@
+using LocIntel.Modules.Incidents.Imports;
 using LocIntel.Modules.Incidents.Incidents;
 using LocIntel.Platform.Data;
 using LocIntel.Platform.Kernel;
@@ -15,6 +16,8 @@ public sealed class IncidentsDbContext(
     public DbSet<Incident> Incidents => Set<Incident>();
     public DbSet<IncidentNote> Notes => Set<IncidentNote>();
     public DbSet<IncidentAttachment> Attachments => Set<IncidentAttachment>();
+    public DbSet<IncidentImportBatch> ImportBatches => Set<IncidentImportBatch>();
+    public DbSet<IncidentImportRow> ImportRows => Set<IncidentImportRow>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -114,6 +117,58 @@ public sealed class IncidentsDbContext(
             b.Property(x => x.AddedAt).HasColumnName("added_at");
             b.HasIndex(x => new { x.IncidentId, x.FileId }).IsUnique();
             b.HasIndex(x => new { x.OrgId, x.IncidentId });
+        });
+
+        modelBuilder.Entity<IncidentImportBatch>(b =>
+        {
+            b.ToTable("import_batches");
+            b.HasKey(x => x.Id);
+            b.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
+            b.Property(x => x.OrgId).HasColumnName("org_id");
+            b.Property(x => x.FileId).HasColumnName("file_id");
+            b.Property(x => x.FileName).HasColumnName("file_name").HasMaxLength(300);
+            b.Property(x => x.Status)
+                .HasColumnName("status")
+                .HasConversion<string>()
+                .HasMaxLength(20);
+            b.Property(x => x.CreatedBy).HasColumnName("created_by");
+            b.Property(x => x.CreatedAt).HasColumnName("created_at");
+            b.Property(x => x.CommittedAt).HasColumnName("committed_at");
+            b.Property(x => x.Total).HasColumnName("total");
+            b.Property(x => x.Valid).HasColumnName("valid");
+            b.Property(x => x.Invalid).HasColumnName("invalid");
+            b.HasIndex(x => new { x.OrgId, x.CreatedAt });
+        });
+
+        modelBuilder.Entity<IncidentImportRow>(b =>
+        {
+            b.ToTable("import_rows");
+            b.HasKey(x => x.Id);
+            b.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
+            b.Property(x => x.OrgId).HasColumnName("org_id");
+            b.Property(x => x.BatchId).HasColumnName("batch_id");
+            b.Property(x => x.RowNumber).HasColumnName("row_number");
+            b.Property(x => x.SiteRef).HasColumnName("site_ref").HasMaxLength(200);
+            b.Property(x => x.SiteId).HasColumnName("site_id");
+            b.Property(x => x.Category)
+                .HasColumnName("category")
+                .HasConversion<string>()
+                .HasMaxLength(40);
+            b.Property(x => x.Severity)
+                .HasColumnName("severity")
+                .HasConversion<string>()
+                .HasMaxLength(20);
+            b.Property(x => x.OccurredAt).HasColumnName("occurred_at");
+            b.Property(x => x.Title).HasColumnName("title").HasMaxLength(200);
+            b.Property(x => x.Narrative).HasColumnName("narrative");
+            b.Property(x => x.LossAmount).HasColumnName("loss_amount").HasPrecision(14, 2);
+            b.Property(x => x.PoliceReportNumber)
+                .HasColumnName("police_report_number")
+                .HasMaxLength(100);
+            b.Property(x => x.Tags).HasColumnName("tags");
+            b.Property(x => x.Errors).HasColumnName("errors");
+            b.Property(x => x.IncidentId).HasColumnName("incident_id");
+            b.HasIndex(x => new { x.BatchId, x.RowNumber });
         });
     }
 }

@@ -64,7 +64,10 @@ public static class IngestEndpoints
         using (var reader = new StreamReader(stream))
             text = await reader.ReadToEndAsync(ct);
 
-        var rows = CsvParser.Parse(text).Select(CsvParser.ToSourceRow).ToList();
+        var rows = LocIntel
+            .Platform.Text.CsvParser.Parse(text)
+            .Select(SourceRows.FromRecord)
+            .ToList();
         if (rows.Count == 0)
             return Results.BadRequest(new { error = "no data rows found" });
 
