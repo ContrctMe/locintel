@@ -96,9 +96,12 @@ public class PublicJourneyTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         var guest = GuestFor("org-a");
 
         var sites = await guest.GetFromJsonAsync<JsonElement>("/public/sites");
+        // SeedSites runs per test, so a name can appear more than once by
+        // the time this test runs (xUnit's in-class order is a name hash)
         var names = sites
             .EnumerateArray()
-            .ToDictionary(s => s.GetProperty("name").GetString()!, s => s);
+            .GroupBy(s => s.GetProperty("name").GetString()!)
+            .ToDictionary(g => g.Key, g => g.First());
         Assert.True(names.ContainsKey("Public Open Store"));
         Assert.False(names.ContainsKey("Public Closed Store")); // closed: invisible
         Assert.True(names["Public Open Store"].GetProperty("openNow").GetBoolean());

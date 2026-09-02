@@ -93,7 +93,9 @@ public class GatesTests(ApiFixture fixture) : IClassFixture<ApiFixture>
             $"/api/operator/orgs/{fixture.OrgA.Value}/entitlements/sites.max/exceptions",
             new
             {
-                value = (existing + 5).ToString(),
+                // generous: this exception outlives the test (an hour) and
+                // becomes the org's ceiling for everything else in the class
+                value = (existing + 500).ToString(),
                 reason = "sales promised",
                 expiresAt = DateTimeOffset.UtcNow.AddHours(1),
             }
@@ -110,6 +112,16 @@ public class GatesTests(ApiFixture fixture) : IClassFixture<ApiFixture>
             }
         );
         third.EnsureSuccessStatusCode();
+
+        // leave the fixture as found: xUnit's in-class order is a hash of the
+        // test name (the fork rename reshuffled it), and later tests in this
+        // class create sites too
+        (
+            await op.PutAsJsonAsync(
+                $"/api/operator/orgs/{fixture.OrgA.Value}/entitlements/sites.max",
+                new { value = "100" }
+            )
+        ).EnsureSuccessStatusCode();
     }
 
     [Fact]
