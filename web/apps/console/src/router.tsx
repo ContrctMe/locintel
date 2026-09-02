@@ -22,6 +22,7 @@ import { NetworkPage } from './pages/network';
 import { RequestDetailPage } from './pages/request-detail';
 import { VendorPortalPage, VendorRequestPage } from './pages/vendor-portal';
 import { OperatorPage } from './pages/operator';
+import { PatrolsPage } from './pages/patrols';
 import { RolesPage } from './pages/roles';
 import { SettingsPage } from './pages/settings';
 import { SiteDetailPage } from './pages/site-detail';
@@ -41,6 +42,7 @@ const routes = [
   createRoute({ getParentRoute: () => rootRoute, path: '/sites', component: SitesPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/sites/$siteId', component: SiteDetailPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/checklists', component: ChecklistsPage }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/patrols', component: PatrolsPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/incidents', component: IncidentsPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/incidents/$incidentId', component: IncidentDetailPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/alerts', component: AlertsPage }),

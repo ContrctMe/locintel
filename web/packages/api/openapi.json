@@ -9363,6 +9363,564 @@
         }
       }
     },
+    "/api/patrols/routes": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Patrols.Routes.RouteEndpoints"
+        ],
+        "summary": "GET_api_patrols_routes",
+        "description": "GET_api_patrols_routes",
+        "operationId": "GET_api_patrols_routes",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "includeArchived",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RouteListResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Patrols.Routes.RouteEndpoints"
+        ],
+        "summary": "POST_api_patrols_routes",
+        "description": "POST_api_patrols_routes",
+        "operationId": "POST_api_patrols_routes",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRouteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RouteCreated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/patrols/routes/{id}": {
+      "put": {
+        "tags": [
+          "LocIntel.Modules.Patrols.Routes.RouteEndpoints"
+        ],
+        "summary": "PUT_api_patrols_routes_id",
+        "description": "PUT_api_patrols_routes_id",
+        "operationId": "PUT_api_patrols_routes_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRouteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RouteMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/patrols/routes/{id}/schedules": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Patrols.Routes.RouteEndpoints"
+        ],
+        "summary": "POST_api_patrols_routes_id_schedules",
+        "description": "POST_api_patrols_routes_id_schedules",
+        "operationId": "POST_api_patrols_routes_id_schedules",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateScheduleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleCreated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/patrols/schedules/{id}": {
+      "delete": {
+        "tags": [
+          "LocIntel.Modules.Patrols.Routes.RouteEndpoints"
+        ],
+        "summary": "DELETE_api_patrols_schedules_id",
+        "description": "DELETE_api_patrols_schedules_id",
+        "operationId": "DELETE_api_patrols_schedules_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleRemoved"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/patrols/today": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Patrols.Patrols.PatrolEndpoints"
+        ],
+        "summary": "GET_api_patrols_today",
+        "description": "GET_api_patrols_today",
+        "operationId": "GET_api_patrols_today",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatrolDayResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/patrols/report": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Patrols.Patrols.PatrolEndpoints"
+        ],
+        "summary": "GET_api_patrols_report",
+        "description": "GET_api_patrols_report",
+        "operationId": "GET_api_patrols_report",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DailyActivityReport"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/patrols/{id}": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Patrols.Patrols.PatrolEndpoints"
+        ],
+        "summary": "GET_api_patrols_id",
+        "description": "GET_api_patrols_id",
+        "operationId": "GET_api_patrols_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatrolView"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/patrols": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Patrols.Patrols.PatrolEndpoints"
+        ],
+        "summary": "POST_api_patrols",
+        "description": "POST_api_patrols",
+        "operationId": "POST_api_patrols",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartPatrolRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatrolStarted"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/patrols/{id}/scan": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Patrols.Patrols.PatrolEndpoints"
+        ],
+        "summary": "POST_api_patrols_id_scan",
+        "description": "POST_api_patrols_id_scan",
+        "operationId": "POST_api_patrols_id_scan",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScanRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanRecorded"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/patrols/{id}/end": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Patrols.Patrols.PatrolEndpoints"
+        ],
+        "summary": "POST_api_patrols_id_end",
+        "description": "POST_api_patrols_id_end",
+        "operationId": "POST_api_patrols_id_end",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EndPatrolRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatrolMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/patrols/{id}/abandon": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Patrols.Patrols.PatrolEndpoints"
+        ],
+        "summary": "POST_api_patrols_id_abandon",
+        "description": "POST_api_patrols_id_abandon",
+        "operationId": "POST_api_patrols_id_abandon",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AbandonPatrolRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatrolMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
     "/objects/upload/{token}": {
       "put": {
         "tags": [
@@ -9801,6 +10359,17 @@
   },
   "components": {
     "schemas": {
+      "AbandonPatrolRequest": {
+        "required": [
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
       "AcknowledgeBulletinRequest": {
         "type": "object",
         "properties": {
@@ -11526,6 +12095,39 @@
           }
         }
       },
+      "Checkpoint": {
+        "required": [
+          "code",
+          "label"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "latitude": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "longitude": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
       "CloseCaseRequest": {
         "required": [
           "disposition"
@@ -11898,6 +12500,38 @@
           }
         }
       },
+      "CreateRouteRequest": {
+        "required": [
+          "siteId",
+          "name",
+          "checkpoints"
+        ],
+        "type": "object",
+        "properties": {
+          "siteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "checkpoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Checkpoint"
+            }
+          },
+          "expectedMinutes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "CreateScheduleRequest": {
         "required": [
           "name",
@@ -12191,6 +12825,77 @@
           "at": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "DailyActivityReport": {
+        "required": [
+          "businessDate",
+          "siteId",
+          "site",
+          "expected",
+          "completed",
+          "missed",
+          "patrols",
+          "incidents"
+        ],
+        "type": "object",
+        "properties": {
+          "businessDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "siteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "site": {
+            "type": "string"
+          },
+          "expected": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "completed": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "missed": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExpectedPatrol"
+            }
+          },
+          "patrols": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PatrolView"
+            }
+          },
+          "incidents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncidentLine"
+            }
+          }
+        }
+      },
+      "EndPatrolRequest": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -12587,6 +13292,51 @@
               "string"
             ],
             "format": "date-time"
+          }
+        }
+      },
+      "ExpectedPatrol": {
+        "required": [
+          "routeId",
+          "routeName",
+          "startLocal",
+          "startUtc",
+          "patrolId",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "routeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "routeName": {
+            "type": "string"
+          },
+          "startLocal": {
+            "type": "string",
+            "format": "time"
+          },
+          "startUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "patrolId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "status": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PatrolStatus"
+              }
+            ]
           }
         }
       },
@@ -13036,6 +13786,39 @@
             "items": {
               "$ref": "#/components/schemas/IncidentAttachmentView"
             }
+          }
+        }
+      },
+      "IncidentLine": {
+        "required": [
+          "id",
+          "title",
+          "category",
+          "severity",
+          "status",
+          "occurredAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -13828,6 +14611,185 @@
         "properties": {
           "value": {
             "type": "string"
+          }
+        }
+      },
+      "PatrolDayResponse": {
+        "required": [
+          "businessDate",
+          "site",
+          "expected",
+          "patrols"
+        ],
+        "type": "object",
+        "properties": {
+          "businessDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "site": {
+            "type": "string"
+          },
+          "expected": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExpectedPatrol"
+            }
+          },
+          "patrols": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PatrolView"
+            }
+          }
+        }
+      },
+      "PatrolMutated": {
+        "required": [
+          "id",
+          "status",
+          "endedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PatrolStatus"
+          },
+          "endedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "PatrolStarted": {
+        "required": [
+          "id",
+          "businessDate"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "businessDate": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "PatrolStatus": {
+        "enum": [
+          "InProgress",
+          "Completed",
+          "Abandoned",
+          null
+        ]
+      },
+      "PatrolView": {
+        "required": [
+          "id",
+          "routeId",
+          "routeName",
+          "siteId",
+          "businessDate",
+          "scheduledStartLocal",
+          "status",
+          "startedAt",
+          "startedBy",
+          "startedByLabel",
+          "endedAt",
+          "summary",
+          "checkpointsTotal",
+          "checkpointsScanned",
+          "scans"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "routeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "routeName": {
+            "type": "string"
+          },
+          "siteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "businessDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "scheduledStartLocal": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "time"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PatrolStatus"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "startedBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startedByLabel": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "endedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "summary": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "checkpointsTotal": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "checkpointsScanned": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "scans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScanView"
+            }
           }
         }
       },
@@ -14887,6 +15849,297 @@
           }
         }
       },
+      "RouteCreated": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "RouteListResponse": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RouteView"
+            }
+          }
+        }
+      },
+      "RouteMutated": {
+        "required": [
+          "id",
+          "archived",
+          "updatedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RouteView": {
+        "required": [
+          "id",
+          "siteId",
+          "name",
+          "checkpoints",
+          "expectedMinutes",
+          "archived",
+          "schedules"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "siteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "checkpoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Checkpoint"
+            }
+          },
+          "expectedMinutes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "schedules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScheduleView"
+            }
+          }
+        }
+      },
+      "ScanRecorded": {
+        "required": [
+          "id",
+          "distanceMeters",
+          "withinGeofence",
+          "scanned",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "distanceMeters": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "withinGeofence": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "scanned": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "total": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "ScanRequest": {
+        "required": [
+          "code"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "latitude": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "longitude": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ScanView": {
+        "required": [
+          "id",
+          "code",
+          "label",
+          "scannedAt",
+          "distanceMeters",
+          "withinGeofence",
+          "note"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "scannedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "distanceMeters": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "withinGeofence": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ScheduleCreated": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "ScheduleRemoved": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "ScheduleView": {
+        "required": [
+          "id",
+          "rRule",
+          "anchorDate",
+          "startLocal",
+          "exDates",
+          "active"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "rRule": {
+            "type": "string"
+          },
+          "anchorDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "startLocal": {
+            "type": "string",
+            "format": "time"
+          },
+          "exDates": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
       "ServiceCategory": {
         "enum": [
           "GuardService",
@@ -15557,6 +16810,25 @@
           }
         }
       },
+      "StartPatrolRequest": {
+        "required": [
+          "routeId"
+        ],
+        "type": "object",
+        "properties": {
+          "routeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "scheduledStartLocal": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "time"
+          }
+        }
+      },
       "SubmitTipRequest": {
         "required": [
           "siteId",
@@ -15899,6 +17171,38 @@
             "items": {
               "$ref": "#/components/schemas/GrantSpec"
             }
+          }
+        }
+      },
+      "UpdateRouteRequest": {
+        "required": [
+          "name",
+          "checkpoints",
+          "expectedMinutes",
+          "archived"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "checkpoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Checkpoint"
+            }
+          },
+          "expectedMinutes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "archived": {
+            "type": "boolean"
           }
         }
       },
@@ -16427,6 +17731,12 @@
     },
     {
       "name": "LocIntel.Modules.Network.Bulletins.SharedBulletinEndpoints"
+    },
+    {
+      "name": "LocIntel.Modules.Patrols.Routes.RouteEndpoints"
+    },
+    {
+      "name": "LocIntel.Modules.Patrols.Patrols.PatrolEndpoints"
     },
     {
       "name": "LocIntel.Api"

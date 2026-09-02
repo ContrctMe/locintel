@@ -58,6 +58,11 @@ public static class Capabilities
     /// <summary>Intelligence network (cross-org sharing): read what your org's shares carry; manage creates, invites, publishes, imports.</summary>
     public const string NetworkRead = "network:read";
     public const string NetworkManage = "network:manage";
+
+    /// <summary>Patrols and guard ops: read reports; perform (start, scan, end) within scope; manage routes and schedules.</summary>
+    public const string PatrolsRead = "patrols:read";
+    public const string PatrolsPerform = "patrols:perform";
+    public const string PatrolsManage = "patrols:manage";
     public const string AuditRead = "audit:read";
     public const string AuditManage = "audit:manage";
     public const string EntitlementsManage = "entitlements:manage";
@@ -95,6 +100,9 @@ public static class Capabilities
         AlertsManage,
         NetworkRead,
         NetworkManage,
+        PatrolsRead,
+        PatrolsPerform,
+        PatrolsManage,
         AuditRead,
         AuditManage,
         EntitlementsManage,

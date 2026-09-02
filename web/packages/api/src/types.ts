@@ -3716,6 +3716,230 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/patrols/routes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_patrols_routes
+         * @description GET_api_patrols_routes
+         */
+        get: operations["GET_api_patrols_routes"];
+        put?: never;
+        /**
+         * POST_api_patrols_routes
+         * @description POST_api_patrols_routes
+         */
+        post: operations["POST_api_patrols_routes"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/patrols/routes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * PUT_api_patrols_routes_id
+         * @description PUT_api_patrols_routes_id
+         */
+        put: operations["PUT_api_patrols_routes_id"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/patrols/routes/{id}/schedules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_patrols_routes_id_schedules
+         * @description POST_api_patrols_routes_id_schedules
+         */
+        post: operations["POST_api_patrols_routes_id_schedules"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/patrols/schedules/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * DELETE_api_patrols_schedules_id
+         * @description DELETE_api_patrols_schedules_id
+         */
+        delete: operations["DELETE_api_patrols_schedules_id"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/patrols/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_patrols_today
+         * @description GET_api_patrols_today
+         */
+        get: operations["GET_api_patrols_today"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/patrols/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_patrols_report
+         * @description GET_api_patrols_report
+         */
+        get: operations["GET_api_patrols_report"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/patrols/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_patrols_id
+         * @description GET_api_patrols_id
+         */
+        get: operations["GET_api_patrols_id"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/patrols": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_patrols
+         * @description POST_api_patrols
+         */
+        post: operations["POST_api_patrols"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/patrols/{id}/scan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_patrols_id_scan
+         * @description POST_api_patrols_id_scan
+         */
+        post: operations["POST_api_patrols_id_scan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/patrols/{id}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_patrols_id_end
+         * @description POST_api_patrols_id_end
+         */
+        post: operations["POST_api_patrols_id_end"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/patrols/{id}/abandon": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_patrols_id_abandon
+         * @description POST_api_patrols_id_abandon
+         */
+        post: operations["POST_api_patrols_id_abandon"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/objects/upload/{token}": {
         parameters: {
             query?: never;
@@ -4483,6 +4707,9 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AbandonPatrolRequest: {
+            reason: string;
+        };
         AcknowledgeBulletinRequest: {
             /** Format: uuid */
             siteId?: null | string;
@@ -4934,6 +5161,14 @@ export interface components {
             planId: string;
             returnPath: string;
         };
+        Checkpoint: {
+            code: string;
+            label: string;
+            /** Format: double */
+            latitude?: null | number | string;
+            /** Format: double */
+            longitude?: null | number | string;
+        };
         CloseCaseRequest: {
             disposition: components["schemas"]["CaseDisposition"];
             note?: null | string;
@@ -5031,6 +5266,14 @@ export interface components {
             name: string;
             grants: components["schemas"]["GrantSpec"][];
         };
+        CreateRouteRequest: {
+            /** Format: uuid */
+            siteId: string;
+            name: string;
+            checkpoints: components["schemas"]["Checkpoint"][];
+            /** Format: int32 */
+            expectedMinutes?: null | number | string;
+        };
         CreateScheduleRequest: {
             name: string;
             rRule: string;
@@ -5105,6 +5348,23 @@ export interface components {
             detail: null | string;
             /** Format: date-time */
             at: string;
+        };
+        DailyActivityReport: {
+            /** Format: date */
+            businessDate: string;
+            /** Format: uuid */
+            siteId: string;
+            site: string;
+            /** Format: int32 */
+            expected: number | string;
+            /** Format: int32 */
+            completed: number | string;
+            missed: components["schemas"]["ExpectedPatrol"][];
+            patrols: components["schemas"]["PatrolView"][];
+            incidents: components["schemas"]["IncidentLine"][];
+        };
+        EndPatrolRequest: {
+            summary?: null | string;
         };
         EntityChildRemoved: {
             /** Format: uuid */
@@ -5217,6 +5477,18 @@ export interface components {
             legalHold: boolean;
             /** Format: date-time */
             deletedAt: null | string;
+        };
+        ExpectedPatrol: {
+            /** Format: uuid */
+            routeId: string;
+            routeName: string;
+            /** Format: time */
+            startLocal: string;
+            /** Format: date-time */
+            startUtc: string;
+            /** Format: uuid */
+            patrolId: null | string;
+            status: null | components["schemas"]["PatrolStatus"];
         };
         FileListResponse: {
             items: components["schemas"]["FileSummary"][];
@@ -5333,6 +5605,16 @@ export interface components {
             deletedAt: null | string;
             notes: components["schemas"]["IncidentNoteView"][];
             attachments: components["schemas"]["IncidentAttachmentView"][];
+        };
+        IncidentLine: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            category: string;
+            severity: string;
+            status: string;
+            /** Format: date-time */
+            occurredAt: string;
         };
         IncidentListResponse: {
             items: components["schemas"]["IncidentSummary"][];
@@ -5538,6 +5820,55 @@ export interface components {
         };
         OperatorSetEntitlementRequest: {
             value: string;
+        };
+        PatrolDayResponse: {
+            /** Format: date */
+            businessDate: string;
+            site: string;
+            expected: components["schemas"]["ExpectedPatrol"][];
+            patrols: components["schemas"]["PatrolView"][];
+        };
+        PatrolMutated: {
+            /** Format: uuid */
+            id: string;
+            status: components["schemas"]["PatrolStatus"];
+            /** Format: date-time */
+            endedAt: null | string;
+        };
+        PatrolStarted: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date */
+            businessDate: string;
+        };
+        /** @enum {unknown} */
+        PatrolStatus: "InProgress" | "Completed" | "Abandoned" | null;
+        PatrolView: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            routeId: string;
+            routeName: string;
+            /** Format: uuid */
+            siteId: string;
+            /** Format: date */
+            businessDate: string;
+            /** Format: time */
+            scheduledStartLocal: null | string;
+            status: components["schemas"]["PatrolStatus"];
+            /** Format: date-time */
+            startedAt: string;
+            /** Format: uuid */
+            startedBy: string;
+            startedByLabel: null | string;
+            /** Format: date-time */
+            endedAt: null | string;
+            summary: null | string;
+            /** Format: int32 */
+            checkpointsTotal: number | string;
+            /** Format: int32 */
+            checkpointsScanned: number | string;
+            scans: components["schemas"]["ScanView"][];
         };
         PlanSummary: {
             id: string;
@@ -5805,6 +6136,82 @@ export interface components {
             /** Format: int32 */
             overlapHours?: null | number | string;
         };
+        RouteCreated: {
+            /** Format: uuid */
+            id: string;
+        };
+        RouteListResponse: {
+            items: components["schemas"]["RouteView"][];
+        };
+        RouteMutated: {
+            /** Format: uuid */
+            id: string;
+            archived: boolean;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        RouteView: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            siteId: string;
+            name: string;
+            checkpoints: components["schemas"]["Checkpoint"][];
+            /** Format: int32 */
+            expectedMinutes: number | string;
+            archived: boolean;
+            schedules: components["schemas"]["ScheduleView"][];
+        };
+        ScanRecorded: {
+            /** Format: uuid */
+            id: string;
+            /** Format: double */
+            distanceMeters: null | number | string;
+            withinGeofence: null | boolean;
+            /** Format: int32 */
+            scanned: number | string;
+            /** Format: int32 */
+            total: number | string;
+        };
+        ScanRequest: {
+            code: string;
+            /** Format: double */
+            latitude?: null | number | string;
+            /** Format: double */
+            longitude?: null | number | string;
+            note?: null | string;
+        };
+        ScanView: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            label: null | string;
+            /** Format: date-time */
+            scannedAt: string;
+            /** Format: double */
+            distanceMeters: null | number | string;
+            withinGeofence: null | boolean;
+            note: null | string;
+        };
+        ScheduleCreated: {
+            /** Format: uuid */
+            id: string;
+        };
+        ScheduleRemoved: {
+            /** Format: uuid */
+            id: string;
+        };
+        ScheduleView: {
+            /** Format: uuid */
+            id: string;
+            rRule: string;
+            /** Format: date */
+            anchorDate: string;
+            /** Format: time */
+            startLocal: string;
+            exDates: string[];
+            active: boolean;
+        };
         /** @enum {unknown} */
         ServiceCategory: "GuardService" | "MobilePatrol" | "AlarmResponse" | "Investigation" | "CctvInstall" | "AccessControl" | "BoardUp" | "Restoration" | "LegalSupport" | "EquipmentSupply" | "KeyHolding" | "Other" | null;
         SetAuditConfigRequest: {
@@ -5977,6 +6384,12 @@ export interface components {
             /** Format: uuid */
             fileId: string;
         };
+        StartPatrolRequest: {
+            /** Format: uuid */
+            routeId: string;
+            /** Format: time */
+            scheduledStartLocal?: null | string;
+        };
         SubmitTipRequest: {
             /** Format: uuid */
             siteId: string;
@@ -6056,6 +6469,13 @@ export interface components {
         UpdateRoleRequest: {
             name: string;
             grants: components["schemas"]["GrantSpec"][];
+        };
+        UpdateRouteRequest: {
+            name: string;
+            checkpoints: components["schemas"]["Checkpoint"][];
+            /** Format: int32 */
+            expectedMinutes: null | number | string;
+            archived: boolean;
         };
         UpdateSiteRequest: {
             name: null | string;
@@ -12951,6 +13371,405 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ImportQueued"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_patrols_routes: {
+        parameters: {
+            query?: {
+                siteId?: string;
+                includeArchived?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RouteListResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_patrols_routes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRouteRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RouteCreated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    PUT_api_patrols_routes_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateRouteRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RouteMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_patrols_routes_id_schedules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateScheduleRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleCreated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    DELETE_api_patrols_schedules_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleRemoved"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_patrols_today: {
+        parameters: {
+            query?: {
+                siteId?: string;
+                date?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatrolDayResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_patrols_report: {
+        parameters: {
+            query?: {
+                siteId?: string;
+                date?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DailyActivityReport"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_patrols_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatrolView"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_patrols: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartPatrolRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatrolStarted"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_patrols_id_scan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScanRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScanRecorded"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_patrols_id_end: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EndPatrolRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatrolMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_patrols_id_abandon: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AbandonPatrolRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatrolMutated"];
                 };
             };
             /** @description Not Found */

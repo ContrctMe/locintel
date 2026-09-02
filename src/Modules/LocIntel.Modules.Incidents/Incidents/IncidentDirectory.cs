@@ -20,4 +20,24 @@ public sealed class IncidentDirectory(IncidentsDbContext db) : IIncidentDirector
                 i.OccurredAt
             ))
             .FirstOrDefaultAsync(ct);
+
+    public async Task<IReadOnlyList<IncidentInfo>> ListForDayAsync(
+        Guid siteId,
+        DateOnly businessDate,
+        CancellationToken ct = default
+    ) =>
+        await db
+            .Incidents.Where(i => i.SiteId == siteId && i.BusinessDate == businessDate)
+            .OrderBy(i => i.OccurredAt)
+            .Select(i => new IncidentInfo(
+                i.Id,
+                i.SiteId,
+                i.Path.ToString(),
+                i.Title,
+                i.Category.ToString(),
+                i.Severity.ToString(),
+                i.Status.ToString(),
+                i.OccurredAt
+            ))
+            .ToListAsync(ct);
 }

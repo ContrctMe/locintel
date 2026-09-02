@@ -25,6 +25,7 @@ public class ModuleBoundaryTests
         typeof(Modules.Marketplace.MarketplaceModule).Assembly,
         typeof(Modules.Alerts.AlertsModule).Assembly,
         typeof(Modules.Network.NetworkModule).Assembly,
+        typeof(Modules.Patrols.PatrolsModule).Assembly,
     ];
 
     private const string ModulePrefix = "LocIntel.Modules.";

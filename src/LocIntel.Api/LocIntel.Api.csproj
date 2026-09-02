@@ -37,5 +37,6 @@
     <ProjectReference Include="..\Modules\LocIntel.Modules.Marketplace\LocIntel.Modules.Marketplace.csproj" />
     <ProjectReference Include="..\Modules\LocIntel.Modules.Alerts\LocIntel.Modules.Alerts.csproj" />
     <ProjectReference Include="..\Modules\LocIntel.Modules.Network\LocIntel.Modules.Network.csproj" />
+    <ProjectReference Include="..\Modules\LocIntel.Modules.Patrols\LocIntel.Modules.Patrols.csproj" />
   </ItemGroup>
 </Project>

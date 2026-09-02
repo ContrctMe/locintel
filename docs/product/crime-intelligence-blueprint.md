@@ -241,3 +241,14 @@ jurisdiction.
   `ImportEntityRequested` outbox message that Entities handles (new
   Suspected record whose summary names the share and publisher). Lesson:
   a migration's Down must drop cross-table policies before the tables.
+- 2026-09-02: **Patrols and guard ops shipped** (schema `patrols`;
+  capabilities `patrols:read|perform|manage`). Routes are ordered
+  checkpoints (jsonb, optional coordinates, 100 m geofence) stamped with
+  the site's path; schedules are RRULEs with a site-local start time,
+  expanded on read for the day through Platform's `RecurrenceExpander`
+  (no materialized horizon: a single day is cheap); runs stamp path and
+  business date at start and match an expected occurrence by route and
+  scheduled start. Daily activity report joins runs, missed rounds, and
+  the day's incidents via the new `IIncidentDirectory.ListForDayAsync`.
+  Console: live patrol with checkpoint taps (GPS when available), routes
+  and weekly schedules, report by date.

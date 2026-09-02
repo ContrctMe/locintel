@@ -553,6 +553,97 @@ public class TenantIsolationTests(ApiFixture fixture) : IClassFixture<ApiFixture
         );
     }
 
+    [Fact]
+    public async Task Patrol_routes_are_tenant_isolated()
+    {
+        var clientA = await fixture.LoginAsync(ApiFixture.UserA);
+        var hierarchy = await clientA.GetAsync("/api/hierarchy");
+        Guid rootId;
+        if (hierarchy.StatusCode == HttpStatusCode.OK)
+            rootId = (await hierarchy.Content.ReadFromJsonAsync<JsonElement>())
+                .GetProperty("nodes")
+                .EnumerateArray()
+                .First(n => n.GetProperty("depth").GetInt32() == 0)
+                .GetProperty("id")
+                .GetGuid();
+        else
+        {
+            var created = await clientA.PostAsJsonAsync(
+                "/api/hierarchy",
+                new { name = "Org A", levels = new[] { "Region" } }
+            );
+            created.EnsureSuccessStatusCode();
+            rootId = (await created.Content.ReadFromJsonAsync<JsonElement>())
+                .GetProperty("rootNodeId")
+                .GetGuid();
+        }
+        var site = await clientA.PostAsJsonAsync(
+            "/api/sites",
+            new
+            {
+                nodeId = rootId,
+                name = "Patrol Isolation Store",
+                timeZone = "Etc/UTC",
+            }
+        );
+        site.EnsureSuccessStatusCode();
+        var siteId = (await site.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id")
+            .GetGuid();
+        var route = await clientA.PostAsJsonAsync(
+            "/api/patrols/routes",
+            new
+            {
+                siteId,
+                name = "Isolated route",
+                checkpoints = new object[] { new { code = "A", label = "A" } },
+            }
+        );
+        route.EnsureSuccessStatusCode();
+        var routeId = (await route.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id")
+            .GetGuid();
+
+        var clientB = await fixture.LoginAsync(ApiFixture.UserB);
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (
+                await clientB.PutAsJsonAsync(
+                    $"/api/patrols/routes/{routeId}",
+                    new
+                    {
+                        name = "x",
+                        checkpoints = new object[] { },
+                        archived = false,
+                    }
+                )
+            ).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (
+                await clientB.PostAsJsonAsync(
+                    $"/api/patrols/routes/{routeId}/schedules",
+                    new
+                    {
+                        rRule = "FREQ=DAILY",
+                        anchorDate = "2026-01-01",
+                        startLocal = "09:00",
+                    }
+                )
+            ).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (await clientB.PostAsJsonAsync("/api/patrols", new { routeId })).StatusCode
+        );
+        var list = await clientB.GetFromJsonAsync<JsonElement>("/api/patrols/routes");
+        Assert.DoesNotContain(
+            list.GetProperty("items").EnumerateArray(),
+            r => r.GetProperty("id").GetGuid() == routeId
+        );
+    }
+
     private sealed record SettingDto(Guid Id, string Key, string Value);
 
     [Fact]
