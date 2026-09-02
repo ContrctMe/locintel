@@ -1,10 +1,10 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using LocIntel.Contracts;
 using LocIntel.Modules.Audit.Data;
 using LocIntel.Platform.Audit;
 using LocIntel.Platform.Kernel;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Wolverine;
 
 namespace LocIntel.Modules.Audit;

@@ -1,8 +1,8 @@
 using Amazon.KeyManagementService;
 using Amazon.KeyManagementService.Model;
-using Microsoft.Extensions.Options;
 using LocIntel.Integrations.AmazonS3;
 using LocIntel.Platform.Secrets;
+using Microsoft.Extensions.Options;
 using Testcontainers.LocalStack;
 
 namespace LocIntel.IntegrationTests;

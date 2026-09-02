@@ -1,6 +1,6 @@
-using Microsoft.Extensions.Options;
 using LocIntel.Platform.Billing;
 using LocIntel.Platform.Kernel;
+using Microsoft.Extensions.Options;
 using Stripe;
 using Stripe.Checkout;
 

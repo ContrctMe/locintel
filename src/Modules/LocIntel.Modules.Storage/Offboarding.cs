@@ -1,11 +1,11 @@
 using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
 using LocIntel.Contracts;
 using LocIntel.Modules.Storage.Data;
 using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Storage;
+using Microsoft.EntityFrameworkCore;
 using Wolverine;
 using Wolverine.Attributes;
 

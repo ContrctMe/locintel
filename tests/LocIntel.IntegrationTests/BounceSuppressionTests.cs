@@ -1,8 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
+using LocIntel.Platform.Notifications;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
-using LocIntel.Platform.Notifications;
 
 namespace LocIntel.IntegrationTests;
 

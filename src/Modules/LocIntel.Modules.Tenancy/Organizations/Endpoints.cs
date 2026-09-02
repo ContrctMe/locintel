@@ -1,7 +1,7 @@
-using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using LocIntel.Modules.Tenancy.Data;
 using LocIntel.Platform.Kernel;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Wolverine.Http;
 
 namespace LocIntel.Modules.Tenancy.Organizations;

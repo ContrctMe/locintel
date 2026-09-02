@@ -1,4 +1,9 @@
 using System.Security.Claims;
+using LocIntel.Contracts;
+using LocIntel.Modules.Identity.Data;
+using LocIntel.Platform.Entitlements;
+using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Notifications;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
@@ -8,11 +13,6 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using LocIntel.Contracts;
-using LocIntel.Modules.Identity.Data;
-using LocIntel.Platform.Entitlements;
-using LocIntel.Platform.Kernel;
-using LocIntel.Platform.Notifications;
 using Wolverine;
 using Wolverine.Http;
 

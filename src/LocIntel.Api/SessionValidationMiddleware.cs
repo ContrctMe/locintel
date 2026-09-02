@@ -1,9 +1,9 @@
 using System.Security.Claims;
+using LocIntel.Modules.Identity.Auth;
+using LocIntel.Modules.Identity.Data;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
-using LocIntel.Modules.Identity.Auth;
-using LocIntel.Modules.Identity.Data;
 
 namespace LocIntel.Api;
 

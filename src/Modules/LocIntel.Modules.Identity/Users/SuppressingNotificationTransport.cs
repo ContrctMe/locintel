@@ -1,8 +1,8 @@
+using LocIntel.Modules.Identity.Data;
+using LocIntel.Platform.Notifications;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using LocIntel.Modules.Identity.Data;
-using LocIntel.Platform.Notifications;
 
 namespace LocIntel.Modules.Identity.Users;
 

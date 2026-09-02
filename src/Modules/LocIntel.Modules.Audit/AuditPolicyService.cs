@@ -1,8 +1,8 @@
-using Microsoft.EntityFrameworkCore;
 using LocIntel.Modules.Audit.Data;
 using LocIntel.Platform.Audit;
 using LocIntel.Platform.Entitlements;
 using LocIntel.Platform.Kernel;
+using Microsoft.EntityFrameworkCore;
 
 namespace LocIntel.Modules.Audit;
 

@@ -1,6 +1,6 @@
 using System.Net.Http.Json;
-using Microsoft.EntityFrameworkCore;
 using LocIntel.Platform.Kernel;
+using Microsoft.EntityFrameworkCore;
 
 namespace LocIntel.IntegrationTests;
 

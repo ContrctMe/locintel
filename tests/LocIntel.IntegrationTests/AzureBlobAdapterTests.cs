@@ -1,6 +1,6 @@
 using Azure.Storage.Blobs;
-using Microsoft.Extensions.Options;
 using LocIntel.Integrations.AzureBlob;
+using Microsoft.Extensions.Options;
 using Testcontainers.Azurite;
 
 namespace LocIntel.IntegrationTests;

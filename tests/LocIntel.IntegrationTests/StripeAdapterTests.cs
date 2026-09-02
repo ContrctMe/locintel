@@ -2,10 +2,10 @@ using System.Security.Cryptography;
 using System.Text;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
-using Microsoft.Extensions.Options;
 using LocIntel.Integrations.Stripe;
 using LocIntel.Platform.Billing;
 using LocIntel.Platform.Kernel;
+using Microsoft.Extensions.Options;
 
 namespace LocIntel.IntegrationTests;
 

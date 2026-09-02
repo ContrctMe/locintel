@@ -1,7 +1,7 @@
-using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using LocIntel.Modules.Identity.Data;
 using LocIntel.Platform.Auth;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Wolverine;
 using Wolverine.Attributes;
 using Wolverine.Http;

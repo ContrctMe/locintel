@@ -1,7 +1,7 @@
+using LocIntel.Modules.Tenancy.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using LocIntel.Modules.Tenancy.Data;
 using Wolverine;
 
 namespace LocIntel.Modules.Tenancy.Sites;

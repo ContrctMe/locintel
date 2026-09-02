@@ -1,10 +1,10 @@
-using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using LocIntel.Contracts;
 using LocIntel.Modules.Entitlements.Data;
 using LocIntel.Platform.Entitlements;
 using LocIntel.Platform.Kernel;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Wolverine.Attributes;
 using Wolverine.Http;
 

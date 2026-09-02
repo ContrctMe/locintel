@@ -1,7 +1,7 @@
-using Microsoft.EntityFrameworkCore;
 using LocIntel.Contracts;
 using LocIntel.Modules.Tenancy.Data;
 using LocIntel.Platform.Kernel;
+using Microsoft.EntityFrameworkCore;
 
 namespace LocIntel.Modules.Tenancy.Organizations;
 

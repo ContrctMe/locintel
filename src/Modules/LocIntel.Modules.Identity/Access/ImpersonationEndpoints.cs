@@ -1,13 +1,13 @@
+using LocIntel.Contracts;
+using LocIntel.Modules.Identity.Auth;
+using LocIntel.Modules.Identity.Data;
+using LocIntel.Platform.Kernel;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using LocIntel.Contracts;
-using LocIntel.Modules.Identity.Auth;
-using LocIntel.Modules.Identity.Data;
-using LocIntel.Platform.Kernel;
 using Wolverine;
 using Wolverine.Attributes;
 using Wolverine.Http;

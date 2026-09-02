@@ -1,6 +1,6 @@
-using Microsoft.EntityFrameworkCore;
 using LocIntel.Contracts;
 using LocIntel.Modules.Storage.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace LocIntel.Modules.Storage;
 

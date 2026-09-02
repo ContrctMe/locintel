@@ -1,8 +1,8 @@
-using Microsoft.EntityFrameworkCore;
 using LocIntel.Contracts;
 using LocIntel.Modules.Tenancy.Data;
 using LocIntel.Modules.Tenancy.Hierarchy;
 using LocIntel.Platform.Kernel;
+using Microsoft.EntityFrameworkCore;
 using Wolverine;
 using Wolverine.Attributes;
 

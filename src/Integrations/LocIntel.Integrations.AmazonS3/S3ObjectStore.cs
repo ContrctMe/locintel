@@ -1,7 +1,7 @@
 using Amazon.S3;
 using Amazon.S3.Model;
-using Microsoft.Extensions.Options;
 using LocIntel.Platform.Storage;
+using Microsoft.Extensions.Options;
 
 namespace LocIntel.Integrations.AmazonS3;
 

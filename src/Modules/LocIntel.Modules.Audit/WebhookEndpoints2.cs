@@ -1,11 +1,11 @@
 using System.Security.Cryptography;
+using LocIntel.Modules.Audit.Data;
+using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Secrets;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
-using LocIntel.Modules.Audit.Data;
-using LocIntel.Platform.Kernel;
-using LocIntel.Platform.Secrets;
 using Wolverine;
 using Wolverine.Attributes;
 using Wolverine.Http;

@@ -1,6 +1,6 @@
-using Microsoft.EntityFrameworkCore;
 using LocIntel.Contracts;
 using LocIntel.Platform.Kernel;
+using Microsoft.EntityFrameworkCore;
 using Wolverine;
 
 namespace LocIntel.Api;

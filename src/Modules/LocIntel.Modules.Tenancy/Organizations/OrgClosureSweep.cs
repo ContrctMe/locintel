@@ -1,10 +1,10 @@
+using LocIntel.Contracts;
+using LocIntel.Modules.Tenancy.Data;
+using LocIntel.Platform.Kernel;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using LocIntel.Contracts;
-using LocIntel.Modules.Tenancy.Data;
-using LocIntel.Platform.Kernel;
 using Wolverine;
 
 namespace LocIntel.Modules.Tenancy.Organizations;

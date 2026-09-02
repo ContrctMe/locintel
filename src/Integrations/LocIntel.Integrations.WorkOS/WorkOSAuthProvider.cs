@@ -1,5 +1,5 @@
-using Microsoft.Extensions.Options;
 using LocIntel.Platform.Auth;
+using Microsoft.Extensions.Options;
 using WorkOS;
 
 namespace LocIntel.Integrations.WorkOS;

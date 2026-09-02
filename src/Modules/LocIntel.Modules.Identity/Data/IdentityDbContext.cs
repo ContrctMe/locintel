@@ -1,9 +1,9 @@
-using Microsoft.EntityFrameworkCore;
 using LocIntel.Modules.Identity.Access;
 using LocIntel.Modules.Identity.Auth;
 using LocIntel.Modules.Identity.Users;
 using LocIntel.Platform.Data;
 using LocIntel.Platform.Kernel;
+using Microsoft.EntityFrameworkCore;
 
 namespace LocIntel.Modules.Identity.Data;
 

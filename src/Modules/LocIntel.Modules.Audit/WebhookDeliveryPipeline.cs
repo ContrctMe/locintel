@@ -1,11 +1,11 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using LocIntel.Modules.Audit.Data;
 using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Secrets;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Wolverine;
 using Wolverine.Attributes;
 

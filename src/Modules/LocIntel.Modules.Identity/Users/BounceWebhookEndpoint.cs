@@ -1,7 +1,7 @@
+using LocIntel.Modules.Identity.Data;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using LocIntel.Modules.Identity.Data;
 using Wolverine.Attributes;
 using Wolverine.Http;
 

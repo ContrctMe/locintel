@@ -1,9 +1,9 @@
+using LocIntel.Platform.Storage;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Primitives;
-using LocIntel.Platform.Storage;
 
 namespace LocIntel.Modules.Storage;
 

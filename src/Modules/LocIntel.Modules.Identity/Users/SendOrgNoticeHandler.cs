@@ -1,8 +1,8 @@
-using Microsoft.EntityFrameworkCore;
 using LocIntel.Contracts;
 using LocIntel.Modules.Identity.Data;
 using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Notifications;
+using Microsoft.EntityFrameworkCore;
 using Wolverine;
 using Wolverine.Attributes;
 

@@ -1,8 +1,8 @@
 using System.Net.Http.Json;
-using Microsoft.EntityFrameworkCore;
 using LocIntel.Modules.Ingest.Data;
 using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Secrets;
+using Microsoft.EntityFrameworkCore;
 using Wolverine;
 using Wolverine.Attributes;
 

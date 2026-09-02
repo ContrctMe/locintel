@@ -1,7 +1,7 @@
-using Microsoft.EntityFrameworkCore;
 using LocIntel.Modules.Checklists.Checklists;
 using LocIntel.Platform.Data;
 using LocIntel.Platform.Kernel;
+using Microsoft.EntityFrameworkCore;
 
 namespace LocIntel.Modules.Checklists.Data;
 
