@@ -1,7 +1,7 @@
 using System.Text;
 using Amazon.S3;
-using Microsoft.Extensions.Options;
 using LocIntel.Integrations.AmazonS3;
+using Microsoft.Extensions.Options;
 using Testcontainers.Minio;
 
 namespace LocIntel.IntegrationTests;

@@ -1,8 +1,8 @@
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Azure.Storage.Sas;
-using Microsoft.Extensions.Options;
 using LocIntel.Platform.Storage;
+using Microsoft.Extensions.Options;
 
 namespace LocIntel.Integrations.AzureBlob;
 

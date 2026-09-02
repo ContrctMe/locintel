@@ -1,6 +1,6 @@
 using System.Reflection;
-using NetArchTest.Rules;
 using LocIntel.Platform.Data;
+using NetArchTest.Rules;
 
 namespace LocIntel.ArchitectureTests;
 

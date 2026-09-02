@@ -1,11 +1,11 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using LocIntel.Contracts;
 using LocIntel.Modules.Tenancy.Data;
 using LocIntel.Modules.Tenancy.Organizations;
 using LocIntel.Modules.Tenancy.Sites;
 using LocIntel.Platform.Data;
 using LocIntel.Platform.Kernel;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Wolverine.EntityFrameworkCore;
 
 namespace LocIntel.Modules.Tenancy;
@@ -48,6 +48,12 @@ public static class TenancyModule
             }
         );
         services.AddScoped<IOrganizationLookup, OrganizationLookup>();
+        // the narrow port PerOrgSweepService resolves: registering the derived
+        // interface alone does NOT satisfy the base one, and the sweeps only
+        // run in the worker role, so a miss here fails nowhere a test looks
+        services.AddScoped<LocIntel.Platform.Messaging.IOrganizationEnumerator>(sp =>
+            sp.GetRequiredService<IOrganizationLookup>()
+        );
         services.AddScoped<ISiteLookup, SiteLookup>();
         services.AddScoped<ISiteDirectory, Sites.SiteDirectory>();
         services.AddScoped<IEntitlementUsageProbe, MaxSitesProbe>();

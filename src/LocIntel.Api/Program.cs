@@ -2,14 +2,6 @@ using System.Globalization;
 using System.Reflection;
 using System.Threading.RateLimiting;
 using JasperFx;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.DataProtection;
-using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.EntityFrameworkCore;
-using OpenTelemetry.Logs;
-using OpenTelemetry.Metrics;
-using OpenTelemetry.Resources;
-using OpenTelemetry.Trace;
 using LocIntel.Api;
 using LocIntel.Integrations.WorkOS;
 using LocIntel.Modules.Audit;
@@ -28,6 +20,14 @@ using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Notifications;
 using LocIntel.Platform.Secrets;
 using LocIntel.Platform.Storage;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.EntityFrameworkCore;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Wolverine;
 using Wolverine.Http;
 using Wolverine.Postgresql;
@@ -270,6 +270,25 @@ builder.Services.AddOpenApi(); // ADR 16: the spec is the contract; TS client + 
 // Notifications (ADR 32): email is on the auth critical path (magic links),
 // so Production must configure a real transport - the built-in SMTP adapter
 // reaches every mainstream provider, forks add vendor SDKs behind the port.
+// SMS egress (a seam, not a feature): "off" is the default and is safe in
+// Production - a fork that needs texting registers its own adapter here.
+switch (builder.Configuration["Notifications:Sms"] ?? "off")
+{
+    case "off":
+        builder.Services.AddSingleton<ISmsTransport, NoSmsTransport>();
+        break;
+    case "local" when !builder.Environment.IsProduction():
+        builder.Services.AddSingleton<LocalSmsCatcher>();
+        builder.Services.AddSingleton<ISmsTransport>(sp =>
+            sp.GetRequiredService<LocalSmsCatcher>()
+        );
+        break;
+    default:
+        throw new InvalidOperationException(
+            "Notifications:Sms 'local' is dev/test only; use 'off' or a fork adapter in Production."
+        );
+}
+
 switch (builder.Configuration["Notifications:Transport"] ?? "local")
 {
     case "smtp":

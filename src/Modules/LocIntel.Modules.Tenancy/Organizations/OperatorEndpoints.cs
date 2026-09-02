@@ -1,8 +1,10 @@
-using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 using LocIntel.Contracts;
 using LocIntel.Modules.Tenancy.Data;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Wolverine;
 using Wolverine.Attributes;
 using Wolverine.Http;
@@ -120,18 +122,7 @@ public static class OperatorOrgEndpoints
                 org.IsPlatform
             )
         );
-        await bus.PublishAsync(
-            new RecordDomainAudit(eventName, "{}"),
-            new DeliveryOptions
-            {
-                TenantId = org.Id.Value.ToString(),
-                Headers =
-                {
-                    ["locintel-actor-tier"] = "user",
-                    ["locintel-actor-id"] = operatorId.ToString(),
-                },
-            }
-        );
+        await bus.AuditAsync(org.Id, AuditActor.User(operatorId), eventName, new { });
         return Results.NoContent();
     }
 }

@@ -1,8 +1,8 @@
+using LocIntel.Platform.Notifications;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.Extensions.Options;
 using MimeKit;
-using LocIntel.Platform.Notifications;
 
 namespace LocIntel.Integrations.Smtp;
 

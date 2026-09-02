@@ -1,9 +1,9 @@
-using Microsoft.EntityFrameworkCore;
 using LocIntel.Modules.Tenancy.Hierarchy;
 using LocIntel.Modules.Tenancy.Organizations;
 using LocIntel.Modules.Tenancy.Sites;
 using LocIntel.Platform.Data;
 using LocIntel.Platform.Kernel;
+using Microsoft.EntityFrameworkCore;
 
 namespace LocIntel.Modules.Tenancy.Data;
 

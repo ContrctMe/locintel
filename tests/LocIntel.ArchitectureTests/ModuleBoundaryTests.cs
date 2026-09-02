@@ -10,15 +10,11 @@ namespace LocIntel.ArchitectureTests;
 /// </summary>
 public class ModuleBoundaryTests
 {
+    // derived from the one module catalog (composition root), so this list
+    // cannot drift from the modules the host actually wires
     private static readonly Assembly[] ModuleAssemblies =
     [
-        typeof(Modules.Tenancy.TenancyModule).Assembly,
-        typeof(Modules.Identity.IdentityModule).Assembly,
-        typeof(Modules.Entitlements.EntitlementsModule).Assembly,
-        typeof(Modules.Audit.AuditModule).Assembly,
-        typeof(Modules.Storage.StorageModule).Assembly,
-        typeof(Modules.Ingest.IngestModule).Assembly,
-        typeof(Modules.Checklists.ChecklistsModule).Assembly,
+        .. LocIntel.Api.ModuleCatalog.All.Select(m => m.DbContextType.Assembly).Distinct(),
     ];
 
     private const string ModulePrefix = "LocIntel.Modules.";
@@ -122,7 +118,11 @@ public class ModuleBoundaryTests
         var result = Types
             .InAssembly(typeof(Contracts.AssemblyMarker).Assembly)
             .ShouldNot()
-            .HaveDependencyOnAny(ModulePrefix + "*", "LocIntel.Api", "Microsoft.EntityFrameworkCore")
+            .HaveDependencyOnAny(
+                ModulePrefix + "*",
+                "LocIntel.Api",
+                "Microsoft.EntityFrameworkCore"
+            )
             .GetResult();
         Assert.True(result.IsSuccessful, "Contracts carry DTOs and integration events only.");
     }

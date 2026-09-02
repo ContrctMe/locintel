@@ -1,9 +1,9 @@
 using System.Text.Json;
+using LocIntel.Platform.Data;
+using LocIntel.Platform.Kernel;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using LocIntel.Platform.Data;
-using LocIntel.Platform.Kernel;
 
 namespace LocIntel.Platform.Audit;
 

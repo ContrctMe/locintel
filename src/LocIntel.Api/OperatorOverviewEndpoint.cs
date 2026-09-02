@@ -1,8 +1,8 @@
-using Microsoft.EntityFrameworkCore;
 using LocIntel.Modules.Identity.Data;
 using LocIntel.Modules.Tenancy.Data;
 using LocIntel.Modules.Tenancy.Organizations;
 using LocIntel.Platform.Kernel;
+using Microsoft.EntityFrameworkCore;
 using Wolverine.Persistence.Durability;
 using Wolverine.Persistence.Durability.DeadLetterManagement;
 

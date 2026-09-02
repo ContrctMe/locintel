@@ -1,7 +1,7 @@
-using Microsoft.EntityFrameworkCore;
 using LocIntel.Modules.Storage.Data;
 using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Storage;
+using Microsoft.EntityFrameworkCore;
 using Wolverine;
 using Wolverine.Attributes;
 

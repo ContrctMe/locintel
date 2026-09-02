@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
-using Microsoft.EntityFrameworkCore;
 using LocIntel.Platform.Infra;
 using LocIntel.Platform.Kernel;
+using Microsoft.EntityFrameworkCore;
 
 namespace LocIntel.Api;
 

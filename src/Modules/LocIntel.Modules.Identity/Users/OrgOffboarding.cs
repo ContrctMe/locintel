@@ -1,10 +1,10 @@
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
 using LocIntel.Contracts;
 using LocIntel.Modules.Identity.Access;
 using LocIntel.Modules.Identity.Data;
 using LocIntel.Platform.Auth;
 using LocIntel.Platform.Kernel;
+using Microsoft.EntityFrameworkCore;
 using Wolverine.Attributes;
 
 namespace LocIntel.Modules.Identity.Users;

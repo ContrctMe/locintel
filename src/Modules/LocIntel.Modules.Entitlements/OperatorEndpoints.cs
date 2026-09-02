@@ -1,10 +1,12 @@
-using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
+using System.Text.Json;
 using LocIntel.Contracts;
 using LocIntel.Modules.Entitlements.Data;
 using LocIntel.Platform.Entitlements;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Wolverine.Attributes;
 using Wolverine.Http;
 
@@ -130,20 +132,11 @@ public static class OperatorEntitlementEndpoints
                 await db.SaveChangesAsync(ct);
 
                 await sp.GetRequiredService<Wolverine.IMessageBus>()
-                    .PublishAsync(
-                        new RecordDomainAudit(
-                            "entitlement.set",
-                            System.Text.Json.JsonSerializer.Serialize(new { code, request.Value })
-                        ),
-                        new Wolverine.DeliveryOptions
-                        {
-                            TenantId = target.Value.ToString(),
-                            Headers =
-                            {
-                                ["locintel-actor-tier"] = "user",
-                                ["locintel-actor-id"] = operatorId.ToString(),
-                            },
-                        }
+                    .AuditAsync(
+                        target,
+                        AuditActor.User(operatorId),
+                        "entitlement.set",
+                        new { code, request.Value }
                     );
                 return Results.NoContent();
             }

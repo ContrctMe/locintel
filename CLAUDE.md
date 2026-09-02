@@ -18,9 +18,7 @@ subtree it belongs to). Every request passes **three gates**, in order:
 ## Architectural decisions
 
 All 47 settled decisions live in `docs/decisions/` (one ADR each, indexed in its
-README). **Consult them before proposing structural changes.**
-The product plan being built on this fork is `docs/product/crime-intelligence-blueprint.md`;
-record build-time decisions in its decisions log. Decisions marked
+README). **Consult them before proposing structural changes.** Decisions marked
 `pinned: true` are expensive to reverse once data exists — do not contradict them
 without the maintainer explicitly reopening the decision.
 
@@ -64,6 +62,11 @@ don't restate them here.
   endpoint/handler whose dependency chain touches more than one DbContext
   (injecting `IScopeResolver` is enough — it uses IdentityDbContext) must
   declare its transaction owner: `[Transactional(typeof(TenancyDbContext))]`.
+  Name a context the chain does NOT supply and the host dies at startup, so
+  every test fails at 1ms with no usable message — `TransactionalAttributeTests`
+  turns that into a named build failure. An endpoint returning `IResult` with
+  no `[ProducesResponseType(typeof(T), 200)]` generates an untyped client:
+  echo a typed state record rather than returning 204 (the ratchet enforces it).
 - **Contract consumption follows the ladder** (ADR 37): Tenancy consumes no
   module's contracts; Identity reads org data only via its org_directory read
   model; every org-writing flow publishes `OrganizationUpserted`. Consuming a
@@ -107,6 +110,10 @@ don't restate them here.
 - Tenant-isolation golden suite (needs Docker; Testcontainers Postgres):
   `dotnet test tests/LocIntel.IntegrationTests` — or one deterministic shard,
   exactly as CI runs it: `tools/run-integration-shard.sh 1 2`
+- Password-less local boot (browser smoke runs, no credentials typed):
+  `LOCINTEL_AUTH=local aspire run` — skips the WorkOS emulator, uses the local
+  provider, and `GET /auth/login?hint=<email>` signs in directly. Dev seeds
+  (alice, operator) are keyed to whichever provider is active.
 - Local dev: `aspire run` from `src/LocIntel.AppHost` (Postgres + WorkOS emulator + migrate → api + worker + dashboard). Dev login: alice@acme.test / test123 (seeded in `workos-emulate.config.yaml`). Caught mail (contact links, resets): `GET /dev/mail` on the api. Localhost quirk: cookies ignore ports, so a console session bleeds into `localhost:5174` — prod subdomains don't have this.
 - Migrations: `dotnet ef migrations add <Name> --project src/Modules/<Module> --startup-project src/Modules/<Module>` (see new-migration skill)
 - Format: `dotnet csharpier format .`

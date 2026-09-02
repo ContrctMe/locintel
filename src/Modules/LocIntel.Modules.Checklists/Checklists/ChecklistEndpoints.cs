@@ -1,9 +1,10 @@
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using LocIntel.Contracts;
 using LocIntel.Modules.Checklists.Data;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Wolverine;
 using Wolverine.Attributes;
 using Wolverine.Http;
@@ -108,20 +109,11 @@ public static class ChecklistEndpoints
         };
         db.Templates.Add(template);
         await db.SaveChangesAsync(ct);
-        await bus.PublishAsync(
-            new RecordDomainAudit(
-                "checklist.template_created",
-                System.Text.Json.JsonSerializer.Serialize(new { template.Id, template.Name })
-            ),
-            new DeliveryOptions
-            {
-                TenantId = org.Value.ToString(),
-                Headers =
-                {
-                    ["locintel-actor-tier"] = "user",
-                    ["locintel-actor-id"] = userId.ToString(),
-                },
-            }
+        await bus.AuditAsync(
+            org,
+            AuditActor.User(userId),
+            "checklist.template_created",
+            new { template.Id, template.Name }
         );
         return Results.Ok(new { template.Id });
     }

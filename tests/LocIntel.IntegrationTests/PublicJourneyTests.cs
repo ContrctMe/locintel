@@ -21,45 +21,10 @@ public class PublicJourneyTests(ApiFixture fixture) : IClassFixture<ApiFixture>
     private async Task<(Guid open, Guid closed)> SeedSites()
     {
         var owner = await fixture.LoginAsync(ApiFixture.UserA);
-        var tree = await owner.GetAsync("/api/hierarchy");
-        Guid rootId;
-        if (tree.StatusCode == HttpStatusCode.OK)
-        {
-            rootId = (await tree.Content.ReadFromJsonAsync<JsonElement>())
-                .GetProperty("nodes")
-                .EnumerateArray()
-                .First(n => n.GetProperty("depth").GetInt32() == 0)
-                .GetProperty("id")
-                .GetGuid();
-        }
-        else
-        {
-            var created = await owner.PostAsJsonAsync(
-                "/api/hierarchy",
-                new { name = "Org A", levels = new[] { "Region" } }
-            );
-            created.EnsureSuccessStatusCode();
-            rootId = (await created.Content.ReadFromJsonAsync<JsonElement>())
-                .GetProperty("rootNodeId")
-                .GetGuid();
-        }
+        // the fixture helper is idempotent, which is what keeps three tests
+        // calling this from creating duplicate "Public Open Store" rows
+        Task<Guid> Site(string name) => ApiFixture.EnsureSiteAsync(owner, name);
 
-        async Task<Guid> Site(string name)
-        {
-            var response = await owner.PostAsJsonAsync(
-                "/api/sites",
-                new
-                {
-                    nodeId = rootId,
-                    name,
-                    timeZone = "Etc/UTC",
-                }
-            );
-            response.EnsureSuccessStatusCode();
-            return (await response.Content.ReadFromJsonAsync<JsonElement>())
-                .GetProperty("id")
-                .GetGuid();
-        }
         var open = await Site("Public Open Store");
         var closed = await Site("Public Closed Store");
         (

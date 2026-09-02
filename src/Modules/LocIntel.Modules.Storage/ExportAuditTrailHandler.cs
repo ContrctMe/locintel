@@ -4,6 +4,7 @@ using System.Text.Json;
 using LocIntel.Contracts;
 using LocIntel.Modules.Storage.Data;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
 using LocIntel.Platform.Storage;
 using Wolverine;
 using Wolverine.Attributes;
@@ -84,25 +85,14 @@ public static class ExportAuditTrailHandler
             }
         );
 
-        await bus.PublishAsync(
-            new RecordDomainAudit(
-                "audit.exported",
-                JsonSerializer.Serialize(
-                    new
-                    {
-                        fileId = id,
-                        truncatedKinds = sections.Where(s => s.Truncated).Select(s => s.Kind),
-                    }
-                )
-            ),
-            new DeliveryOptions
+        await bus.AuditAsync(
+            org,
+            AuditActor.User(message.RequestedBy),
+            "audit.exported",
+            new
             {
-                TenantId = org.Value.ToString(),
-                Headers =
-                {
-                    ["locintel-actor-tier"] = "user",
-                    ["locintel-actor-id"] = message.RequestedBy.ToString(),
-                },
+                fileId = id,
+                truncatedKinds = sections.Where(s => s.Truncated).Select(s => s.Kind),
             }
         );
     }

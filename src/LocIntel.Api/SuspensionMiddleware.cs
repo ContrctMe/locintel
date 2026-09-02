@@ -1,6 +1,6 @@
-using Microsoft.EntityFrameworkCore;
 using LocIntel.Modules.Identity.Data;
 using LocIntel.Platform.Kernel;
+using Microsoft.EntityFrameworkCore;
 
 namespace LocIntel.Api;
 

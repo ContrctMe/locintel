@@ -1,7 +1,7 @@
 using System.Diagnostics;
-using Microsoft.EntityFrameworkCore;
 using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Storage;
+using Microsoft.EntityFrameworkCore;
 
 namespace LocIntel.Api;
 

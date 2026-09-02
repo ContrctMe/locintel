@@ -1,4 +1,8 @@
 using System.Security.Claims;
+using LocIntel.Modules.Identity.Data;
+using LocIntel.Modules.Identity.Users;
+using LocIntel.Platform.Auth;
+using LocIntel.Platform.Kernel;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
@@ -7,10 +11,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using LocIntel.Modules.Identity.Data;
-using LocIntel.Modules.Identity.Users;
-using LocIntel.Platform.Auth;
-using LocIntel.Platform.Kernel;
 
 namespace LocIntel.Modules.Identity.Auth;
 

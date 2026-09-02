@@ -1,11 +1,12 @@
+using LocIntel.Contracts;
+using LocIntel.Modules.Storage.Data;
+using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
+using LocIntel.Platform.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using LocIntel.Contracts;
-using LocIntel.Modules.Storage.Data;
-using LocIntel.Platform.Kernel;
-using LocIntel.Platform.Storage;
 using Wolverine;
 
 namespace LocIntel.Modules.Storage;
@@ -43,22 +44,15 @@ public static class PurgeFileTrashHandler
                 await store.DeleteAsync(previewKey, ct);
             file.Status = FileStatus.Erased;
             file.PreviewKey = null;
-            await bus.PublishAsync(
-                new RecordDomainAudit(
-                    "file.erased",
-                    System.Text.Json.JsonSerializer.Serialize(
-                        new
-                        {
-                            file.Id,
-                            file.Name,
-                            source = "trash-window",
-                        }
-                    )
-                ),
-                new DeliveryOptions
+            await bus.AuditAsync(
+                org,
+                AuditActor.System,
+                "file.erased",
+                new
                 {
-                    TenantId = org.Value.ToString(),
-                    Headers = { ["locintel-actor-tier"] = "system" },
+                    file.Id,
+                    file.Name,
+                    source = "trash-window",
                 }
             );
         }
@@ -67,25 +61,8 @@ public static class PurgeFileTrashHandler
 }
 
 /// <summary>Daily enumerator (same shape as the audit retention sweep).</summary>
-public sealed class FileTrashService(IServiceProvider services) : BackgroundService
+public sealed class FileTrashService(IServiceProvider services)
+    : PerOrgSweepService<PurgeFileTrash>(services)
 {
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-    {
-        using var timer = new PeriodicTimer(TimeSpan.FromHours(24));
-        try
-        {
-            do
-            {
-                await using var scope = services.CreateAsyncScope();
-                var orgs = scope.ServiceProvider.GetRequiredService<IOrganizationLookup>();
-                var bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
-                foreach (var orgId in await orgs.ListIdsAsync(stoppingToken))
-                    await bus.PublishAsync(
-                        new PurgeFileTrash(),
-                        new DeliveryOptions { TenantId = orgId.Value.ToString() }
-                    );
-            } while (await timer.WaitForNextTickAsync(stoppingToken));
-        }
-        catch (OperationCanceledException) { } // shutdown
-    }
+    protected override TimeSpan Interval => TimeSpan.FromHours(24);
 }

@@ -1,7 +1,7 @@
 using Amazon.KeyManagementService;
 using Amazon.KeyManagementService.Model;
-using Microsoft.Extensions.Options;
 using LocIntel.Platform.Secrets;
+using Microsoft.Extensions.Options;
 
 namespace LocIntel.Integrations.AmazonS3;
 

@@ -1,6 +1,6 @@
-using Microsoft.AspNetCore.Http;
 using LocIntel.Contracts;
 using LocIntel.Platform.Kernel;
+using Microsoft.AspNetCore.Http;
 using Wolverine;
 using Wolverine.Http;
 

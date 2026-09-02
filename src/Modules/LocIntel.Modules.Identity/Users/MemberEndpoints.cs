@@ -1,11 +1,12 @@
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using LocIntel.Contracts;
 using LocIntel.Modules.Identity.Data;
 using LocIntel.Platform.Auth;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Wolverine;
 using Wolverine.Attributes;
 using Wolverine.Http;
@@ -66,21 +67,7 @@ public static class MemberEndpoints
         db.Memberships.Remove(membership);
         await db.SaveChangesAsync(ct);
 
-        await bus.PublishAsync(
-            new RecordDomainAudit(
-                "member.left",
-                System.Text.Json.JsonSerializer.Serialize(new { userId })
-            ),
-            new DeliveryOptions
-            {
-                TenantId = org.Value.ToString(),
-                Headers =
-                {
-                    ["locintel-actor-tier"] = "user",
-                    ["locintel-actor-id"] = userId.ToString(),
-                },
-            }
-        );
+        await bus.AuditAsync(org, AuditActor.User(userId), "member.left", new { userId });
 
         // session still points at the org they left: reissue against the next
         // membership (or none - back to the day-zero screen)
@@ -233,21 +220,7 @@ public static class MemberEndpoints
         );
         await db.SaveChangesAsync(ct);
 
-        await bus.PublishAsync(
-            new RecordDomainAudit(
-                "member.invited",
-                System.Text.Json.JsonSerializer.Serialize(new { email })
-            ),
-            new DeliveryOptions
-            {
-                TenantId = org.Value.ToString(),
-                Headers =
-                {
-                    ["locintel-actor-tier"] = "user",
-                    ["locintel-actor-id"] = inviter.ToString(),
-                },
-            }
-        );
+        await bus.AuditAsync(org, AuditActor.User(inviter), "member.invited", new { email });
         return Results.Ok(new { invitationId });
     }
 
@@ -355,21 +328,7 @@ public static class MemberEndpoints
         db.Memberships.Remove(membership);
         await db.SaveChangesAsync(ct);
 
-        await bus.PublishAsync(
-            new RecordDomainAudit(
-                "member.removed",
-                System.Text.Json.JsonSerializer.Serialize(new { userId })
-            ),
-            new DeliveryOptions
-            {
-                TenantId = org.Value.ToString(),
-                Headers =
-                {
-                    ["locintel-actor-tier"] = "user",
-                    ["locintel-actor-id"] = actor.ToString(),
-                },
-            }
-        );
+        await bus.AuditAsync(org, AuditActor.User(actor), "member.removed", new { userId });
         return Results.NoContent();
     }
 }

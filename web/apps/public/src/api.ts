@@ -6,7 +6,7 @@ import { getRequestHeader } from '@tanstack/react-start/server';
  * unknown degrades to empty - the public page always renders.
  */
 export async function publicApi<T>(path: string, fallback: T): Promise<T> {
-  const apiBase = process.env.PREMISE_API ?? 'http://localhost:5293';
+  const apiBase = process.env.LOCINTEL_API ?? 'http://localhost:5293';
   try {
     const host = getRequestHeader('host');
     // the browser's cookie rides along: an identified contact stays
@@ -51,7 +51,7 @@ export type PublicSiteDetail = PublicSite & {
  * callers that must tell "org has nothing" from "backend is down" use this.
  */
 export async function publicApiMaybe<T>(path: string): Promise<T | undefined> {
-  const apiBase = process.env.PREMISE_API ?? 'http://localhost:5293';
+  const apiBase = process.env.LOCINTEL_API ?? 'http://localhost:5293';
   try {
     const host = getRequestHeader('host');
     const cookie = getRequestHeader('cookie');

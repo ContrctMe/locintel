@@ -1,10 +1,11 @@
 using System.Text.Json;
-using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using LocIntel.Contracts;
 using LocIntel.Modules.Entitlements.Data;
 using LocIntel.Platform.Billing;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Wolverine;
 using Wolverine.Attributes;
 using Wolverine.Http;
@@ -144,16 +145,11 @@ public static class BillingSubscriptionChangedHandler
                 ),
                 new DeliveryOptions { TenantId = org.Value.ToString() }
             );
-        await bus.PublishAsync(
-            new RecordDomainAudit(
-                "billing.subscription_changed",
-                JsonSerializer.Serialize(new { planId = message.PlanId, status = message.Status })
-            ),
-            new DeliveryOptions
-            {
-                TenantId = org.Value.ToString(),
-                Headers = { ["locintel-actor-tier"] = "system" },
-            }
+        await bus.AuditAsync(
+            org,
+            AuditActor.System,
+            "billing.subscription_changed",
+            new { planId = message.PlanId, status = message.Status }
         );
     }
 }

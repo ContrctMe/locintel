@@ -1,3 +1,12 @@
+using System.Text.Json;
+using LocIntel.Contracts;
+using LocIntel.Modules.Identity.Access;
+using LocIntel.Modules.Identity.Data;
+using LocIntel.Modules.Identity.Users;
+using LocIntel.Platform.Auth;
+using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
+using LocIntel.Platform.Notifications;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
@@ -5,13 +14,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using LocIntel.Contracts;
-using LocIntel.Modules.Identity.Access;
-using LocIntel.Modules.Identity.Data;
-using LocIntel.Modules.Identity.Users;
-using LocIntel.Platform.Auth;
-using LocIntel.Platform.Kernel;
-using LocIntel.Platform.Notifications;
 using Wolverine;
 
 namespace LocIntel.Modules.Identity.Auth;
@@ -249,17 +251,11 @@ public static class AccountEndpoints
                                 .ExecuteDeleteAsync(ct);
                         }
                     );
-                    await bus.PublishAsync(
-                        new RecordDomainAudit("account.deleted", "{}"),
-                        new DeliveryOptions
-                        {
-                            TenantId = membership.OrgId.Value.ToString(),
-                            Headers =
-                            {
-                                ["locintel-actor-tier"] = "user",
-                                ["locintel-actor-id"] = userId.ToString(),
-                            },
-                        }
+                    await bus.AuditAsync(
+                        membership.OrgId,
+                        AuditActor.User(userId),
+                        "account.deleted",
+                        new { }
                     );
                 }
 

@@ -1,5 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
-using LocIntel.Platform.Data;
+﻿using LocIntel.Platform.Data;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 

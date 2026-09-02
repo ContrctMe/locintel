@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
-using Microsoft.Extensions.Configuration;
 using LocIntel.Platform.Storage;
+using Microsoft.Extensions.Configuration;
 
 namespace LocIntel.Modules.Storage;
 

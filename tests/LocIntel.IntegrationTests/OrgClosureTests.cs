@@ -1,9 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using LocIntel.Platform.Notifications;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
-using LocIntel.Platform.Notifications;
 
 namespace LocIntel.IntegrationTests;
 

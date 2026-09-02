@@ -1,6 +1,6 @@
+using LocIntel.Platform.Kernel;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
-using LocIntel.Platform.Kernel;
 
 namespace LocIntel.Platform.Data;
 

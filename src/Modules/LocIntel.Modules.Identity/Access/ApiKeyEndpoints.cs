@@ -1,10 +1,12 @@
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 using LocIntel.Contracts;
 using LocIntel.Modules.Identity.Data;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Wolverine;
 using Wolverine.Attributes;
 using Wolverine.Http;
@@ -228,21 +230,5 @@ public static class ApiKeyEndpoints
         string eventName,
         Guid keyId,
         string name
-    ) =>
-        bus.PublishAsync(
-                new RecordDomainAudit(
-                    eventName,
-                    System.Text.Json.JsonSerializer.Serialize(new { keyId, name })
-                ),
-                new DeliveryOptions
-                {
-                    TenantId = org.Value.ToString(),
-                    Headers =
-                    {
-                        ["locintel-actor-tier"] = "user",
-                        ["locintel-actor-id"] = actorId.ToString(),
-                    },
-                }
-            )
-            .AsTask();
+    ) => bus.AuditAsync(org, AuditActor.User(actorId), eventName, new { keyId, name }).AsTask();
 }

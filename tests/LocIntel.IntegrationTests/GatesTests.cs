@@ -39,6 +39,44 @@ public class GatesTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         );
     }
 
+    /// <summary>
+    /// A private org for tests that MUTATE org-level state. The entitlement
+    /// test lowers a ceiling and grants an exception; doing that to the
+    /// shared OrgA left the next test in the class facing a ceiling it never
+    /// set (a fork hit this when a rename reshuffled xUnit's order).
+    /// </summary>
+    private async Task<(HttpClient owner, Guid rootId, Guid orgId)> IsolatedSetup(string email)
+    {
+        var owner = await fixture.LoginAsync(email);
+        var org = await owner.PostAsJsonAsync(
+            "/api/orgs",
+            new { name = email, slug = email.Split('@')[0] }
+        );
+        org.EnsureSuccessStatusCode();
+        var orgId = (await org.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("orgId")
+            .GetGuid();
+        // membership lands via the outbox; switch once it is visible
+        for (var i = 0; i < 100; i++)
+        {
+            var me = await owner.GetFromJsonAsync<JsonElement>("/me");
+            if (me.GetProperty("organizations").GetArrayLength() > 0)
+                break;
+            await Task.Delay(100);
+        }
+        (await owner.PostAsJsonAsync("/auth/switch-org", new { orgId })).EnsureSuccessStatusCode();
+
+        var created = await owner.PostAsJsonAsync(
+            "/api/hierarchy",
+            new { name = email, levels = new[] { "Region", "Market" } }
+        );
+        created.EnsureSuccessStatusCode();
+        var rootId = (await created.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("rootNodeId")
+            .GetGuid();
+        return (owner, rootId, orgId);
+    }
+
     // ---- gate 1: entitlements ----
 
     [Fact]
@@ -55,13 +93,14 @@ public class GatesTests(ApiFixture fixture) : IClassFixture<ApiFixture>
     [Fact]
     public async Task Site_limit_blocks_with_402_and_exception_lifts_it()
     {
-        var (owner, rootId) = await Setup();
+        // its own org: this test moves a ceiling and never puts it back
+        var (owner, rootId, orgId) = await IsolatedSetup("gates-limit@locintel.local");
 
         var existing = (await ApiFixture.GetItemsAsync(owner, "/api/sites")).GetArrayLength();
         // custody: the OPERATOR sets the tenant's limit
         var op = await fixture.OperatorClient();
         var set = await op.PutAsJsonAsync(
-            $"/api/operator/orgs/{fixture.OrgA.Value}/entitlements/sites.max",
+            $"/api/operator/orgs/{orgId}/entitlements/sites.max",
             new { value = (existing + 1).ToString() }
         );
         Assert.Equal(HttpStatusCode.NoContent, set.StatusCode);
@@ -90,7 +129,7 @@ public class GatesTests(ApiFixture fixture) : IClassFixture<ApiFixture>
 
         // first-class exception (ADR 10): operator-granted, then it just works
         var exception = await op.PostAsJsonAsync(
-            $"/api/operator/orgs/{fixture.OrgA.Value}/entitlements/sites.max/exceptions",
+            $"/api/operator/orgs/{orgId}/entitlements/sites.max/exceptions",
             new
             {
                 value = (existing + 5).ToString(),

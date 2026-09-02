@@ -3,14 +3,18 @@ using LocIntel.Platform.Kernel;
 namespace LocIntel.Contracts;
 
 /// <summary>Cross-module read contract implemented by the Tenancy module.</summary>
-public interface IOrganizationLookup
+public interface IOrganizationLookup : LocIntel.Platform.Messaging.IOrganizationEnumerator
 {
     Task<OrgSummary?> FindBySlugAsync(string slug, CancellationToken ct = default);
     Task<OrgSummary?> FindByExternalIdAsync(string externalId, CancellationToken ct = default);
     Task<OrgSummary?> GetAsync(OrgId id, CancellationToken ct = default);
 
-    /// <summary>All org ids - for platform enumerators fanning out per-org work (ADR 24).</summary>
-    Task<IReadOnlyList<OrgId>> ListIdsAsync(CancellationToken ct = default);
+    /// <summary>
+    /// All org ids - for platform enumerators fanning out per-org work
+    /// (ADR 24). Declared by IOrganizationEnumerator, the narrow port
+    /// PerOrgSweepService depends on.
+    /// </summary>
+    new Task<IReadOnlyList<OrgId>> ListIdsAsync(CancellationToken ct = default);
 }
 
 public sealed record OrgSummary(
@@ -143,6 +147,8 @@ public sealed record PurgeOrgIngest;
 
 /// <summary>Webhook CONFIG purges with the org; the audit trail itself stays (ADR 25/40).</summary>
 public sealed record PurgeOrgWebhooks;
+
+public sealed record PurgeOrgChecklists;
 
 /// <summary>The org is gone: read models drop it, provider directory follows.</summary>
 public sealed record OrganizationDeleted(OrgId OrgId, string? ExternalId);

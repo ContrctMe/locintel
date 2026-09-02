@@ -56,6 +56,7 @@ public class LifecycleTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         Assert.Equal(
             [
                 "audit.json",
+                "checklists.json",
                 "entitlements.json",
                 "identity.json",
                 "ingest.json",

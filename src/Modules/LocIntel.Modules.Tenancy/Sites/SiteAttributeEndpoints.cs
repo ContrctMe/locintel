@@ -1,9 +1,9 @@
 using System.Text.Json;
+using LocIntel.Modules.Tenancy.Data;
+using LocIntel.Platform.Kernel;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using LocIntel.Modules.Tenancy.Data;
-using LocIntel.Platform.Kernel;
 using Wolverine.Attributes;
 using Wolverine.Http;
 

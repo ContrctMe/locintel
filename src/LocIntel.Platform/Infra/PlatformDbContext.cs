@@ -1,6 +1,6 @@
-using Microsoft.EntityFrameworkCore;
 using LocIntel.Platform.Data;
 using LocIntel.Platform.Kernel;
+using Microsoft.EntityFrameworkCore;
 
 namespace LocIntel.Platform.Infra;
 

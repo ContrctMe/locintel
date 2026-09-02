@@ -3,8 +3,8 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
 // dev proxy: the console and API share an origin so the HttpOnly session
-// cookie (ADR 21) just works. Point PREMISE_API at the running API.
-const apiTarget = process.env.PREMISE_API ?? 'http://localhost:5293';
+// cookie (ADR 21) just works. Point LOCINTEL_API at the running API.
+const apiTarget = process.env.LOCINTEL_API ?? 'http://localhost:5293';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],

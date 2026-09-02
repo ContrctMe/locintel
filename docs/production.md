@@ -102,6 +102,7 @@ contact links land in spam and that reads as "login is broken."
 | `Secrets:LocalMasterKey` | **Dev/test only — refuses to boot in Production.** Register a KMS adapter (`KmsKeyWrapper`, ADR 31) |
 | `RateLimits:GuestPerMinute` / `RateLimits:UserPerMinute` | Defaults 60 / 300; per-org API quota comes from the entitlement |
 | `Impersonation:TtlSeconds` | Support-session length (default 3600) |
+| `Notifications:Sms` | `off` (default, and the only value allowed in Production without a fork adapter) or `local` (dev catcher). SMS is a SEAM: the template ships the port and an off transport, never a routing or consent policy |
 | `Api:ExposeOpenApi` | Serve `/openapi/v1.json` (default true; the console developer page links it). Set false to hide the API surface |
 | `Webhooks:RetryBaseSeconds` | Outbound webhook backoff base (default suits production; tests shrink it) |
 | `Audit:PolicyCacheTtlSeconds` | Per-org audit-policy cache |
@@ -122,7 +123,7 @@ The two frontends deploy differently (`pnpm build` in `web/`):
   Start). Its build emits a **server bundle** (`dist/server/server.js`, a
   web-standard `fetch` handler) plus client assets — it is NOT a static
   drop. It must run as a process on a Node or serverless/edge host, with
-  `PREMISE_API` pointing at the API's internal URL (SSR fetches run
+  `LOCINTEL_API` pointing at the API's internal URL (SSR fetches run
   server-to-server) and reachable from the org subdomains. The API stamps
   `Cache-Control` on `/public/*` (60s) and on `sitemap.xml`/`robots.txt`
   (longer) so a CDN in front of the API or the public app absorbs crawler
