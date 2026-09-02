@@ -220,3 +220,11 @@ jurisdiction.
   forwarded. Leftover from init: the `PREMISE_API` env var (uppercase
   escaped the rename) is now `LOCINTEL_API` in AppHost, both web apps,
   and the production guide.
+- 2026-09-01: **Analytics and map shipped** (console). Incidents now stamp
+  `local_hour` and `local_weekday` at write time (migration
+  `LocalTimeStamps`; older rows are null and simply absent from those two
+  rollups) so time-of-day heat is a group-by, never a read-time zone
+  conversion. Stats gained ByHour/ByWeekday. Console `/analytics`: window
+  and site filters, stat tiles, Leaflet map of incident density per site
+  (one hue, radius = count), bars by category/severity/hour/weekday, site
+  table, daily table. Leaflet added to the console workspace.

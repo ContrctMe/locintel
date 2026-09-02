@@ -3,6 +3,7 @@ using System;
 using LocIntel.Modules.Incidents.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LocIntel.Modules.Incidents.Migrations
 {
     [DbContext(typeof(IncidentsDbContext))]
-    partial class IncidentsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260902041231_LocalTimeStamps")]
+    partial class LocalTimeStamps
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

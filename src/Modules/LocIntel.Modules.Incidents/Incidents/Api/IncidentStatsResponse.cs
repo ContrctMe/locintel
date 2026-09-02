@@ -10,5 +10,7 @@ public sealed record IncidentStatsResponse(
     IReadOnlyList<IncidentCount> ByCategory,
     IReadOnlyList<IncidentCount> BySeverity,
     IReadOnlyList<IncidentCount> BySite,
-    IReadOnlyList<IncidentCount> ByBusinessDate
+    IReadOnlyList<IncidentCount> ByBusinessDate,
+    IReadOnlyList<IncidentCount> ByHour,
+    IReadOnlyList<IncidentCount> ByWeekday
 );

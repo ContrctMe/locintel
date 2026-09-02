@@ -238,6 +238,29 @@ public class IncidentTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         Assert.Equal(2, theft.GetProperty("count").GetInt32());
         Assert.Equal(940m, theft.GetProperty("loss").GetDecimal());
 
+        // time-of-day heat is stamped in the SITE's zone: 05:30Z on the 10th is
+        // 22:xx on Saturday the 9th in Los Angeles
+        var byHour = stats
+            .GetProperty("byHour")
+            .EnumerateArray()
+            .ToDictionary(
+                h => h.GetProperty("key").GetString()!,
+                h => h.GetProperty("count").GetInt32()
+            );
+        Assert.Equal(1, byHour["22"]);
+        Assert.Equal(1, byHour["13"]); // 20:00Z on the 10th
+        Assert.Equal(1, byHour["05"]); // 12:00Z on the 11th
+        var byWeekday = stats
+            .GetProperty("byWeekday")
+            .EnumerateArray()
+            .ToDictionary(
+                d => d.GetProperty("key").GetString()!,
+                d => d.GetProperty("count").GetInt32()
+            );
+        Assert.Equal(1, byWeekday["6"]); // Saturday the 9th
+        Assert.Equal(1, byWeekday["7"]); // Sunday the 10th
+        Assert.Equal(1, byWeekday["1"]); // Monday the 11th
+
         // the window excludes the first one when it starts on the 10th
         var narrower = await owner.GetFromJsonAsync<JsonElement>(
             $"/api/incidents/stats?siteId={siteId}&from=2026-05-10&to=2026-05-11"

@@ -51,6 +51,8 @@ public sealed class IncidentsDbContext(
             b.Property(x => x.LocationDetail).HasColumnName("location_detail").HasMaxLength(200);
             b.Property(x => x.OccurredAt).HasColumnName("occurred_at");
             b.Property(x => x.BusinessDate).HasColumnName("business_date");
+            b.Property(x => x.LocalHour).HasColumnName("local_hour");
+            b.Property(x => x.LocalWeekday).HasColumnName("local_weekday");
             b.Property(x => x.ReportedAt).HasColumnName("reported_at");
             b.Property(x => x.ReportedBy).HasColumnName("reported_by");
             b.Property(x => x.ReporterContact).HasColumnName("reporter_contact").HasMaxLength(320);

@@ -247,6 +247,8 @@ public static class IncidentEndpoints
             LocationDetail = Clean(request.LocationDetail),
             OccurredAt = request.OccurredAt.ToUniversalTime(),
             BusinessDate = BusinessDate.For(request.OccurredAt, site.TimeZone),
+            LocalHour = BusinessDate.LocalClock(request.OccurredAt, site.TimeZone).Hour,
+            LocalWeekday = BusinessDate.LocalClock(request.OccurredAt, site.TimeZone).Weekday,
             ReportedBy = actor.Id,
             LossAmount = request.LossAmount,
             RecoveredAmount = request.RecoveredAmount,
@@ -332,7 +334,12 @@ public static class IncidentEndpoints
             var site = await sites.FindAsync(incident.SiteId, ct);
             incident.OccurredAt = request.OccurredAt.ToUniversalTime();
             if (site is not null)
+            {
                 incident.BusinessDate = BusinessDate.For(incident.OccurredAt, site.TimeZone);
+                var clock = BusinessDate.LocalClock(incident.OccurredAt, site.TimeZone);
+                incident.LocalHour = clock.Hour;
+                incident.LocalWeekday = clock.Weekday;
+            }
         }
         incident.LossAmount = request.LossAmount;
         incident.RecoveredAmount = request.RecoveredAmount;

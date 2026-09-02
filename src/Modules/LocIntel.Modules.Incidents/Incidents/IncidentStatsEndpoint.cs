@@ -55,6 +55,8 @@ public static class IncidentStatsEndpoint
                 i.Severity,
                 i.SiteId,
                 i.BusinessDate,
+                i.LocalHour,
+                i.LocalWeekday,
                 i.Status,
                 Loss = i.LossAmount ?? 0m,
             })
@@ -88,6 +90,20 @@ public static class IncidentStatsEndpoint
                         g.Count(),
                         g.Sum(x => x.Loss)
                     ))
+                    .OrderBy(c => c.Key)
+                    .ToList(),
+                rows.Where(r => r.LocalHour != null)
+                    .GroupBy(r => r.LocalHour!.Value)
+                    .Select(g => new IncidentCount(
+                        g.Key.ToString("00"),
+                        g.Count(),
+                        g.Sum(x => x.Loss)
+                    ))
+                    .OrderBy(c => c.Key)
+                    .ToList(),
+                rows.Where(r => r.LocalWeekday != null)
+                    .GroupBy(r => r.LocalWeekday!.Value)
+                    .Select(g => new IncidentCount(g.Key.ToString(), g.Count(), g.Sum(x => x.Loss)))
                     .OrderBy(c => c.Key)
                     .ToList()
             )

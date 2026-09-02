@@ -40,6 +40,10 @@ public sealed class Incident : IPathScoped, ISoftDeletable
     /// <summary>Stamped site-local business date of OccurredAt (ADR 26 kind 3).</summary>
     public required DateOnly BusinessDate { get; set; }
 
+    /// <summary>Stamped site-local hour (0-23) and ISO weekday (1 = Monday .. 7 = Sunday) of OccurredAt - the time-of-day heat is a group-by, never a read-time zone conversion (ADR 26).</summary>
+    public int? LocalHour { get; set; }
+    public int? LocalWeekday { get; set; }
+
     /// <summary>UTC instant.</summary>
     public DateTimeOffset ReportedAt { get; init; } = DateTimeOffset.UtcNow;
 

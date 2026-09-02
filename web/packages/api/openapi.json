@@ -12608,7 +12608,9 @@
           "byCategory",
           "bySeverity",
           "bySite",
-          "byBusinessDate"
+          "byBusinessDate",
+          "byHour",
+          "byWeekday"
         ],
         "type": "object",
         "properties": {
@@ -12663,6 +12665,18 @@
             }
           },
           "byBusinessDate": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncidentCount"
+            }
+          },
+          "byHour": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncidentCount"
+            }
+          },
+          "byWeekday": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/IncidentCount"

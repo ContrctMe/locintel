@@ -2,6 +2,7 @@ import { createRootRoute, createRoute, createRouter, Outlet } from '@tanstack/re
 import { Shell } from './shell';
 import { AccountPage } from './pages/account';
 import { AlertsPage } from './pages/alerts';
+import { AnalyticsPage } from './pages/analytics';
 import { AuditPage } from './pages/audit';
 import { CaseDetailPage } from './pages/case-detail';
 import { CasesPage } from './pages/cases';
@@ -42,6 +43,7 @@ const routes = [
   createRoute({ getParentRoute: () => rootRoute, path: '/incidents', component: IncidentsPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/incidents/$incidentId', component: IncidentDetailPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/alerts', component: AlertsPage }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/analytics', component: AnalyticsPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/cases', component: CasesPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/cases/$caseId', component: CaseDetailPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/entities', component: EntitiesPage }),

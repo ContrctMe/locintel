@@ -84,6 +84,8 @@ public static class TipEndpoints
             Narrative = description,
             OccurredAt = occurredAt,
             BusinessDate = BusinessDate.For(occurredAt, site.TimeZone),
+            LocalHour = BusinessDate.LocalClock(occurredAt, site.TimeZone).Hour,
+            LocalWeekday = BusinessDate.LocalClock(occurredAt, site.TimeZone).Weekday,
             ReportedBy = Guid.Empty,
             ReporterContact = string.IsNullOrWhiteSpace(request.Contact)
                 ? null

@@ -5154,6 +5154,8 @@ export interface components {
             bySeverity: components["schemas"]["IncidentCount"][];
             bySite: components["schemas"]["IncidentCount"][];
             byBusinessDate: components["schemas"]["IncidentCount"][];
+            byHour: components["schemas"]["IncidentCount"][];
+            byWeekday: components["schemas"]["IncidentCount"][];
         };
         /** @enum {unknown} */
         IncidentStatus: "Open" | "Closed";
