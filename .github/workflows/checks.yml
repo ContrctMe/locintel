@@ -31,6 +31,11 @@ jobs:
           ConnectionStrings__locintel: "Host=localhost;Port=1;Database=x;Username=x;Password=x"
           ASPNETCORE_ENVIRONMENT: Testing
           ROLE: api
+      - name: "Fork sync: the SECOND sync is the one that broke (item 15)"
+        run: |
+          git config --global user.email ci@example.com
+          git config --global user.name CI
+          tests/sync-upstream.test.sh
 
   unit:
     runs-on: ubuntu-latest

@@ -47,7 +47,7 @@ public static class ShareEndpoints
                 s.Name,
                 s.Description,
                 s.OwnerName,
-                s.OwnerOrgId == actor.Org,
+                s.OrgId == actor.Org,
                 a.Role,
                 a.Status,
                 s.Status,
@@ -92,7 +92,7 @@ public static class ShareEndpoints
                     share.Name,
                     share.Description,
                     share.OwnerName,
-                    share.OwnerOrgId == actor.Org,
+                    share.OrgId == actor.Org,
                     access!.Role,
                     access.Status,
                     share.Status,
@@ -145,7 +145,7 @@ public static class ShareEndpoints
         var share = new Share
         {
             Id = Guid.CreateVersion7(),
-            OwnerOrgId = actor.Org,
+            OrgId = actor.Org,
             OwnerName = ownerName,
             Name = request.Name.Trim(),
             Description = request.Description?.Trim() ?? "",
@@ -211,7 +211,7 @@ public static class ShareEndpoints
         var (share, access) = await Load(id, db, ct);
         if (share is null)
             return Results.NotFound();
-        if (share.OwnerOrgId != actor.Org)
+        if (share.OrgId != actor.Org)
             return Results.Unauthorized();
         if (share.Status == ShareStatus.Closed)
             return Results.Conflict(new { error = "the share is closed" });
@@ -319,7 +319,7 @@ public static class ShareEndpoints
         var (share, access) = await Load(id, db, ct);
         if (share is null)
             return Results.NotFound();
-        if (share.OwnerOrgId == actor.Org)
+        if (share.OrgId == actor.Org)
             return Results.Conflict(
                 new { error = "the owner closes a share instead of leaving it" }
             );
@@ -355,7 +355,7 @@ public static class ShareEndpoints
         var (share, _) = await Load(id, db, ct);
         if (share is null)
             return Results.NotFound();
-        if (share.OwnerOrgId != actor.Org)
+        if (share.OrgId != actor.Org)
             return Results.Unauthorized();
         var target = new OrgId(orgId);
         if (target == actor.Org)
@@ -400,7 +400,7 @@ public static class ShareEndpoints
         var (share, access) = await Load(id, db, ct);
         if (share is null)
             return Results.NotFound();
-        if (share.OwnerOrgId != actor.Org)
+        if (share.OrgId != actor.Org)
             return Results.Unauthorized();
         share.Status = ShareStatus.Closed;
         share.UpdatedAt = DateTimeOffset.UtcNow;

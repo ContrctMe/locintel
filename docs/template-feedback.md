@@ -228,6 +228,24 @@ five more classes still carry `for (var i = 0; i < N; i++)` loops with
 bounds of 20-100. The fork's own tests have none. Finish the sweep, or add
 the loop shape to `HygieneTests` so it cannot come back.
 
+## Round four (after the third sync, 2026-09-02)
+
+Round three landed in full; the sync merged clean. One item left:
+
+### 18. The recipient-list shape keys the parent on `id`
+
+`RecipientListSql` joins `r."{foreignKeyColumn}" = "{table}".id`. Two of
+the three Network tables are keyed by a foreign key instead: a member row
+and a bulletin both belong to a SHARE, so the lookup is
+`share_access.share_id = share_members.share_id`. Add a `parentKeyColumn`
+parameter (default `"id"`) and the C# side needs nothing - the caller
+already supplies the lambda. With that, `share_members` (recipient writes:
+`writableByRecipient`, plus owner writes through the parent - a second gap,
+smaller: the owner of the PARENT may also write the child) and
+`shared_bulletins` (owner column `publisher_org_id`, status `= 'Active'`)
+can adopt it. Files: `src/Modules/LocIntel.Modules.Network/Data/NetworkDbContext.cs`,
+`Migrations/20260902042111_Initial.cs`.
+
 ## Suggested prompt for the template session
 
-> Read `/Users/jarod/coding/locintel/docs/template-feedback.md`, section "Round three" (items 15-17; rounds one and two are merged). Item 15 is a bug in `tools/sync-upstream.sh` with the fix described - apply it and add a test that syncs a fork twice. Item 16 extends `EnableRecipientListRls` / `AddRecipientListFilter`; port it with adversarial tests. Item 17 is a sweep of the template's own tests. Keep the suite shuffled and green after each change, and note in the commit message which item it closes.
+> Read `/Users/jarod/coding/locintel/docs/template-feedback.md`, section "Round four" (item 18; rounds one to three are merged). Extend `EnableRecipientListRls` with a `parentKeyColumn` parameter and, if it fits cleanly, a parent-owner write clause; cover both in `TenancyShapeRlsTests`. Keep the suite shuffled and green, and note in the commit message which item it closes.

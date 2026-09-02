@@ -345,13 +345,10 @@ public class HierarchyAndTimeTests(ApiFixture fixture) : IClassFixture<ApiFixtur
             $"/api/sites/{siteId}/schedules/{row.GetProperty("id").GetGuid()}"
         );
         delete.EnsureSuccessStatusCode();
-        for (var i = 0; i < 60; i++)
-        {
-            if ((await fixture.QueryWindows(siteId)).Count == 0)
-                return;
-            await Task.Delay(100);
-        }
-        Assert.Fail("windows survived schedule deletion");
+        await ApiFixture.WaitUntilAsync(
+            async () => (await fixture.QueryWindows(siteId)).Count == 0,
+            "the occurrence windows to be removed with their schedule"
+        );
     }
 
     private async Task<List<(DateTimeOffset start, DateTimeOffset end)>> PollWindows(
@@ -359,19 +356,13 @@ public class HierarchyAndTimeTests(ApiFixture fixture) : IClassFixture<ApiFixtur
         int minimum
     )
     {
-        for (var i = 0; i < 100; i++)
-        {
-            var windows = await fixture.QueryWindows(siteId);
-            if (windows.Count >= Math.Max(minimum, 1))
-                return windows;
-            await Task.Delay(100);
-        }
-        var final = await fixture.QueryWindows(siteId);
-        Assert.True(
-            final.Count >= minimum,
-            $"projection has {final.Count} rows, wanted >= {minimum}; {await fixture.DeadLetterSummary()}"
+        List<(DateTimeOffset start, DateTimeOffset end)> polled = [];
+        await ApiFixture.WaitUntilAsync(
+            async () => (polled = await fixture.QueryWindows(siteId)).Count >= Math.Max(minimum, 1),
+            $"the occurrence projection to reach at least {Math.Max(minimum, 1)} rows",
+            diagnostics: fixture.DeadLetterSummary
         );
-        return final;
+        return polled;
     }
 
     [Fact]

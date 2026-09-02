@@ -42,6 +42,15 @@ migration files; always add a new one.
      the parent. Being on the list grants READ only - the WITH CHECK omits
      the recipient clause, so a recipient cannot edit the parent (award a
      request to itself); Postgres refuses that write loudly (42501).
+     Two options cover the harder cases: `recipientPredicate` gates the
+     lookup on the recipient row's own state (`"status <> 'Removed'"` - a
+     removal usually KEEPS the row for the audit trail, so listing alone
+     cannot mean access), and `writableByRecipient: true` extends WITH CHECK
+     with the SAME gated lookup for rows the recipient authors (a member
+     editing its membership, a publisher posting into a share). Reusing the
+     gated lookup is the point: a predicate on reads only would leave a
+     removed member able to write. For a single-owner parent use
+     `AddOwnerAndRecipientsFilter` instead of `AddRecipientListFilter`.
    - **Recursion rule.** A policy may reference ANOTHER table, never its own -
      a self-referencing policy recurses and the query fails at runtime. For
      "can this org see it through a grant", anchor visibility on one

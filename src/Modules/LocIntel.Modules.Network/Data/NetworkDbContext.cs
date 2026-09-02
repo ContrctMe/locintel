@@ -52,7 +52,7 @@ public sealed class NetworkDbContext(
             b.ToTable("shares");
             b.HasKey(x => x.Id);
             b.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
-            b.Property(x => x.OwnerOrgId).HasColumnName("owner_org_id");
+            b.Property(x => x.OrgId).HasColumnName("owner_org_id");
             b.Property(x => x.OwnerName).HasColumnName("owner_name").HasMaxLength(200);
             b.Property(x => x.Name).HasColumnName("name").HasMaxLength(200);
             b.Property(x => x.Description).HasColumnName("description");
@@ -63,17 +63,19 @@ public sealed class NetworkDbContext(
             b.Property(x => x.CreatedBy).HasColumnName("created_by");
             b.Property(x => x.CreatedAt).HasColumnName("created_at");
             b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
-            b.HasIndex(x => x.OwnerOrgId);
-            b.HasQueryFilter(
-                TenantFilter,
-                s =>
-                    Access.Any(a =>
-                        a.ShareId == s.Id
-                        && a.OrgId == CurrentOrg
-                        && a.Status != MembershipStatus.Removed
-                    )
-            );
+            b.HasIndex(x => x.OrgId);
         });
+        // owner plus every non-removed member (Platform owner-and-recipients shape);
+        // a removed member keeps its share_access row for the trail but loses access
+        AddOwnerAndRecipientsFilter<Share>(
+            modelBuilder,
+            s =>
+                Access.Any(a =>
+                    a.ShareId == s.Id
+                    && a.OrgId == CurrentOrg
+                    && a.Status != MembershipStatus.Removed
+                )
+        );
 
         modelBuilder.Entity<ShareMember>(b =>
         {

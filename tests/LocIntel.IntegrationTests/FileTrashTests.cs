@@ -37,20 +37,18 @@ public class FileTrashTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         };
         (await client.SendAsync(put)).EnsureSuccessStatusCode();
         (await client.PostAsync($"/api/files/{fileId}/complete", null)).EnsureSuccessStatusCode();
-        for (var i = 0; i < 100; i++)
-        {
-            var files = await ApiFixture.GetItemsAsync(client, "/api/files");
-            var mine = files
-                .EnumerateArray()
-                .FirstOrDefault(f => f.GetProperty("id").GetGuid() == fileId);
-            if (
-                mine.ValueKind != JsonValueKind.Undefined
-                && mine.GetProperty("status").GetString() == "Clean"
-            )
-                return (client, fileId);
-            await Task.Delay(100);
-        }
-        throw new TimeoutException("file never scanned Clean");
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+            {
+                var mine = (await ApiFixture.GetItemsAsync(client, "/api/files"))
+                    .EnumerateArray()
+                    .FirstOrDefault(f => f.GetProperty("id").GetGuid() == fileId);
+                return mine.ValueKind != JsonValueKind.Undefined
+                    && mine.GetProperty("status").GetString() == "Clean";
+            },
+            "the uploaded file to be scanned Clean"
+        );
+        return (client, fileId);
     }
 
     private static async Task<bool> ListedAsync(HttpClient client, Guid fileId, bool trash)

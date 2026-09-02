@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 """LocIntel fork initializer (ADR 36): renames the template to YOUR product.
 
-Usage: python3 tools/init.py Acme
+Usage: python3 tools/init.py Acme [--snapshot]
+
+--snapshot renames and nothing else: no verification pass, no git bootstrap.
+tools/sync-upstream.sh uses it to replay an upstream snapshot through the
+same rename inside a worktree, where committing or moving refs would corrupt
+the very branch the sync is building.
 Renames LocIntel -> Acme across solution, projects, namespaces, config keys,
 schemas stay as-is (they are yours to evolve), and the web workspace scopes.
 Run BEFORE the first migration is applied anywhere durable. One-way: there is
@@ -13,10 +18,13 @@ import shutil
 import subprocess
 import sys
 
-if len(sys.argv) != 2 or not re.fullmatch(r"[A-Z][A-Za-z0-9]+", sys.argv[1]):
-    sys.exit("usage: init.py <PascalCaseName>   e.g. init.py Acme")
+args = sys.argv[1:]
+snapshot = "--snapshot" in args
+args = [a for a in args if a != "--snapshot"]
+if len(args) != 1 or not re.fullmatch(r"[A-Z][A-Za-z0-9]+", args[0]):
+    sys.exit("usage: init.py <PascalCaseName> [--snapshot]   e.g. init.py Acme")
 
-name = sys.argv[1]
+name = args[0]
 lower = name.lower()
 upper = name.upper()
 root = pathlib.Path(__file__).resolve().parent.parent
@@ -69,6 +77,10 @@ def run(label, *command):
 # product namespace changes where it sorts against Microsoft.*, so csharpier's
 # using order shifts across the tree - a fork discovered this as a CI format
 # failure on its very first commit.
+if snapshot:
+    print(f"renamed template -> {name} (snapshot: no verification, no git bootstrap)")
+    raise SystemExit(0)
+
 print("verifying the rename:")
 run("format", "dotnet", "csharpier", "format", ".")
 built = run("build", "dotnet", "build", f"{name}.slnx")

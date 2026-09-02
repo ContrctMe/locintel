@@ -129,13 +129,7 @@ public class LifecycleTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         var orgId = (await created.Content.ReadFromJsonAsync<JsonElement>())
             .GetProperty("orgId")
             .GetGuid();
-        for (var i = 0; i < 60; i++)
-        {
-            var me = await founder.GetFromJsonAsync<JsonElement>("/me");
-            if (me.GetProperty("organizations").GetArrayLength() > 0)
-                break;
-            await Task.Delay(100);
-        }
+        await ApiFixture.WaitForMembershipAsync(founder);
         (
             await founder.PostAsJsonAsync("/auth/switch-org", new { orgId })
         ).EnsureSuccessStatusCode();
@@ -162,13 +156,13 @@ public class LifecycleTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         var guest = fixture.GuestClient();
         guest.DefaultRequestHeaders.Add("X-Forwarded-Host", "doomed.locintel.test");
         JsonElement publicSites = default;
-        for (var i = 0; i < 60; i++)
-        {
-            publicSites = await guest.GetFromJsonAsync<JsonElement>("/public/sites");
-            if (publicSites.GetArrayLength() > 0)
-                break;
-            await Task.Delay(100);
-        }
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+                (
+                    publicSites = await guest.GetFromJsonAsync<JsonElement>("/public/sites")
+                ).GetArrayLength() > 0,
+            "the site to become publicly visible"
+        );
         Assert.Equal(1, publicSites.GetArrayLength());
 
         // suspend, then offboard
@@ -191,13 +185,13 @@ public class LifecycleTests(ApiFixture fixture) : IClassFixture<ApiFixture>
 
         // membership + directory purge: the org vanishes from the founder's world
         JsonElement after = default;
-        for (var i = 0; i < 100; i++)
-        {
-            after = await founder.GetFromJsonAsync<JsonElement>("/me");
-            if (after.GetProperty("organizations").GetArrayLength() == 0)
-                break;
-            await Task.Delay(100);
-        }
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+                (after = await founder.GetFromJsonAsync<JsonElement>("/me"))
+                    .GetProperty("organizations")
+                    .GetArrayLength() == 0,
+            "the offboarded org to leave the membership read model"
+        );
         Assert.Equal(0, after.GetProperty("organizations").GetArrayLength());
 
         // grants are gone: the scope gate filters reads to nothing (never an

@@ -360,3 +360,12 @@ jurisdiction.
   now regenerate with `pnpm --filter public run routes`; the sync script
   captures its parent before `init.py` runs, because the upstream init
   now commits and moves `template-renamed` itself.
+- 2026-09-02: **Third template sync** (upstream `b190fc5`, round-three
+  items 15-17 landed; the merge was clean). `shares` moves onto the
+  extended recipient-list shape (`Share` is `IOrgScoped` over
+  `owner_org_id`; `AddOwnerAndRecipientsFilter` + `EnableRecipientListRls`
+  with the status gate, migration `OwnerAndRecipientsShape`). `share_members`
+  and `shared_bulletins` stay hand-written: they join `share_access` on the
+  parent's `share_id`, not its `id`, which the helper fixes - filed as
+  round-four feedback. The fork's own tests already had no hand-rolled
+  waits, so the new hygiene test passed untouched.

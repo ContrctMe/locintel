@@ -78,19 +78,15 @@ public class IngestTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         (await client.PostAsync($"/api/files/{fileId}/complete", null)).EnsureSuccessStatusCode();
 
         // staging requires a Clean verdict
-        for (var i = 0; i < 200; i++)
-        {
-            var files = await ApiFixture.GetItemsAsync(client, "/api/files");
-            if (
-                files
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+                (await ApiFixture.GetItemsAsync(client, "/api/files"))
                     .EnumerateArray()
                     .First(f => f.GetProperty("id").GetGuid() == fileId)
                     .GetProperty("status")
-                    .GetString() == "Clean"
-            )
-                break;
-            await Task.Delay(100);
-        }
+                    .GetString() == "Clean",
+            "the ingest upload to be scanned Clean"
+        );
         return fileId;
     }
 
@@ -103,17 +99,18 @@ public class IngestTests(ApiFixture fixture) : IClassFixture<ApiFixture>
 
     private async Task<JsonElement?> PollSite(HttpClient client, string name, bool expect = true)
     {
-        for (var i = 0; i < 200; i++)
-        {
-            var sites = await ApiFixture.GetItemsAsync(client, "/api/sites");
-            var match = sites
-                .EnumerateArray()
-                .FirstOrDefault(s => s.GetProperty("name").GetString() == name);
-            if ((match.ValueKind == JsonValueKind.Object) == expect)
-                return match.ValueKind == JsonValueKind.Object ? match : null;
-            await Task.Delay(100);
-        }
-        return null;
+        JsonElement match = default;
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+            {
+                match = (await ApiFixture.GetItemsAsync(client, "/api/sites"))
+                    .EnumerateArray()
+                    .FirstOrDefault(s => s.GetProperty("name").GetString() == name);
+                return (match.ValueKind == JsonValueKind.Object) == expect;
+            },
+            expect ? $"site '{name}' to be applied" : $"site '{name}' to be absent"
+        );
+        return match.ValueKind == JsonValueKind.Object ? match : null;
     }
 
     [Fact]
@@ -263,16 +260,16 @@ public class IngestTests(ApiFixture fixture) : IClassFixture<ApiFixture>
 
             // sync lands a STAGED batch (same core as uploads); commit stays explicit
             JsonElement batch = default;
-            for (var i = 0; i < 200; i++)
-            {
-                await Task.Delay(100);
-                var found = await fixture.QueryIngestBatch("pos-sync");
-                if (found is { } b)
+            await ApiFixture.WaitUntilAsync(
+                async () =>
                 {
+                    if (await fixture.QueryIngestBatch("pos-sync") is not { } b)
+                        return false;
                     batch = JsonSerializer.SerializeToElement(b);
-                    break;
-                }
-            }
+                    return true;
+                },
+                "the connector sync to stage a batch"
+            );
             Assert.Equal("sk-pos-secret", seenKey); // decrypted credential reached the source
             var batchId = batch.GetProperty("Id").GetGuid();
             var commit = await client.PostAsync($"/api/ingest/batches/{batchId}/commit", null);

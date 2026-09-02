@@ -53,17 +53,14 @@ public class DirectorySyncTests(DirectorySyncFixture fixture) : IClassFixture<Di
         var orgId = (await created.Content.ReadFromJsonAsync<JsonElement>())
             .GetProperty("orgId")
             .GetGuid();
-        for (var i = 0; i < 100; i++)
-        {
-            var me = await client.GetFromJsonAsync<JsonElement>("/me");
-            if (
-                me.GetProperty("organizations")
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+                (await client.GetFromJsonAsync<JsonElement>("/me"))
+                    .GetProperty("organizations")
                     .EnumerateArray()
-                    .Any(o => o.GetProperty("id").GetGuid() == orgId)
-            )
-                break;
-            await Task.Delay(100);
-        }
+                    .Any(o => o.GetProperty("id").GetGuid() == orgId),
+            "the directory-synced membership to appear"
+        );
         (await client.PostAsJsonAsync("/auth/switch-org", new { orgId })).EnsureSuccessStatusCode();
 
         // the org's external id lives at the provider; ask the emulator
@@ -79,13 +76,13 @@ public class DirectorySyncTests(DirectorySyncFixture fixture) : IClassFixture<Di
             .GetString()!;
 
         // and the OrgDirectory read model learns it via OrganizationUpserted
-        for (var i = 0; i < 100; i++)
-        {
-            var sso = await client.GetFromJsonAsync<JsonElement>("/api/org/sso");
-            if (sso.GetProperty("available").GetBoolean())
-                break;
-            await Task.Delay(100);
-        }
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+                (await client.GetFromJsonAsync<JsonElement>("/api/org/sso"))
+                    .GetProperty("available")
+                    .GetBoolean(),
+            "SSO to become available for the org"
+        );
         return (client, orgId, externalOrgId);
     }
 
