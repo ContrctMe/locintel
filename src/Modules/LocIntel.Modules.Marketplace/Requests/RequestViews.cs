@@ -20,10 +20,30 @@ public static class RequestViews
         CancellationToken ct
     )
     {
-        var vendorName = await db
-            .Profiles.Where(p => p.OrgId == request.VendorOrgId)
-            .Select(p => p.Name)
-            .FirstOrDefaultAsync(ct);
+        var vendorName = request.VendorOrgId is { } vendorOrg
+            ? await db
+                .Profiles.Where(p => p.OrgId == vendorOrg)
+                .Select(p => p.Name)
+                .FirstOrDefaultAsync(ct)
+            : null;
+        var quotes = await db
+            .Quotes.Where(q => q.RequestId == request.Id)
+            .OrderBy(q => q.Amount)
+            .ToListAsync(ct);
+        var recipients = await db
+            .Recipients.Where(x => x.RequestId == request.Id)
+            .OrderBy(x => x.NotifiedAt)
+            .ToListAsync(ct);
+        var vendorIds = quotes
+            .Select(q => q.VendorOrgId)
+            .Concat(recipients.Select(x => x.VendorOrgId))
+            .Distinct()
+            .ToArray();
+        var vendorNames = await db
+            .Profiles.Where(p => vendorIds.Contains(p.OrgId))
+            .ToDictionaryAsync(p => p.OrgId, p => p.Name, ct);
+        // the other side never sees competing quotes: a vendor sees only its own
+        var mine = readerOrg == request.OrgId;
         var events = await db
             .Events.Where(e => e.RequestId == request.Id)
             .OrderBy(e => e.At)
@@ -35,8 +55,9 @@ public static class RequestViews
         );
         return new RequestDetail(
             request.Id,
-            request.VendorOrgId.Value,
+            request.VendorOrgId?.Value,
             vendorName,
+            request.Mode,
             request.RequesterName,
             request.Category,
             request.Urgency,
@@ -83,6 +104,29 @@ public static class RequestViews
                     e.DistanceFromSiteMeters is { } d ? d <= Geo.GeofenceMeters : null,
                     e.At
                 ))
+                .ToList(),
+            quotes
+                .Where(q => mine || q.VendorOrgId == readerOrg)
+                .Select(q => new QuoteView(
+                    q.Id,
+                    q.VendorOrgId.Value,
+                    vendorNames.GetValueOrDefault(q.VendorOrgId),
+                    q.Amount,
+                    q.Currency,
+                    q.Notes,
+                    q.ValidUntil,
+                    q.Status,
+                    q.CreatedAt
+                ))
+                .ToList(),
+            recipients
+                .Where(x => mine || x.VendorOrgId == readerOrg)
+                .Select(x => new RecipientView(
+                    x.VendorOrgId.Value,
+                    vendorNames.GetValueOrDefault(x.VendorOrgId),
+                    x.Status,
+                    x.NotifiedAt
+                ))
                 .ToList()
         );
     }
@@ -105,10 +149,14 @@ public static class RequestViews
             .Take(take)
             .Select(r => new RequestSummary(
                 r.Id,
-                r.VendorOrgId.Value,
-                db.Profiles.Where(p => p.OrgId == r.VendorOrgId)
-                    .Select(p => p.Name)
-                    .FirstOrDefault(),
+                r.VendorOrgId == null ? null : r.VendorOrgId.Value.Value,
+                r.VendorOrgId == null
+                    ? null
+                    : db
+                        .Profiles.Where(p => p.OrgId == r.VendorOrgId)
+                        .Select(p => p.Name)
+                        .FirstOrDefault(),
+                r.Mode,
                 r.RequesterName,
                 r.Category,
                 r.Urgency,

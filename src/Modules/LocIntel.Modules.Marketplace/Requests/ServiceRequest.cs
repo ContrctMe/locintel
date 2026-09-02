@@ -18,7 +18,10 @@ public sealed class ServiceRequest
 {
     public required Guid Id { get; init; }
     public required OrgId OrgId { get; init; }
-    public required OrgId VendorOrgId { get; init; }
+
+    /// <summary>Null while a Broadcast request is out for quotes; set when the buyer awards one.</summary>
+    public OrgId? VendorOrgId { get; set; }
+    public RequestMode Mode { get; init; } = RequestMode.Direct;
     public required ServiceCategory Category { get; init; }
     public required RequestUrgency Urgency { get; set; }
     public RequestStatus Status { get; set; } = RequestStatus.Draft;

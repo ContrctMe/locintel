@@ -10,7 +10,7 @@ import type { Page } from '../lib/paging';
 import { can, useMe } from '../session';
 
 export type RequestSummary = {
-  id: string; vendorOrgId: string; vendorName: string | null; requesterName: string; category: string;
+  id: string; vendorOrgId: string | null; vendorName: string | null; mode: string; requesterName: string; category: string;
   urgency: string; status: string; siteId: string; siteName: string; title: string; startsAt: string;
   endsAt: string | null; budgetAmount: number | null; currency: string; updatedAt: string;
 };
@@ -91,7 +91,7 @@ export function MarketplacePage() {
                     <Link to="/marketplace/requests/$requestId" params={{ requestId: r.id }} className="font-medium hover:underline">{r.title}</Link>
                     <div className="text-xs text-muted-foreground">{categoryLabel(r.category)}</div>
                   </TableCell>
-                  <TableCell className="text-sm">{r.vendorName ?? '—'}</TableCell>
+                  <TableCell className="text-sm">{r.vendorName ?? (r.mode === 'Broadcast' ? 'Open for quotes' : '—')}</TableCell>
                   <TableCell className="text-sm">{r.siteName}</TableCell>
                   <TableCell className="text-sm">{r.urgency}</TableCell>
                   <TableCell><RequestStatusBadge status={r.status} /></TableCell>
@@ -143,7 +143,7 @@ export function NewRequestDialog({ siteId: presetSite, incidentId, caseId, trigg
         if (i > 0) specObj[line.slice(0, i).trim()] = line.slice(i + 1).trim();
       }
       const created = await api.post<{ id: string }>('/api/marketplace/requests', {
-        vendorOrgId, category, urgency, siteId, title: title.trim(), details: details.trim() || null,
+        vendorOrgId: vendorOrgId || null, category, urgency, siteId, title: title.trim(), details: details.trim() || null,
         spec: specObj, startsAt: new Date(startsAt).toISOString(),
         endsAt: endsAt ? new Date(endsAt).toISOString() : null, rrule: rrule.trim() || null,
         budgetAmount: budget ? Number(budget) : null, incidentId: incidentId ?? null, caseId: caseId ?? null,
@@ -171,7 +171,7 @@ export function NewRequestDialog({ siteId: presetSite, incidentId, caseId, trigg
           <div className="space-y-1">
             <Label htmlFor="rq-vendor">Vendor</Label>
             <Select id="rq-vendor" value={vendorOrgId} onChange={(e) => setVendorOrgId(e.target.value)}>
-              <option value="">Choose…</option>
+              <option value="">Broadcast: ask every matching vendor for a quote</option>
               {usable?.map((v) => <option key={v.orgId} value={v.orgId}>{v.preferred ? '★ ' : ''}{v.name}</option>)}
             </Select>
           </div>
@@ -209,7 +209,7 @@ export function NewRequestDialog({ siteId: presetSite, incidentId, caseId, trigg
         <div className="space-y-1"><Label htmlFor="rq-spec">Specifics, one per line as key: value</Label>
           <Textarea id="rq-spec" rows={3} value={spec} placeholder={'headcount: 2\narmed: no'} onChange={(e) => setSpec(e.target.value)} /></div>
         <div className="space-y-1"><Label htmlFor="rq-details">Details</Label><Textarea id="rq-details" rows={3} value={details} onChange={(e) => setDetails(e.target.value)} /></div>
-        <Button className="w-full" disabled={!vendorOrgId || !siteId || !title.trim() || create.isPending} onClick={() => create.mutate()}>Send request</Button>
+        <Button className="w-full" disabled={!siteId || !title.trim() || create.isPending} onClick={() => create.mutate()}>{vendorOrgId ? 'Send request' : 'Send for quotes'}</Button>
         {create.isError && <p className="text-xs text-destructive">{apiError(create.error, 'Could not send')}</p>}
       </div>
     </FormDialog>

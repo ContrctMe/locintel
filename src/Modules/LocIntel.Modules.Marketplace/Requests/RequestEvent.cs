@@ -13,7 +13,7 @@ public sealed class RequestEvent
 {
     public required Guid Id { get; init; }
     public required OrgId OrgId { get; init; }
-    public required OrgId VendorOrgId { get; init; }
+    public OrgId? VendorOrgId { get; init; }
     public required Guid RequestId { get; init; }
     public required OrgId ActorOrgId { get; init; }
     public required Guid ActorId { get; init; }

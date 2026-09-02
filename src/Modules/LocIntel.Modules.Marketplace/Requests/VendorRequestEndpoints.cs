@@ -37,8 +37,20 @@ public static class VendorRequestEndpoints
             return Results.Unauthorized();
         if (!await scopes.CanAsync(accessor.Current, Capabilities.VendorFulfill, ct))
             return Results.Unauthorized();
+        // assigned to us, or a broadcast we were invited to and have not declined
         var query = db.Requests.Where(r =>
-            r.VendorOrgId == actor.Org && r.Status != RequestStatus.Draft
+            r.Status != RequestStatus.Draft
+            && (
+                r.VendorOrgId == actor.Org
+                || (
+                    r.VendorOrgId == null
+                    && db.Recipients.Any(x =>
+                        x.RequestId == r.Id
+                        && x.VendorOrgId == actor.Org
+                        && x.Status != RecipientStatus.Declined
+                    )
+                )
+            )
         );
         if (status is { } s)
             query = query.Where(r => r.Status == s);
@@ -83,6 +95,10 @@ public static class VendorRequestEndpoints
             return error;
         if (row!.Status != RequestStatus.Submitted)
             return Results.Conflict(new { error = "only submitted requests can be accepted" });
+        if (row.Mode == RequestMode.Broadcast)
+            return Results.Conflict(
+                new { error = "quote on a broadcast request; the buyer awards it" }
+            );
         // expired credentials block new assignments (blueprint: trust and safety)
         var now = time.GetUtcNow();
         if (
@@ -130,6 +146,38 @@ public static class VendorRequestEndpoints
         if (string.IsNullOrWhiteSpace(request.Reason))
             return Results.BadRequest(new { error = "declining needs a reason" });
         var reason = request.Reason.Trim();
+        if (row.Mode == RequestMode.Broadcast)
+        {
+            // one recipient bowing out leaves the request open for the others
+            var recipient = await db.Recipients.FirstAsync(
+                x => x.RequestId == id && x.VendorOrgId == actor!.Value.Org,
+                ct
+            );
+            recipient.Status = RecipientStatus.Declined;
+            recipient.RespondedAt = DateTimeOffset.UtcNow;
+            var own = await db.Quotes.FirstOrDefaultAsync(
+                q =>
+                    q.RequestId == id
+                    && q.VendorOrgId == actor!.Value.Org
+                    && q.Status == QuoteStatus.Submitted,
+                ct
+            );
+            if (own is not null)
+                own.Status = QuoteStatus.Withdrawn;
+            db.Events.Add(
+                NewEvent(
+                    row,
+                    actor!.Value,
+                    RequestEventKind.Message,
+                    $"Declined to quote: {reason}",
+                    null,
+                    null,
+                    null
+                )
+            );
+            await db.SaveChangesAsync(ct);
+            return Results.Ok(RequestViews.Mutated(row));
+        }
         return await Transition(
             row,
             actor!.Value,
@@ -161,8 +209,10 @@ public static class VendorRequestEndpoints
         var (row, actor, error) = await Load(id, db, accessor, scopes, ct);
         if (error is not null)
             return error;
-        if (row!.Status != RequestStatus.Accepted)
-            return Results.Conflict(new { error = "only accepted requests can be started" });
+        if (row!.Status != RequestStatus.Accepted || row.VendorOrgId != actor!.Value.Org)
+            return Results.Conflict(
+                new { error = "only accepted requests assigned to you can be started" }
+            );
         var now = time.GetUtcNow();
         return await Transition(
             row,
@@ -196,8 +246,8 @@ public static class VendorRequestEndpoints
         var (row, actor, error) = await Load(id, db, accessor, scopes, ct);
         if (error is not null)
             return error;
-        if (row!.Status != RequestStatus.InProgress)
-            return Results.Conflict(new { error = "only work in progress can be completed" });
+        if (row!.Status != RequestStatus.InProgress || row.VendorOrgId != actor!.Value.Org)
+            return Results.Conflict(new { error = "only your work in progress can be completed" });
         var now = time.GetUtcNow();
         var summary = string.IsNullOrWhiteSpace(request.Summary) ? null : request.Summary.Trim();
         return await Transition(
@@ -313,6 +363,95 @@ public static class VendorRequestEndpoints
         return Results.Ok(new RequestEventCreated(evt.Id, null, null));
     }
 
+    /// <summary>Quote on a broadcast: one per vendor, resubmitting replaces it.</summary>
+    [Transactional(typeof(MarketplaceDbContext))]
+    [WolverinePost("/api/vendor/requests/{id}/quotes")]
+    [ProducesResponseType(typeof(QuoteSubmitted), StatusCodes.Status200OK)]
+    public static async Task<IResult> SubmitQuote(
+        Guid id,
+        SubmitQuoteRequest request,
+        MarketplaceDbContext db,
+        IPrincipalAccessor accessor,
+        IScopeResolver scopes,
+        IMessageBus bus,
+        TimeProvider time,
+        CancellationToken ct
+    )
+    {
+        var (row, actor, error) = await Load(id, db, accessor, scopes, ct);
+        if (error is not null)
+            return error;
+        if (row!.Mode != RequestMode.Broadcast || row.Status != RequestStatus.Submitted)
+            return Results.Conflict(new { error = "quotes are for open broadcast requests" });
+        if (request.Amount < 0)
+            return Results.BadRequest(new { error = "amount cannot be negative" });
+        var now = time.GetUtcNow();
+        if (request.ValidUntil is { } until && until <= now)
+            return Results.BadRequest(new { error = "validity must be in the future" });
+        if (
+            await db.Credentials.AnyAsync(
+                c => c.OrgId == actor!.Value.Org && c.ExpiresAt <= now,
+                ct
+            )
+        )
+            return Results.Conflict(new { error = "renew expired credentials before quoting" });
+        var quote = await db.Quotes.FirstOrDefaultAsync(
+            q => q.RequestId == id && q.VendorOrgId == actor!.Value.Org,
+            ct
+        );
+        if (quote is null)
+        {
+            quote = new Quote
+            {
+                Id = Guid.CreateVersion7(),
+                OrgId = row.OrgId,
+                VendorOrgId = actor!.Value.Org,
+                RequestId = row.Id,
+                Amount = request.Amount,
+                Currency = row.Currency,
+                SubmittedBy = actor.Value.Id,
+            };
+            db.Quotes.Add(quote);
+        }
+        else if (quote.Status is not (QuoteStatus.Submitted or QuoteStatus.Withdrawn))
+            return Results.Conflict(new { error = $"your quote is {quote.Status}" });
+        quote.Amount = request.Amount;
+        quote.Notes = string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim();
+        quote.ValidUntil = request.ValidUntil;
+        quote.Status = QuoteStatus.Submitted;
+        quote.UpdatedAt = now;
+        var recipient = await db.Recipients.FirstAsync(
+            x => x.RequestId == id && x.VendorOrgId == actor!.Value.Org,
+            ct
+        );
+        recipient.Status = RecipientStatus.Quoted;
+        recipient.RespondedAt = now;
+        // never touch the request row before award: RLS admits a recipient to
+        // READ it, but only the two parties may write it
+        await db.SaveChangesAsync(ct);
+        await bus.PublishAsync(
+            new SendOrgNotice(
+                $"Quote received: {row.Title}",
+                [
+                    $"{VendorNameOf(db, actor!.Value.Org)} quoted {quote.Currency} {quote.Amount:0.00}.",
+                    "Open the console to compare quotes and award.",
+                ]
+            ),
+            new DeliveryOptions { TenantId = row.OrgId.Value.ToString() }
+        );
+        await MarketplaceAudit.PublishAsync(
+            bus,
+            actor.Value,
+            "marketplace.quote_submitted",
+            new { RequestId = id, quote.Amount }
+        );
+        return Results.Ok(new QuoteSubmitted(quote.Id, quote.Status));
+    }
+
+    private static string VendorNameOf(MarketplaceDbContext db, OrgId vendorOrg) =>
+        db.Profiles.Where(p => p.OrgId == vendorOrg).Select(p => p.Name).FirstOrDefault()
+        ?? "The vendor";
+
     private static async Task<IResult> Position(
         Guid id,
         CheckInRequest request,
@@ -402,7 +541,9 @@ public static class VendorRequestEndpoints
         {
             Id = Guid.CreateVersion7(),
             OrgId = row.OrgId,
-            VendorOrgId = row.VendorOrgId,
+            // a recipient's event (a decline to quote) is between it and the
+            // buyer; after award the vendor party is the awarded vendor
+            VendorOrgId = row.VendorOrgId ?? actor.Org,
             RequestId = row.Id,
             ActorOrgId = actor.Org,
             ActorId = actor.Id,
@@ -431,7 +572,20 @@ public static class VendorRequestEndpoints
         if (!await scopes.CanAsync(accessor.Current, Capabilities.VendorFulfill, ct))
             return (null, null, Results.Unauthorized());
         var row = await db.Requests.FirstOrDefaultAsync(
-            r => r.Id == id && r.VendorOrgId == actor.Org && r.Status != RequestStatus.Draft,
+            r =>
+                r.Id == id
+                && r.Status != RequestStatus.Draft
+                && (
+                    r.VendorOrgId == actor.Org
+                    || (
+                        r.VendorOrgId == null
+                        && db.Recipients.Any(x =>
+                            x.RequestId == r.Id
+                            && x.VendorOrgId == actor.Org
+                            && x.Status != RecipientStatus.Declined
+                        )
+                    )
+                ),
             ct
         );
         return row is null ? (null, null, Results.NotFound()) : (row, actor, null);

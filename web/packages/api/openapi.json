@@ -8225,6 +8225,56 @@
         }
       }
     },
+    "/api/marketplace/requests/{id}/quotes/{quoteId}/accept": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Marketplace.Requests.RequesterEndpoints"
+        ],
+        "summary": "POST_api_marketplace_requests_id_quotes_quoteId_accept",
+        "description": "POST_api_marketplace_requests_id_quotes_quoteId_accept",
+        "operationId": "POST_api_marketplace_requests_id_quotes_quoteId_accept",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "quoteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/vendor/requests": {
       "get": {
         "tags": [
@@ -8702,6 +8752,57 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RequestEventCreated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/vendor/requests/{id}/quotes": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Marketplace.Requests.VendorRequestEndpoints"
+        ],
+        "summary": "POST_api_vendor_requests_id_quotes",
+        "description": "POST_api_vendor_requests_id_quotes",
+        "operationId": "POST_api_vendor_requests_id_quotes",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitQuoteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuoteSubmitted"
                 }
               }
             }
@@ -12681,7 +12782,6 @@
       },
       "CreateRequest": {
         "required": [
-          "vendorOrgId",
           "category",
           "urgency",
           "siteId",
@@ -12690,10 +12790,6 @@
         ],
         "type": "object",
         "properties": {
-          "vendorOrgId": {
-            "type": "string",
-            "format": "uuid"
-          },
           "category": {
             "$ref": "#/components/schemas/ServiceCategory"
           },
@@ -12710,6 +12806,13 @@
           "startsAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "vendorOrgId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           },
           "details": {
             "type": [
@@ -15739,6 +15842,91 @@
           }
         }
       },
+      "QuoteStatus": {
+        "enum": [
+          "Submitted",
+          "Accepted",
+          "Rejected",
+          "Withdrawn"
+        ]
+      },
+      "QuoteSubmitted": {
+        "required": [
+          "id",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/QuoteStatus"
+          }
+        }
+      },
+      "QuoteView": {
+        "required": [
+          "id",
+          "vendorOrgId",
+          "vendorName",
+          "amount",
+          "currency",
+          "notes",
+          "validUntil",
+          "status",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "vendorOrgId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "vendorName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "amount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "validUntil": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "status": {
+            "$ref": "#/components/schemas/QuoteStatus"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "ReasonRequest": {
         "required": [
           "reason"
@@ -15747,6 +15935,41 @@
         "properties": {
           "reason": {
             "type": "string"
+          }
+        }
+      },
+      "RecipientStatus": {
+        "enum": [
+          "Invited",
+          "Quoted",
+          "Declined"
+        ]
+      },
+      "RecipientView": {
+        "required": [
+          "vendorOrgId",
+          "vendorName",
+          "status",
+          "notifiedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "vendorOrgId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "vendorName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/RecipientStatus"
+          },
+          "notifiedAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -15873,6 +16096,7 @@
           "id",
           "vendorOrgId",
           "vendorName",
+          "mode",
           "requesterName",
           "category",
           "urgency",
@@ -15905,7 +16129,9 @@
           "cancelledAt",
           "cancelReason",
           "canManage",
-          "events"
+          "events",
+          "quotes",
+          "recipients"
         ],
         "type": "object",
         "properties": {
@@ -15914,7 +16140,10 @@
             "format": "uuid"
           },
           "vendorOrgId": {
-            "type": "string",
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "uuid"
           },
           "vendorName": {
@@ -15922,6 +16151,9 @@
               "null",
               "string"
             ]
+          },
+          "mode": {
+            "$ref": "#/components/schemas/RequestMode"
           },
           "requesterName": {
             "type": "string"
@@ -16100,6 +16332,18 @@
             "items": {
               "$ref": "#/components/schemas/RequestEventView"
             }
+          },
+          "quotes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuoteView"
+            }
+          },
+          "recipients": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecipientView"
+            }
           }
         }
       },
@@ -16255,6 +16499,12 @@
           }
         }
       },
+      "RequestMode": {
+        "enum": [
+          "Direct",
+          "Broadcast"
+        ]
+      },
       "RequestMutated": {
         "required": [
           "id",
@@ -16294,6 +16544,7 @@
           "id",
           "vendorOrgId",
           "vendorName",
+          "mode",
           "requesterName",
           "category",
           "urgency",
@@ -16314,7 +16565,10 @@
             "format": "uuid"
           },
           "vendorOrgId": {
-            "type": "string",
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "uuid"
           },
           "vendorName": {
@@ -16322,6 +16576,9 @@
               "null",
               "string"
             ]
+          },
+          "mode": {
+            "$ref": "#/components/schemas/RequestMode"
           },
           "requesterName": {
             "type": "string"
@@ -17405,6 +17662,35 @@
               "string"
             ],
             "format": "time"
+          }
+        }
+      },
+      "SubmitQuoteRequest": {
+        "required": [
+          "amount"
+        ],
+        "type": "object",
+        "properties": {
+          "amount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "validUntil": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         }
       },

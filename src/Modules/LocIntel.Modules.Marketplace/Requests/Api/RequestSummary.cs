@@ -4,8 +4,9 @@ namespace LocIntel.Modules.Marketplace.Requests.Api;
 
 public sealed record RequestSummary(
     Guid Id,
-    Guid VendorOrgId,
+    Guid? VendorOrgId,
     string? VendorName,
+    RequestMode Mode,
     string RequesterName,
     ServiceCategory Category,
     RequestUrgency Urgency,

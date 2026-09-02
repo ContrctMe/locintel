@@ -4,8 +4,9 @@ namespace LocIntel.Modules.Marketplace.Requests.Api;
 
 public sealed record RequestDetail(
     Guid Id,
-    Guid VendorOrgId,
+    Guid? VendorOrgId,
     string? VendorName,
+    RequestMode Mode,
     string RequesterName,
     ServiceCategory Category,
     RequestUrgency Urgency,
@@ -38,5 +39,7 @@ public sealed record RequestDetail(
     DateTimeOffset? CancelledAt,
     string? CancelReason,
     bool CanManage,
-    IReadOnlyList<RequestEventView> Events
+    IReadOnlyList<RequestEventView> Events,
+    IReadOnlyList<QuoteView> Quotes,
+    IReadOnlyList<RecipientView> Recipients
 );

@@ -170,6 +170,12 @@ export function VendorRequestPage() {
   const decline = act('/decline', 'Declined');
   const start = act('/start', 'Started');
   const complete = act('/complete', 'Marked complete');
+  const [amount, setAmount] = useState('');
+  const [quoteNotes, setQuoteNotes] = useState('');
+  const quote = useApiMutation({
+    mutationFn: () => api.post(`/api/vendor/requests/${requestId}/quotes`, { amount: Number(amount), notes: quoteNotes.trim() || null }),
+    invalidate: [['vendor']], success: 'Quote submitted',
+  });
   const position = useApiMutation({
     mutationFn: (kind: 'check-in' | 'check-out') =>
       new Promise<{ latitude: number; longitude: number }>((resolve, reject) =>
@@ -190,7 +196,16 @@ export function VendorRequestPage() {
       <Card>
         <CardHeader><CardTitle className="text-base">Actions</CardTitle></CardHeader>
         <CardContent className="flex flex-wrap items-end gap-3">
-          {r.status === 'Submitted' && (
+          {r.status === 'Submitted' && r.mode === 'Broadcast' && (
+            <>
+              <Input className="w-36" type="number" min="0" step="0.01" placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} />
+              <Input className="w-64" placeholder="Notes for the buyer" value={quoteNotes} onChange={(e) => setQuoteNotes(e.target.value)} />
+              <Button disabled={!amount || quote.isPending} onClick={() => quote.mutate()}>Submit quote</Button>
+              <Input className="w-48" placeholder="Decline reason" value={reason} onChange={(e) => setReason(e.target.value)} />
+              <Button variant="outline" disabled={!reason.trim()} onClick={() => decline.mutate({ reason })}>Decline</Button>
+            </>
+          )}
+          {r.status === 'Submitted' && r.mode !== 'Broadcast' && (
             <>
               <Button onClick={() => accept.mutate(undefined)}>Accept</Button>
               <Input className="w-56" placeholder="Decline reason" value={reason} onChange={(e) => setReason(e.target.value)} />

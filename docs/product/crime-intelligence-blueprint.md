@@ -280,3 +280,15 @@ jurisdiction.
   whose entities pass the need-to-know directory (restricted records are
   named as such), filed as a note only by the person. Entitlement
   `ai.assist`. Deferred: MO similarity across incidents, PII redaction.
+- 2026-09-02: **Marketplace v2: broadcast requests and quotes** (migration
+  `Rfq`). A request without a chosen vendor is Mode = Broadcast: on
+  submit it fans out `request_recipients` rows (published vendors offering
+  the category, not blocked, preferred first, ten at most) - the recipient
+  row is what lets a vendor READ a request that has no `vendor_org_id`
+  yet (requests policy gained an EXISTS on recipients; WITH CHECK stays
+  two-party, so recipients never write the request row). Vendors quote
+  (one per vendor, resubmit replaces; expired credentials block quoting)
+  or decline per recipient; the buyer awards a quote, which sets the
+  vendor, budget, and Accepted, rejects the others, and hands off to the
+  existing fulfillment flow. Vendors see only their own quote; buyers see
+  all. Console: broadcast option, quotes card with Award, vendor quote form.

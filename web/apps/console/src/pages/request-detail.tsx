@@ -8,7 +8,7 @@ import { useApiMutation } from '../lib/mutation';
 import { RequestStatusBadge, categoryLabel } from './marketplace';
 
 export type RequestDetail = {
-  id: string; vendorOrgId: string; vendorName: string | null; requesterName: string; category: string;
+  id: string; vendorOrgId: string | null; vendorName: string | null; mode: string; requesterName: string; category: string;
   urgency: string; status: string; siteId: string; siteName: string; siteTimeZone: string;
   siteLatitude: number | null; siteLongitude: number | null; title: string; details: string;
   spec: Record<string, string>; startsAt: string; endsAt: string | null; rrule: string | null;
@@ -18,6 +18,8 @@ export type RequestDetail = {
   disputeReason: string | null; cancelledAt: string | null; cancelReason: string | null; canManage: boolean;
   events: { id: string; side: string; actor: string | null; kind: string; body: string | null;
     distanceFromSiteMeters: number | null; withinGeofence: boolean | null; at: string }[];
+  quotes: { id: string; vendorOrgId: string; vendorName: string | null; amount: number; currency: string; notes: string | null; validUntil: string | null; status: string; createdAt: string }[];
+  recipients: { vendorOrgId: string; vendorName: string | null; status: string; notifiedAt: string }[];
 };
 
 /** Shared body for both sides of a request: facts, then the timeline. */
@@ -31,7 +33,7 @@ export function RequestFacts({ r, side }: { r: RequestDetail; side: 'requester' 
           <span className="text-sm text-muted-foreground">{r.urgency}</span>
         </div>
         <p className="mt-1 text-sm text-muted-foreground">
-          {categoryLabel(r.category)} · {side === 'requester' ? `to ${r.vendorName ?? 'vendor'}` : `from ${r.requesterName}`} · {r.siteName}
+          {categoryLabel(r.category)} · {side === 'requester' ? (r.vendorName ? `to ${r.vendorName}` : r.mode === 'Broadcast' ? 'open for quotes' : 'no vendor') : `from ${r.requesterName}`} · {r.siteName}
         </p>
       </div>
       <Card>
@@ -105,6 +107,10 @@ export function RequestDetailPage() {
   const verify = act('/verify', 'Work verified');
   const dispute = act('/dispute', 'Dispute raised');
   const cancel = act('/cancel', 'Request cancelled');
+  const award = useApiMutation({
+    mutationFn: (quoteId: string) => api.post(`/api/marketplace/requests/${requestId}/quotes/${quoteId}/accept`),
+    invalidate: [['marketplace']], success: 'Quote accepted; the vendor is assigned',
+  });
   const send = useApiMutation({
     mutationFn: () => api.post(`/api/marketplace/requests/${requestId}/messages`, { body: message.trim() }),
     invalidate: [key], onSuccess: () => setMessage(''),
@@ -127,6 +133,30 @@ export function RequestDetailPage() {
                 {r.status !== 'Completed' && <Button variant="destructive" disabled={!reason.trim()} onClick={() => cancel.mutate({ reason })}>Cancel</Button>}
               </>
             )}
+          </CardContent>
+        </Card>
+      )}
+      {r.mode === 'Broadcast' && (
+        <Card>
+          <CardHeader><CardTitle className="text-base">Quotes</CardTitle></CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <p className="text-muted-foreground">
+              Sent to {r.recipients.length} vendor{r.recipients.length === 1 ? '' : 's'}: {r.recipients.map((x) => `${x.vendorName ?? x.vendorOrgId} (${x.status})`).join(', ') || 'none yet'}
+            </p>
+            {r.quotes.length === 0 && <p className="text-muted-foreground">No quotes yet.</p>}
+            {r.quotes.map((q) => (
+              <div key={q.id} className="flex items-center justify-between rounded-md border p-2">
+                <span>
+                  <span className="font-medium">{q.vendorName ?? q.vendorOrgId}</span> · {q.currency} {q.amount.toLocaleString()}
+                  {q.notes && <span className="ml-2 text-muted-foreground">{q.notes}</span>}
+                  {q.validUntil && <span className="ml-2 text-xs text-muted-foreground">valid until {fmtDateTime(q.validUntil)}</span>}
+                  <span className="ml-2 text-xs text-muted-foreground">{q.status}</span>
+                </span>
+                {r.canManage && r.status === 'Submitted' && q.status === 'Submitted' && (
+                  <Button size="sm" onClick={() => award.mutate(q.id)}>Award</Button>
+                )}
+              </div>
+            ))}
           </CardContent>
         </Card>
       )}

@@ -3272,6 +3272,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/marketplace/requests/{id}/quotes/{quoteId}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_marketplace_requests_id_quotes_quoteId_accept
+         * @description POST_api_marketplace_requests_id_quotes_quoteId_accept
+         */
+        post: operations["POST_api_marketplace_requests_id_quotes_quoteId_accept"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/vendor/requests": {
         parameters: {
             query?: never;
@@ -3466,6 +3486,26 @@ export interface paths {
          * @description POST_api_vendor_requests_id_delivery
          */
         post: operations["POST_api_vendor_requests_id_delivery"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vendor/requests/{id}/quotes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_vendor_requests_id_quotes
+         * @description POST_api_vendor_requests_id_quotes
+         */
+        post: operations["POST_api_vendor_requests_id_quotes"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5366,8 +5406,6 @@ export interface components {
             slug: string;
         };
         CreateRequest: {
-            /** Format: uuid */
-            vendorOrgId: string;
             category: components["schemas"]["ServiceCategory"];
             urgency: components["schemas"]["RequestUrgency"];
             /** Format: uuid */
@@ -5375,6 +5413,8 @@ export interface components {
             title: string;
             /** Format: date-time */
             startsAt: string;
+            /** Format: uuid */
+            vendorOrgId?: null | string;
             details?: null | string;
             spec?: null | {
                 [key: string]: string;
@@ -6161,8 +6201,41 @@ export interface components {
         PutSettingRequest: {
             value: string;
         };
+        /** @enum {unknown} */
+        QuoteStatus: "Submitted" | "Accepted" | "Rejected" | "Withdrawn";
+        QuoteSubmitted: {
+            /** Format: uuid */
+            id: string;
+            status: components["schemas"]["QuoteStatus"];
+        };
+        QuoteView: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            vendorOrgId: string;
+            vendorName: null | string;
+            /** Format: double */
+            amount: number | string;
+            currency: string;
+            notes: null | string;
+            /** Format: date-time */
+            validUntil: null | string;
+            status: components["schemas"]["QuoteStatus"];
+            /** Format: date-time */
+            createdAt: string;
+        };
         ReasonRequest: {
             reason: string;
+        };
+        /** @enum {unknown} */
+        RecipientStatus: "Invited" | "Quoted" | "Declined";
+        RecipientView: {
+            /** Format: uuid */
+            vendorOrgId: string;
+            vendorName: null | string;
+            status: components["schemas"]["RecipientStatus"];
+            /** Format: date-time */
+            notifiedAt: string;
         };
         RenameNodeRequest: {
             name: string;
@@ -6197,8 +6270,9 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** Format: uuid */
-            vendorOrgId: string;
+            vendorOrgId: null | string;
             vendorName: null | string;
+            mode: components["schemas"]["RequestMode"];
             requesterName: string;
             category: components["schemas"]["ServiceCategory"];
             urgency: components["schemas"]["RequestUrgency"];
@@ -6250,6 +6324,8 @@ export interface components {
             cancelReason: null | string;
             canManage: boolean;
             events: components["schemas"]["RequestEventView"][];
+            quotes: components["schemas"]["QuoteView"][];
+            recipients: components["schemas"]["RecipientView"][];
         };
         RequestEventCreated: {
             /** Format: uuid */
@@ -6286,6 +6362,8 @@ export interface components {
             /** Format: int32 */
             nextOffset: null | number | string;
         };
+        /** @enum {unknown} */
+        RequestMode: "Direct" | "Broadcast";
         RequestMutated: {
             /** Format: uuid */
             id: string;
@@ -6299,8 +6377,9 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** Format: uuid */
-            vendorOrgId: string;
+            vendorOrgId: null | string;
             vendorName: null | string;
+            mode: components["schemas"]["RequestMode"];
             requesterName: string;
             category: components["schemas"]["ServiceCategory"];
             urgency: components["schemas"]["RequestUrgency"];
@@ -6588,6 +6667,13 @@ export interface components {
             routeId: string;
             /** Format: time */
             scheduledStartLocal?: null | string;
+        };
+        SubmitQuoteRequest: {
+            /** Format: double */
+            amount: number | string;
+            notes?: null | string;
+            /** Format: date-time */
+            validUntil?: null | string;
         };
         SubmitTipRequest: {
             /** Format: uuid */
@@ -12822,6 +12908,38 @@ export interface operations {
             };
         };
     };
+    POST_api_marketplace_requests_id_quotes_quoteId_accept: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                quoteId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     GET_api_vendor_requests: {
         parameters: {
             query?: {
@@ -13145,6 +13263,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RequestEventCreated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_vendor_requests_id_quotes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitQuoteRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuoteSubmitted"];
                 };
             };
             /** @description Not Found */

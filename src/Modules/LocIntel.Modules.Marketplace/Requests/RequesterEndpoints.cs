@@ -105,19 +105,26 @@ public static class RequesterEndpoints
         var site = await sites.FindAsync(request.SiteId, ct);
         if (site is null || !scope.Covers(site.Path))
             return Results.NotFound();
-        var vendorOrg = new OrgId(request.VendorOrgId);
+        OrgId? vendorOrg = request.VendorOrgId is { } chosen ? new OrgId(chosen) : null;
         if (vendorOrg == actor.Org)
             return Results.BadRequest(new { error = "an org cannot hire itself" });
-        var vendor = await db.Profiles.FirstOrDefaultAsync(
-            p => p.OrgId == vendorOrg && p.Published,
-            ct
-        );
-        if (vendor is null)
-            return Results.NotFound();
-        if (!vendor.Offers(request.Category))
-            return Results.BadRequest(new { error = "that vendor does not offer this category" });
-        if (await db.Preferred.AnyAsync(p => p.VendorOrgId == vendorOrg && p.Blocked, ct))
-            return Results.BadRequest(new { error = "that vendor is blocked by your org" });
+        if (vendorOrg is { } direct)
+        {
+            var vendor = await db.Profiles.FirstOrDefaultAsync(
+                p => p.OrgId == direct && p.Published,
+                ct
+            );
+            if (vendor is null)
+                return Results.NotFound();
+            if (!vendor.Offers(request.Category))
+                return Results.BadRequest(
+                    new { error = "that vendor does not offer this category" }
+                );
+            if (await db.Preferred.AnyAsync(p => p.VendorOrgId == direct && p.Blocked, ct))
+                return Results.BadRequest(new { error = "that vendor is blocked by your org" });
+        }
+        else if (!await MatchingVendors(db, actor.Org, request.Category).AnyAsync(ct))
+            return Results.Conflict(new { error = "no published vendor offers this category" });
         if (
             Validate(
                 request.Title,
@@ -138,6 +145,7 @@ public static class RequesterEndpoints
             Id = Guid.CreateVersion7(),
             OrgId = actor.Org,
             VendorOrgId = vendorOrg,
+            Mode = vendorOrg is null ? RequestMode.Broadcast : RequestMode.Direct,
             Category = request.Category,
             Urgency = request.Urgency,
             SiteId = site.Id,
@@ -169,7 +177,8 @@ public static class RequesterEndpoints
             {
                 row.Id,
                 Category = row.Category.ToString(),
-                VendorOrgId = vendorOrg.Value,
+                VendorOrgId = vendorOrg?.Value,
+                Mode = row.Mode.ToString(),
                 row.SiteId,
             }
         );
@@ -241,29 +250,67 @@ public static class RequesterEndpoints
             return upsell;
         if (row!.Status != RequestStatus.Draft)
             return Results.Conflict(new { error = "only drafts can be submitted" });
-        var vendor = await db.Profiles.FirstOrDefaultAsync(
-            p => p.OrgId == row.VendorOrgId && p.Published,
-            ct
-        );
-        if (vendor is null)
-            return Results.Conflict(new { error = "the vendor is no longer published" });
         var now = DateTimeOffset.UtcNow;
+        List<OrgId> recipients;
+        if (row.Mode == RequestMode.Direct)
+        {
+            var vendor = await db.Profiles.FirstOrDefaultAsync(
+                p => p.OrgId == row.VendorOrgId && p.Published,
+                ct
+            );
+            if (vendor is null)
+                return Results.Conflict(new { error = "the vendor is no longer published" });
+            recipients = [row.VendorOrgId!.Value];
+        }
+        else
+        {
+            // broadcast: every matching vendor gets a recipient row (which is
+            // what lets them see the request) - preferred vendors first, ten at most
+            recipients = await MatchingVendors(db, actor.Value.Org, row.Category)
+                .Take(10)
+                .ToListAsync(ct);
+            if (recipients.Count == 0)
+                return Results.Conflict(new { error = "no published vendor offers this category" });
+            foreach (var vendorOrg in recipients)
+                db.Recipients.Add(
+                    new RequestRecipient
+                    {
+                        Id = Guid.CreateVersion7(),
+                        OrgId = row.OrgId,
+                        VendorOrgId = vendorOrg,
+                        RequestId = row.Id,
+                    }
+                );
+        }
         row.Status = RequestStatus.Submitted;
         row.SubmittedAt = now;
         row.UpdatedAt = now;
-        db.Events.Add(RequestViews.StatusEvent(row, actor.Value, "Submitted"));
-        await db.SaveChangesAsync(ct);
-        await bus.PublishAsync(
-            new SendOrgNotice(
-                $"New {Label(row.Category)} request: {row.Title}",
-                [
-                    $"{row.RequesterName} sent a {row.Urgency.ToString().ToLowerInvariant()} request for {row.SiteName}.",
-                    $"Starts {row.StartsAt:u}.",
-                    "Open the vendor console to accept or decline.",
-                ]
-            ),
-            new DeliveryOptions { TenantId = row.VendorOrgId.Value.ToString() }
+        db.Events.Add(
+            RequestViews.StatusEvent(
+                row,
+                actor.Value,
+                row.Mode == RequestMode.Broadcast
+                    ? $"Sent to {recipients.Count} vendor(s) for quotes"
+                    : "Submitted"
+            )
         );
+        await db.SaveChangesAsync(ct);
+        foreach (var vendorOrg in recipients)
+            await bus.PublishAsync(
+                new SendOrgNotice(
+                    row.Mode == RequestMode.Broadcast
+                        ? $"Request for quotes: {Label(row.Category)} - {row.Title}"
+                        : $"New {Label(row.Category)} request: {row.Title}",
+                    [
+                        $"{row.RequesterName} sent a {row.Urgency.ToString().ToLowerInvariant()} request for {row.SiteName}.",
+                        $"Starts {row.StartsAt:u}.",
+                        row.Mode == RequestMode.Broadcast
+                            ? "Open the vendor console to quote or decline."
+                            : "Open the vendor console to accept or decline.",
+                    ]
+                ),
+                new DeliveryOptions { TenantId = vendorOrg.Value.ToString() }
+            );
         await MarketplaceAudit.PublishAsync(
             bus,
             actor.Value,
@@ -314,7 +361,7 @@ public static class RequesterEndpoints
                     $"Request cancelled: {row.Title}",
                     [$"{row.RequesterName} cancelled: {row.CancelReason}"]
                 ),
-                new DeliveryOptions { TenantId = row.VendorOrgId.Value.ToString() }
+                new DeliveryOptions { TenantId = row.VendorOrgId!.Value.Value.ToString() }
             );
         await MarketplaceAudit.PublishAsync(
             bus,
@@ -355,7 +402,7 @@ public static class RequesterEndpoints
                 $"Work verified: {row.Title}",
                 [$"{row.RequesterName} verified the work at {row.SiteName}."]
             ),
-            new DeliveryOptions { TenantId = row.VendorOrgId.Value.ToString() }
+            new DeliveryOptions { TenantId = row.VendorOrgId!.Value.Value.ToString() }
         );
         await MarketplaceAudit.PublishAsync(
             bus,
@@ -399,7 +446,7 @@ public static class RequesterEndpoints
                 $"Work disputed: {row.Title}",
                 [$"{row.RequesterName} disputed: {row.DisputeReason}"]
             ),
-            new DeliveryOptions { TenantId = row.VendorOrgId.Value.ToString() }
+            new DeliveryOptions { TenantId = row.VendorOrgId!.Value.Value.ToString() }
         );
         await MarketplaceAudit.PublishAsync(
             bus,
@@ -442,6 +489,109 @@ public static class RequesterEndpoints
         row.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
         return Results.Ok(new RequestEventCreated(evt.Id, null, null));
+    }
+
+    /// <summary>Award a broadcast: the quote's vendor becomes THE vendor, the request is Accepted, other quotes are rejected.</summary>
+    [Transactional(typeof(MarketplaceDbContext))]
+    [WolverinePost("/api/marketplace/requests/{id}/quotes/{quoteId}/accept")]
+    [ProducesResponseType(typeof(RequestMutated), StatusCodes.Status200OK)]
+    public static async Task<IResult> AcceptQuote(
+        Guid id,
+        Guid quoteId,
+        MarketplaceDbContext db,
+        IPrincipalAccessor accessor,
+        IScopeResolver scopes,
+        IMessageBus bus,
+        CancellationToken ct
+    )
+    {
+        var (row, actor, _, error) = await Load(id, db, accessor, scopes, true, ct);
+        if (error is not null)
+            return error;
+        if (row!.Mode != RequestMode.Broadcast || row.Status != RequestStatus.Submitted)
+            return Results.Conflict(
+                new { error = "only an open broadcast request can be awarded" }
+            );
+        var quotes = await db.Quotes.Where(q => q.RequestId == id).ToListAsync(ct);
+        var winner = quotes.FirstOrDefault(q =>
+            q.Id == quoteId && q.Status == QuoteStatus.Submitted
+        );
+        if (winner is null)
+            return Results.NotFound();
+        if (winner.ValidUntil is { } until && until < DateTimeOffset.UtcNow)
+            return Results.Conflict(new { error = "that quote has expired" });
+        var now = DateTimeOffset.UtcNow;
+        winner.Status = QuoteStatus.Accepted;
+        winner.UpdatedAt = now;
+        var losers = quotes
+            .Where(q => q.Id != quoteId && q.Status == QuoteStatus.Submitted)
+            .ToList();
+        foreach (var other in losers)
+        {
+            other.Status = QuoteStatus.Rejected;
+            other.UpdatedAt = now;
+        }
+        row.VendorOrgId = winner.VendorOrgId;
+        row.BudgetAmount = winner.Amount;
+        row.Currency = winner.Currency;
+        row.Status = RequestStatus.Accepted;
+        row.AcceptedAt = now;
+        row.UpdatedAt = now;
+        db.Events.Add(
+            RequestViews.StatusEvent(
+                row,
+                actor!.Value,
+                $"Awarded: {winner.Currency} {winner.Amount:0.00}"
+            )
+        );
+        await db.SaveChangesAsync(ct);
+        await bus.PublishAsync(
+            new SendOrgNotice(
+                $"Quote accepted: {row.Title}",
+                [
+                    $"{row.RequesterName} accepted your quote of {winner.Currency} {winner.Amount:0.00} for {row.SiteName}.",
+                    "Open the vendor console to start the work.",
+                ]
+            ),
+            new DeliveryOptions { TenantId = winner.VendorOrgId.Value.ToString() }
+        );
+        foreach (var other in losers)
+            await bus.PublishAsync(
+                new SendOrgNotice(
+                    $"Quote not selected: {row.Title}",
+                    [$"{row.RequesterName} awarded this request to another vendor."]
+                ),
+                new DeliveryOptions { TenantId = other.VendorOrgId.Value.ToString() }
+            );
+        await MarketplaceAudit.PublishAsync(
+            bus,
+            actor.Value,
+            "marketplace.quote_accepted",
+            new
+            {
+                row.Id,
+                QuoteId = quoteId,
+                VendorOrgId = winner.VendorOrgId.Value,
+                winner.Amount,
+            }
+        );
+        return Results.Ok(RequestViews.Mutated(row));
+    }
+
+    /// <summary>Published vendors offering the category, not blocked by this org, preferred ones first.</summary>
+    internal static IQueryable<OrgId> MatchingVendors(
+        MarketplaceDbContext db,
+        OrgId requester,
+        ServiceCategory category
+    )
+    {
+        var name = category.ToString();
+        return db
+            .Profiles.Where(p => p.Published && p.OrgId != requester && p.Categories.Contains(name))
+            .Where(p => !db.Preferred.Any(x => x.VendorOrgId == p.OrgId && x.Blocked))
+            .OrderByDescending(p => db.Preferred.Any(x => x.VendorOrgId == p.OrgId && !x.Blocked))
+            .ThenBy(p => p.Name)
+            .Select(p => p.OrgId);
     }
 
     /// <summary>The requester side of a row: in the reader's org AND site scope, or a 404.</summary>

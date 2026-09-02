@@ -25,6 +25,8 @@ public sealed class MarketplaceDbContext(
     public DbSet<PreferredVendor> Preferred => Set<PreferredVendor>();
     public DbSet<ServiceRequest> Requests => Set<ServiceRequest>();
     public DbSet<RequestEvent> Events => Set<RequestEvent>();
+    public DbSet<RequestRecipient> Recipients => Set<RequestRecipient>();
+    public DbSet<Quote> Quotes => Set<Quote>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -96,6 +98,7 @@ public sealed class MarketplaceDbContext(
             b.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
             b.Property(x => x.OrgId).HasColumnName("org_id");
             b.Property(x => x.VendorOrgId).HasColumnName("vendor_org_id");
+            b.Property(x => x.Mode).HasColumnName("mode").HasConversion<string>().HasMaxLength(20);
             b.Property(x => x.Category)
                 .HasColumnName("category")
                 .HasConversion<string>()
@@ -154,10 +157,13 @@ public sealed class MarketplaceDbContext(
                 x.UpdatedAt,
             });
             b.HasIndex(x => x.Path).HasMethod("gist");
-            // two-party: either side of the row is a tenant of it
+            // two-party, plus the vendors a broadcast was sent to (before award)
             b.HasQueryFilter(
                 TenantFilter,
-                r => r.OrgId == CurrentOrg || r.VendorOrgId == CurrentOrg
+                r =>
+                    r.OrgId == CurrentOrg
+                    || r.VendorOrgId == CurrentOrg
+                    || Recipients.Any(x => x.RequestId == r.Id && x.VendorOrgId == CurrentOrg)
             );
         });
 
@@ -181,6 +187,53 @@ public sealed class MarketplaceDbContext(
             b.HasQueryFilter(
                 TenantFilter,
                 e => e.OrgId == CurrentOrg || e.VendorOrgId == CurrentOrg
+            );
+        });
+
+        modelBuilder.Entity<RequestRecipient>(b =>
+        {
+            b.ToTable("request_recipients");
+            b.HasKey(x => x.Id);
+            b.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
+            b.Property(x => x.OrgId).HasColumnName("org_id");
+            b.Property(x => x.VendorOrgId).HasColumnName("vendor_org_id");
+            b.Property(x => x.RequestId).HasColumnName("request_id");
+            b.Property(x => x.Status)
+                .HasColumnName("status")
+                .HasConversion<string>()
+                .HasMaxLength(20);
+            b.Property(x => x.NotifiedAt).HasColumnName("notified_at");
+            b.Property(x => x.RespondedAt).HasColumnName("responded_at");
+            b.HasIndex(x => new { x.RequestId, x.VendorOrgId }).IsUnique();
+            b.HasQueryFilter(
+                TenantFilter,
+                x => x.OrgId == CurrentOrg || x.VendorOrgId == CurrentOrg
+            );
+        });
+
+        modelBuilder.Entity<Quote>(b =>
+        {
+            b.ToTable("quotes");
+            b.HasKey(x => x.Id);
+            b.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
+            b.Property(x => x.OrgId).HasColumnName("org_id");
+            b.Property(x => x.VendorOrgId).HasColumnName("vendor_org_id");
+            b.Property(x => x.RequestId).HasColumnName("request_id");
+            b.Property(x => x.Amount).HasColumnName("amount").HasPrecision(14, 2);
+            b.Property(x => x.Currency).HasColumnName("currency").HasMaxLength(3);
+            b.Property(x => x.Notes).HasColumnName("notes").HasMaxLength(2000);
+            b.Property(x => x.ValidUntil).HasColumnName("valid_until");
+            b.Property(x => x.Status)
+                .HasColumnName("status")
+                .HasConversion<string>()
+                .HasMaxLength(20);
+            b.Property(x => x.SubmittedBy).HasColumnName("submitted_by");
+            b.Property(x => x.CreatedAt).HasColumnName("created_at");
+            b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+            b.HasIndex(x => new { x.RequestId, x.VendorOrgId }).IsUnique();
+            b.HasQueryFilter(
+                TenantFilter,
+                x => x.OrgId == CurrentOrg || x.VendorOrgId == CurrentOrg
             );
         });
     }
