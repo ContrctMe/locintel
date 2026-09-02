@@ -183,7 +183,9 @@ public static class SharedBulletinEndpoints
                         $"From {publisher}.",
                         bulletin.Body,
                         "Open Network in the console to review or import it.",
-                    ]
+                    ],
+                    "network",
+                    $"Shared {bulletin.Kind.ToString().ToUpperInvariant()} in {share.Name}: {bulletin.Title}"
                 ),
                 new DeliveryOptions { TenantId = org.Value.ToString() }
             );

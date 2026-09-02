@@ -836,6 +836,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_me_notifications
+         * @description GET_api_me_notifications
+         */
+        get: operations["GET_api_me_notifications"];
+        /**
+         * PUT_api_me_notifications
+         * @description PUT_api_me_notifications
+         */
+        put: operations["PUT_api_me_notifications"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/org/sso": {
         parameters: {
             query?: never;
@@ -6041,6 +6065,14 @@ export interface components {
             /** Format: uuid */
             newParentId: string;
         };
+        NotificationPreferenceView: {
+            phone: null | string;
+            smsAlerts: boolean;
+            smsMarketplace: boolean;
+            smsNetwork: boolean;
+            browserAlerts: boolean;
+            smsAvailable: boolean;
+        };
         OpenCaseRequest: {
             title: string;
             summary?: null | string;
@@ -6731,6 +6763,13 @@ export interface components {
             currency: null | string;
             policeReportNumber: null | string;
             tags: null | string[];
+        };
+        UpdateNotificationPreferenceRequest: {
+            phone: null | string;
+            smsAlerts: boolean;
+            smsMarketplace: boolean;
+            smsNetwork: boolean;
+            browserAlerts: boolean;
         };
         UpdateProfileRequest: {
             name: string;
@@ -8336,6 +8375,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IResult"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_me_notifications: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationPreferenceView"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    PUT_api_me_notifications: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateNotificationPreferenceRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationPreferenceView"];
                 };
             };
             /** @description Not Found */

@@ -50,7 +50,9 @@ public static class ShareInvitationRequestedHandler
                 [
                     $"{message.OwnerName} invited your organization to join \"{message.ShareName}\".",
                     "Accept it in the console under Network to start seeing shared bulletins.",
-                ]
+                ],
+                "network",
+                $"Invitation to share intelligence: {message.ShareName}"
             ),
             new DeliveryOptions { TenantId = org.Value.ToString() }
         );

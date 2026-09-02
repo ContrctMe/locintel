@@ -334,6 +334,37 @@ switch (builder.Configuration["Notifications:Transport"] ?? "local")
         );
 }
 
+// SMS (blueprint transports): off by default and allowed off in production -
+// a fork without a phone channel loses nothing. "local" captures for dev/test.
+switch (builder.Configuration["Notifications:Sms"] ?? "off")
+{
+    case "twilio":
+        builder.Services.Configure<LocIntel.Integrations.Twilio.TwilioOptions>(
+            builder.Configuration.GetSection("Notifications:Twilio")
+        );
+        builder.Services.AddHttpClient<
+            LocIntel.Platform.Notifications.ISmsTransport,
+            LocIntel.Integrations.Twilio.TwilioSmsTransport
+        >();
+        break;
+    case "local" when !builder.Environment.IsProduction():
+        builder.Services.AddSingleton<LocIntel.Platform.Notifications.LocalSmsCatcher>();
+        builder.Services.AddSingleton<LocIntel.Platform.Notifications.ISmsTransport>(sp =>
+            sp.GetRequiredService<LocIntel.Platform.Notifications.LocalSmsCatcher>()
+        );
+        break;
+    case "off":
+        builder.Services.AddSingleton<
+            LocIntel.Platform.Notifications.ISmsTransport,
+            LocIntel.Platform.Notifications.NoSmsTransport
+        >();
+        break;
+    default:
+        throw new InvalidOperationException(
+            "Notifications:Sms must be 'off', 'local' (dev/test only), or 'twilio'."
+        );
+}
+
 // Rate limiting (ADR 30): partitioned by principal tier. Guests limit on
 // their session cookie (fallback: IP), users on user id. The per-org quota
 // reading metered entitlements attaches in step 4.
@@ -563,6 +594,15 @@ if (role == "api")
                 // resolve the concrete type (absent when transport is smtp)
                 (IServiceProvider sp) =>
                     sp.GetService<LocIntel.Platform.Notifications.LocalMailCatcher>() is { } catcher
+                        ? Results.Ok(catcher.Sent)
+                        : Results.NotFound()
+            )
+            .ExcludeFromDescription();
+    if (app.Environment.IsDevelopment())
+        app.MapGet(
+                "/dev/sms",
+                (IServiceProvider sp) =>
+                    sp.GetService<LocIntel.Platform.Notifications.LocalSmsCatcher>() is { } catcher
                         ? Results.Ok(catcher.Sent)
                         : Results.NotFound()
             )

@@ -85,6 +85,7 @@ redirect URI at `https://console.yourproduct.com/auth/callback`.
 | Key | Notes |
 |---|---|
 | `Notifications:Transport` | `smtp` in production (`local` refuses to boot there) |
+| `Notifications:Sms` | `off` (default, fine in production), `local` (dev/test catcher, refused in production), or `twilio` (set `Notifications:Twilio:AccountSid`, `AuthToken` as secrets, and `From` as an E.164 number or a messaging service id). Members opt in per kind under Account > Notifications; the phone is unverified in v1. |
 | `Intelligence:Provider` | `local` (keyword heuristics, no vendor - allowed in production) or `anthropic` (Claude; set `Intelligence:Anthropic:ApiKey` as a secret, optional `Model` default `claude-opus-5`, `Effort` default `low`). Tenant text leaves the platform only under `anthropic`. |
 | `Notifications:Smtp:Host`, `:Port` | Submission endpoint (587 default, STARTTLS on) |
 | `Notifications:Smtp:UserName`, `:Password` | Omit both for an unauthenticated relay |

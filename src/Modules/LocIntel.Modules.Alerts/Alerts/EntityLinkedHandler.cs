@@ -58,7 +58,9 @@ public static class EntityLinkedHandler
         await bus.PublishAsync(
             new SendOrgNotice(
                 alert.Title,
-                [message.IncidentTitle, "Open the record in the console to review the pattern."]
+                [message.IncidentTitle, "Open the record in the console to review the pattern."],
+                "alerts",
+                alert.Title
             ),
             new DeliveryOptions { TenantId = org.Value.ToString() }
         );

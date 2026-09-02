@@ -26,6 +26,7 @@ public sealed class IdentityDbContext(
     public DbSet<Contact> Contacts => Set<Contact>();
     public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
     public DbSet<EmailSuppression> EmailSuppressions => Set<EmailSuppression>();
+    public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -111,6 +112,22 @@ public sealed class IdentityDbContext(
             b.Property(m => m.CreatedAt).HasColumnName("created_at");
             b.HasIndex(m => new { m.UserId, m.OrgId }).IsUnique();
             b.HasIndex(m => m.OrgId);
+        });
+
+        modelBuilder.Entity<NotificationPreference>(b =>
+        {
+            b.ToTable("notification_preferences");
+            b.HasKey(p => p.Id);
+            b.Property(p => p.Id).HasColumnName("id").ValueGeneratedNever();
+            b.Property(p => p.OrgId).HasColumnName("org_id");
+            b.Property(p => p.UserId).HasColumnName("user_id");
+            b.Property(p => p.Phone).HasColumnName("phone").HasMaxLength(20);
+            b.Property(p => p.SmsAlerts).HasColumnName("sms_alerts");
+            b.Property(p => p.SmsMarketplace).HasColumnName("sms_marketplace");
+            b.Property(p => p.SmsNetwork).HasColumnName("sms_network");
+            b.Property(p => p.BrowserAlerts).HasColumnName("browser_alerts");
+            b.Property(p => p.UpdatedAt).HasColumnName("updated_at");
+            b.HasIndex(p => new { p.OrgId, p.UserId }).IsUnique();
         });
 
         modelBuilder.Entity<OrgDirectoryEntry>(b =>

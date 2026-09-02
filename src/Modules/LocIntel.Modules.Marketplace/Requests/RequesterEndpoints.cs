@@ -307,7 +307,11 @@ public static class RequesterEndpoints
                         row.Mode == RequestMode.Broadcast
                             ? "Open the vendor console to quote or decline."
                             : "Open the vendor console to accept or decline.",
-                    ]
+                    ],
+                    "marketplace",
+                    row.Mode == RequestMode.Broadcast
+                        ? $"Request for quotes: {Label(row.Category)} - {row.Title}"
+                        : $"New {Label(row.Category)} request: {row.Title}"
                 ),
                 new DeliveryOptions { TenantId = vendorOrg.Value.ToString() }
             );
@@ -359,7 +363,9 @@ public static class RequesterEndpoints
             await bus.PublishAsync(
                 new SendOrgNotice(
                     $"Request cancelled: {row.Title}",
-                    [$"{row.RequesterName} cancelled: {row.CancelReason}"]
+                    [$"{row.RequesterName} cancelled: {row.CancelReason}"],
+                    "marketplace",
+                    $"Request cancelled: {row.Title}"
                 ),
                 new DeliveryOptions { TenantId = row.VendorOrgId!.Value.Value.ToString() }
             );
@@ -400,7 +406,9 @@ public static class RequesterEndpoints
         await bus.PublishAsync(
             new SendOrgNotice(
                 $"Work verified: {row.Title}",
-                [$"{row.RequesterName} verified the work at {row.SiteName}."]
+                [$"{row.RequesterName} verified the work at {row.SiteName}."],
+                "marketplace",
+                $"Work verified: {row.Title}"
             ),
             new DeliveryOptions { TenantId = row.VendorOrgId!.Value.Value.ToString() }
         );
@@ -444,7 +452,9 @@ public static class RequesterEndpoints
         await bus.PublishAsync(
             new SendOrgNotice(
                 $"Work disputed: {row.Title}",
-                [$"{row.RequesterName} disputed: {row.DisputeReason}"]
+                [$"{row.RequesterName} disputed: {row.DisputeReason}"],
+                "marketplace",
+                $"Work disputed: {row.Title}"
             ),
             new DeliveryOptions { TenantId = row.VendorOrgId!.Value.Value.ToString() }
         );
@@ -551,7 +561,9 @@ public static class RequesterEndpoints
                 [
                     $"{row.RequesterName} accepted your quote of {winner.Currency} {winner.Amount:0.00} for {row.SiteName}.",
                     "Open the vendor console to start the work.",
-                ]
+                ],
+                "marketplace",
+                $"Quote accepted: {row.Title}"
             ),
             new DeliveryOptions { TenantId = winner.VendorOrgId.Value.ToString() }
         );
@@ -559,7 +571,9 @@ public static class RequesterEndpoints
             await bus.PublishAsync(
                 new SendOrgNotice(
                     $"Quote not selected: {row.Title}",
-                    [$"{row.RequesterName} awarded this request to another vendor."]
+                    [$"{row.RequesterName} awarded this request to another vendor."],
+                    "marketplace",
+                    $"Quote not selected: {row.Title}"
                 ),
                 new DeliveryOptions { TenantId = other.VendorOrgId.Value.ToString() }
             );

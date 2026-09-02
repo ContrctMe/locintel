@@ -299,3 +299,16 @@ jurisdiction.
   path and notifies managers. The prosecution package is now a print-ready
   console page (`/cases/{id}/package`, browser print-to-PDF); fetching it
   is the export and logs custody on every file, as before.
+- 2026-09-02: **SMS and browser notifications shipped.** `ISmsTransport`
+  port in Platform (local catcher, `NoSmsTransport` when off, Twilio REST
+  adapter in `LocIntel.Integrations.Twilio`; `Notifications:Sms` = off |
+  local | twilio, off allowed in production). `SendOrgNotice` gained
+  `Kind` (alerts | marketplace | network) and a short `Sms` text; Identity
+  sends email to managers as before and texts members who opted in to
+  that kind, hold its capability, and have an E.164 phone in the new
+  `notification_preferences` table (`/api/me/notifications`). Every
+  Alerts, Marketplace, and Network notice now carries a kind. Browser
+  notifications: the console polls the alert summary for members who
+  opted in and raises a Notification when unread grows (no push service;
+  a real push channel remains fork territory). Phone verification is
+  deferred.

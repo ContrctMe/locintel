@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+
 namespace LocIntel.Platform.Notifications;
 
 /// <summary>
@@ -40,6 +42,56 @@ public sealed class LocalMailCatcher : INotificationTransport
     {
         lock (_sent)
             _sent.Add(message);
+        return Task.CompletedTask;
+    }
+}
+
+/// <summary>
+/// Outbound SMS port (blueprint: the transport ADR 32 left to forks).
+/// Adapters: Twilio in LocIntel.Integrations.Twilio, the local catcher for
+/// dev and tests, and NoSmsTransport when SMS is off. Same contract as
+/// email: handlers call it from the outbox, never application code.
+/// </summary>
+public interface ISmsTransport
+{
+    Task SendAsync(SmsMessage message, CancellationToken ct = default);
+}
+
+/// <summary>To is E.164; Body is plain text, kept short by the caller.</summary>
+public sealed record SmsMessage(string To, string Body);
+
+/// <summary>Dev/test SMS transport: captures instead of sending.</summary>
+public sealed class LocalSmsCatcher : ISmsTransport
+{
+    private readonly List<SmsMessage> _sent = [];
+
+    public IReadOnlyList<SmsMessage> Sent
+    {
+        get
+        {
+            lock (_sent)
+                return [.. _sent];
+        }
+    }
+
+    public Task SendAsync(SmsMessage message, CancellationToken ct = default)
+    {
+        lock (_sent)
+            _sent.Add(message);
+        return Task.CompletedTask;
+    }
+}
+
+/// <summary>SMS is off (the default): sends are dropped loudly enough to see in logs, never thrown.</summary>
+public sealed class NoSmsTransport(Microsoft.Extensions.Logging.ILogger<NoSmsTransport> logger)
+    : ISmsTransport
+{
+    public Task SendAsync(SmsMessage message, CancellationToken ct = default)
+    {
+        logger.LogInformation(
+            "SMS transport is off; dropping a {Length}-character message",
+            message.Body.Length
+        );
         return Task.CompletedTask;
     }
 }

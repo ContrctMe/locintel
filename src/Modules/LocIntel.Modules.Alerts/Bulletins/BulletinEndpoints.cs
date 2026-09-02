@@ -204,7 +204,9 @@ public static class BulletinEndpoints
                     bulletin.Body,
                     $"Expires {bulletin.ExpiresAt:u}.",
                     "Acknowledge it in the console.",
-                ]
+                ],
+                "alerts",
+                $"{bulletin.Kind.ToString().ToUpperInvariant()}: {bulletin.Title}"
             ),
             new DeliveryOptions { TenantId = actor.Org.Value.ToString() }
         );

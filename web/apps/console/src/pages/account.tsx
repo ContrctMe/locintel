@@ -8,6 +8,7 @@ import { useApiMutation } from '../lib/mutation';
 import { useMe } from '../session';
 
 type Session = { id: string; userAgent: string | null; createdAt: string; current: boolean };
+type Prefs = { phone: string | null; smsAlerts: boolean; smsMarketplace: boolean; smsNetwork: boolean; browserAlerts: boolean; smsAvailable: boolean };
 
 /** Best-effort browser/OS from the UA - a label, not a fingerprint. */
 function describeAgent(ua: string | null): string {
@@ -94,6 +95,7 @@ export function AccountPage() {
   return (
     <div className="max-w-lg space-y-6">
       <h1 className="text-2xl font-semibold">Account</h1>
+      <NotificationsCard />
       <Card>
         <CardHeader><CardTitle>Profile</CardTitle></CardHeader>
         <CardContent className="space-y-3">
@@ -177,5 +179,45 @@ export function AccountPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+/** Reachability beyond email: SMS opt-in per kind (needs the SMS transport on) and browser notifications for alerts. */
+function NotificationsCard() {
+  const { data: prefs } = useQuery({ queryKey: ['me', 'notifications'], queryFn: () => api.get<Prefs>('/api/me/notifications') });
+  if (!prefs) return null;
+  return <NotificationsForm key={JSON.stringify(prefs)} prefs={prefs} />;
+}
+
+function NotificationsForm({ prefs }: { prefs: Prefs }) {
+  const [phone, setPhone] = useState(prefs.phone ?? '');
+  const [smsAlerts, setSmsAlerts] = useState(prefs.smsAlerts);
+  const [smsMarketplace, setSmsMarketplace] = useState(prefs.smsMarketplace);
+  const [smsNetwork, setSmsNetwork] = useState(prefs.smsNetwork);
+  const [browserAlerts, setBrowserAlerts] = useState(prefs.browserAlerts);
+  const save = useApiMutation({
+    mutationFn: async () => {
+      if (browserAlerts && typeof Notification !== 'undefined' && Notification.permission === 'default') await Notification.requestPermission();
+      return api.put('/api/me/notifications', { phone: phone.trim() || null, smsAlerts, smsMarketplace, smsNetwork, browserAlerts });
+    },
+    invalidate: [['me', 'notifications']], success: 'Notification settings saved',
+  });
+  const smsOn = prefs.smsAvailable;
+  return (
+    <Card>
+      <CardHeader><CardTitle>Notifications</CardTitle></CardHeader>
+      <CardContent className="space-y-3 text-sm">
+        <div className="space-y-1">
+          <Label htmlFor="nt-phone">Mobile number (E.164, e.g. +14155551234)</Label>
+          <Input id="nt-phone" value={phone} placeholder="+1…" onChange={(e) => setPhone(e.target.value)} disabled={!smsOn} />
+          {!smsOn && <p className="text-xs text-muted-foreground">SMS is not configured on this deployment; email and browser notifications still work.</p>}
+        </div>
+        <label className="flex items-center gap-2"><input type="checkbox" className="size-4 accent-primary" checked={smsAlerts} disabled={!smsOn} onChange={(e) => setSmsAlerts(e.target.checked)} />Text me critical incidents, bulletins, and repeat offenders</label>
+        <label className="flex items-center gap-2"><input type="checkbox" className="size-4 accent-primary" checked={smsMarketplace} disabled={!smsOn} onChange={(e) => setSmsMarketplace(e.target.checked)} />Text me marketplace dispatches and updates</label>
+        <label className="flex items-center gap-2"><input type="checkbox" className="size-4 accent-primary" checked={smsNetwork} disabled={!smsOn} onChange={(e) => setSmsNetwork(e.target.checked)} />Text me intelligence network activity</label>
+        <label className="flex items-center gap-2"><input type="checkbox" className="size-4 accent-primary" checked={browserAlerts} onChange={(e) => setBrowserAlerts(e.target.checked)} />Show browser notifications for new alerts while the console is open</label>
+        <Button size="sm" disabled={save.isPending} onClick={() => save.mutate()}>Save</Button>
+      </CardContent>
+    </Card>
   );
 }

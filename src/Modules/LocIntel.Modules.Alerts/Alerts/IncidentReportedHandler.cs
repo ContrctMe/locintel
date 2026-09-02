@@ -52,7 +52,9 @@ public static class IncidentReportedHandler
                     message.Title,
                     $"Occurred {message.OccurredAt:u}.",
                     "Open the console for the full report.",
-                ]
+                ],
+                "alerts",
+                alert.Title
             ),
             new DeliveryOptions { TenantId = org.Value.ToString() }
         );

@@ -24,6 +24,7 @@ public static class SendOrgNoticeHandler
         IdentityDbContext db,
         IScopeResolver scopes,
         INotificationTransport transport,
+        ISmsTransport sms,
         CancellationToken ct
     )
     {
@@ -63,5 +64,38 @@ public static class SendOrgNoticeHandler
                 ct
             );
         }
+
+        // SMS: members who opted in to this kind AND hold its capability;
+        // never managers-by-default, never without a phone on file
+        if (message.Sms is { Length: > 0 } text && KindCapability(message.Kind) is { } capability)
+        {
+            var prefs = await db
+                .NotificationPreferences.Where(p => p.Phone != null)
+                .ToListAsync(ct);
+            var body = text.Length > 300 ? text[..297] + "..." : text;
+            foreach (var pref in prefs.Where(p => p.WantsSms(message.Kind)))
+            {
+                var member = members.FirstOrDefault(m => m.Id == pref.UserId);
+                if (member is null)
+                    continue;
+                var principal = new Principal.User(member.Id, member.Email, member.Name, org);
+                if (!await scopes.CanAsync(principal, capability, ct))
+                    continue;
+                await sms.SendAsync(
+                    new SmsMessage(pref.Phone!, $"{orgName ?? "LocIntel"}: {body}"),
+                    ct
+                );
+            }
+        }
     }
+
+    /// <summary>Which capability a channel kind implies - the SMS goes to people who could act on it in the console.</summary>
+    private static string? KindCapability(string kind) =>
+        kind switch
+        {
+            "alerts" => Capabilities.AlertsRead,
+            "marketplace" => Capabilities.MarketplaceRead,
+            "network" => Capabilities.NetworkRead,
+            _ => null,
+        };
 }

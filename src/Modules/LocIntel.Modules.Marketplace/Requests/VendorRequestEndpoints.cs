@@ -435,7 +435,9 @@ public static class VendorRequestEndpoints
                 [
                     $"{VendorNameOf(db, actor!.Value.Org)} quoted {quote.Currency} {quote.Amount:0.00}.",
                     "Open the console to compare quotes and award.",
-                ]
+                ],
+                "marketplace",
+                $"Quote received: {row.Title}"
             ),
             new DeliveryOptions { TenantId = row.OrgId.Value.ToString() }
         );
@@ -516,7 +518,7 @@ public static class VendorRequestEndpoints
         db.Events.Add(RequestViews.StatusEvent(row, actor, eventBody));
         await db.SaveChangesAsync(ct);
         await bus.PublishAsync(
-            new SendOrgNotice(noticeSubject, noticeLines),
+            new SendOrgNotice(noticeSubject, noticeLines, "marketplace", noticeSubject),
             new DeliveryOptions { TenantId = row.OrgId.Value.ToString() }
         );
         await MarketplaceAudit.PublishAsync(

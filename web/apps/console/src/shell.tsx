@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useRouterState } from '@tanstack/react-router';
 import { useState, type ReactNode } from 'react';
 import { can, useMe, type Me } from './session';
+import { useAlertPings } from './lib/alert-pings';
 
 // grouped by rhythm of use: daily operations, then org administration,
 // then the operator wall (UX review P2)
@@ -45,6 +46,7 @@ const NAV_GROUPS = [
 ] as const;
 
 export function Shell({ children }: { children: ReactNode }) {
+  useAlertPings();
   const { data: me, isLoading } = useMe();
   const queryClient = useQueryClient();
   const path = useRouterState({ select: (s) => s.location.pathname });

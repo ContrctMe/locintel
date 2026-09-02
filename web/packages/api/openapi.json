@@ -1938,6 +1938,74 @@
         }
       }
     },
+    "/api/me/notifications": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Identity.Users.NotificationPreferenceEndpoints"
+        ],
+        "summary": "GET_api_me_notifications",
+        "description": "GET_api_me_notifications",
+        "operationId": "GET_api_me_notifications",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationPreferenceView"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "LocIntel.Modules.Identity.Users.NotificationPreferenceEndpoints"
+        ],
+        "summary": "PUT_api_me_notifications",
+        "description": "PUT_api_me_notifications",
+        "operationId": "PUT_api_me_notifications",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateNotificationPreferenceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationPreferenceView"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/org/sso": {
       "get": {
         "tags": [
@@ -15224,6 +15292,40 @@
           }
         }
       },
+      "NotificationPreferenceView": {
+        "required": [
+          "phone",
+          "smsAlerts",
+          "smsMarketplace",
+          "smsNetwork",
+          "browserAlerts",
+          "smsAvailable"
+        ],
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "smsAlerts": {
+            "type": "boolean"
+          },
+          "smsMarketplace": {
+            "type": "boolean"
+          },
+          "smsNetwork": {
+            "type": "boolean"
+          },
+          "browserAlerts": {
+            "type": "boolean"
+          },
+          "smsAvailable": {
+            "type": "boolean"
+          }
+        }
+      },
       "OpenCaseRequest": {
         "required": [
           "title"
@@ -17942,6 +18044,36 @@
           }
         }
       },
+      "UpdateNotificationPreferenceRequest": {
+        "required": [
+          "phone",
+          "smsAlerts",
+          "smsMarketplace",
+          "smsNetwork",
+          "browserAlerts"
+        ],
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "smsAlerts": {
+            "type": "boolean"
+          },
+          "smsMarketplace": {
+            "type": "boolean"
+          },
+          "smsNetwork": {
+            "type": "boolean"
+          },
+          "browserAlerts": {
+            "type": "boolean"
+          }
+        }
+      },
       "UpdateProfileRequest": {
         "required": [
           "name"
@@ -18480,6 +18612,9 @@
     },
     {
       "name": "LocIntel.Modules.Identity.Users.MemberEndpoints"
+    },
+    {
+      "name": "LocIntel.Modules.Identity.Users.NotificationPreferenceEndpoints"
     },
     {
       "name": "LocIntel.Modules.Identity.Users.SsoEndpoints"
