@@ -52,6 +52,7 @@ function RootComponent() {
       <footer className="mt-16 border-t">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-6 py-6 text-xs text-muted-foreground">
           <span>{org?.name ?? ''}</span>
+          <a href="/tips" className="underline-offset-2 hover:underline">Report something</a>
           <span>Powered by LocIntel</span>
         </div>
       </footer>

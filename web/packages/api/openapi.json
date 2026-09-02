@@ -4415,6 +4415,46 @@
         }
       }
     },
+    "/public/tips": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Incidents.Tips.TipEndpoints"
+        ],
+        "summary": "POST_public_tips",
+        "description": "POST_public_tips",
+        "operationId": "POST_public_tips",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitTipRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TipReceipt"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/incidents/{id}/attachments": {
       "post": {
         "tags": [
@@ -12273,6 +12313,7 @@
           "reportedAt",
           "reportedBy",
           "reporter",
+          "reporterContact",
           "lossAmount",
           "recoveredAmount",
           "currency",
@@ -12340,6 +12381,12 @@
             "format": "uuid"
           },
           "reporter": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "reporterContact": {
             "type": [
               "null",
               "string"
@@ -14472,6 +14519,45 @@
           }
         }
       },
+      "SubmitTipRequest": {
+        "required": [
+          "siteId",
+          "category",
+          "description"
+        ],
+        "type": "object",
+        "properties": {
+          "siteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "category": {
+            "$ref": "#/components/schemas/IncidentCategory"
+          },
+          "description": {
+            "type": "string"
+          },
+          "occurredAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "contact": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "website": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "SwitchOrgRequest": {
         "required": [
           "orgId"
@@ -14481,6 +14567,17 @@
           "orgId": {
             "type": "string",
             "format": "uuid"
+          }
+        }
+      },
+      "TipReceipt": {
+        "required": [
+          "receipt"
+        ],
+        "type": "object",
+        "properties": {
+          "receipt": {
+            "type": "string"
           }
         }
       },
@@ -15226,6 +15323,9 @@
     },
     {
       "name": "LocIntel.Modules.Checklists.Checklists.ChecklistEndpoints"
+    },
+    {
+      "name": "LocIntel.Modules.Incidents.Tips.TipEndpoints"
     },
     {
       "name": "LocIntel.Modules.Incidents.Incidents.IncidentAttachmentEndpoints"

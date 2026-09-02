@@ -16,6 +16,7 @@ public sealed record IncidentDetail(
     DateTimeOffset ReportedAt,
     Guid ReportedBy,
     string? Reporter,
+    string? ReporterContact,
     decimal? LossAmount,
     decimal? RecoveredAmount,
     string Currency,

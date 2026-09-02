@@ -175,6 +175,7 @@ public static class IncidentEndpoints
                 incident.ReportedAt,
                 incident.ReportedBy,
                 labels.GetValueOrDefault(incident.ReportedBy),
+                incident.ReporterContact,
                 incident.LossAmount,
                 incident.RecoveredAmount,
                 incident.Currency,

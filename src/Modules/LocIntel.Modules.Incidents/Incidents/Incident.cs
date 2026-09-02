@@ -43,8 +43,11 @@ public sealed class Incident : IPathScoped, ISoftDeletable
     /// <summary>UTC instant.</summary>
     public DateTimeOffset ReportedAt { get; init; } = DateTimeOffset.UtcNow;
 
-    /// <summary>User id, or the API key id when Source is Api.</summary>
+    /// <summary>User id, the API key id when Source is Api, or Guid.Empty for an anonymous tip.</summary>
     public required Guid ReportedBy { get; init; }
+
+    /// <summary>How to reach an anonymous tipster who chose to leave a way (Source = Tip); never shown publicly.</summary>
+    public string? ReporterContact { get; set; }
 
     public decimal? LossAmount { get; set; }
     public decimal? RecoveredAmount { get; set; }

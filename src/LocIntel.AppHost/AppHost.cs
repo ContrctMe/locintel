@@ -55,13 +55,13 @@ builder
     // unproxied: executables cannot be proxied onto their own target port;
     // vite binds 5173 directly and reads it from PORT
     .WithHttpEndpoint(env: "PORT", port: 5173, isProxied: false)
-    .WithEnvironment("PREMISE_API", api.GetEndpoint("http"))
+    .WithEnvironment("LOCINTEL_API", api.GetEndpoint("http"))
     .WaitFor(api);
 
 builder
     .AddNpmApp("public", "../../web/apps/public", "dev")
     .WithHttpEndpoint(env: "PORT", port: 5174, isProxied: false)
-    .WithEnvironment("PREMISE_API", api.GetEndpoint("http"))
+    .WithEnvironment("LOCINTEL_API", api.GetEndpoint("http"))
     .WaitFor(api);
 
 // launchProfileName: null - the worker must NOT inherit launchSettings'

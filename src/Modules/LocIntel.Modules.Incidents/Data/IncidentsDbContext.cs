@@ -53,6 +53,7 @@ public sealed class IncidentsDbContext(
             b.Property(x => x.BusinessDate).HasColumnName("business_date");
             b.Property(x => x.ReportedAt).HasColumnName("reported_at");
             b.Property(x => x.ReportedBy).HasColumnName("reported_by");
+            b.Property(x => x.ReporterContact).HasColumnName("reporter_contact").HasMaxLength(320);
             b.Property(x => x.LossAmount).HasColumnName("loss_amount").HasPrecision(14, 2);
             b.Property(x => x.RecoveredAmount)
                 .HasColumnName("recovered_amount")

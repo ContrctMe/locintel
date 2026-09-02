@@ -10,7 +10,7 @@ import { getRequestHeader, setCookie } from '@tanstack/react-start/server';
 const redeem = createServerFn({ method: 'GET' })
   .inputValidator((token: string) => token)
   .handler(async ({ data: token }) => {
-    const apiBase = process.env.PREMISE_API ?? 'http://localhost:5293';
+    const apiBase = process.env.LOCINTEL_API ?? 'http://localhost:5293';
     const host = getRequestHeader('host');
     try {
       const response = await fetch(

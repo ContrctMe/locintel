@@ -211,3 +211,12 @@ jurisdiction.
   alert. Reads are per user (`alert_reads`). Transports: email only; SMS
   and push remain fork territory as ADR 32 anticipated; no alert purge job
   yet (90-day convention). Dashboard gained incident and alert cards.
+- 2026-09-01: **Anonymous tips shipped**: `POST /public/tips` on the guest
+  tier (ADR 7) files an incident with Source = Tip, Medium severity,
+  `reported_by` = empty, optional `reporter_contact` (new column,
+  migration `TipIntake`), a `tip` tag, and a quotable receipt; honeypot
+  field, length floor, guest rate limits (ADR 30). Public app: `/tips`
+  page linked from the footer, posting server-side with the host
+  forwarded. Leftover from init: the `PREMISE_API` env var (uppercase
+  escaped the rename) is now `LOCINTEL_API` in AppHost, both web apps,
+  and the production guide.

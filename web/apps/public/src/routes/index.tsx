@@ -15,7 +15,7 @@ const fetchLocator = createServerFn({ method: 'GET' })
   }));
 
 const signOut = createServerFn({ method: 'POST' }).handler(async () => {
-  const apiBase = process.env.PREMISE_API ?? 'http://localhost:5293';
+  const apiBase = process.env.LOCINTEL_API ?? 'http://localhost:5293';
   const cookie = getRequestHeader('cookie');
   try {
     const response = await fetch(`${apiBase}/auth/logout`, {

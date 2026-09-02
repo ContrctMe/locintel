@@ -1916,6 +1916,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/public/tips": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_public_tips
+         * @description POST_public_tips
+         */
+        post: operations["POST_public_tips"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/incidents/{id}/attachments": {
         parameters: {
             query?: never;
@@ -5063,6 +5083,7 @@ export interface components {
             /** Format: uuid */
             reportedBy: string;
             reporter: null | string;
+            reporterContact: null | string;
             /** Format: double */
             lossAmount: null | number | string;
             /** Format: double */
@@ -5599,9 +5620,22 @@ export interface components {
             /** Format: uuid */
             fileId: string;
         };
+        SubmitTipRequest: {
+            /** Format: uuid */
+            siteId: string;
+            category: components["schemas"]["IncidentCategory"];
+            description: string;
+            /** Format: date-time */
+            occurredAt?: null | string;
+            contact?: null | string;
+            website?: null | string;
+        };
         SwitchOrgRequest: {
             /** Format: uuid */
             orgId: string;
+        };
+        TipReceipt: {
+            receipt: string;
         };
         UpdateCaseRequest: {
             title: string;
@@ -9194,6 +9228,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IResult"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_public_tips: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitTipRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TipReceipt"];
                 };
             };
             /** @description Not Found */
