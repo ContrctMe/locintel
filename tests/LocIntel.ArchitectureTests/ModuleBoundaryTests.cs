@@ -23,6 +23,7 @@ public class ModuleBoundaryTests
         typeof(Modules.Entities.EntitiesModule).Assembly,
         typeof(Modules.Cases.CasesModule).Assembly,
         typeof(Modules.Marketplace.MarketplaceModule).Assembly,
+        typeof(Modules.Alerts.AlertsModule).Assembly,
     ];
 
     private const string ModulePrefix = "LocIntel.Modules.";

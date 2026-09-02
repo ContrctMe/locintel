@@ -9,6 +9,7 @@ using LocIntel.Modules.Checklists;
 using LocIntel.Modules.Entitlements;
 using LocIntel.Modules.Identity;
 using LocIntel.Modules.Identity.Auth;
+using LocIntel.Modules.Alerts;
 using LocIntel.Modules.Cases;
 using LocIntel.Modules.Entities;
 using LocIntel.Modules.Incidents;
@@ -208,6 +209,7 @@ builder.Services.AddIncidentsModule();
 builder.Services.AddEntitiesModule(runBackgroundWork: role == "worker");
 builder.Services.AddCasesModule();
 builder.Services.AddMarketplaceModule();
+builder.Services.AddAlertsModule();
 
 // Platform infra context (idempotency, ADR 29)
 builder.Services.AddDbContext<PlatformDbContext>(
@@ -426,6 +428,7 @@ builder.UseWolverine(opts =>
     opts.Discovery.IncludeAssembly(typeof(EntitiesModule).Assembly);
     opts.Discovery.IncludeAssembly(typeof(CasesModule).Assembly);
     opts.Discovery.IncludeAssembly(typeof(MarketplaceModule).Assembly);
+    opts.Discovery.IncludeAssembly(typeof(AlertsModule).Assembly);
 });
 
 if (role == "migrate")

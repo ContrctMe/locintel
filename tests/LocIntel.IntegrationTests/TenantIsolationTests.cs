@@ -450,6 +450,45 @@ public class TenantIsolationTests(ApiFixture fixture) : IClassFixture<ApiFixture
         ).EnsureSuccessStatusCode();
     }
 
+    [Fact]
+    public async Task Bulletins_are_tenant_isolated()
+    {
+        var clientA = await fixture.LoginAsync(ApiFixture.UserA);
+        var created = await clientA.PostAsJsonAsync(
+            "/api/bulletins",
+            new
+            {
+                kind = "Safety",
+                severity = "Low",
+                title = "Isolated bulletin",
+                body = "Wet floor.",
+            }
+        );
+        created.EnsureSuccessStatusCode();
+        var id = (await created.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id")
+            .GetGuid();
+
+        var clientB = await fixture.LoginAsync(ApiFixture.UserB);
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (await clientB.GetAsync($"/api/bulletins/{id}")).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (await clientB.PostAsync($"/api/bulletins/{id}/withdraw", null)).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (await clientB.PostAsJsonAsync($"/api/bulletins/{id}/acknowledge", new { })).StatusCode
+        );
+        var list = await clientB.GetFromJsonAsync<JsonElement>("/api/bulletins");
+        Assert.DoesNotContain(
+            list.GetProperty("items").EnumerateArray(),
+            b => b.GetProperty("id").GetGuid() == id
+        );
+    }
+
     private sealed record SettingDto(Guid Id, string Key, string Value);
 
     [Fact]

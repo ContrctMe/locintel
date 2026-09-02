@@ -55,6 +55,7 @@ public class LifecycleTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         var sections = zip.Entries.Select(e => e.Name).Order().ToArray();
         Assert.Equal(
             [
+                "alerts.json",
                 "audit.json",
                 "cases.json",
                 "checklists.json",

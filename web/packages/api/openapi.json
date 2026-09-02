@@ -8404,6 +8404,381 @@
         }
       }
     },
+    "/api/bulletins": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Alerts.Bulletins.BulletinEndpoints"
+        ],
+        "summary": "GET_api_bulletins",
+        "description": "GET_api_bulletins",
+        "operationId": "GET_api_bulletins",
+        "parameters": [
+          {
+            "name": "includeInactive",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/BulletinKind"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulletinListResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Alerts.Bulletins.BulletinEndpoints"
+        ],
+        "summary": "POST_api_bulletins",
+        "description": "POST_api_bulletins",
+        "operationId": "POST_api_bulletins",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IssueBulletinRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulletinIssued"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bulletins/{id}": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Alerts.Bulletins.BulletinEndpoints"
+        ],
+        "summary": "GET_api_bulletins_id",
+        "description": "GET_api_bulletins_id",
+        "operationId": "GET_api_bulletins_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulletinDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bulletins/{id}/withdraw": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Alerts.Bulletins.BulletinEndpoints"
+        ],
+        "summary": "POST_api_bulletins_id_withdraw",
+        "description": "POST_api_bulletins_id_withdraw",
+        "operationId": "POST_api_bulletins_id_withdraw",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulletinMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bulletins/{id}/acknowledge": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Alerts.Bulletins.BulletinEndpoints"
+        ],
+        "summary": "POST_api_bulletins_id_acknowledge",
+        "description": "POST_api_bulletins_id_acknowledge",
+        "operationId": "POST_api_bulletins_id_acknowledge",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcknowledgeBulletinRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulletinAcknowledged"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/alerts": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Alerts.Alerts.AlertEndpoints"
+        ],
+        "summary": "GET_api_alerts",
+        "description": "GET_api_alerts",
+        "operationId": "GET_api_alerts",
+        "parameters": [
+          {
+            "name": "unreadOnly",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertListResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/alerts/{id}/read": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Alerts.Alerts.AlertEndpoints"
+        ],
+        "summary": "POST_api_alerts_id_read",
+        "description": "POST_api_alerts_id_read",
+        "operationId": "POST_api_alerts_id_read",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertMarkedRead"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/alerts/summary": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Alerts.Alerts.AlertEndpoints"
+        ],
+        "summary": "GET_api_alerts_summary",
+        "description": "GET_api_alerts_summary",
+        "operationId": "GET_api_alerts_summary",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertSummary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
     "/objects/upload/{token}": {
       "put": {
         "tags": [
@@ -8842,6 +9217,68 @@
   },
   "components": {
     "schemas": {
+      "AcknowledgeBulletinRequest": {
+        "type": "object",
+        "properties": {
+          "siteId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "AcknowledgementView": {
+        "required": [
+          "id",
+          "userId",
+          "user",
+          "siteId",
+          "note",
+          "acknowledgedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "siteId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "acknowledgedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "AddCaseEntityRequest": {
         "required": [
           "entityId"
@@ -9031,6 +9468,178 @@
           }
         }
       },
+      "AlertKind": {
+        "enum": [
+          "HighSeverityIncident",
+          "BulletinIssued"
+        ]
+      },
+      "AlertListResponse": {
+        "required": [
+          "items",
+          "total",
+          "nextOffset",
+          "unread"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AlertView"
+            }
+          },
+          "total": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "nextOffset": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "unread": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "AlertMarkedRead": {
+        "required": [
+          "id",
+          "readAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "readAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AlertSeverity": {
+        "enum": [
+          "Low",
+          "Medium",
+          "High",
+          "Critical"
+        ]
+      },
+      "AlertSummary": {
+        "required": [
+          "unread",
+          "activeBulletins",
+          "unacknowledgedBulletins"
+        ],
+        "type": "object",
+        "properties": {
+          "unread": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "activeBulletins": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "unacknowledgedBulletins": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "AlertView": {
+        "required": [
+          "id",
+          "kind",
+          "severity",
+          "title",
+          "body",
+          "incidentId",
+          "bulletinId",
+          "entityId",
+          "createdAt",
+          "readAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/AlertKind"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/AlertSeverity"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "incidentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "bulletinId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "entityId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "readAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
       "AssignRoleRequest": {
         "required": [
           "userId"
@@ -9158,6 +9767,233 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "BulletinAcknowledged": {
+        "required": [
+          "id",
+          "acknowledgedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "acknowledgedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "BulletinDetail": {
+        "required": [
+          "bulletin",
+          "acknowledgements"
+        ],
+        "type": "object",
+        "properties": {
+          "bulletin": {
+            "$ref": "#/components/schemas/BulletinView"
+          },
+          "acknowledgements": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/AcknowledgementView"
+            }
+          }
+        }
+      },
+      "BulletinIssued": {
+        "required": [
+          "id",
+          "expiresAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "BulletinKind": {
+        "enum": [
+          "Bolo",
+          "Advisory",
+          "Safety"
+        ]
+      },
+      "BulletinListResponse": {
+        "required": [
+          "items",
+          "total",
+          "nextOffset"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulletinView"
+            }
+          },
+          "total": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "nextOffset": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "BulletinMutated": {
+        "required": [
+          "id",
+          "status",
+          "withdrawnAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BulletinStatus"
+          },
+          "withdrawnAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "BulletinStatus": {
+        "enum": [
+          "Active",
+          "Withdrawn"
+        ]
+      },
+      "BulletinView": {
+        "required": [
+          "id",
+          "kind",
+          "severity",
+          "title",
+          "body",
+          "scopePath",
+          "entityId",
+          "incidentId",
+          "caseId",
+          "issuedBy",
+          "issuer",
+          "issuedAt",
+          "expiresAt",
+          "status",
+          "active",
+          "acknowledged",
+          "acknowledgements"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/BulletinKind"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/AlertSeverity"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "scopePath": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "entityId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "incidentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "caseId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "issuedBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "issuer": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "issuedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BulletinStatus"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "acknowledged": {
+            "type": "boolean"
+          },
+          "acknowledgements": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -11877,6 +12713,63 @@
       "IResult": {
         "type": "object"
       },
+      "IssueBulletinRequest": {
+        "required": [
+          "kind",
+          "severity",
+          "title",
+          "body"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/BulletinKind"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/AlertSeverity"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "scopePath": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "entityId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "incidentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "caseId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "expiresAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
       "IssueContactLinkRequest": {
         "required": [
           "email"
@@ -14384,6 +15277,12 @@
     },
     {
       "name": "LocIntel.Modules.Marketplace.Requests.VendorRequestEndpoints"
+    },
+    {
+      "name": "LocIntel.Modules.Alerts.Bulletins.BulletinEndpoints"
+    },
+    {
+      "name": "LocIntel.Modules.Alerts.Alerts.AlertEndpoints"
     },
     {
       "name": "LocIntel.Api"

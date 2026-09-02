@@ -7,6 +7,8 @@ import { can, useMe } from '../session';
 
 type Effective = Record<string, { value: string; shape: string; policy: string; usage: number | null }>;
 type SitesSummary = { total: number; openCount: number };
+type IncidentStats = { total: number; open: number; totalLoss: number; byCategory: { key: string; count: number; loss: number }[] };
+type AlertSummary = { unread: number; activeBulletins: number; unacknowledgedBulletins: number };
 type Invitation = { id: string; state: string };
 type AuditEvent = {
   id: string; eventName: string; actorTier: string; occurredAt: string;
@@ -19,6 +21,8 @@ export function DashboardPage() {
   const seesSites = can(me, 'sites:read');
   const seesMembers = can(me, 'roles:manage');
   const seesAudit = can(me, 'audit:read');
+  const seesIncidents = can(me, 'incidents:read');
+  const seesAlerts = can(me, 'alerts:read');
 
   const { data: entitlements } = useQuery({
     queryKey: ['entitlements'],
@@ -33,6 +37,16 @@ export function DashboardPage() {
     queryKey: ['invitations'],
     queryFn: () => api.get<Invitation[]>('/api/members/invitations'),
     enabled: seesMembers,
+  });
+  const { data: incidents } = useQuery({
+    queryKey: ['incidents', 'stats', 'dashboard'],
+    queryFn: () => api.get<IncidentStats>('/api/incidents/stats'),
+    enabled: seesIncidents,
+  });
+  const { data: alerts } = useQuery({
+    queryKey: ['alerts', 'summary'],
+    queryFn: () => api.get<AlertSummary>('/api/alerts/summary'),
+    enabled: seesAlerts,
   });
   const { data: events } = useQuery({
     queryKey: ['audit', 'events', 5],
@@ -49,6 +63,41 @@ export function DashboardPage() {
       <h1 className="text-2xl font-semibold">Dashboard</h1>
 
       <div className="grid grid-cols-2 gap-4">
+        {seesIncidents && (
+          <Card>
+            <CardContent className="pt-5">
+              <Link to="/incidents" className="block">
+                <div className="text-3xl font-semibold tabular-nums">
+                  {incidents === undefined ? '—' : incidents.total}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  incidents, last 30 days · {incidents?.open ?? 0} open
+                  {incidents && incidents.totalLoss > 0 && ` · $${incidents.totalLoss.toLocaleString()} loss`}
+                </div>
+                {incidents && incidents.byCategory.length > 0 && (
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {incidents.byCategory.slice(0, 3).map((c) => `${c.key.replace(/([a-z])([A-Z])/g, '$1 $2')} ${c.count}`).join(' · ')}
+                  </div>
+                )}
+              </Link>
+            </CardContent>
+          </Card>
+        )}
+        {seesAlerts && (
+          <Card>
+            <CardContent className="pt-5">
+              <Link to="/alerts" className="block">
+                <div className="text-3xl font-semibold tabular-nums">
+                  {alerts === undefined ? '—' : alerts.unread}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  unread alerts · {alerts?.activeBulletins ?? 0} active bulletins
+                  {alerts && alerts.unacknowledgedBulletins > 0 && ` · ${alerts.unacknowledgedBulletins} to acknowledge`}
+                </div>
+              </Link>
+            </CardContent>
+          </Card>
+        )}
         {seesSites && (
           <Card>
             <CardContent className="pt-5">

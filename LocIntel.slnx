@@ -13,6 +13,7 @@
     <Project Path="src/Integrations/LocIntel.Integrations.WorkOS/LocIntel.Integrations.WorkOS.csproj" />
   </Folder>
   <Folder Name="/src/Modules/">
+    <Project Path="src/Modules/LocIntel.Modules.Alerts/LocIntel.Modules.Alerts.csproj" />
     <Project Path="src/Modules/LocIntel.Modules.Audit/LocIntel.Modules.Audit.csproj" />
     <Project Path="src/Modules/LocIntel.Modules.Cases/LocIntel.Modules.Cases.csproj" />
     <Project Path="src/Modules/LocIntel.Modules.Checklists/LocIntel.Modules.Checklists.csproj" />

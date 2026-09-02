@@ -50,6 +50,10 @@ public static class Capabilities
     /// </summary>
     public const string VendorManage = "vendor:manage";
     public const string VendorFulfill = "vendor:fulfill";
+
+    /// <summary>Alerts feed and bulletins (BOLOs): read/acknowledge within scope; manage issues and withdraws.</summary>
+    public const string AlertsRead = "alerts:read";
+    public const string AlertsManage = "alerts:manage";
     public const string AuditRead = "audit:read";
     public const string AuditManage = "audit:manage";
     public const string EntitlementsManage = "entitlements:manage";
@@ -83,6 +87,8 @@ public static class Capabilities
         MarketplaceManage,
         VendorManage,
         VendorFulfill,
+        AlertsRead,
+        AlertsManage,
         AuditRead,
         AuditManage,
         EntitlementsManage,

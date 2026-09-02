@@ -22,6 +22,8 @@ export const CAPABILITIES = [
   'marketplace:manage',
   'vendor:manage',
   'vendor:fulfill',
+  'alerts:read',
+  'alerts:manage',
   'audit:read',
   'audit:manage',
   'entitlements:manage',

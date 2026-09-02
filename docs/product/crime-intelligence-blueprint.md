@@ -200,3 +200,14 @@ jurisdiction.
   go through `SendOrgNotice`. Preferred/blocked lists per requester org.
   Test hygiene: GatesTests restores `sites.max` (xUnit's in-class order is a
   hash of the test name and the fork rename reshuffled it).
+- 2026-09-01: **Alerts and bulletins shipped** (schema `alerts`;
+  capabilities `alerts:read|manage`). Incidents now publishes the
+  `IncidentReported` integration event (tenant on the envelope); Alerts
+  turns High/Critical ones into feed alerts and emails managers via
+  `SendOrgNotice`. Bulletins (BOLO / Advisory / Safety) target a subtree
+  (`scope_path`, null = org-wide) and reach readers whose scope OVERLAPS
+  (`ScopeOverlap`: either side ancestor of the other); acknowledgements
+  are per user with optional site and note; issuing also drops a feed
+  alert. Reads are per user (`alert_reads`). Transports: email only; SMS
+  and push remain fork territory as ADR 32 anticipated; no alert purge job
+  yet (90-day convention). Dashboard gained incident and alert cards.

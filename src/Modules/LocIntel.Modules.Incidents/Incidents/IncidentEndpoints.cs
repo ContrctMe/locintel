@@ -1,4 +1,5 @@
 using LocIntel.Contracts;
+using LocIntel.Contracts.Incidents;
 using LocIntel.Modules.Incidents.Data;
 using LocIntel.Modules.Incidents.Incidents.Api;
 using LocIntel.Platform.Data;
@@ -266,6 +267,20 @@ public static class IncidentEndpoints
                 Severity = incident.Severity.ToString(),
                 incident.BusinessDate,
             }
+        );
+        await bus.PublishAsync(
+            new IncidentReported(
+                incident.Id,
+                incident.SiteId,
+                site.Name,
+                incident.Path.ToString(),
+                incident.Category.ToString(),
+                incident.Severity.ToString(),
+                incident.Title,
+                incident.OccurredAt,
+                incident.ReportedBy
+            ),
+            new DeliveryOptions { TenantId = actor.Org.Value.ToString() }
         );
         return Results.Ok(new IncidentCreated(incident.Id, incident.BusinessDate));
     }

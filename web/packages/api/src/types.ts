@@ -3328,6 +3328,150 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/bulletins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_bulletins
+         * @description GET_api_bulletins
+         */
+        get: operations["GET_api_bulletins"];
+        put?: never;
+        /**
+         * POST_api_bulletins
+         * @description POST_api_bulletins
+         */
+        post: operations["POST_api_bulletins"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/bulletins/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_bulletins_id
+         * @description GET_api_bulletins_id
+         */
+        get: operations["GET_api_bulletins_id"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/bulletins/{id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_bulletins_id_withdraw
+         * @description POST_api_bulletins_id_withdraw
+         */
+        post: operations["POST_api_bulletins_id_withdraw"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/bulletins/{id}/acknowledge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_bulletins_id_acknowledge
+         * @description POST_api_bulletins_id_acknowledge
+         */
+        post: operations["POST_api_bulletins_id_acknowledge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_alerts
+         * @description GET_api_alerts
+         */
+        get: operations["GET_api_alerts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/alerts/{id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_alerts_id_read
+         * @description POST_api_alerts_id_read
+         */
+        post: operations["POST_api_alerts_id_read"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/alerts/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_alerts_summary
+         * @description GET_api_alerts_summary
+         */
+        get: operations["GET_api_alerts_summary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/objects/upload/{token}": {
         parameters: {
             query?: never;
@@ -4095,6 +4239,23 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AcknowledgeBulletinRequest: {
+            /** Format: uuid */
+            siteId?: null | string;
+            note?: null | string;
+        };
+        AcknowledgementView: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            userId: string;
+            user: null | string;
+            /** Format: uuid */
+            siteId: null | string;
+            note: null | string;
+            /** Format: date-time */
+            acknowledgedAt: string;
+        };
         AddCaseEntityRequest: {
             /** Format: uuid */
             entityId: string;
@@ -4149,6 +4310,51 @@ export interface components {
         AddIncidentNoteRequest: {
             body: string;
         };
+        /** @enum {unknown} */
+        AlertKind: "HighSeverityIncident" | "BulletinIssued";
+        AlertListResponse: {
+            items: components["schemas"]["AlertView"][];
+            /** Format: int32 */
+            total: number | string;
+            /** Format: int32 */
+            nextOffset: null | number | string;
+            /** Format: int32 */
+            unread: number | string;
+        };
+        AlertMarkedRead: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            readAt: string;
+        };
+        /** @enum {unknown} */
+        AlertSeverity: "Low" | "Medium" | "High" | "Critical";
+        AlertSummary: {
+            /** Format: int32 */
+            unread: number | string;
+            /** Format: int32 */
+            activeBulletins: number | string;
+            /** Format: int32 */
+            unacknowledgedBulletins: number | string;
+        };
+        AlertView: {
+            /** Format: uuid */
+            id: string;
+            kind: components["schemas"]["AlertKind"];
+            severity: components["schemas"]["AlertSeverity"];
+            title: string;
+            body: string;
+            /** Format: uuid */
+            incidentId: null | string;
+            /** Format: uuid */
+            bulletinId: null | string;
+            /** Format: uuid */
+            entityId: null | string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            readAt: null | string;
+        };
         AssignRoleRequest: {
             /** Format: uuid */
             userId: string;
@@ -4180,6 +4386,67 @@ export interface components {
         BounceReport: {
             email: string;
             reason: null | string;
+        };
+        BulletinAcknowledged: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            acknowledgedAt: string;
+        };
+        BulletinDetail: {
+            bulletin: components["schemas"]["BulletinView"];
+            acknowledgements: null | components["schemas"]["AcknowledgementView"][];
+        };
+        BulletinIssued: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        /** @enum {unknown} */
+        BulletinKind: "Bolo" | "Advisory" | "Safety";
+        BulletinListResponse: {
+            items: components["schemas"]["BulletinView"][];
+            /** Format: int32 */
+            total: number | string;
+            /** Format: int32 */
+            nextOffset: null | number | string;
+        };
+        BulletinMutated: {
+            /** Format: uuid */
+            id: string;
+            status: components["schemas"]["BulletinStatus"];
+            /** Format: date-time */
+            withdrawnAt: null | string;
+        };
+        /** @enum {unknown} */
+        BulletinStatus: "Active" | "Withdrawn";
+        BulletinView: {
+            /** Format: uuid */
+            id: string;
+            kind: components["schemas"]["BulletinKind"];
+            severity: components["schemas"]["AlertSeverity"];
+            title: string;
+            body: string;
+            scopePath: null | string;
+            /** Format: uuid */
+            entityId: null | string;
+            /** Format: uuid */
+            incidentId: null | string;
+            /** Format: uuid */
+            caseId: null | string;
+            /** Format: uuid */
+            issuedBy: string;
+            issuer: null | string;
+            /** Format: date-time */
+            issuedAt: string;
+            /** Format: date-time */
+            expiresAt: string;
+            status: components["schemas"]["BulletinStatus"];
+            active: boolean;
+            acknowledged: boolean;
+            /** Format: int32 */
+            acknowledgements: number | string;
         };
         CaseChildAdded: {
             /** Format: uuid */
@@ -4894,6 +5161,21 @@ export interface components {
             roleId: string;
         };
         IResult: Record<string, never>;
+        IssueBulletinRequest: {
+            kind: components["schemas"]["BulletinKind"];
+            severity: components["schemas"]["AlertSeverity"];
+            title: string;
+            body: string;
+            scopePath?: null | string;
+            /** Format: uuid */
+            entityId?: null | string;
+            /** Format: uuid */
+            incidentId?: null | string;
+            /** Format: uuid */
+            caseId?: null | string;
+            /** Format: date-time */
+            expiresAt?: null | string;
+        };
         IssueContactLinkRequest: {
             email: string;
         };
@@ -11603,6 +11885,263 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RequestEventCreated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_bulletins: {
+        parameters: {
+            query?: {
+                includeInactive?: boolean;
+                kind?: components["schemas"]["BulletinKind"];
+                limit?: number | string;
+                offset?: number | string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulletinListResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_bulletins: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IssueBulletinRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulletinIssued"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_bulletins_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulletinDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_bulletins_id_withdraw: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulletinMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_bulletins_id_acknowledge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcknowledgeBulletinRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulletinAcknowledged"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_alerts: {
+        parameters: {
+            query?: {
+                unreadOnly?: boolean;
+                limit?: number | string;
+                offset?: number | string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertListResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_alerts_id_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertMarkedRead"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_alerts_summary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertSummary"];
                 };
             };
             /** @description Not Found */

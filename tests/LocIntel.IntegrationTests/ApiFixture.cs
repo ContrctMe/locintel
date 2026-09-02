@@ -105,13 +105,20 @@ public class ApiFixture : IAsyncLifetime
                 )
         )
             await marketplace.Database.MigrateAsync();
+        await using (
+            var alerts = CreateModuleContext<LocIntel.Modules.Alerts.Data.AlertsDbContext>(
+                adminCs,
+                "alerts"
+            )
+        )
+            await alerts.Database.MigrateAsync();
 
         await _postgres.ExecScriptAsync(
             """
             CREATE ROLE app_user LOGIN PASSWORD 'app_user' NOSUPERUSER;
             -- Wolverine owns its envelope schema; the app creates it at startup
             GRANT CREATE ON DATABASE postgres TO app_user;
-            GRANT USAGE ON SCHEMA tenancy, identity, entitlements, audit, storage, platform, ingest, checklists, incidents, entities, cases, marketplace TO app_user;
+            GRANT USAGE ON SCHEMA tenancy, identity, entitlements, audit, storage, platform, ingest, checklists, incidents, entities, cases, marketplace, alerts TO app_user;
             GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA tenancy TO app_user;
             GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA identity TO app_user;
             GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA checklists TO app_user;
@@ -124,6 +131,7 @@ public class ApiFixture : IAsyncLifetime
             GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA entities TO app_user;
             GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA cases TO app_user;
             GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA marketplace TO app_user;
+            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA alerts TO app_user;
             """
         );
         AppConnectionString = new Npgsql.NpgsqlConnectionStringBuilder(adminCs)
