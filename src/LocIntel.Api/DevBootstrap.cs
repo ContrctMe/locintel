@@ -1,6 +1,7 @@
 using LocIntel.Contracts;
 using LocIntel.Platform.Kernel;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Wolverine;
 
 namespace LocIntel.Api;
@@ -16,7 +17,8 @@ namespace LocIntel.Api;
 public sealed class DevBootstrap(
     IServiceProvider services,
     ReadinessState readiness,
-    ILogger<DevBootstrap> logger
+    ILogger<DevBootstrap> logger,
+    IConfiguration configuration
 ) : BackgroundService
 {
     public const string EmulatorUserId = "user_01DEVALICE00000000000000";
@@ -47,7 +49,12 @@ public sealed class DevBootstrap(
         await using var scope = services.CreateAsyncScope();
         var sp = scope.ServiceProvider;
 
-        // seed keyed to the emulator's PINNED ids - login just matches
+        // seed keyed to the emulator's PINNED ids - login just matches; the
+        // password-less local provider (LOCINTEL_AUTH=local) keys users as
+        // local_{email}, so the same people sign in either way
+        var provider = configuration["Auth:Provider"] ?? "local";
+        string Subject(string pinned, string email) =>
+            provider == "local" ? $"local_{email}" : pinned;
         var tenancy = sp.GetRequiredService<LocIntel.Modules.Tenancy.Data.TenancyDbContext>();
         var org = await tenancy.Organizations.FirstOrDefaultAsync(o => o.Slug == "acme-dev", ct);
         if (org is null)
@@ -96,8 +103,8 @@ public sealed class DevBootstrap(
         await SeedOwnerAsync(
             sp,
             org.Id,
-            "workos",
-            EmulatorUserId,
+            provider,
+            Subject(EmulatorUserId, "alice@acme.test"),
             "alice@acme.test",
             "Alice Dev",
             "Owner",
@@ -125,8 +132,8 @@ public sealed class DevBootstrap(
         await SeedOwnerAsync(
             sp,
             platformOrg.Id,
-            "workos",
-            EmulatorOperatorId,
+            provider,
+            Subject(EmulatorOperatorId, "operator@locintel.local"),
             "operator@locintel.local",
             "LocIntel Operator",
             "Operator",

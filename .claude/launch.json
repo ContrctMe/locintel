@@ -4,7 +4,24 @@
     {
       "name": "console",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--dir", "web", "dev:console"],
+      "runtimeArgs": [
+        "--dir",
+        "web",
+        "dev:console"
+      ],
+      "port": 5173
+    },
+    {
+      "name": "aspire",
+      "runtimeExecutable": "/usr/bin/env",
+      "runtimeArgs": [
+        "LOCINTEL_AUTH=local",
+        "/Users/jarod/.aspire/bin/aspire",
+        "run",
+        "--project",
+        "src/LocIntel.AppHost/LocIntel.AppHost.csproj",
+        "--non-interactive"
+      ],
       "port": 5173
     }
   ]

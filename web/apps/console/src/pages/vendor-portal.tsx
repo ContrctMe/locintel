@@ -12,7 +12,7 @@ import { CATEGORIES, categoryLabel, RequestStatusBadge, type RequestSummary } fr
 import { RequestFacts, Timeline, type RequestDetail } from './request-detail';
 
 type Profile = {
-  orgId: string; name: string; description: string; categories: string[]; serviceAreas: string[];
+  orgId: string; updatedAt: string; name: string; description: string; categories: string[]; serviceAreas: string[];
   latitude: number | null; longitude: number | null; serviceRadiusKm: number | null;
   contactEmail: string | null; contactPhone: string | null; published: boolean;
   credentials: { id: string; kind: string; label: string; number: string | null; jurisdiction: string | null; expiresAt: string; expired: boolean }[];
@@ -22,7 +22,7 @@ type Profile = {
 export function VendorPortalPage() {
   const { data: me } = useMe();
   const manage = can(me, 'vendor:manage');
-  const { data: profile, isError } = useQuery({
+  const { data: profile, isError, isPending } = useQuery({
     queryKey: ['vendor', 'profile'],
     queryFn: () => api.get<Profile>('/api/vendor/profile'),
     retry: false,
@@ -37,7 +37,9 @@ export function VendorPortalPage() {
       <p className="text-sm text-muted-foreground">
         Your organization as a fulfillment vendor. Publish a profile to appear in every buyer's catalog; requests they send land below.
       </p>
-      {manage && <ProfileCard profile={isError ? null : (profile ?? null)} />}
+      {manage && !isPending && (
+        <ProfileCard key={profile?.updatedAt ?? 'new'} profile={isError ? null : (profile ?? null)} />
+      )}
       <Card>
         <CardHeader><CardTitle className="text-base">Incoming requests</CardTitle></CardHeader>
         <CardContent className="p-0">

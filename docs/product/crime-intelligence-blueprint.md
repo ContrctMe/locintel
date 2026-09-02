@@ -252,3 +252,12 @@ jurisdiction.
   the day's incidents via the new `IIncidentDirectory.ListForDayAsync`.
   Console: live patrol with checkpoint taps (GPS when available), routes
   and weekly schedules, report by date.
+- 2026-09-02: **Browser smoke run** through Aspire with the new
+  `LOCINTEL_AUTH=local` switch (AppHost picks the provider; DevBootstrap
+  keys seeded users as `local_{email}` under it; `.claude/launch.json`
+  has an `aspire` configuration). Every new console page rendered with no
+  console errors: dashboard cards, incidents, entity, case, alerts,
+  analytics map, patrols, network, marketplace, vendor portal, public
+  tips. Two fixes came out of it: entitlement labels for the new plan
+  keys, and the vendor profile form seeding its state before the query
+  resolved.

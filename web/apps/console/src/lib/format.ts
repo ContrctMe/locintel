@@ -39,6 +39,8 @@ export const ENTITLEMENT_LABELS: Record<string, string> = {
   'contact_links.enabled': 'Contact links',
   'contact_links.monthly': 'Contact links / month',
   'hierarchy.depth': 'Hierarchy depth',
+  'marketplace.enabled': 'Marketplace',
+  'network.enabled': 'Intelligence sharing',
   'sites.max': 'Site limit',
   'sso.enabled': 'Single sign-on',
 };

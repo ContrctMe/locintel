@@ -35,18 +35,25 @@ var migrate = builder
     .WaitFor(postgres)
     .WithEnvironment("ROLE", "migrate");
 
+// LOCINTEL_AUTH=local swaps the WorkOS emulator for the password-less local
+// provider (any email signs in) - for browser smoke runs and demos where
+// nobody should be typing credentials.
+var authProvider = Environment.GetEnvironmentVariable("LOCINTEL_AUTH") ?? "workos";
+
 var api = builder
     .AddProject<Projects.LocIntel_Api>("api")
     .WithReference(postgres)
     .WaitForCompletion(migrate)
-    .WaitFor(workos)
     .WithEnvironment("ROLE", "api")
     .WithEnvironment("Database__AppUser", "app_user")
     .WithEnvironment("Database__AppPassword", "app_user")
-    .WithEnvironment("Auth__Provider", "workos")
-    .WithEnvironment("Auth__WorkOS__ApiKey", "sk_test_default")
-    .WithEnvironment("Auth__WorkOS__ClientId", "client_locintel_dev")
-    .WithEnvironment("Auth__WorkOS__ApiBaseUrl", workosEndpoint)
+    .WithEnvironment("Auth__Provider", authProvider);
+if (authProvider == "workos")
+    api = api.WaitFor(workos)
+        .WithEnvironment("Auth__WorkOS__ApiKey", "sk_test_default")
+        .WithEnvironment("Auth__WorkOS__ClientId", "client_locintel_dev")
+        .WithEnvironment("Auth__WorkOS__ApiBaseUrl", workosEndpoint);
+api = api
     // WaitFor(api) waits for HEALTHY: 503 until dev bootstrap finishes
     .WithHttpHealthCheck("/healthz");
 

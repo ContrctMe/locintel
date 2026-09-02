@@ -107,7 +107,7 @@ don't restate them here.
 - Tenant-isolation golden suite (needs Docker; Testcontainers Postgres):
   `dotnet test tests/LocIntel.IntegrationTests` — or one deterministic shard,
   exactly as CI runs it: `tools/run-integration-shard.sh 1 2`
-- Local dev: `aspire run` from `src/LocIntel.AppHost` (Postgres + WorkOS emulator + migrate → api + worker + dashboard). Dev login: alice@acme.test / test123 (seeded in `workos-emulate.config.yaml`). Caught mail (contact links, resets): `GET /dev/mail` on the api. Localhost quirk: cookies ignore ports, so a console session bleeds into `localhost:5174` — prod subdomains don't have this.
+- Local dev: `aspire run` from `src/LocIntel.AppHost` (Postgres + WorkOS emulator + migrate → api + worker + dashboard). Dev login: alice@acme.test / test123 (seeded in `workos-emulate.config.yaml`). `LOCINTEL_AUTH=local aspire run` swaps in the password-less local provider (any email signs in; `/auth/login?hint=alice@acme.test`) - use it for browser smoke runs so nobody types credentials. Caught mail (contact links, resets): `GET /dev/mail` on the api. Localhost quirk: cookies ignore ports, so a console session bleeds into `localhost:5174` — prod subdomains don't have this.
 - Migrations: `dotnet ef migrations add <Name> --project src/Modules/<Module> --startup-project src/Modules/<Module>` (see new-migration skill)
 - Format: `dotnet csharpier format .`
 - Frontend (web/): `pnpm install`, `pnpm typecheck`, `pnpm build`,
