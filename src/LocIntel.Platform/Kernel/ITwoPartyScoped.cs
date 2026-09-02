@@ -22,6 +22,36 @@ public interface ITwoPartyScoped
 }
 
 /// <summary>
+/// The two-party shape when BOTH parties are always present - a quote (there
+/// is no quote without a vendor), a recipient row, an accepted referral.
+///
+/// It is a separate interface rather than a non-nullable override because
+/// C# cannot narrow a property's type in a derived interface without
+/// explicit implementation. Forks that used <see cref="ITwoPartyScoped"/>
+/// for a NOT NULL column ended up carrying `required OrgId?` plus
+/// `.IsRequired()` plus a null-forgiving accessor on every such entity -
+/// three pieces of ceremony and a `!` that lies about the model. Implementing
+/// this instead costs nothing:
+///
+/// <code>
+/// public sealed class Quote : IRequiredCounterpartyScoped
+/// {
+///     public required OrgId OrgId { get; init; }
+///     public required OrgId CounterpartyOrgId { get; init; }
+/// }
+/// </code>
+///
+/// The database policy is identical either way - <c>EnableTwoPartyRls</c>
+/// does not care about nullability - so this is purely about the model
+/// telling the truth.
+/// </summary>
+public interface IRequiredCounterpartyScoped
+{
+    OrgId OrgId { get; }
+    OrgId CounterpartyOrgId { get; }
+}
+
+/// <summary>
 /// A row its owner controls but any org may read once published (a public
 /// catalog listing, a directory profile). Reads are open to all tenants;
 /// writes stay with the owner - two policies, never one.

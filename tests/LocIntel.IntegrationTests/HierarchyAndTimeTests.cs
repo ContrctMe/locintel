@@ -217,13 +217,12 @@ public class HierarchyAndTimeTests(ApiFixture fixture) : IClassFixture<ApiFixtur
         patch.EnsureSuccessStatusCode();
 
         List<(DateTimeOffset start, DateTimeOffset end)> after = [];
-        for (var i = 0; i < 50; i++)
-        {
-            await Task.Delay(100);
-            after = await PollWindows(siteId, minimum: 0);
-            if (after.Count > 0 && after.Any(w => w.start == before[0].start.AddHours(3)))
-                break;
-        }
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+                (after = await PollWindows(siteId, minimum: 0)).Count > 0
+                && after.Any(w => w.start == before[0].start.AddHours(3)),
+            "occurrences to be re-expanded in the new time zone"
+        );
         // same local 9am is 3 hours later in UTC on the west coast. Match by
         // value, not index: expansion-from can include one extra occurrence on
         // the horizon-start's LOCAL date, and that date differs by zone.

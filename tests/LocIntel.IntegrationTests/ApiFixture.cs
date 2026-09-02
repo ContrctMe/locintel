@@ -409,6 +409,69 @@ public class ApiFixture : IAsyncLifetime
         return (await created.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
     }
 
+    /// <summary>
+    /// Wait for something the OUTBOX will make true. Replaces per-test
+    /// `for (i &lt; N) { ...; await Task.Delay(100); }` loops, whose bounds
+    /// ranged 10-300 across this suite with no reasoning behind any of them -
+    /// a fork's extra outbox traffic pushed one past its bound and the
+    /// failure surfaced as an unrelated assert further down.
+    ///
+    /// One generous bound (async work either happens in a couple of seconds
+    /// or is broken), and a timeout says WHAT was being waited for.
+    /// </summary>
+    public static async Task WaitUntilAsync(
+        Func<Task<bool>> condition,
+        string what,
+        TimeSpan? timeout = null
+    )
+    {
+        var limit = timeout ?? TimeSpan.FromSeconds(30);
+        var deadline = DateTimeOffset.UtcNow + limit;
+        do
+        {
+            if (await condition())
+                return;
+            await Task.Delay(100);
+        } while (DateTimeOffset.UtcNow < deadline);
+
+        Assert.Fail($"timed out after {limit.TotalSeconds:0}s waiting for {what}");
+    }
+
+    /// <summary>
+    /// The same wait, for the common "poll until the row appears" shape:
+    /// returns the value instead of a bool, so callers stop writing a
+    /// captured local plus a break.
+    /// </summary>
+    public static async Task<T> WaitForAsync<T>(
+        Func<Task<T?>> probe,
+        string what,
+        TimeSpan? timeout = null
+    )
+        where T : class
+    {
+        T? found = null;
+        await WaitUntilAsync(async () => (found = await probe()) is not null, what, timeout);
+        return found!;
+    }
+
+    /// <summary>
+    /// Founder membership and the Owner role arrive via the OUTBOX after
+    /// POST /api/orgs, so a test that switches org immediately races it. Four
+    /// tests wrote this wait by hand with three different bounds.
+    /// </summary>
+    public static Task<JsonElement> WaitForMembershipAsync(HttpClient client) =>
+        WaitForAsync<object>(
+                async () =>
+                    (await client.GetFromJsonAsync<JsonElement>("/me"))
+                        .GetProperty("organizations")
+                        .GetArrayLength() > 0
+                        ? new object()
+                        : null,
+                "founder membership to arrive via the outbox"
+            )
+            .ContinueWith(_ => client.GetFromJsonAsync<JsonElement>("/me"))
+            .Unwrap();
+
     /// <summary>Unwrap a paged list envelope ({ items, total, nextOffset }) to its items.</summary>
     public static async Task<System.Text.Json.JsonElement> GetItemsAsync(
         HttpClient client,

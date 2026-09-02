@@ -45,12 +45,10 @@ public class PublicJourneyTests(ApiFixture fixture) : IClassFixture<ApiFixture>
                 }
             )
         ).EnsureSuccessStatusCode();
-        for (var i = 0; i < 60; i++)
-        {
-            if ((await fixture.QueryWindows(open)).Count > 0)
-                break;
-            await Task.Delay(100);
-        }
+        await ApiFixture.WaitUntilAsync(
+            async () => (await fixture.QueryWindows(open)).Count > 0,
+            "the open site's occurrence windows to be projected"
+        );
         return (open, closed);
     }
 

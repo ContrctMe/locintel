@@ -1,0 +1,8 @@
+{
+  "$comment": "The standalone generator (tsr generate) is router-only: the TanStack START plugin appends the SSR Register block during vite build, and without it type inference silently degrades. routeTreeFileFooter reproduces that block so `pnpm run routes` and a real build emit a byte-identical file - which is what lets CI fail on drift without flapping.",
+  "routesDirectory": "./src/routes",
+  "generatedRouteTree": "./src/routeTree.gen.ts",
+  "routeTreeFileFooter": [
+    "import type { getRouter } from './router.tsx'\nimport type { createStart } from '@tanstack/react-start'\ndeclare module '@tanstack/react-start' {\n  interface Register {\n    ssr: true\n    router: Awaited<ReturnType<typeof getRouter>>\n  }\n}"
+  ]
+}

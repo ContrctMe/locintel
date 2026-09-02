@@ -46,19 +46,18 @@ public class StorageTests(ApiFixture fixture) : IClassFixture<ApiFixture>
     private async Task<string?> PollStatus(HttpClient client, Guid fileId, string until)
     {
         string? status = null;
-        for (var i = 0; i < 60; i++)
-        {
-            var files = await ApiFixture.GetItemsAsync(client, "/api/files");
-            status = files
-                .EnumerateArray()
-                .FirstOrDefault(f => f.GetProperty("id").GetGuid() == fileId)
-                .TryGetProperty("status", out var s)
-                ? s.GetString()
-                : null;
-            if (status == until)
-                return status;
-            await Task.Delay(100);
-        }
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+                (
+                    status = (await ApiFixture.GetItemsAsync(client, "/api/files"))
+                        .EnumerateArray()
+                        .FirstOrDefault(f => f.GetProperty("id").GetGuid() == fileId)
+                        .TryGetProperty("status", out var s)
+                        ? s.GetString()
+                        : null
+                ) == until,
+            $"the file to reach status {until}"
+        );
         return status;
     }
 
@@ -69,19 +68,15 @@ public class StorageTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         Assert.Equal("Clean", await PollStatus(client, fileId, "Clean"));
 
         // derivative: text head-preview generated async
-        for (var i = 0; i < 50; i++)
-        {
-            var files = await ApiFixture.GetItemsAsync(client, "/api/files");
-            if (
-                files
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+                (await ApiFixture.GetItemsAsync(client, "/api/files"))
                     .EnumerateArray()
                     .First(f => f.GetProperty("id").GetGuid() == fileId)
                     .GetProperty("hasPreview")
-                    .GetBoolean()
-            )
-                break;
-            await Task.Delay(100);
-        }
+                    .GetBoolean(),
+            "the file preview to be generated"
+        );
 
         // download: authz at signing time, then the unguarded short-TTL URL
         var download = await client.GetFromJsonAsync<JsonElement>($"/api/files/{fileId}/download");

@@ -122,13 +122,7 @@ public class AccountTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         );
         Assert.True(created.IsSuccessStatusCode, await created.Content.ReadAsStringAsync());
         // founder membership + Owner arrive via the outbox
-        for (var i = 0; i < 60; i++)
-        {
-            var check = await lastManager.GetFromJsonAsync<JsonElement>("/me");
-            if (check.GetProperty("organizations").GetArrayLength() > 0)
-                break;
-            await Task.Delay(100);
-        }
+        await ApiFixture.WaitForMembershipAsync(lastManager);
         var orgId = (await created.Content.ReadFromJsonAsync<JsonElement>())
             .GetProperty("orgId")
             .GetGuid();

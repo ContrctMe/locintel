@@ -287,26 +287,23 @@ public class GatesTests(ApiFixture fixture) : IClassFixture<ApiFixture>
             await op.PostAsync($"/api/operator/orgs/{fixture.OrgB.Value}/suspend", null)
         ).EnsureSuccessStatusCode();
         HttpResponseMessage blocked = null!;
-        for (var i = 0; i < 50; i++) // enforcement learns via the event
-        {
-            blocked = await member.GetAsync("/api/sites");
-            if (blocked.StatusCode == HttpStatusCode.Forbidden)
-                break;
-            await Task.Delay(100);
-        }
+        // enforcement learns via the event
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+                (blocked = await member.GetAsync("/api/sites")).StatusCode
+                == HttpStatusCode.Forbidden,
+            "suspension to start returning 403"
+        );
         Assert.Equal(HttpStatusCode.Forbidden, blocked.StatusCode);
         (await member.GetAsync("/me")).EnsureSuccessStatusCode(); // /me still works
 
         (
             await op.PostAsync($"/api/operator/orgs/{fixture.OrgB.Value}/reactivate", null)
         ).EnsureSuccessStatusCode();
-        for (var i = 0; i < 50; i++)
-        {
-            if ((await member.GetAsync("/api/sites")).IsSuccessStatusCode)
-                return;
-            await Task.Delay(100);
-        }
-        Assert.Fail("org never reactivated");
+        await ApiFixture.WaitUntilAsync(
+            async () => (await member.GetAsync("/api/sites")).IsSuccessStatusCode,
+            "the org to reactivate"
+        );
     }
 
     // ---- gates 2+3: grants and scope ----

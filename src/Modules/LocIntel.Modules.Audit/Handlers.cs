@@ -1,6 +1,7 @@
 using LocIntel.Contracts;
 using LocIntel.Modules.Audit.Data;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
 using Microsoft.EntityFrameworkCore;
 using Wolverine;
 using Wolverine.Attributes;
@@ -31,7 +32,7 @@ public static class RecordDomainAuditHandler
             {
                 Id = Guid.CreateVersion7(),
                 OrgId = org,
-                ActorTier = envelope.Headers.GetValueOrDefault("locintel-actor-tier") ?? "system",
+                ActorTier = envelope.Headers.GetValueOrDefault(AuditHeaders.Tier) ?? "system",
                 ActorId = ParseActor(envelope),
                 EventName = message.EventName,
                 Payload = message.PayloadJson,
@@ -66,7 +67,7 @@ public static class RecordDomainAuditHandler
         );
 
     private static Guid? ParseActor(Envelope envelope) =>
-        Guid.TryParse(envelope.Headers.GetValueOrDefault("locintel-actor-id"), out var id)
+        Guid.TryParse(envelope.Headers.GetValueOrDefault(AuditHeaders.ActorId), out var id)
             ? id
             : null;
 }
@@ -87,7 +88,7 @@ public static class RecordAuthzAuditHandler
             {
                 Id = Guid.CreateVersion7(),
                 OrgId = RequireOrg(tenant, envelope),
-                ActorTier = envelope.Headers.GetValueOrDefault("locintel-actor-tier") ?? "system",
+                ActorTier = envelope.Headers.GetValueOrDefault(AuditHeaders.Tier) ?? "system",
                 ActorId = ParseActor(envelope),
                 Action = message.Action,
                 Outcome = message.Outcome,
@@ -105,7 +106,7 @@ public static class RecordAuthzAuditHandler
         );
 
     private static Guid? ParseActor(Envelope envelope) =>
-        Guid.TryParse(envelope.Headers.GetValueOrDefault("locintel-actor-id"), out var id)
+        Guid.TryParse(envelope.Headers.GetValueOrDefault(AuditHeaders.ActorId), out var id)
             ? id
             : null;
 }
@@ -126,7 +127,7 @@ public static class RecordAccessAuditHandler
             {
                 Id = Guid.CreateVersion7(),
                 OrgId = RequireOrg(tenant, envelope),
-                ActorTier = envelope.Headers.GetValueOrDefault("locintel-actor-tier") ?? "system",
+                ActorTier = envelope.Headers.GetValueOrDefault(AuditHeaders.Tier) ?? "system",
                 ActorId = ParseActor(envelope),
                 Method = message.Method,
                 Path = message.Path,
@@ -144,7 +145,7 @@ public static class RecordAccessAuditHandler
         );
 
     private static Guid? ParseActor(Envelope envelope) =>
-        Guid.TryParse(envelope.Headers.GetValueOrDefault("locintel-actor-id"), out var id)
+        Guid.TryParse(envelope.Headers.GetValueOrDefault(AuditHeaders.ActorId), out var id)
             ? id
             : null;
 }

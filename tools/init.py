@@ -20,6 +20,11 @@ name = sys.argv[1]
 lower = name.lower()
 upper = name.upper()
 root = pathlib.Path(__file__).resolve().parent.parent
+# whether the fork's tree was clean BEFORE the rename decides if this script
+# may commit it: sweeping someone's in-progress work into the init commit
+# would be rude and hard to unpick
+clean_before = not subprocess.run(["git", "status", "--porcelain"], cwd=root,
+                                  capture_output=True, text=True).stdout.strip()
 SKIP_DIRS = {".git", "node_modules", "bin", "obj", "dist", ".tanstack", ".aspire"}
 TEXT_SUFFIXES = {".cs", ".csproj", ".slnx", ".json", ".yaml", ".yml", ".md", ".ts",
                  ".tsx", ".css", ".html", ".py", ".sh"}
@@ -79,6 +84,30 @@ status = subprocess.run(["git", "status", "--porcelain"], cwd=root,
                         capture_output=True, text=True)
 print(f"\n{len(status.stdout.splitlines())} paths touched")
 
+# Bootstrap the sync story (ADR 36). The fork is a one-way rename, so upstream
+# commits can never merge directly - tools/sync-upstream.sh replays each
+# upstream snapshot through this same rename onto a parallel branch, and that
+# branch must START at the commit that renamed the template. So: remember
+# where this repo came from, commit the rename, and mark it.
+def git(*args):
+    return subprocess.run(["git", *args], cwd=root, capture_output=True, text=True)
+
+origin = git("remote", "get-url", "origin").stdout.strip()
+if origin and not git("remote", "get-url", "template").stdout.strip():
+    git("remote", "add", "template", origin)
+    print(f"template remote -> {origin}")
+
+if clean_before and git("rev-parse", "--verify", "-q", "HEAD").returncode == 0:
+    git("add", "-A")
+    if git("commit", "-m", f"Initialize {name} from the LocIntel template").returncode == 0:
+        git("branch", "-f", "template-renamed", "HEAD")
+        print(f"committed the rename as {git('rev-parse', '--short', 'HEAD').stdout.strip()} "
+              "and marked template-renamed there")
+        print("  (undo with: git reset --soft HEAD~1 && git branch -D template-renamed)")
+else:
+    print("tree was dirty before the rename, so it was NOT committed; after you commit,")
+    print("  run: git branch template-renamed HEAD   (sync-upstream.sh needs it)")
+
 print(f"""
 renamed template -> {name}
 next steps:
@@ -86,4 +115,4 @@ next steps:
   2. integration tests (needs Docker): dotnet test tests/{name}.IntegrationTests
   3. cd web && pnpm install && pnpm typecheck
   4. update workos-emulate.config.yaml seed org/user for your product
-  5. commit; delete this script if you like ceremony-free repos""")
+  5. pull the template forward later with: tools/sync-upstream.sh""")

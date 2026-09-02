@@ -117,6 +117,9 @@ don't restate them here.
 - Local dev: `aspire run` from `src/LocIntel.AppHost` (Postgres + WorkOS emulator + migrate → api + worker + dashboard). Dev login: alice@acme.test / test123 (seeded in `workos-emulate.config.yaml`). Caught mail (contact links, resets): `GET /dev/mail` on the api. Localhost quirk: cookies ignore ports, so a console session bleeds into `localhost:5174` — prod subdomains don't have this.
 - Migrations: `dotnet ef migrations add <Name> --project src/Modules/<Module> --startup-project src/Modules/<Module>` (see new-migration skill)
 - Format: `dotnet csharpier format .`
+- Adding a public-app route: create the file, then `pnpm --filter public run
+  routes` — `routeTree.gen.ts` is committed (so a fresh checkout typechecks)
+  and goes stale otherwise; CI fails on drift, like `openapi.json`.
 - Frontend (web/): `pnpm install`, `pnpm typecheck`, `pnpm build`,
   `pnpm dev:console` (SPA, proxies to the API), `pnpm dev:public` (Start/SSR)
 - Contract codegen (ADR 16): run the integration tests (snapshots
@@ -124,7 +127,9 @@ don't restate them here.
   `pnpm codegen:keys` (capability/entitlement unions). A dirty openapi.json
   after tests means the contract changed - review it like code.
 - New module: `python3 tools/new-module.py <Name>` (prints the wiring list)
-- Fork init: `python3 tools/init.py <ProductName>` (one-way rename)
+- Fork init: `python3 tools/init.py <ProductName>` (one-way rename; also adds
+  the `template` remote and creates `template-renamed` at the init commit)
+- Pull the template forward into a fork: `tools/sync-upstream.sh` (ADR 36)
 
 ## For forks
 

@@ -169,16 +169,15 @@ public class AuditTests(ApiFixture fixture) : IClassFixture<ApiFixture>
 
         await fixture.PublishForOrgA(new LocIntel.Modules.Audit.PurgeAuditData());
 
-        for (var i = 0; i < 50; i++)
-        {
-            await Task.Delay(100);
-            var remaining = await fixture.QueryAudit(db =>
-                db.Changes.IgnoreQueryFilters().Where(a => a.Id == oldId)
-            );
-            if (remaining.Count == 0)
-                return;
-        }
-        Assert.Fail("100-day-old audit row survived a 90-day retention purge");
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+                (
+                    await fixture.QueryAudit(db =>
+                        db.Changes.IgnoreQueryFilters().Where(a => a.Id == oldId)
+                    )
+                ).Count == 0,
+            "the 100-day-old audit row to be purged by 90-day retention"
+        );
     }
 
     private static async Task<Guid> EnsureHierarchy(HttpClient client)

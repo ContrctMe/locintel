@@ -32,13 +32,7 @@ public class DayZeroTests(ApiFixture fixture) : IClassFixture<ApiFixture>
 
         // founder membership + Owner arrive via the outbox; then switch in
         JsonElement me = default;
-        for (var i = 0; i < 60; i++)
-        {
-            me = await founder.GetFromJsonAsync<JsonElement>("/me");
-            if (me.GetProperty("organizations").GetArrayLength() > 0)
-                break;
-            await Task.Delay(100);
-        }
+        me = await ApiFixture.WaitForMembershipAsync(founder);
         Assert.Equal("newco", me.GetProperty("organizations")[0].GetProperty("slug").GetString());
 
         (
@@ -81,13 +75,7 @@ public class DayZeroTests(ApiFixture fixture) : IClassFixture<ApiFixture>
             await boss.PostAsJsonAsync("/api/orgs", new { name = "InviteCo", slug = "inviteco" })
         ).EnsureSuccessStatusCode();
         JsonElement me = default;
-        for (var i = 0; i < 60; i++)
-        {
-            me = await boss.GetFromJsonAsync<JsonElement>("/me");
-            if (me.GetProperty("organizations").GetArrayLength() > 0)
-                break;
-            await Task.Delay(100);
-        }
+        me = await ApiFixture.WaitForMembershipAsync(boss);
         var orgId = me.GetProperty("organizations")[0].GetProperty("id").GetGuid();
         (await boss.PostAsJsonAsync("/auth/switch-org", new { orgId })).EnsureSuccessStatusCode();
 
