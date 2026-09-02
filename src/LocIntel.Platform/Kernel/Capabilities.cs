@@ -54,6 +54,10 @@ public static class Capabilities
     /// <summary>Alerts feed and bulletins (BOLOs): read/acknowledge within scope; manage issues and withdraws.</summary>
     public const string AlertsRead = "alerts:read";
     public const string AlertsManage = "alerts:manage";
+
+    /// <summary>Intelligence network (cross-org sharing): read what your org's shares carry; manage creates, invites, publishes, imports.</summary>
+    public const string NetworkRead = "network:read";
+    public const string NetworkManage = "network:manage";
     public const string AuditRead = "audit:read";
     public const string AuditManage = "audit:manage";
     public const string EntitlementsManage = "entitlements:manage";
@@ -89,6 +93,8 @@ public static class Capabilities
         VendorFulfill,
         AlertsRead,
         AlertsManage,
+        NetworkRead,
+        NetworkManage,
         AuditRead,
         AuditManage,
         EntitlementsManage,

@@ -489,6 +489,70 @@ public class TenantIsolationTests(ApiFixture fixture) : IClassFixture<ApiFixture
         );
     }
 
+    [Fact]
+    public async Task Network_shares_are_sealed_to_their_members()
+    {
+        var clientA = await fixture.LoginAsync(ApiFixture.UserA);
+        var created = await clientA.PostAsJsonAsync(
+            "/api/network/shares",
+            new { name = "Sealed share" }
+        );
+        created.EnsureSuccessStatusCode();
+        var id = (await created.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id")
+            .GetGuid();
+        var bulletin = await clientA.PostAsJsonAsync(
+            $"/api/network/shares/{id}/bulletins",
+            new
+            {
+                kind = "Advisory",
+                severity = "Low",
+                title = "Sealed bulletin",
+                body = "Members only.",
+            }
+        );
+        bulletin.EnsureSuccessStatusCode();
+        var bulletinId = (await bulletin.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id")
+            .GetGuid();
+
+        var clientB = await fixture.LoginAsync(ApiFixture.UserB);
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (await clientB.GetAsync($"/api/network/shares/{id}")).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (await clientB.PostAsync($"/api/network/shares/{id}/accept", null)).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (
+                await clientB.PostAsJsonAsync(
+                    $"/api/network/shares/{id}/invite",
+                    new { slug = "org-a" }
+                )
+            ).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (
+                await clientB.PostAsync($"/api/network/bulletins/{bulletinId}/import", null)
+            ).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (
+                await clientB.PostAsync($"/api/network/bulletins/{bulletinId}/withdraw", null)
+            ).StatusCode
+        );
+        var list = await clientB.GetFromJsonAsync<JsonElement>("/api/network/bulletins");
+        Assert.DoesNotContain(
+            list.GetProperty("items").EnumerateArray(),
+            x => x.GetProperty("id").GetGuid() == bulletinId
+        );
+    }
+
     private sealed record SettingDto(Guid Id, string Key, string Value);
 
     [Fact]

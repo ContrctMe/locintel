@@ -4,17 +4,18 @@ using System.Threading.RateLimiting;
 using JasperFx;
 using LocIntel.Api;
 using LocIntel.Integrations.WorkOS;
+using LocIntel.Modules.Alerts;
 using LocIntel.Modules.Audit;
+using LocIntel.Modules.Cases;
 using LocIntel.Modules.Checklists;
+using LocIntel.Modules.Entities;
 using LocIntel.Modules.Entitlements;
 using LocIntel.Modules.Identity;
 using LocIntel.Modules.Identity.Auth;
-using LocIntel.Modules.Alerts;
-using LocIntel.Modules.Cases;
-using LocIntel.Modules.Entities;
 using LocIntel.Modules.Incidents;
-using LocIntel.Modules.Marketplace;
 using LocIntel.Modules.Ingest;
+using LocIntel.Modules.Marketplace;
+using LocIntel.Modules.Network;
 using LocIntel.Modules.Storage;
 using LocIntel.Modules.Tenancy;
 using LocIntel.Platform.Audit;
@@ -210,6 +211,7 @@ builder.Services.AddEntitiesModule(runBackgroundWork: role == "worker");
 builder.Services.AddCasesModule();
 builder.Services.AddMarketplaceModule();
 builder.Services.AddAlertsModule();
+builder.Services.AddNetworkModule();
 
 // Platform infra context (idempotency, ADR 29)
 builder.Services.AddDbContext<PlatformDbContext>(
@@ -429,6 +431,7 @@ builder.UseWolverine(opts =>
     opts.Discovery.IncludeAssembly(typeof(CasesModule).Assembly);
     opts.Discovery.IncludeAssembly(typeof(MarketplaceModule).Assembly);
     opts.Discovery.IncludeAssembly(typeof(AlertsModule).Assembly);
+    opts.Discovery.IncludeAssembly(typeof(NetworkModule).Assembly);
 });
 
 if (role == "migrate")

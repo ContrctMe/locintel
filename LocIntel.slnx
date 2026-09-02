@@ -23,6 +23,7 @@
     <Project Path="src/Modules/LocIntel.Modules.Incidents/LocIntel.Modules.Incidents.csproj" />
     <Project Path="src/Modules/LocIntel.Modules.Ingest/LocIntel.Modules.Ingest.csproj" />
     <Project Path="src/Modules/LocIntel.Modules.Marketplace/LocIntel.Modules.Marketplace.csproj" />
+    <Project Path="src/Modules/LocIntel.Modules.Network/LocIntel.Modules.Network.csproj" />
     <Project Path="src/Modules/LocIntel.Modules.Storage/LocIntel.Modules.Storage.csproj" />
     <Project Path="src/Modules/LocIntel.Modules.Tenancy/LocIntel.Modules.Tenancy.csproj" />
   </Folder>

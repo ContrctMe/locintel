@@ -8819,6 +8819,550 @@
         }
       }
     },
+    "/api/network/shares": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Network.Shares.ShareEndpoints"
+        ],
+        "summary": "GET_api_network_shares",
+        "description": "GET_api_network_shares",
+        "operationId": "GET_api_network_shares",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShareListResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Network.Shares.ShareEndpoints"
+        ],
+        "summary": "POST_api_network_shares",
+        "description": "POST_api_network_shares",
+        "operationId": "POST_api_network_shares",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateShareRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShareCreated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/network/shares/{id}": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Network.Shares.ShareEndpoints"
+        ],
+        "summary": "GET_api_network_shares_id",
+        "description": "GET_api_network_shares_id",
+        "operationId": "GET_api_network_shares_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShareDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/network/shares/{id}/invite": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Network.Shares.ShareEndpoints"
+        ],
+        "summary": "POST_api_network_shares_id_invite",
+        "description": "POST_api_network_shares_id_invite",
+        "operationId": "POST_api_network_shares_id_invite",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InviteOrgRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberInvited"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/network/shares/{id}/accept": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Network.Shares.ShareEndpoints"
+        ],
+        "summary": "POST_api_network_shares_id_accept",
+        "description": "POST_api_network_shares_id_accept",
+        "operationId": "POST_api_network_shares_id_accept",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShareMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/network/shares/{id}/leave": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Network.Shares.ShareEndpoints"
+        ],
+        "summary": "POST_api_network_shares_id_leave",
+        "description": "POST_api_network_shares_id_leave",
+        "operationId": "POST_api_network_shares_id_leave",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShareMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/network/shares/{id}/members/{orgId}": {
+      "delete": {
+        "tags": [
+          "LocIntel.Modules.Network.Shares.ShareEndpoints"
+        ],
+        "summary": "DELETE_api_network_shares_id_members_orgId",
+        "description": "DELETE_api_network_shares_id_members_orgId",
+        "operationId": "DELETE_api_network_shares_id_members_orgId",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "orgId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberRemoved"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/network/shares/{id}/close": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Network.Shares.ShareEndpoints"
+        ],
+        "summary": "POST_api_network_shares_id_close",
+        "description": "POST_api_network_shares_id_close",
+        "operationId": "POST_api_network_shares_id_close",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShareMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/network/bulletins": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Network.Bulletins.SharedBulletinEndpoints"
+        ],
+        "summary": "GET_api_network_bulletins",
+        "description": "GET_api_network_bulletins",
+        "operationId": "GET_api_network_bulletins",
+        "parameters": [
+          {
+            "name": "shareId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "includeInactive",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedBulletinListResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/network/shares/{id}/bulletins": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Network.Bulletins.SharedBulletinEndpoints"
+        ],
+        "summary": "POST_api_network_shares_id_bulletins",
+        "description": "POST_api_network_shares_id_bulletins",
+        "operationId": "POST_api_network_shares_id_bulletins",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishBulletinRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedBulletinPublished"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/network/bulletins/{id}/withdraw": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Network.Bulletins.SharedBulletinEndpoints"
+        ],
+        "summary": "POST_api_network_bulletins_id_withdraw",
+        "description": "POST_api_network_bulletins_id_withdraw",
+        "operationId": "POST_api_network_bulletins_id_withdraw",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedBulletinMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/network/bulletins/{id}/import": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Network.Bulletins.SharedBulletinEndpoints"
+        ],
+        "summary": "POST_api_network_bulletins_id_import",
+        "description": "POST_api_network_bulletins_id_import",
+        "operationId": "POST_api_network_bulletins_id_import",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportQueued"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
     "/objects/upload/{token}": {
       "put": {
         "tags": [
@@ -11394,6 +11938,23 @@
           }
         }
       },
+      "CreateShareRequest": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "CreateSiteRequest": {
         "required": [
           "nodeId",
@@ -12159,6 +12720,18 @@
           }
         }
       },
+      "ImportQueued": {
+        "required": [
+          "bulletinId"
+        ],
+        "type": "object",
+        "properties": {
+          "bulletinId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
       "IncidentAttachmentCreated": {
         "required": [
           "id"
@@ -12771,6 +13344,17 @@
           }
         }
       },
+      "InviteOrgRequest": {
+        "required": [
+          "slug"
+        ],
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string"
+          }
+        }
+      },
       "IResult": {
         "type": "object"
       },
@@ -13021,6 +13605,22 @@
           }
         }
       },
+      "MemberInvited": {
+        "required": [
+          "orgId",
+          "orgName"
+        ],
+        "type": "object",
+        "properties": {
+          "orgId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "orgName": {
+            "type": "string"
+          }
+        }
+      },
       "MemberListResponse": {
         "required": [
           "items",
@@ -13054,6 +13654,32 @@
           }
         }
       },
+      "MemberRemoved": {
+        "required": [
+          "orgId"
+        ],
+        "type": "object",
+        "properties": {
+          "orgId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "MemberRole": {
+        "enum": [
+          "Owner",
+          "Member"
+        ]
+      },
+      "MembershipStatus": {
+        "enum": [
+          "Invited",
+          "Active",
+          "Left",
+          "Removed"
+        ]
+      },
       "MemberSummary": {
         "required": [
           "userId",
@@ -13086,6 +13712,38 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "MemberView": {
+        "required": [
+          "orgId",
+          "orgName",
+          "role",
+          "status",
+          "joinedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "orgId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "orgName": {
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/MemberRole"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MembershipStatus"
+          },
+          "joinedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         }
       },
@@ -13481,6 +14139,52 @@
           },
           "embedSnippet": {
             "type": "string"
+          }
+        }
+      },
+      "PublishBulletinRequest": {
+        "required": [
+          "kind",
+          "severity",
+          "title",
+          "body"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/SharedBulletinKind"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/SharedSeverity"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "entityId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "areas": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "expiresAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         }
       },
@@ -14329,6 +15033,326 @@
           },
           "value": {
             "type": "string"
+          }
+        }
+      },
+      "ShareCreated": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "SharedBulletinKind": {
+        "enum": [
+          "Bolo",
+          "Advisory"
+        ]
+      },
+      "SharedBulletinListResponse": {
+        "required": [
+          "items",
+          "total",
+          "nextOffset"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SharedBulletinView"
+            }
+          },
+          "total": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "nextOffset": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "SharedBulletinMutated": {
+        "required": [
+          "id",
+          "withdrawnAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "withdrawnAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "SharedBulletinPublished": {
+        "required": [
+          "id",
+          "expiresAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SharedBulletinView": {
+        "required": [
+          "id",
+          "shareId",
+          "shareName",
+          "publisherOrgId",
+          "publisherName",
+          "mine",
+          "kind",
+          "severity",
+          "title",
+          "body",
+          "entityKind",
+          "displayName",
+          "aliases",
+          "descriptors",
+          "areas",
+          "publishedAt",
+          "expiresAt",
+          "withdrawnAt",
+          "active"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shareId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shareName": {
+            "type": "string"
+          },
+          "publisherOrgId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "publisherName": {
+            "type": "string"
+          },
+          "mine": {
+            "type": "boolean"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/SharedBulletinKind"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/SharedSeverity"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "entityKind": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "displayName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "descriptors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "areas": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "withdrawnAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ShareDetail": {
+        "required": [
+          "share",
+          "members"
+        ],
+        "type": "object",
+        "properties": {
+          "share": {
+            "$ref": "#/components/schemas/ShareSummary"
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemberView"
+            }
+          }
+        }
+      },
+      "SharedSeverity": {
+        "enum": [
+          "Low",
+          "Medium",
+          "High",
+          "Critical"
+        ]
+      },
+      "ShareListResponse": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShareSummary"
+            }
+          }
+        }
+      },
+      "ShareMutated": {
+        "required": [
+          "id",
+          "membership"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "membership": {
+            "$ref": "#/components/schemas/MembershipStatus"
+          }
+        }
+      },
+      "ShareStatus": {
+        "enum": [
+          "Active",
+          "Closed"
+        ]
+      },
+      "ShareSummary": {
+        "required": [
+          "id",
+          "name",
+          "description",
+          "ownerName",
+          "owned",
+          "role",
+          "membership",
+          "status",
+          "activeMembers",
+          "activeBulletins",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "ownerName": {
+            "type": "string"
+          },
+          "owned": {
+            "type": "boolean"
+          },
+          "role": {
+            "$ref": "#/components/schemas/MemberRole"
+          },
+          "membership": {
+            "$ref": "#/components/schemas/MembershipStatus"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ShareStatus"
+          },
+          "activeMembers": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "activeBulletins": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -15397,6 +16421,12 @@
     },
     {
       "name": "LocIntel.Modules.Alerts.Alerts.AlertEndpoints"
+    },
+    {
+      "name": "LocIntel.Modules.Network.Shares.ShareEndpoints"
+    },
+    {
+      "name": "LocIntel.Modules.Network.Bulletins.SharedBulletinEndpoints"
     },
     {
       "name": "LocIntel.Api"

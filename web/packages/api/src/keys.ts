@@ -24,6 +24,8 @@ export const CAPABILITIES = [
   'vendor:fulfill',
   'alerts:read',
   'alerts:manage',
+  'network:read',
+  'network:manage',
   'audit:read',
   'audit:manage',
   'entitlements:manage',
@@ -42,6 +44,7 @@ export const ENTITLEMENTS = {
   'contact_links.monthly': { shape: 'Metered', policy: 'Grace', defaultValue: '1000' },
   'hierarchy.depth': { shape: 'Limit', policy: 'Block', defaultValue: '4' },
   'marketplace.enabled': { shape: 'Boolean', policy: 'Block', defaultValue: 'true' },
+  'network.enabled': { shape: 'Boolean', policy: 'Block', defaultValue: 'true' },
   'sites.max': { shape: 'Limit', policy: 'Block', defaultValue: '100' },
   'sso.enabled': { shape: 'Boolean', policy: 'Block', defaultValue: 'false' },
 } as const;

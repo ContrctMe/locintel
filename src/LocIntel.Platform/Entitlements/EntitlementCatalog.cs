@@ -61,6 +61,9 @@ public static class EntitlementCatalog
     /// <summary>The fulfillment marketplace, requester side: raising requests to vendors (boolean gate; vendors need no plan).</summary>
     public const string MarketplaceEnabled = "marketplace.enabled";
 
+    /// <summary>Cross-org intelligence sharing (boolean gate on creating shares and publishing into them).</summary>
+    public const string NetworkEnabled = "network.enabled";
+
     public static readonly IReadOnlyDictionary<string, EntitlementDescriptor> Definitions =
         new Dictionary<string, EntitlementDescriptor>
         {
@@ -99,6 +102,12 @@ public static class EntitlementCatalog
             [SsoEnabled] = new(SsoEnabled, EntitlementShape.Boolean, LimitPolicy.Block, "false"),
             [MarketplaceEnabled] = new(
                 MarketplaceEnabled,
+                EntitlementShape.Boolean,
+                LimitPolicy.Block,
+                "true"
+            ),
+            [NetworkEnabled] = new(
+                NetworkEnabled,
                 EntitlementShape.Boolean,
                 LimitPolicy.Block,
                 "true"

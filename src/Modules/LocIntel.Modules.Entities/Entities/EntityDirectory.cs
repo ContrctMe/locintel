@@ -1,3 +1,4 @@
+using System.Text.Json;
 using LocIntel.Contracts.Entities;
 using LocIntel.Modules.Entities.Data;
 using LocIntel.Platform.Kernel;
@@ -25,15 +26,29 @@ public sealed class EntityDirectory(
             return new Dictionary<Guid, EntityInfo>();
         var manage = await scopes.CanAsync(accessor.Current, Capabilities.EntitiesManage, ct);
         var ids = entityIds.ToArray();
-        return await EntityVisibility
+        var rows = await EntityVisibility
             .Visible(db, scope, accessor.Current, manage, time.GetUtcNow())
             .Where(e => ids.Contains(e.Id))
-            .Select(e => new EntityInfo(
+            .Select(e => new
+            {
+                e.Id,
+                e.Kind,
+                e.Status,
+                e.DisplayName,
+                e.Aliases,
+                e.DescriptorsJson,
+            })
+            .ToListAsync(ct);
+        return rows.ToDictionary(
+            e => e.Id,
+            e => new EntityInfo(
                 e.Id,
                 e.Kind.ToString(),
                 e.Status.ToString(),
-                e.DisplayName
-            ))
-            .ToDictionaryAsync(e => e.Id, ct);
+                e.DisplayName,
+                e.Aliases,
+                JsonSerializer.Deserialize<Dictionary<string, string>>(e.DescriptorsJson) ?? []
+            )
+        );
     }
 }

@@ -18,6 +18,7 @@ import { IngestPage } from './pages/ingest';
 import { MarketplacePage } from './pages/marketplace';
 import { MarketplaceVendorsPage } from './pages/marketplace-vendors';
 import { MembersPage } from './pages/members';
+import { NetworkPage } from './pages/network';
 import { RequestDetailPage } from './pages/request-detail';
 import { VendorPortalPage, VendorRequestPage } from './pages/vendor-portal';
 import { OperatorPage } from './pages/operator';
@@ -48,6 +49,7 @@ const routes = [
   createRoute({ getParentRoute: () => rootRoute, path: '/cases/$caseId', component: CaseDetailPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/entities', component: EntitiesPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/entities/$entityId', component: EntityDetailPage }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/network', component: NetworkPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/marketplace', component: MarketplacePage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/marketplace/vendors', component: MarketplaceVendorsPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/marketplace/requests/$requestId', component: RequestDetailPage }),

@@ -3492,6 +3492,230 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/network/shares": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_network_shares
+         * @description GET_api_network_shares
+         */
+        get: operations["GET_api_network_shares"];
+        put?: never;
+        /**
+         * POST_api_network_shares
+         * @description POST_api_network_shares
+         */
+        post: operations["POST_api_network_shares"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/network/shares/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_network_shares_id
+         * @description GET_api_network_shares_id
+         */
+        get: operations["GET_api_network_shares_id"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/network/shares/{id}/invite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_network_shares_id_invite
+         * @description POST_api_network_shares_id_invite
+         */
+        post: operations["POST_api_network_shares_id_invite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/network/shares/{id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_network_shares_id_accept
+         * @description POST_api_network_shares_id_accept
+         */
+        post: operations["POST_api_network_shares_id_accept"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/network/shares/{id}/leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_network_shares_id_leave
+         * @description POST_api_network_shares_id_leave
+         */
+        post: operations["POST_api_network_shares_id_leave"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/network/shares/{id}/members/{orgId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * DELETE_api_network_shares_id_members_orgId
+         * @description DELETE_api_network_shares_id_members_orgId
+         */
+        delete: operations["DELETE_api_network_shares_id_members_orgId"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/network/shares/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_network_shares_id_close
+         * @description POST_api_network_shares_id_close
+         */
+        post: operations["POST_api_network_shares_id_close"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/network/bulletins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_network_bulletins
+         * @description GET_api_network_bulletins
+         */
+        get: operations["GET_api_network_bulletins"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/network/shares/{id}/bulletins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_network_shares_id_bulletins
+         * @description POST_api_network_shares_id_bulletins
+         */
+        post: operations["POST_api_network_shares_id_bulletins"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/network/bulletins/{id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_network_bulletins_id_withdraw
+         * @description POST_api_network_bulletins_id_withdraw
+         */
+        post: operations["POST_api_network_bulletins_id_withdraw"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/network/bulletins/{id}/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_network_bulletins_id_import
+         * @description POST_api_network_bulletins_id_import
+         */
+        post: operations["POST_api_network_bulletins_id_import"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/objects/upload/{token}": {
         parameters: {
             query?: never;
@@ -4818,6 +5042,10 @@ export interface components {
             closes: string;
             exDates?: null | string[];
         };
+        CreateShareRequest: {
+            name: string;
+            description?: null | string;
+        };
         CreateSiteRequest: {
             /** Format: uuid */
             nodeId: string;
@@ -5026,6 +5254,10 @@ export interface components {
             expiresAt: string;
             orgName: string;
         };
+        ImportQueued: {
+            /** Format: uuid */
+            bulletinId: string;
+        };
         IncidentAttachmentCreated: {
             /** Format: uuid */
             id: string;
@@ -5183,6 +5415,9 @@ export interface components {
             /** Format: uuid */
             roleId: string;
         };
+        InviteOrgRequest: {
+            slug: string;
+        };
         IResult: Record<string, never>;
         IssueBulletinRequest: {
             kind: components["schemas"]["BulletinKind"];
@@ -5244,6 +5479,11 @@ export interface components {
             organization: string;
             listings: components["schemas"]["ListingRecord"][];
         };
+        MemberInvited: {
+            /** Format: uuid */
+            orgId: string;
+            orgName: string;
+        };
         MemberListResponse: {
             items: components["schemas"]["MemberSummary"][];
             /** Format: int32 */
@@ -5251,6 +5491,14 @@ export interface components {
             /** Format: int32 */
             nextOffset: null | number | string;
         };
+        MemberRemoved: {
+            /** Format: uuid */
+            orgId: string;
+        };
+        /** @enum {unknown} */
+        MemberRole: "Owner" | "Member";
+        /** @enum {unknown} */
+        MembershipStatus: "Invited" | "Active" | "Left" | "Removed";
         MemberSummary: {
             /** Format: uuid */
             userId: string;
@@ -5259,6 +5507,15 @@ export interface components {
             /** Format: date-time */
             joinedAt: string;
             roles: string[];
+        };
+        MemberView: {
+            /** Format: uuid */
+            orgId: string;
+            orgName: string;
+            role: components["schemas"]["MemberRole"];
+            status: components["schemas"]["MembershipStatus"];
+            /** Format: date-time */
+            joinedAt: null | string;
         };
         MessageRequest: {
             body: string;
@@ -5360,6 +5617,17 @@ export interface components {
         PublicUrlResponse: {
             url: string;
             embedSnippet: string;
+        };
+        PublishBulletinRequest: {
+            kind: components["schemas"]["SharedBulletinKind"];
+            severity: components["schemas"]["SharedSeverity"];
+            title: string;
+            body: string;
+            /** Format: uuid */
+            entityId?: null | string;
+            areas?: null | string[];
+            /** Format: date-time */
+            expiresAt?: null | string;
         };
         PublishVendorProfileRequest: {
             published: boolean;
@@ -5574,6 +5842,93 @@ export interface components {
             id: string;
             key: string;
             value: string;
+        };
+        ShareCreated: {
+            /** Format: uuid */
+            id: string;
+        };
+        /** @enum {unknown} */
+        SharedBulletinKind: "Bolo" | "Advisory";
+        SharedBulletinListResponse: {
+            items: components["schemas"]["SharedBulletinView"][];
+            /** Format: int32 */
+            total: number | string;
+            /** Format: int32 */
+            nextOffset: null | number | string;
+        };
+        SharedBulletinMutated: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            withdrawnAt: null | string;
+        };
+        SharedBulletinPublished: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        SharedBulletinView: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            shareId: string;
+            shareName: string;
+            /** Format: uuid */
+            publisherOrgId: string;
+            publisherName: string;
+            mine: boolean;
+            kind: components["schemas"]["SharedBulletinKind"];
+            severity: components["schemas"]["SharedSeverity"];
+            title: string;
+            body: string;
+            entityKind: null | string;
+            displayName: null | string;
+            aliases: string[];
+            descriptors: {
+                [key: string]: string;
+            };
+            areas: string[];
+            /** Format: date-time */
+            publishedAt: string;
+            /** Format: date-time */
+            expiresAt: string;
+            /** Format: date-time */
+            withdrawnAt: null | string;
+            active: boolean;
+        };
+        ShareDetail: {
+            share: components["schemas"]["ShareSummary"];
+            members: components["schemas"]["MemberView"][];
+        };
+        /** @enum {unknown} */
+        SharedSeverity: "Low" | "Medium" | "High" | "Critical";
+        ShareListResponse: {
+            items: components["schemas"]["ShareSummary"][];
+        };
+        ShareMutated: {
+            /** Format: uuid */
+            id: string;
+            membership: components["schemas"]["MembershipStatus"];
+        };
+        /** @enum {unknown} */
+        ShareStatus: "Active" | "Closed";
+        ShareSummary: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            description: string;
+            ownerName: string;
+            owned: boolean;
+            role: components["schemas"]["MemberRole"];
+            membership: components["schemas"]["MembershipStatus"];
+            status: components["schemas"]["ShareStatus"];
+            /** Format: int32 */
+            activeMembers: number | string;
+            /** Format: int32 */
+            activeBulletins: number | string;
+            /** Format: date-time */
+            createdAt: string;
         };
         SiteListResponse: {
             items: components["schemas"]["SiteResponse"][];
@@ -12211,6 +12566,391 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AlertSummary"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_network_shares: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShareListResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_network_shares: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateShareRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShareCreated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_network_shares_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShareDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_network_shares_id_invite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InviteOrgRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberInvited"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_network_shares_id_accept: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShareMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_network_shares_id_leave: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShareMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    DELETE_api_network_shares_id_members_orgId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                orgId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberRemoved"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_network_shares_id_close: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShareMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_network_bulletins: {
+        parameters: {
+            query?: {
+                shareId?: string;
+                includeInactive?: boolean;
+                q?: string;
+                limit?: number | string;
+                offset?: number | string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SharedBulletinListResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_network_shares_id_bulletins: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublishBulletinRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SharedBulletinPublished"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_network_bulletins_id_withdraw: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SharedBulletinMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_network_bulletins_id_import: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportQueued"];
                 };
             };
             /** @description Not Found */

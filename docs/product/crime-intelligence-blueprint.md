@@ -228,3 +228,16 @@ jurisdiction.
   and site filters, stat tiles, Leaflet map of incident density per site
   (one hue, radius = count), bars by category/severity/hour/weekday, site
   table, daily table. Leaflet added to the console workspace.
+- 2026-09-01: **Intelligence network shipped** (schema `network`;
+  capabilities `network:read|manage`; entitlement `network.enabled`).
+  Shares are consortiums owned by one org. `share_access` is each org's
+  OWN single-owner row and every other policy (shares, roster, bulletins)
+  is one hop through it - never through its own table, so nothing
+  recurses; the invitee's access row is created under THEIR tenant by a
+  `ShareInvitationRequested` message, and removal by `ShareAccessRevoked`.
+  Bulletins are COPIES (kind/name/aliases/descriptors snapshot from a
+  record the publisher may see) readable by active members, withdrawn by
+  the publisher, importable by other members via the
+  `ImportEntityRequested` outbox message that Entities handles (new
+  Suspected record whose summary names the share and publisher). Lesson:
+  a migration's Down must drop cross-table policies before the tables.
