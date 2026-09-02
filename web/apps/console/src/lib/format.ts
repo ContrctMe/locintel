@@ -33,6 +33,7 @@ export const fmtTimeInZone = (value: string | Date, timeZone: string): string =>
 
 /** Friendly names for entitlement codes; the raw code stays available as detail. */
 export const ENTITLEMENT_LABELS: Record<string, string> = {
+  'ai.assist': 'AI assistance',
   'api.requests_per_minute': 'API requests / minute',
   'audit.read_logging': 'Read-access logging',
   'audit.retention_days': 'Audit retention (days)',

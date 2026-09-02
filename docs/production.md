@@ -85,6 +85,7 @@ redirect URI at `https://console.yourproduct.com/auth/callback`.
 | Key | Notes |
 |---|---|
 | `Notifications:Transport` | `smtp` in production (`local` refuses to boot there) |
+| `Intelligence:Provider` | `local` (keyword heuristics, no vendor - allowed in production) or `anthropic` (Claude; set `Intelligence:Anthropic:ApiKey` as a secret, optional `Model` default `claude-opus-5`, `Effort` default `low`). Tenant text leaves the platform only under `anthropic`. |
 | `Notifications:Smtp:Host`, `:Port` | Submission endpoint (587 default, STARTTLS on) |
 | `Notifications:Smtp:UserName`, `:Password` | Omit both for an unauthenticated relay |
 | `Notifications:Smtp:FromAddress`, `:FromName` | The sender identity |

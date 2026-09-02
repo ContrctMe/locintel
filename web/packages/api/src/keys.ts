@@ -40,6 +40,7 @@ export const CAPABILITIES = [
 export type Capability = (typeof CAPABILITIES)[number];
 
 export const ENTITLEMENTS = {
+  'ai.assist': { shape: 'Boolean', policy: 'Block', defaultValue: 'true' },
   'api.requests_per_minute': { shape: 'Limit', policy: 'Block', defaultValue: '600' },
   'audit.read_logging': { shape: 'Boolean', policy: 'Block', defaultValue: 'true' },
   'audit.retention_days': { shape: 'Tiered', policy: 'WarnOnly', defaultValue: '90' },

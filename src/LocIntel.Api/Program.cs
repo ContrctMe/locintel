@@ -284,6 +284,31 @@ builder.Services.AddOpenApi(); // ADR 16: the spec is the contract; TS client + 
 // Notifications (ADR 32): email is on the auth critical path (magic links),
 // so Production must configure a real transport - the built-in SMTP adapter
 // reaches every mainstream provider, forks add vendor SDKs behind the port.
+// AI assistance (blueprint module 10): the local heuristic needs no vendor and
+// is allowed everywhere; "anthropic" sends tenant text to Claude and needs a key.
+switch (builder.Configuration["Intelligence:Provider"] ?? "local")
+{
+    case "anthropic":
+        builder.Services.Configure<LocIntel.Integrations.Anthropic.AnthropicOptions>(
+            builder.Configuration.GetSection("Intelligence:Anthropic")
+        );
+        builder.Services.AddSingleton<
+            LocIntel.Platform.Intelligence.ITextIntelligence,
+            LocIntel.Integrations.Anthropic.AnthropicTextIntelligence
+        >();
+        break;
+    case "local":
+        builder.Services.AddSingleton<
+            LocIntel.Platform.Intelligence.ITextIntelligence,
+            LocIntel.Platform.Intelligence.LocalTextIntelligence
+        >();
+        break;
+    default:
+        throw new InvalidOperationException(
+            $"Unknown Intelligence:Provider '{builder.Configuration["Intelligence:Provider"]}'; expected 'local' or 'anthropic'."
+        );
+}
+
 switch (builder.Configuration["Notifications:Transport"] ?? "local")
 {
     case "smtp":

@@ -64,6 +64,9 @@ public static class EntitlementCatalog
     /// <summary>Cross-org intelligence sharing (boolean gate on creating shares and publishing into them).</summary>
     public const string NetworkEnabled = "network.enabled";
 
+    /// <summary>AI assistance (classification suggestions, case briefs) - boolean gate.</summary>
+    public const string AiAssist = "ai.assist";
+
     public static readonly IReadOnlyDictionary<string, EntitlementDescriptor> Definitions =
         new Dictionary<string, EntitlementDescriptor>
         {
@@ -112,6 +115,7 @@ public static class EntitlementCatalog
                 LimitPolicy.Block,
                 "true"
             ),
+            [AiAssist] = new(AiAssist, EntitlementShape.Boolean, LimitPolicy.Block, "true"),
         };
 
     /// <summary>Grace allows this fraction over the ceiling before blocking (ADR 9).</summary>

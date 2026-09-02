@@ -269,3 +269,14 @@ jurisdiction.
   incidents with Source = Import (stamps as usual; no IncidentReported
   events - history is not news); discard deletes the staged rows. Console:
   Import CSV dialog on the incidents page with preview of invalid rows.
+- 2026-09-02: **AI assistance shipped** (blueprint module 10, v1).
+  `ITextIntelligence` port in Platform with a deterministic local
+  heuristic adapter (tests, dev, vendor-free forks) and a Claude adapter in
+  `LocIntel.Integrations.Anthropic` (structured JSON output over closed
+  category/severity sets, low effort by default, `Intelligence:Provider`
+  switch). Endpoints: `POST /api/incidents/{id}/assist` suggests category,
+  severity, tags, summary (read-only; the person applies it via the new
+  edit dialog) and `POST /api/cases/{id}/assist/brief` drafts a brief
+  whose entities pass the need-to-know directory (restricted records are
+  named as such), filed as a note only by the person. Entitlement
+  `ai.assist`. Deferred: MO similarity across incidents, PII redaction.

@@ -11,7 +11,7 @@ import { can, useMe } from '../session';
 import { StatusBadge } from '../shell';
 import { EntityStatusBadge, LINK_ROLES, type EntitySummary } from './entities';
 import { OpenCaseDialog, PriorityBadge, type CaseSummary } from './cases';
-import { categoryLabel, SeverityBadge } from './incidents';
+import { CATEGORIES, SEVERITIES, categoryLabel, SeverityBadge } from './incidents';
 
 type Note = { id: string; authorId: string; author: string | null; body: string; createdAt: string };
 type Attachment = {
@@ -167,6 +167,7 @@ export function IncidentDetailPage() {
                 Reopen
               </Button>
             )}
+            <EditIncidentDialog incident={incident} />
             <Button variant="outline" disabled={hold.isPending}
               onClick={() => hold.mutate(!incident.legalHold)}>
               {incident.legalHold ? 'Release legal hold' : 'Place legal hold'}
@@ -419,5 +420,64 @@ function CasesCard({ incidentId, manage }: { incidentId: string; manage: boolean
         ))}
       </CardContent>
     </Card>
+  );
+}
+
+type Suggestion = { provider: string; category: string; severity: string; tags: string[]; summary: string; confidence: number };
+
+/** Edit the incident; "Suggest" asks the assistance port and fills the form - the person still saves. */
+function EditIncidentDialog({ incident }: { incident: Incident }) {
+  const [open, setOpen] = useState(false);
+  const [category, setCategory] = useState(incident.category);
+  const [severity, setSeverity] = useState(incident.severity);
+  const [title, setTitle] = useState(incident.title);
+  const [narrative, setNarrative] = useState(incident.narrative);
+  const [locationDetail, setLocationDetail] = useState(incident.locationDetail ?? '');
+  const [lossAmount, setLossAmount] = useState(incident.lossAmount == null ? '' : String(incident.lossAmount));
+  const [recovered, setRecovered] = useState(incident.recoveredAmount == null ? '' : String(incident.recoveredAmount));
+  const [police, setPolice] = useState(incident.policeReportNumber ?? '');
+  const [tags, setTags] = useState(incident.tags.join(', '));
+  const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
+  const suggest = useApiMutation({
+    mutationFn: () => api.post<Suggestion>(`/api/incidents/${incident.id}/assist`),
+    onSuccess: (s) => { setSuggestion(s); setCategory(s.category); setSeverity(s.severity); if (s.tags.length) setTags(s.tags.join(', ')); },
+    errorFallback: 'No suggestion available',
+  });
+  const save = useApiMutation({
+    mutationFn: () => api.put(`/api/incidents/${incident.id}`, {
+      category, severity, title: title.trim(), occurredAt: incident.occurredAt, narrative: narrative.trim() || null,
+      locationDetail: locationDetail.trim() || null, lossAmount: lossAmount ? Number(lossAmount) : null,
+      recoveredAmount: recovered ? Number(recovered) : null, currency: incident.currency,
+      policeReportNumber: police.trim() || null, tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
+    }),
+    invalidate: [['incidents']], success: 'Incident updated', onSuccess: () => setOpen(false),
+  });
+  return (
+    <FormDialog open={open} onOpenChange={setOpen} title="Edit incident" trigger={<Button variant="outline">Edit</Button>}>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <Button size="sm" variant="outline" disabled={suggest.isPending} onClick={() => suggest.mutate()}>
+            {suggest.isPending ? 'Thinking…' : 'Suggest category, severity, tags'}
+          </Button>
+          {suggestion && <span className="text-xs text-muted-foreground">{suggestion.provider} · {Math.round(suggestion.confidence * 100)}% · {suggestion.summary}</span>}
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1"><Label htmlFor="ei-cat">Category</Label>
+            <Select id="ei-cat" value={category} onChange={(e) => setCategory(e.target.value)}>{CATEGORIES.map((c) => <option key={c} value={c}>{categoryLabel(c)}</option>)}</Select></div>
+          <div className="space-y-1"><Label htmlFor="ei-sev">Severity</Label>
+            <Select id="ei-sev" value={severity} onChange={(e) => setSeverity(e.target.value)}>{SEVERITIES.map((s) => <option key={s} value={s}>{s}</option>)}</Select></div>
+        </div>
+        <div className="space-y-1"><Label htmlFor="ei-title">Title</Label><Input id="ei-title" value={title} maxLength={200} onChange={(e) => setTitle(e.target.value)} /></div>
+        <div className="space-y-1"><Label htmlFor="ei-narr">Narrative</Label><Textarea id="ei-narr" rows={4} value={narrative} onChange={(e) => setNarrative(e.target.value)} /></div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1"><Label htmlFor="ei-loc">Where in the site</Label><Input id="ei-loc" value={locationDetail} onChange={(e) => setLocationDetail(e.target.value)} /></div>
+          <div className="space-y-1"><Label htmlFor="ei-police">Police report</Label><Input id="ei-police" value={police} onChange={(e) => setPolice(e.target.value)} /></div>
+          <div className="space-y-1"><Label htmlFor="ei-loss">Loss</Label><Input id="ei-loss" type="number" min="0" step="0.01" value={lossAmount} onChange={(e) => setLossAmount(e.target.value)} /></div>
+          <div className="space-y-1"><Label htmlFor="ei-rec">Recovered</Label><Input id="ei-rec" type="number" min="0" step="0.01" value={recovered} onChange={(e) => setRecovered(e.target.value)} /></div>
+        </div>
+        <div className="space-y-1"><Label htmlFor="ei-tags">Tags (comma separated)</Label><Input id="ei-tags" value={tags} onChange={(e) => setTags(e.target.value)} /></div>
+        <Button className="w-full" disabled={!title.trim() || save.isPending} onClick={() => save.mutate()}>Save</Button>
+      </div>
+    </FormDialog>
   );
 }

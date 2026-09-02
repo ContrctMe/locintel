@@ -4455,6 +4455,47 @@
         }
       }
     },
+    "/api/incidents/{id}/assist": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Incidents.Incidents.IncidentAssistEndpoint"
+        ],
+        "summary": "POST_api_incidents_id_assist",
+        "description": "POST_api_incidents_id_assist",
+        "operationId": "POST_api_incidents_id_assist",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentAssistResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/incidents/{id}/attachments": {
       "post": {
         "tags": [
@@ -5989,6 +6030,47 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/EntityChildRemoved"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases/{id}/assist/brief": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Cases.Cases.CaseBriefEndpoint"
+        ],
+        "summary": "POST_api_cases_id_assist_brief",
+        "description": "POST_api_cases_id_assist_brief",
+        "operationId": "POST_api_cases_id_assist_brief",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseBriefResponse"
                 }
               }
             }
@@ -11341,6 +11423,21 @@
           }
         }
       },
+      "CaseBriefResponse": {
+        "required": [
+          "provider",
+          "text"
+        ],
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      },
       "CaseChildAdded": {
         "required": [
           "id"
@@ -13912,6 +14009,45 @@
           "Committed",
           "Discarded"
         ]
+      },
+      "IncidentAssistResponse": {
+        "required": [
+          "provider",
+          "category",
+          "severity",
+          "tags",
+          "summary",
+          "confidence"
+        ],
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/components/schemas/IncidentCategory"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/IncidentSeverity"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "summary": {
+            "type": "string"
+          },
+          "confidence": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
       },
       "IncidentAttachmentCreated": {
         "required": [
@@ -18113,6 +18249,9 @@
       "name": "LocIntel.Modules.Incidents.Tips.TipEndpoints"
     },
     {
+      "name": "LocIntel.Modules.Incidents.Incidents.IncidentAssistEndpoint"
+    },
+    {
       "name": "LocIntel.Modules.Incidents.Incidents.IncidentAttachmentEndpoints"
     },
     {
@@ -18135,6 +18274,9 @@
     },
     {
       "name": "LocIntel.Modules.Entities.Entities.EntityLinkEndpoints"
+    },
+    {
+      "name": "LocIntel.Modules.Cases.Cases.CaseBriefEndpoint"
     },
     {
       "name": "LocIntel.Modules.Cases.Cases.CaseEndpoints"

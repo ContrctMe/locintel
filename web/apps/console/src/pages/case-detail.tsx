@@ -87,6 +87,16 @@ export function CaseDetailPage() {
     invalidate: [['cases', 'custody', caseId], key],
     onSuccess: (r) => window.open(r.url, '_blank', 'noopener'),
   });
+  const [brief, setBrief] = useState<{ provider: string; text: string } | null>(null);
+  const draftBrief = useApiMutation({
+    mutationFn: () => api.post<{ provider: string; text: string }>(`/api/cases/${caseId}/assist/brief`),
+    onSuccess: (b) => setBrief(b),
+    errorFallback: 'Could not draft a brief',
+  });
+  const fileBrief = useApiMutation({
+    mutationFn: () => api.post(`/api/cases/${caseId}/notes`, { body: brief!.text }),
+    invalidate: [key], success: 'Brief filed as a note', onSuccess: () => setBrief(null),
+  });
   const exportPackage = useApiMutation({
     mutationFn: () => api.get<unknown>(`/api/cases/${caseId}/package`),
     invalidate: [['cases']],
@@ -147,6 +157,9 @@ export function CaseDetailPage() {
             <Button variant="outline" disabled={exportPackage.isPending} onClick={() => exportPackage.mutate()}>
               Export package
             </Button>
+            <Button variant="outline" disabled={draftBrief.isPending} onClick={() => draftBrief.mutate()}>
+              {draftBrief.isPending ? 'Drafting…' : 'Draft brief'}
+            </Button>
             {c.deletedAt ? (
               <Button variant="outline" disabled={restore.isPending} onClick={() => restore.mutate(undefined)}>Restore</Button>
             ) : (
@@ -154,6 +167,23 @@ export function CaseDetailPage() {
                 Move to trash
               </ConfirmButton>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {brief && (
+        <Card className="border-primary/40">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between text-base">
+              Draft brief <span className="text-xs font-normal text-muted-foreground">{brief.provider} · review before use</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <pre className="whitespace-pre-wrap rounded-md bg-muted p-3 text-sm">{brief.text}</pre>
+            <div className="flex gap-2">
+              {work && <Button size="sm" disabled={fileBrief.isPending} onClick={() => fileBrief.mutate()}>File as note</Button>}
+              <Button size="sm" variant="ghost" onClick={() => setBrief(null)}>Discard</Button>
+            </div>
           </CardContent>
         </Card>
       )}

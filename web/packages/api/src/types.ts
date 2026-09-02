@@ -1936,6 +1936,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/incidents/{id}/assist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_incidents_id_assist
+         * @description POST_api_incidents_id_assist
+         */
+        post: operations["POST_api_incidents_id_assist"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/incidents/{id}/attachments": {
         parameters: {
             query?: never;
@@ -2459,6 +2479,26 @@ export interface paths {
          * @description DELETE_api_entities_id_links_linkId
          */
         delete: operations["DELETE_api_entities_id_links_linkId"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cases/{id}/assist/brief": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_cases_id_assist_brief
+         * @description POST_api_cases_id_assist_brief
+         */
+        post: operations["POST_api_cases_id_assist_brief"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -5003,6 +5043,10 @@ export interface components {
             /** Format: int32 */
             acknowledgements: number | string;
         };
+        CaseBriefResponse: {
+            provider: string;
+            text: string;
+        };
         CaseChildAdded: {
             /** Format: uuid */
             id: string;
@@ -5672,6 +5716,15 @@ export interface components {
         };
         /** @enum {unknown} */
         ImportStatus: "Staged" | "Committed" | "Discarded";
+        IncidentAssistResponse: {
+            provider: string;
+            category: components["schemas"]["IncidentCategory"];
+            severity: components["schemas"]["IncidentSeverity"];
+            tags: string[];
+            summary: string;
+            /** Format: double */
+            confidence: number | string;
+        };
         IncidentAttachmentCreated: {
             /** Format: uuid */
             id: string;
@@ -10197,6 +10250,37 @@ export interface operations {
             };
         };
     };
+    POST_api_incidents_id_assist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncidentAssistResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     POST_api_incidents_id_attachments: {
         parameters: {
             query?: never;
@@ -11239,6 +11323,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EntityChildRemoved"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_cases_id_assist_brief: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseBriefResponse"];
                 };
             };
             /** @description Not Found */
