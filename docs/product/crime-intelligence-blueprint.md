@@ -158,3 +158,14 @@ jurisdiction.
   for any endpoint without a declared 200 type, so "no content" mutations
   echo a typed `IncidentMutated` instead of 204; the migration round-trip
   test had never covered Checklists - both modules are in it now.
+- 2026-09-01: **Entities module shipped** (schema `entities`; capabilities
+  `entities:read|manage`). The fourth gate is `EntityVisibility`: an entity
+  is readable via a linked incident whose STAMPED path is in the reader's
+  scope (links carry the path), via a time-boxed `access_grants` row, or
+  via `entities:manage`. Every detail read publishes `entity.viewed` (domain
+  audit, always on). Confirmed status requires a linked incident. Retention
+  is mandatory (`expires_at`, default 365d, max 3y); a worker enumerator
+  fans out `ExpireEntities` per org and the handler trashes expired unheld
+  rows; managers can trigger a sweep. `ActorRef` moved to Platform for
+  modules whose writes accept people and API keys. Deferred: entity photos
+  (biometric exposure) until Evidence; `IEntityDirectory` until Cases.

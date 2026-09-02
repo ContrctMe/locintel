@@ -220,6 +220,68 @@ public class TenantIsolationTests(ApiFixture fixture) : IClassFixture<ApiFixture
         );
     }
 
+    [Fact]
+    public async Task Entities_are_tenant_isolated()
+    {
+        var clientA = await fixture.LoginAsync(ApiFixture.UserA);
+        var created = await clientA.PostAsJsonAsync(
+            "/api/entities",
+            new { kind = "Person", displayName = "Isolated Person" }
+        );
+        created.EnsureSuccessStatusCode();
+        var id = (await created.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id")
+            .GetGuid();
+
+        var clientB = await fixture.LoginAsync(ApiFixture.UserB);
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (await clientB.GetAsync($"/api/entities/{id}")).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (
+                await clientB.PostAsJsonAsync(
+                    $"/api/entities/{id}/status",
+                    new { status = "Cleared" }
+                )
+            ).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (
+                await clientB.PostAsJsonAsync($"/api/entities/{id}/hold", new { hold = true })
+            ).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (await clientB.DeleteAsync($"/api/entities/{id}")).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (await clientB.PostAsync($"/api/entities/{id}/restore", null)).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (
+                await clientB.PostAsJsonAsync(
+                    $"/api/entities/{id}/grants",
+                    new
+                    {
+                        userId = Guid.NewGuid(),
+                        reason = "x",
+                        expiresAt = DateTimeOffset.UtcNow.AddDays(1),
+                    }
+                )
+            ).StatusCode
+        );
+        var list = await clientB.GetFromJsonAsync<JsonElement>("/api/entities");
+        Assert.DoesNotContain(
+            list.GetProperty("items").EnumerateArray(),
+            e => e.GetProperty("id").GetGuid() == id
+        );
+    }
+
     private sealed record SettingDto(Guid Id, string Key, string Value);
 
     [Fact]

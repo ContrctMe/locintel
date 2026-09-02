@@ -20,6 +20,7 @@ public class ModuleBoundaryTests
         typeof(Modules.Ingest.IngestModule).Assembly,
         typeof(Modules.Checklists.ChecklistsModule).Assembly,
         typeof(Modules.Incidents.IncidentsModule).Assembly,
+        typeof(Modules.Entities.EntitiesModule).Assembly,
     ];
 
     private const string ModulePrefix = "LocIntel.Modules.";

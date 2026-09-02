@@ -24,6 +24,14 @@ public static class Capabilities
     public const string IncidentsRead = "incidents:read";
     public const string IncidentsReport = "incidents:report";
     public const string IncidentsManage = "incidents:manage";
+
+    /// <summary>
+    /// Persons of interest, vehicles, groups. entities:read is need-to-know:
+    /// it reaches only entities linked to incidents within the holder's
+    /// scope, or explicitly granted; entities:manage sees and edits all.
+    /// </summary>
+    public const string EntitiesRead = "entities:read";
+    public const string EntitiesManage = "entities:manage";
     public const string AuditRead = "audit:read";
     public const string AuditManage = "audit:manage";
     public const string EntitlementsManage = "entitlements:manage";
@@ -49,6 +57,8 @@ public static class Capabilities
         IncidentsRead,
         IncidentsReport,
         IncidentsManage,
+        EntitiesRead,
+        EntitiesManage,
         AuditRead,
         AuditManage,
         EntitlementsManage,

@@ -9,6 +9,7 @@ import { useApiMutation } from '../lib/mutation';
 import type { Page } from '../lib/paging';
 import { can, useMe } from '../session';
 import { StatusBadge } from '../shell';
+import { EntityStatusBadge, LINK_ROLES, type EntitySummary } from './entities';
 import { categoryLabel, SeverityBadge } from './incidents';
 
 type Note = { id: string; authorId: string; author: string | null; body: string; createdAt: string };
@@ -212,6 +213,10 @@ export function IncidentDetailPage() {
         </CardContent>
       </Card>
 
+      {can(me, 'entities:read') && (
+        <LinkedEntitiesCard incidentId={incidentId} manage={can(me, 'entities:manage')} />
+      )}
+
       <Card>
         <CardHeader><CardTitle className="text-base">Notes</CardTitle></CardHeader>
         <CardContent className="space-y-3">
@@ -297,6 +302,91 @@ function AttachDialog({ incidentId, invalidate }: { incidentId: string; invalida
         </div>
         <Button className="w-full" disabled={!fileId || attach.isPending} onClick={() => attach.mutate()}>
           Attach
+        </Button>
+      </div>
+    </FormDialog>
+  );
+}
+
+/** The graph's other end: who and what was involved, as far as need-to-know lets this reader see. */
+function LinkedEntitiesCard({ incidentId, manage }: { incidentId: string; manage: boolean }) {
+  const { data } = useQuery({
+    queryKey: ['entities', 'by-incident', incidentId],
+    queryFn: () => api.get<Page<EntitySummary>>(`/api/entities?incidentId=${incidentId}&limit=100`),
+  });
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between text-base">
+          People &amp; vehicles
+          {manage && <LinkEntityDialog incidentId={incidentId} />}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {data?.items.length === 0 && (
+          <p className="text-sm text-muted-foreground">No records you can see are linked.</p>
+        )}
+        {data?.items.map((e) => (
+          <div key={e.id} className="flex items-center justify-between rounded-md border p-2 text-sm">
+            <span>
+              <Link to="/entities/$entityId" params={{ entityId: e.id }} className="font-medium hover:underline">
+                {e.displayName}
+              </Link>
+              <span className="ml-2 text-muted-foreground">{e.kind}</span>
+            </span>
+            <EntityStatusBadge status={e.status} />
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
+function LinkEntityDialog({ incidentId }: { incidentId: string }) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState('');
+  const [entityId, setEntityId] = useState('');
+  const [role, setRole] = useState<string>('Suspect');
+  const { data: entities } = useQuery({
+    queryKey: ['entities', 'picker', q],
+    queryFn: async () =>
+      (await api.get<Page<EntitySummary>>(
+        `/api/entities?limit=50${q.trim() ? `&q=${encodeURIComponent(q.trim())}` : ''}`,
+      )).items,
+    enabled: open,
+  });
+  const link = useApiMutation({
+    mutationFn: () => api.post(`/api/entities/${entityId}/links`, { incidentId, role }),
+    invalidate: [['entities']],
+    success: 'Record linked',
+    onSuccess: () => {
+      setOpen(false);
+      setEntityId('');
+    },
+  });
+  return (
+    <FormDialog open={open} onOpenChange={setOpen} title="Link a record"
+      trigger={<Button size="sm" variant="outline">Link record</Button>}>
+      <div className="space-y-3">
+        <div className="space-y-1">
+          <Label htmlFor="le-q">Find record</Label>
+          <Input id="le-q" value={q} placeholder="Name or alias" onChange={(e) => setQ(e.target.value)} />
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="le-ent">Record</Label>
+          <Select id="le-ent" value={entityId} onChange={(e) => setEntityId(e.target.value)}>
+            <option value="">Choose…</option>
+            {entities?.map((e) => <option key={e.id} value={e.id}>{e.displayName} · {e.kind}</option>)}
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="le-role">Role</Label>
+          <Select id="le-role" value={role} onChange={(e) => setRole(e.target.value)}>
+            {LINK_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+          </Select>
+        </div>
+        <Button className="w-full" disabled={!entityId || link.isPending} onClick={() => link.mutate()}>
+          Link
         </Button>
       </div>
     </FormDialog>

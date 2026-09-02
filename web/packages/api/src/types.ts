@@ -2148,6 +2148,218 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/entities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_entities
+         * @description GET_api_entities
+         */
+        get: operations["GET_api_entities"];
+        put?: never;
+        /**
+         * POST_api_entities
+         * @description POST_api_entities
+         */
+        post: operations["POST_api_entities"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/entities/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_entities_id
+         * @description GET_api_entities_id
+         */
+        get: operations["GET_api_entities_id"];
+        /**
+         * PUT_api_entities_id
+         * @description PUT_api_entities_id
+         */
+        put: operations["PUT_api_entities_id"];
+        post?: never;
+        /**
+         * DELETE_api_entities_id
+         * @description DELETE_api_entities_id
+         */
+        delete: operations["DELETE_api_entities_id"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/entities/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_entities_id_status
+         * @description POST_api_entities_id_status
+         */
+        post: operations["POST_api_entities_id_status"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/entities/{id}/hold": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_entities_id_hold
+         * @description POST_api_entities_id_hold
+         */
+        post: operations["POST_api_entities_id_hold"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/entities/{id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_entities_id_restore
+         * @description POST_api_entities_id_restore
+         */
+        post: operations["POST_api_entities_id_restore"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/entities/retention/sweep": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_entities_retention_sweep
+         * @description POST_api_entities_retention_sweep
+         */
+        post: operations["POST_api_entities_retention_sweep"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/entities/{id}/grants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_entities_id_grants
+         * @description POST_api_entities_id_grants
+         */
+        post: operations["POST_api_entities_id_grants"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/entities/{id}/grants/{grantId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * DELETE_api_entities_id_grants_grantId
+         * @description DELETE_api_entities_id_grants_grantId
+         */
+        delete: operations["DELETE_api_entities_id_grants_grantId"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/entities/{id}/links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_entities_id_links
+         * @description POST_api_entities_id_links
+         */
+        post: operations["POST_api_entities_id_links"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/entities/{id}/links/{linkId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * DELETE_api_entities_id_links_linkId
+         * @description DELETE_api_entities_id_links_linkId
+         */
+        delete: operations["DELETE_api_entities_id_links_linkId"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/objects/upload/{token}": {
         parameters: {
             query?: never;
@@ -3037,6 +3249,17 @@ export interface components {
             /** Format: int32 */
             syncIntervalHours?: null | number | string;
         };
+        CreateEntityRequest: {
+            kind: components["schemas"]["EntityKind"];
+            displayName: string;
+            aliases?: null | string[];
+            descriptors?: null | {
+                [key: string]: string;
+            };
+            summary?: null | string;
+            /** Format: date-time */
+            expiresAt?: null | string;
+        };
         CreateFileRequest: {
             name: string;
             contentType: string;
@@ -3094,6 +3317,118 @@ export interface components {
             url: string;
             events?: null | string[];
         };
+        EntityChildRemoved: {
+            /** Format: uuid */
+            id: string;
+        };
+        EntityCreated: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        EntityDetail: {
+            /** Format: uuid */
+            id: string;
+            kind: components["schemas"]["EntityKind"];
+            status: components["schemas"]["EntityStatus"];
+            displayName: string;
+            aliases: string[];
+            descriptors: {
+                [key: string]: string;
+            };
+            summary: string;
+            /** Format: date-time */
+            expiresAt: string;
+            legalHold: boolean;
+            /** Format: uuid */
+            createdBy: string;
+            creator: null | string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            deletedAt: null | string;
+            links: components["schemas"]["EntityLinkView"][];
+            grants: null | components["schemas"]["EntityGrantView"][];
+        };
+        EntityGrantCreated: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        EntityGrantView: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            userId: string;
+            user: null | string;
+            reason: string;
+            /** Format: date-time */
+            expiresAt: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        /** @enum {unknown} */
+        EntityKind: "Person" | "Vehicle" | "Group";
+        EntityLinkCreated: {
+            /** Format: uuid */
+            id: string;
+        };
+        EntityLinkView: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            incidentId: string;
+            /** Format: uuid */
+            siteId: string;
+            incidentTitle: null | string;
+            incidentStatus: null | string;
+            /** Format: date-time */
+            occurredAt: null | string;
+            role: components["schemas"]["LinkRole"];
+            note: null | string;
+            /** Format: date-time */
+            linkedAt: string;
+        };
+        EntityListResponse: {
+            items: components["schemas"]["EntitySummary"][];
+            /** Format: int32 */
+            total: number | string;
+            /** Format: int32 */
+            nextOffset: null | number | string;
+        };
+        EntityMutated: {
+            /** Format: uuid */
+            id: string;
+            status: components["schemas"]["EntityStatus"];
+            /** Format: date-time */
+            expiresAt: string;
+            legalHold: boolean;
+            /** Format: date-time */
+            deletedAt: null | string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        /** @enum {unknown} */
+        EntityStatus: "Suspected" | "Confirmed" | "Cleared";
+        EntitySummary: {
+            /** Format: uuid */
+            id: string;
+            kind: components["schemas"]["EntityKind"];
+            status: components["schemas"]["EntityStatus"];
+            displayName: string;
+            aliases: string[];
+            /** Format: int32 */
+            linkCount: number | string;
+            /** Format: date-time */
+            expiresAt: string;
+            legalHold: boolean;
+            /** Format: date-time */
+            deletedAt: null | string;
+        };
         FileListResponse: {
             items: components["schemas"]["FileSummary"][];
             /** Format: int32 */
@@ -3113,6 +3448,13 @@ export interface components {
             hasPreview: boolean;
             /** Format: date-time */
             createdAt: string;
+        };
+        GrantEntityAccessRequest: {
+            /** Format: uuid */
+            userId: string;
+            reason: string;
+            /** Format: date-time */
+            expiresAt: string;
         };
         GrantSpec: {
             domain: string;
@@ -3282,6 +3624,14 @@ export interface components {
             email: string;
         };
         JsonElement: unknown;
+        LinkIncidentRequest: {
+            /** Format: uuid */
+            incidentId: string;
+            role: components["schemas"]["LinkRole"];
+            note?: null | string;
+        };
+        /** @enum {unknown} */
+        LinkRole: "Suspect" | "Victim" | "Witness" | "Associate" | "VehicleUsed" | "Other";
         ListingHours: {
             name: string;
             rRule: string;
@@ -3430,6 +3780,12 @@ export interface components {
             policeReportNumber?: null | string;
             tags?: null | string[];
         };
+        RetentionSweepQueued: {
+            /** Format: date-time */
+            queuedAt: string;
+            /** Format: int32 */
+            pending: number | string;
+        };
         RotateApiKeyRequest: {
             /** Format: int32 */
             overlapHours?: null | number | string;
@@ -3437,6 +3793,12 @@ export interface components {
         SetAuditConfigRequest: {
             logGrants: boolean;
             logReads: boolean;
+        };
+        SetEntityHoldRequest: {
+            hold: boolean;
+        };
+        SetEntityStatusRequest: {
+            status: components["schemas"]["EntityStatus"];
         };
         SetHoldRequest: {
             hold: boolean;
@@ -3507,6 +3869,16 @@ export interface components {
             apiKey?: null | string;
             /** Format: int32 */
             syncIntervalHours?: null | number | string;
+        };
+        UpdateEntityRequest: {
+            displayName: string;
+            aliases: null | string[];
+            descriptors: null | {
+                [key: string]: string;
+            };
+            summary: null | string;
+            /** Format: date-time */
+            expiresAt: string;
         };
         UpdateIncidentRequest: {
             category: components["schemas"]["IncidentCategory"];
@@ -7473,6 +7845,437 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IncidentStatsResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_entities: {
+        parameters: {
+            query?: {
+                kind?: components["schemas"]["EntityKind"];
+                status?: components["schemas"]["EntityStatus"];
+                incidentId?: string;
+                q?: string;
+                trash?: boolean;
+                limit?: number | string;
+                offset?: number | string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityListResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_entities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateEntityRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityCreated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_entities_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    PUT_api_entities_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateEntityRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    DELETE_api_entities_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_entities_id_status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetEntityStatusRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_entities_id_hold: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetEntityHoldRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_entities_id_restore: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMutated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_entities_retention_sweep: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetentionSweepQueued"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_entities_id_grants: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GrantEntityAccessRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityGrantCreated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    DELETE_api_entities_id_grants_grantId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                grantId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityChildRemoved"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_entities_id_links: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkIncidentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityLinkCreated"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    DELETE_api_entities_id_links_linkId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                linkId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityChildRemoved"];
                 };
             };
             /** @description Not Found */

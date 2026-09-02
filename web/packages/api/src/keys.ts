@@ -14,6 +14,8 @@ export const CAPABILITIES = [
   'incidents:read',
   'incidents:report',
   'incidents:manage',
+  'entities:read',
+  'entities:manage',
   'audit:read',
   'audit:manage',
   'entitlements:manage',

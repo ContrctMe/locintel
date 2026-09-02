@@ -5139,6 +5139,640 @@
         }
       }
     },
+    "/api/entities": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Entities.Entities.EntityEndpoints"
+        ],
+        "summary": "GET_api_entities",
+        "description": "GET_api_entities",
+        "operationId": "GET_api_entities",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/EntityKind"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/EntityStatus"
+            }
+          },
+          {
+            "name": "incidentId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "trash",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityListResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Entities.Entities.EntityEndpoints"
+        ],
+        "summary": "POST_api_entities",
+        "description": "POST_api_entities",
+        "operationId": "POST_api_entities",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEntityRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityCreated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/entities/{id}": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Entities.Entities.EntityEndpoints"
+        ],
+        "summary": "GET_api_entities_id",
+        "description": "GET_api_entities_id",
+        "operationId": "GET_api_entities_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "LocIntel.Modules.Entities.Entities.EntityEndpoints"
+        ],
+        "summary": "PUT_api_entities_id",
+        "description": "PUT_api_entities_id",
+        "operationId": "PUT_api_entities_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEntityRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "LocIntel.Modules.Entities.Entities.EntityEndpoints"
+        ],
+        "summary": "DELETE_api_entities_id",
+        "description": "DELETE_api_entities_id",
+        "operationId": "DELETE_api_entities_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/entities/{id}/status": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Entities.Entities.EntityEndpoints"
+        ],
+        "summary": "POST_api_entities_id_status",
+        "description": "POST_api_entities_id_status",
+        "operationId": "POST_api_entities_id_status",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetEntityStatusRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/entities/{id}/hold": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Entities.Entities.EntityEndpoints"
+        ],
+        "summary": "POST_api_entities_id_hold",
+        "description": "POST_api_entities_id_hold",
+        "operationId": "POST_api_entities_id_hold",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetEntityHoldRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/entities/{id}/restore": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Entities.Entities.EntityEndpoints"
+        ],
+        "summary": "POST_api_entities_id_restore",
+        "description": "POST_api_entities_id_restore",
+        "operationId": "POST_api_entities_id_restore",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityMutated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/entities/retention/sweep": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Entities.Entities.EntityEndpoints"
+        ],
+        "summary": "POST_api_entities_retention_sweep",
+        "description": "POST_api_entities_retention_sweep",
+        "operationId": "POST_api_entities_retention_sweep",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetentionSweepQueued"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/entities/{id}/grants": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Entities.Entities.EntityGrantEndpoints"
+        ],
+        "summary": "POST_api_entities_id_grants",
+        "description": "POST_api_entities_id_grants",
+        "operationId": "POST_api_entities_id_grants",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GrantEntityAccessRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityGrantCreated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/entities/{id}/grants/{grantId}": {
+      "delete": {
+        "tags": [
+          "LocIntel.Modules.Entities.Entities.EntityGrantEndpoints"
+        ],
+        "summary": "DELETE_api_entities_id_grants_grantId",
+        "description": "DELETE_api_entities_id_grants_grantId",
+        "operationId": "DELETE_api_entities_id_grants_grantId",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "grantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityChildRemoved"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/entities/{id}/links": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Entities.Entities.EntityLinkEndpoints"
+        ],
+        "summary": "POST_api_entities_id_links",
+        "description": "POST_api_entities_id_links",
+        "operationId": "POST_api_entities_id_links",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkIncidentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityLinkCreated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/entities/{id}/links/{linkId}": {
+      "delete": {
+        "tags": [
+          "LocIntel.Modules.Entities.Entities.EntityLinkEndpoints"
+        ],
+        "summary": "DELETE_api_entities_id_links_linkId",
+        "description": "DELETE_api_entities_id_links_linkId",
+        "operationId": "DELETE_api_entities_id_links_linkId",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "linkId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityChildRemoved"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
     "/objects/upload/{token}": {
       "put": {
         "tags": [
@@ -6039,6 +6673,52 @@
           }
         }
       },
+      "CreateEntityRequest": {
+        "required": [
+          "kind",
+          "displayName"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/EntityKind"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "aliases": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "descriptors": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "summary": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "expiresAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
       "CreateFileRequest": {
         "required": [
           "name",
@@ -6276,6 +6956,402 @@
           }
         }
       },
+      "EntityChildRemoved": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "EntityCreated": {
+        "required": [
+          "id",
+          "expiresAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "EntityDetail": {
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "displayName",
+          "aliases",
+          "descriptors",
+          "summary",
+          "expiresAt",
+          "legalHold",
+          "createdBy",
+          "creator",
+          "createdAt",
+          "updatedAt",
+          "deletedAt",
+          "links",
+          "grants"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/EntityKind"
+          },
+          "status": {
+            "$ref": "#/components/schemas/EntityStatus"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "descriptors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "summary": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "legalHold": {
+            "type": "boolean"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "creator": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deletedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EntityLinkView"
+            }
+          },
+          "grants": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/EntityGrantView"
+            }
+          }
+        }
+      },
+      "EntityGrantCreated": {
+        "required": [
+          "id",
+          "expiresAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "EntityGrantView": {
+        "required": [
+          "id",
+          "userId",
+          "user",
+          "reason",
+          "expiresAt",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "EntityKind": {
+        "enum": [
+          "Person",
+          "Vehicle",
+          "Group"
+        ]
+      },
+      "EntityLinkCreated": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "EntityLinkView": {
+        "required": [
+          "id",
+          "incidentId",
+          "siteId",
+          "incidentTitle",
+          "incidentStatus",
+          "occurredAt",
+          "role",
+          "note",
+          "linkedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "incidentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "siteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "incidentTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "incidentStatus": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "occurredAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "role": {
+            "$ref": "#/components/schemas/LinkRole"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "linkedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "EntityListResponse": {
+        "required": [
+          "items",
+          "total",
+          "nextOffset"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EntitySummary"
+            }
+          },
+          "total": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "nextOffset": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "EntityMutated": {
+        "required": [
+          "id",
+          "status",
+          "expiresAt",
+          "legalHold",
+          "deletedAt",
+          "updatedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/EntityStatus"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "legalHold": {
+            "type": "boolean"
+          },
+          "deletedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "EntityStatus": {
+        "enum": [
+          "Suspected",
+          "Confirmed",
+          "Cleared"
+        ]
+      },
+      "EntitySummary": {
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "displayName",
+          "aliases",
+          "linkCount",
+          "expiresAt",
+          "legalHold",
+          "deletedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/EntityKind"
+          },
+          "status": {
+            "$ref": "#/components/schemas/EntityStatus"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "linkCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "legalHold": {
+            "type": "boolean"
+          },
+          "deletedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
       "FileListResponse": {
         "required": [
           "items",
@@ -6349,6 +7425,27 @@
             "type": "boolean"
           },
           "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "GrantEntityAccessRequest": {
+        "required": [
+          "userId",
+          "reason",
+          "expiresAt"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "expiresAt": {
             "type": "string",
             "format": "date-time"
           }
@@ -6991,6 +8088,38 @@
         }
       },
       "JsonElement": { },
+      "LinkIncidentRequest": {
+        "required": [
+          "incidentId",
+          "role"
+        ],
+        "type": "object",
+        "properties": {
+          "incidentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "role": {
+            "$ref": "#/components/schemas/LinkRole"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "LinkRole": {
+        "enum": [
+          "Suspect",
+          "Victim",
+          "Witness",
+          "Associate",
+          "VehicleUsed",
+          "Other"
+        ]
+      },
       "ListingHours": {
         "required": [
           "name",
@@ -7601,6 +8730,27 @@
           }
         }
       },
+      "RetentionSweepQueued": {
+        "required": [
+          "queuedAt",
+          "pending"
+        ],
+        "type": "object",
+        "properties": {
+          "queuedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "pending": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "RotateApiKeyRequest": {
         "type": "object",
         "properties": {
@@ -7627,6 +8777,28 @@
           },
           "logReads": {
             "type": "boolean"
+          }
+        }
+      },
+      "SetEntityHoldRequest": {
+        "required": [
+          "hold"
+        ],
+        "type": "object",
+        "properties": {
+          "hold": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SetEntityStatusRequest": {
+        "required": [
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/EntityStatus"
           }
         }
       },
@@ -7912,6 +9084,49 @@
               "string"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "UpdateEntityRequest": {
+        "required": [
+          "displayName",
+          "aliases",
+          "descriptors",
+          "summary",
+          "expiresAt"
+        ],
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "aliases": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "descriptors": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "summary": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -8231,6 +9446,15 @@
     },
     {
       "name": "LocIntel.Modules.Incidents.Incidents.IncidentStatsEndpoint"
+    },
+    {
+      "name": "LocIntel.Modules.Entities.Entities.EntityEndpoints"
+    },
+    {
+      "name": "LocIntel.Modules.Entities.Entities.EntityGrantEndpoints"
+    },
+    {
+      "name": "LocIntel.Modules.Entities.Entities.EntityLinkEndpoints"
     },
     {
       "name": "LocIntel.Api"

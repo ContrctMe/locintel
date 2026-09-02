@@ -5,6 +5,8 @@ import { AuditPage } from './pages/audit';
 import { ChecklistsPage } from './pages/checklists';
 import { DashboardPage } from './pages/dashboard';
 import { DevelopersPage } from './pages/developers';
+import { EntitiesPage } from './pages/entities';
+import { EntityDetailPage } from './pages/entity-detail';
 import { HierarchyPage } from './pages/hierarchy';
 import { IncidentDetailPage } from './pages/incident-detail';
 import { IncidentsPage } from './pages/incidents';
@@ -32,6 +34,8 @@ const routes = [
   createRoute({ getParentRoute: () => rootRoute, path: '/checklists', component: ChecklistsPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/incidents', component: IncidentsPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/incidents/$incidentId', component: IncidentDetailPage }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/entities', component: EntitiesPage }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/entities/$entityId', component: EntityDetailPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/files', component: FilesPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/hierarchy', component: HierarchyPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/ingest', component: IngestPage }),

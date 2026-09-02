@@ -211,7 +211,7 @@ public static class IncidentEndpoints
         CancellationToken ct
     )
     {
-        if (IncidentActor.From(accessor.Current) is not { } actor)
+        if (ActorRef.From(accessor.Current) is not { } actor)
             return Results.Unauthorized();
         var scope = await scopes.ScopeForAsync(accessor.Current, Capabilities.IncidentsReport, ct);
         if (scope is NodeScope.None)
@@ -239,7 +239,7 @@ public static class IncidentEndpoints
             Path = new LTree(site.Path),
             Category = request.Category,
             Severity = request.Severity,
-            Source = actor.Source,
+            Source = actor.IsService ? IncidentSource.Api : IncidentSource.Console,
             Title = request.Title.Trim(),
             Narrative = request.Narrative?.Trim() ?? "",
             LocationDetail = Clean(request.LocationDetail),
@@ -500,7 +500,7 @@ public static class IncidentEndpoints
         CancellationToken ct
     )
     {
-        if (IncidentActor.From(accessor.Current) is not { } actor)
+        if (ActorRef.From(accessor.Current) is not { } actor)
             return Results.Unauthorized();
         var scope = await scopes.ScopeForAsync(accessor.Current, Capabilities.IncidentsManage, ct);
         if (scope is NodeScope.None)
@@ -519,7 +519,7 @@ public static class IncidentEndpoints
     }
 
     /// <summary>Gate 2 then gate 3 for a write: (incident, actor) or the response to return instead.</summary>
-    internal static async Task<(Incident?, IncidentActor?, IResult?)> LoadForWrite(
+    internal static async Task<(Incident?, ActorRef?, IResult?)> LoadForWrite(
         Guid id,
         IncidentsDbContext db,
         IPrincipalAccessor accessor,
@@ -528,7 +528,7 @@ public static class IncidentEndpoints
         CancellationToken ct
     )
     {
-        if (IncidentActor.From(accessor.Current) is not { } actor)
+        if (ActorRef.From(accessor.Current) is not { } actor)
             return (null, null, Results.Unauthorized());
         var scope = await scopes.ScopeForAsync(accessor.Current, capability, ct);
         if (scope is NodeScope.None)

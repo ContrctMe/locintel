@@ -3,10 +3,10 @@ using LocIntel.Contracts;
 using LocIntel.Platform.Kernel;
 using Wolverine;
 
-namespace LocIntel.Modules.Incidents.Incidents;
+namespace LocIntel.Modules.Entities.Entities;
 
-/// <summary>Intent-level audit (ADR 12) in business language; org and actor ride the envelope, never ambient.</summary>
-public static class IncidentAudit
+/// <summary>Intent-level audit (ADR 12); org and actor ride the envelope, never ambient.</summary>
+public static class EntityAudit
 {
     public static ValueTask PublishAsync(
         IMessageBus bus,
