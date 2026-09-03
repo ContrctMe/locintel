@@ -163,12 +163,10 @@ public static class LifecycleEndpoints
         CancellationToken ct
     )
     {
-        if (
-            accessor.Current
-                is not Principal.User { ActiveOrg: { } orgId, UserId: var userId } principal
-            || !await scopes.CanAsync(principal, Capabilities.OrgManage, ct)
-        )
-            return Results.Unauthorized();
+        var gate = await Gate.RequireUserAsync(accessor, scopes, Capabilities.OrgManage, ct);
+        if (gate is not GateOutcome.Allowed { Principal: Principal.User principal, Org: var orgId })
+            return gate.ToResult();
+        var userId = principal.UserId;
         await bus.PublishForOrgAsync(orgId, new ExportOrgData(userId));
         return Results.Accepted(value: new { status = "queued", destination = "files" });
     }
@@ -185,11 +183,11 @@ public static class LifecycleEndpoints
         CancellationToken ct
     )
     {
+        var gate = await Gate.RequireOperatorAsync(accessor, operators, ct);
         if (
-            accessor.Current is not Principal.User { UserId: var operatorId } principal
-            || !await operators.IsOperatorAsync(principal, ct)
+            gate is not GateOutcome.Allowed { Principal: Principal.User { UserId: var operatorId } }
         )
-            return Results.Unauthorized();
+            return gate.ToResult();
         var target = new OrgId(orgId);
         if (!await db.Organizations.AnyAsync(o => o.Id == target, ct))
             return Results.NotFound();
@@ -214,11 +212,11 @@ public static class LifecycleEndpoints
         CancellationToken ct
     )
     {
+        var gate = await Gate.RequireOperatorAsync(accessor, operators, ct);
         if (
-            accessor.Current is not Principal.User { UserId: var operatorId } principal
-            || !await operators.IsOperatorAsync(principal, ct)
+            gate is not GateOutcome.Allowed { Principal: Principal.User { UserId: var operatorId } }
         )
-            return Results.Unauthorized();
+            return gate.ToResult();
         var target = new OrgId(orgId);
         var org = await db.Organizations.FirstOrDefaultAsync(o => o.Id == target, ct);
         if (org is null)

@@ -18,8 +18,39 @@ namespace LocIntel.ArchitectureTests;
 /// </summary>
 public partial class TestWaitHygieneTests
 {
-    [GeneratedRegex(@"for \(\s*var \w+ = 0;\s*\w+ [<!]=? \w*\d+;")]
+    // the bound may be followed by a compound condition (`i < 50 && mail is
+    // null`) - the first version required a bare `N;` and missed 37 waits
+    [GeneratedRegex(@"for \(\s*var \w+ = 0;\s*\w+ [<!]=? \w*\d+\b")]
     private static partial Regex CountingLoop();
+
+    /// <summary>
+    /// Shrink-only ratchet over the waits that still use the loop shape,
+    /// keyed by file. New files and any growth fail; an entry higher than
+    /// reality also fails, so the list can only get shorter. Convert with
+    /// ApiFixture.WaitUntilAsync / WaitForAsync and lower the number.
+    /// </summary>
+    private static readonly Dictionary<string, int> Remaining = new()
+    {
+        ["AccessLogPartitioningTests.cs"] = 1,
+        ["ApiKeyTests.cs"] = 1,
+        ["AuditExportTests.cs"] = 2,
+        ["AuditTests.cs"] = 4,
+        ["BillingTests.cs"] = 1,
+        ["ContactTierTests.cs"] = 2,
+        ["DeadLetterTests.cs"] = 3,
+        ["DirectorySyncTests.cs"] = 2,
+        ["FileTrashTests.cs"] = 1,
+        ["ImpersonationTests.cs"] = 2,
+        ["IngestTests.cs"] = 5,
+        ["LifecycleTests.cs"] = 1,
+        ["OrgClosureTests.cs"] = 2,
+        ["RateLimitTests.cs"] = 2,
+        ["RotationTests.cs"] = 1,
+        ["SiteClosureTests.cs"] = 3,
+        ["SmtpTransportTests.cs"] = 1,
+        ["StorageTests.cs"] = 1,
+        ["WebhookTests.cs"] = 2,
+    };
 
     [Fact]
     public void Tests_do_not_hand_roll_outbox_waits()
@@ -51,11 +82,31 @@ public partial class TestWaitHygieneTests
             }
         }
 
+        var perFile = offenders
+            .GroupBy(o => Path.GetFileName(o.Split(':')[0]))
+            .ToDictionary(g => g.Key, g => g.Count());
+        var grew = perFile
+            .Where(kv => kv.Value > Remaining.GetValueOrDefault(kv.Key))
+            .Select(kv => $"{kv.Key}: {kv.Value} (allowed {Remaining.GetValueOrDefault(kv.Key)})")
+            .ToList();
+        var stale = Remaining
+            .Where(kv => perFile.GetValueOrDefault(kv.Key) < kv.Value)
+            .Select(kv =>
+                $"{kv.Key}: allowed {kv.Value}, actual {perFile.GetValueOrDefault(kv.Key)}"
+            )
+            .ToList();
         Assert.True(
-            offenders.Count == 0,
+            grew.Count == 0,
             "hand-rolled outbox waits - use ApiFixture.WaitUntilAsync/WaitForAsync, which "
                 + "fails saying what it waited for instead of falling through:\n  "
+                + string.Join("\n  ", grew)
+                + "\nsites:\n  "
                 + string.Join("\n  ", offenders)
+        );
+        Assert.True(
+            stale.Count == 0,
+            "the wait ratchet only shrinks - lower these entries to match:\n  "
+                + string.Join("\n  ", stale)
         );
     }
 

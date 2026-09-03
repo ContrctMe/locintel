@@ -261,7 +261,7 @@ public class GatesTests(ApiFixture fixture) : IClassFixture<ApiFixture>
             $"/api/operator/orgs/{fixture.OrgA.Value}/entitlements/sites.max",
             new { value = "100000" }
         );
-        Assert.Equal(HttpStatusCode.Unauthorized, direct.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, direct.StatusCode);
         // and the old self-serve surface is gone
         var legacy = await owner.PutAsJsonAsync(
             "/api/admin/entitlements/sites.max",

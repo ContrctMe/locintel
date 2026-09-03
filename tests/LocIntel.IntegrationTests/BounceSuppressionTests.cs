@@ -120,7 +120,7 @@ public class BounceSuppressionTests(BounceFixture fixture) : IClassFixture<Bounc
 
         // tenants hold no custody over the platform-global list
         Assert.Equal(
-            HttpStatusCode.Unauthorized,
+            HttpStatusCode.Forbidden,
             (await member.GetAsync("/api/operator/suppressions")).StatusCode
         );
     }

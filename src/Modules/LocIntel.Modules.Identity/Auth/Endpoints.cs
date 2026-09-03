@@ -171,15 +171,7 @@ public static class AuthEndpoints
                     await scopedDb.SaveChangesAsync(ct);
                 }
 
-                var activeOrg = await db
-                    .Memberships.Where(m => m.UserId == user.Id)
-                    .OrderBy(m => m.CreatedAt)
-                    // UUIDv7 tie-break: CreatedAt collides at Postgres microsecond
-                    // resolution for memberships created together - without this the
-                    // default org is a per-boot coin flip
-                    .ThenBy(m => m.Id)
-                    .Select(m => (OrgId?)m.OrgId)
-                    .FirstOrDefaultAsync(ct);
+                var activeOrg = await db.DefaultOrgAsync(user.Id, ct);
 
                 // server-side session record: the cookie's revocation authority
                 var session = new Users.UserSession
@@ -359,6 +351,30 @@ public static class AuthEndpoints
                     expires.ToUnixTimeSeconds().ToString()
                 )
             );
+        return new ClaimsPrincipal(
+            new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme)
+        );
+    }
+
+    /// <summary>
+    /// A contact-tier session (ADR 7): the counterpart of the user issuer, so
+    /// the claim set for "who is this request" is minted in one place and
+    /// read back by one resolver. Contact links used to build this list by
+    /// hand with a claim name only the resolver knew.
+    /// </summary>
+    public static ClaimsPrincipal BuildContactClaimsPrincipal(
+        Guid contactId,
+        OrgId org,
+        string email
+    )
+    {
+        var claims = new List<Claim>
+        {
+            new(LocIntelClaims.Tier, "contact"),
+            new(LocIntelClaims.ContactId, contactId.ToString()),
+            new(LocIntelClaims.ActiveOrg, org.Value.ToString()),
+            new(LocIntelClaims.Email, email),
+        };
         return new ClaimsPrincipal(
             new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme)
         );

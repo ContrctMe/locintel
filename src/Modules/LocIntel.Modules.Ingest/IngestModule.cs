@@ -17,25 +17,7 @@ public static class IngestModule
         if (runBackgroundWork)
             services.AddHostedService<ConnectorScheduleService>();
 
-        services.AddDbContextWithWolverineIntegration<IngestDbContext>(
-            (sp, options) =>
-            {
-                // Options are SINGLETON: never resolve scoped services here (dev
-                // scope-validation rejects it, and it would freeze the first
-                // request's region). v1 is single-region (ADR 35); multi-region
-                // moves connection selection to a per-scope interceptor.
-                var regions = sp.GetRequiredService<IRegionDataSources>();
-                options
-                    .UseNpgsql(
-                        regions.For(RegionId.Default),
-                        npgsql => npgsql.MigrationsHistoryTable("__ef_migrations_history", "ingest")
-                    )
-                    .AddInterceptors(
-                        TenantSessionInterceptor.Instance,
-                        sp.GetRequiredService<LocIntel.Platform.Audit.AuditSaveChangesInterceptor>()
-                    );
-            }
-        );
+        services.AddModuleDbContext<IngestDbContext>("ingest");
         services.AddScoped<StagingService>();
         services.AddScoped<LocIntel.Contracts.IOrgDataExporter, IngestExporter>();
         services.AddHttpClient("ingest-connector");

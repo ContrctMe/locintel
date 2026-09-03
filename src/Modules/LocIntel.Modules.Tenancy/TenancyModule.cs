@@ -27,26 +27,7 @@ public static class TenancyModule
             services.AddHostedService<Organizations.OrgClosureService>();
         }
 
-        services.AddDbContextWithWolverineIntegration<TenancyDbContext>(
-            (sp, options) =>
-            {
-                // Options are SINGLETON: never resolve scoped services here (dev
-                // scope-validation rejects it, and it would freeze the first
-                // request's region). v1 is single-region (ADR 35); multi-region
-                // moves connection selection to a per-scope interceptor.
-                var regions = sp.GetRequiredService<IRegionDataSources>();
-                options
-                    .UseNpgsql(
-                        regions.For(RegionId.Default),
-                        npgsql =>
-                            npgsql.MigrationsHistoryTable("__ef_migrations_history", "tenancy")
-                    )
-                    .AddInterceptors(
-                        TenantSessionInterceptor.Instance,
-                        sp.GetRequiredService<LocIntel.Platform.Audit.AuditSaveChangesInterceptor>()
-                    );
-            }
-        );
+        services.AddModuleDbContext<TenancyDbContext>("tenancy");
         services.AddScoped<IOrganizationLookup, OrganizationLookup>();
         // the narrow port PerOrgSweepService resolves: registering the derived
         // interface alone does NOT satisfy the base one, and the sweeps only

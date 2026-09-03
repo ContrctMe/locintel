@@ -57,12 +57,12 @@ public class ImpersonationTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         // the operator wall drops WHILE impersonating: no platform reach,
         // no chaining into a second org
         var wall = await op.GetAsync($"/api/operator/orgs/{fixture.OrgB.Value}/entitlements");
-        Assert.Equal(HttpStatusCode.Unauthorized, wall.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, wall.StatusCode);
         var chain = await op.PostAsync(
             $"/api/operator/orgs/{fixture.OrgB.Value}/impersonate",
             null
         );
-        Assert.Equal(HttpStatusCode.Unauthorized, chain.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, chain.StatusCode);
 
         // stop: home to the platform org, audit trail on record in the target
         (await op.PostAsync("/auth/impersonation/stop", null)).EnsureSuccessStatusCode();
@@ -97,7 +97,7 @@ public class ImpersonationTests(ApiFixture fixture) : IClassFixture<ApiFixture>
             $"/api/operator/orgs/{fixture.OrgB.Value}/impersonate",
             null
         );
-        Assert.Equal(HttpStatusCode.Unauthorized, denied.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
 
         var op = await fixture.OperatorClient();
         var platform = await op.PostAsync(
@@ -132,8 +132,9 @@ public class ImpersonationExpiryTests(ShortImpersonationFixture fixture)
             await op.PostAsync($"/api/operator/orgs/{fixture.OrgA.Value}/impersonate", null)
         ).EnsureSuccessStatusCode();
 
-        // live now (a grant-guarded endpoint answers); nothing after the
-        // claim lapses - no cleanup job involved
+        // live now (a grant-guarded endpoint answers); after the claim lapses
+        // the operator is still signed in with OrgA active but holds no grant
+        // there, so the grant gate answers 403 - no cleanup job involved
         var live = await op.GetAsync("/api/members");
         Assert.True(
             live.IsSuccessStatusCode,
@@ -142,7 +143,7 @@ public class ImpersonationExpiryTests(ShortImpersonationFixture fixture)
         var expired = false;
         for (var i = 0; i < 100 && !expired; i++)
         {
-            expired = (await op.GetAsync("/api/members")).StatusCode == HttpStatusCode.Unauthorized;
+            expired = (await op.GetAsync("/api/members")).StatusCode == HttpStatusCode.Forbidden;
             if (!expired)
                 await Task.Delay(100);
         }

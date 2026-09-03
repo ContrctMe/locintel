@@ -201,7 +201,7 @@ public class HygieneTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         ).EnsureSuccessStatusCode();
         var target2 = await fixture.LoginAsync("excuser@hygiene.local"); // fresh resolver scope
         Assert.Equal(
-            HttpStatusCode.Unauthorized,
+            HttpStatusCode.Forbidden,
             (await target2.GetAsync("/api/audit/events")).StatusCode
         );
     }
@@ -232,7 +232,7 @@ public class HygieneTests(ApiFixture fixture) : IClassFixture<ApiFixture>
 
         var viewer = await fixture.LoginAsync(ApiFixture.ViewerA); // no org:manage
         Assert.Equal(
-            HttpStatusCode.Unauthorized,
+            HttpStatusCode.Forbidden,
             (await viewer.PutAsJsonAsync("/api/org", new { name = "Nope" })).StatusCode
         );
     }

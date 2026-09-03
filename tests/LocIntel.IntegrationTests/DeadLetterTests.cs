@@ -94,7 +94,7 @@ public class DeadLetterTests(ApiFixture fixture) : IClassFixture<ApiFixture>
     {
         var owner = await fixture.LoginAsync(ApiFixture.UserA);
         Assert.Equal(
-            HttpStatusCode.Unauthorized,
+            HttpStatusCode.Forbidden,
             (await owner.GetAsync("/api/operator/dead-letters")).StatusCode
         );
     }

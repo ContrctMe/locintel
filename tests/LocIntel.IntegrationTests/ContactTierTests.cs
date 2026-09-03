@@ -115,10 +115,7 @@ public class ContactTierTests(ApiFixture fixture) : IClassFixture<ApiFixture>
     public async Task Contact_custody_needs_roles_manage()
     {
         var viewer = await fixture.LoginAsync(ApiFixture.ViewerA);
-        Assert.Equal(
-            HttpStatusCode.Unauthorized,
-            (await viewer.GetAsync("/api/contacts")).StatusCode
-        );
+        Assert.Equal(HttpStatusCode.Forbidden, (await viewer.GetAsync("/api/contacts")).StatusCode);
     }
 
     [Fact]

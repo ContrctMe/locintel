@@ -29,6 +29,22 @@ public sealed class RoleGrant : IOrgScoped
     public required Guid RoleId { get; init; }
     public required string Domain { get; init; }
     public required string Action { get; init; }
+
+    /// <summary>
+    /// The "everything in this org" grant an Owner or Operator role carries.
+    /// Three places minted it by hand - founder provisioning, the dev
+    /// bootstrap, and the test fixture - each spelling the wildcard pair
+    /// itself. The grant that means "all authority" is worth one definition.
+    /// </summary>
+    public static RoleGrant Wildcard(Role role) =>
+        new()
+        {
+            Id = Guid.CreateVersion7(),
+            OrgId = role.OrgId,
+            RoleId = role.Id,
+            Domain = "*",
+            Action = "*",
+        };
 }
 
 /// <summary>

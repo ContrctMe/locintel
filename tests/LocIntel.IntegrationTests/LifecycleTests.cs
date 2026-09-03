@@ -191,7 +191,7 @@ public class LifecycleTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         // error - ADR three-gate), and the grant gate slams writes shut
         Assert.Equal(0, (await ApiFixture.GetItemsAsync(founder, "/api/sites")).GetArrayLength());
         Assert.Equal(
-            HttpStatusCode.Unauthorized,
+            HttpStatusCode.Forbidden,
             (
                 await founder.PostAsJsonAsync(
                     "/api/hierarchy",

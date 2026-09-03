@@ -159,10 +159,7 @@ public class BillingTests(ApiFixture fixture) : IClassFixture<ApiFixture>
     public async Task Billing_is_org_manage_gated()
     {
         var viewer = await fixture.LoginAsync(ApiFixture.ViewerA);
-        Assert.Equal(
-            HttpStatusCode.Unauthorized,
-            (await viewer.GetAsync("/api/billing")).StatusCode
-        );
+        Assert.Equal(HttpStatusCode.Forbidden, (await viewer.GetAsync("/api/billing")).StatusCode);
     }
 
     [Fact]

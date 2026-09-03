@@ -1,4 +1,5 @@
 using System.Text.Json;
+using LocIntel.Contracts;
 using LocIntel.Modules.Tenancy.Data;
 using LocIntel.Platform.Kernel;
 using Microsoft.AspNetCore.Http;
@@ -44,7 +45,7 @@ public static class SiteAttributeEndpoints
         // definitions are readable wherever sites are: the console form and
         // the public page both need labels
         if (!await scopes.CanAsync(accessor.Current, Capabilities.SitesRead, ct))
-            return Results.Unauthorized();
+            return new GateOutcome.Forbidden(Capabilities.SitesRead).ToResult();
         return Results.Ok(await DefinitionsAsync(db, ct));
     }
 
@@ -59,11 +60,9 @@ public static class SiteAttributeEndpoints
         CancellationToken ct
     )
     {
-        if (
-            accessor.Current is not Principal.User { ActiveOrg: { } org } principal
-            || !await scopes.CanAsync(principal, Capabilities.SitesManage, ct)
-        )
-            return Results.Unauthorized();
+        var gate = await Gate.RequireUserAsync(accessor, scopes, Capabilities.SitesManage, ct);
+        if (gate is not GateOutcome.Allowed { Principal: Principal.User principal, Org: var org })
+            return gate.ToResult();
         var key = request.Key.Trim().ToLowerInvariant();
         if (
             key.Length is < 1 or > 60
@@ -111,11 +110,9 @@ public static class SiteAttributeEndpoints
         CancellationToken ct
     )
     {
-        if (
-            accessor.Current is not Principal.User principal
-            || !await scopes.CanAsync(principal, Capabilities.SitesManage, ct)
-        )
-            return Results.Unauthorized();
+        var gate = await Gate.RequireUserAsync(accessor, scopes, Capabilities.SitesManage, ct);
+        if (gate is not GateOutcome.Allowed)
+            return gate.ToResult();
         var definition = await db.SiteAttributeDefinitions.FirstOrDefaultAsync(d => d.Id == id, ct);
         if (definition is null)
             return Results.NotFound();

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using LocIntel.Contracts;
 using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Storage;
 using Microsoft.EntityFrameworkCore;
@@ -32,8 +33,9 @@ public static class OperatorHealthEndpoint
                 CancellationToken ct
             ) =>
             {
-                if (!await operators.IsOperatorAsync(accessor.Current, ct))
-                    return Results.Unauthorized();
+                var gate = await Gate.RequireOperatorAsync(accessor, operators, ct);
+                if (gate is not GateOutcome.Allowed)
+                    return gate.ToResult();
 
                 var checks = new List<object>
                 {

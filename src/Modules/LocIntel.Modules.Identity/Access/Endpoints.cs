@@ -1,3 +1,4 @@
+using LocIntel.Contracts;
 using LocIntel.Modules.Identity.Data;
 using LocIntel.Platform.Kernel;
 using Microsoft.AspNetCore.Http;
@@ -32,11 +33,9 @@ public static class AccessEndpoints
         CancellationToken ct
     )
     {
-        if (
-            accessor.Current is not Principal.User { ActiveOrg: not null } principal
-            || !await scopes.CanAsync(principal, Capabilities.RolesManage, ct)
-        )
-            return Results.Unauthorized();
+        var gate = await Gate.RequireUserAsync(accessor, scopes, Capabilities.RolesManage, ct);
+        if (gate is not GateOutcome.Allowed { Principal: Principal.User principal })
+            return gate.ToResult();
         // the editor's read: grants and reach, not just names
         var roles = await db
             .Roles.OrderBy(r => r.Name)
@@ -63,11 +62,9 @@ public static class AccessEndpoints
         CancellationToken ct
     )
     {
-        if (
-            accessor.Current is not Principal.User { ActiveOrg: { } org } principal
-            || !await scopes.CanAsync(principal, Capabilities.RolesManage, ct)
-        )
-            return Results.Unauthorized();
+        var gate = await Gate.RequireUserAsync(accessor, scopes, Capabilities.RolesManage, ct);
+        if (gate is not GateOutcome.Allowed { Principal: Principal.User principal, Org: var org })
+            return gate.ToResult();
 
         var role = Role.Create(org, request.Name);
         db.Roles.Add(role);
@@ -96,11 +93,9 @@ public static class AccessEndpoints
         CancellationToken ct
     )
     {
-        if (
-            accessor.Current is not Principal.User { ActiveOrg: { } org } principal
-            || !await scopes.CanAsync(principal, Capabilities.RolesManage, ct)
-        )
-            return Results.Unauthorized();
+        var gate = await Gate.RequireUserAsync(accessor, scopes, Capabilities.RolesManage, ct);
+        if (gate is not GateOutcome.Allowed { Principal: Principal.User principal, Org: var org })
+            return gate.ToResult();
 
         var role = await db.Roles.FirstOrDefaultAsync(r => r.Id == id, ct);
         var membership = await db.Memberships.FirstOrDefaultAsync(
@@ -133,12 +128,10 @@ public static class AccessEndpoints
         CancellationToken ct
     )
     {
-        if (
-            accessor.Current
-                is not Principal.User { ActiveOrg: { } org, UserId: var grantor } principal
-            || !await scopes.CanAsync(principal, Capabilities.RolesManage, ct)
-        )
-            return Results.Unauthorized();
+        var gate = await Gate.RequireUserAsync(accessor, scopes, Capabilities.RolesManage, ct);
+        if (gate is not GateOutcome.Allowed { Principal: Principal.User principal, Org: var org })
+            return gate.ToResult();
+        var grantor = principal.UserId;
         if (request.ExpiresAt <= DateTimeOffset.UtcNow)
             return Results.BadRequest(new { error = "exceptions must expire in the future" });
         if (!await db.Memberships.AnyAsync(m => m.UserId == request.UserId && m.OrgId == org, ct))

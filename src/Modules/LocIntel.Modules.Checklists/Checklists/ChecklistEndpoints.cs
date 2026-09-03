@@ -57,11 +57,9 @@ public static class ChecklistEndpoints
         CancellationToken ct
     )
     {
-        if (
-            accessor.Current is not Principal.User principal
-            || !await scopes.CanAsync(principal, Capabilities.ChecklistsManage, ct)
-        )
-            return Results.Unauthorized();
+        var gate = await Gate.RequireUserAsync(accessor, scopes, Capabilities.ChecklistsManage, ct);
+        if (gate is not GateOutcome.Allowed)
+            return gate.ToResult();
         var templates = await db
             .Templates.OrderBy(t => t.Name)
             .Select(t => new ChecklistTemplateSummary(
@@ -86,12 +84,10 @@ public static class ChecklistEndpoints
         CancellationToken ct
     )
     {
-        if (
-            accessor.Current
-                is not Principal.User { ActiveOrg: { } org, UserId: var userId } principal
-            || !await scopes.CanAsync(principal, Capabilities.ChecklistsManage, ct)
-        )
-            return Results.Unauthorized();
+        var gate = await Gate.RequireUserAsync(accessor, scopes, Capabilities.ChecklistsManage, ct);
+        if (gate is not GateOutcome.Allowed { Principal: Principal.User principal, Org: var org })
+            return gate.ToResult();
+        var userId = principal.UserId;
         var items = request.Items.Select(i => i.Trim()).Where(i => i.Length > 0).ToArray();
         if (string.IsNullOrWhiteSpace(request.Name) || items.Length == 0)
             return Results.BadRequest(
@@ -128,11 +124,9 @@ public static class ChecklistEndpoints
         CancellationToken ct
     )
     {
-        if (
-            accessor.Current is not Principal.User principal
-            || !await scopes.CanAsync(principal, Capabilities.ChecklistsManage, ct)
-        )
-            return Results.Unauthorized();
+        var gate = await Gate.RequireUserAsync(accessor, scopes, Capabilities.ChecklistsManage, ct);
+        if (gate is not GateOutcome.Allowed)
+            return gate.ToResult();
         var template = await db.Templates.FirstOrDefaultAsync(t => t.Id == id, ct);
         if (template is null)
             return Results.NotFound();
@@ -157,13 +151,9 @@ public static class ChecklistEndpoints
         CancellationToken ct
     )
     {
-        var scope = await scopes.ScopeForAsync(
-            accessor.Current,
-            Capabilities.ChecklistsComplete,
-            ct
-        );
-        if (scope is NodeScope.None)
-            return Results.Unauthorized();
+        var gate = await Gate.RequireAsync(accessor, scopes, Capabilities.ChecklistsComplete, ct);
+        if (gate is not GateOutcome.Allowed { Scope: var scope })
+            return gate.ToResult();
         var site = await sites.FindAsync(siteId, ct);
         if (site is null || !scope.Covers(site.Path))
             return Results.NotFound();
@@ -223,15 +213,22 @@ public static class ChecklistEndpoints
         CancellationToken ct
     )
     {
-        if (accessor.Current is not Principal.User { ActiveOrg: { } org, UserId: var userId })
-            return Results.Unauthorized();
-        var scope = await scopes.ScopeForAsync(
-            accessor.Current,
+        var gate = await Gate.RequireUserAsync(
+            accessor,
+            scopes,
             Capabilities.ChecklistsComplete,
             ct
         );
-        if (scope is NodeScope.None)
-            return Results.Unauthorized();
+        if (
+            gate
+            is not GateOutcome.Allowed
+            {
+                Principal: Principal.User { UserId: var userId },
+                Org: var org,
+                Scope: var scope,
+            }
+        )
+            return gate.ToResult();
         var site = await sites.FindAsync(request.SiteId, ct);
         if (site is null || !scope.Covers(site.Path))
             return Results.NotFound();

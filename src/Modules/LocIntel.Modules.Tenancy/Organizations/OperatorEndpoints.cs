@@ -23,8 +23,9 @@ public static class OperatorOrgEndpoints
         CancellationToken ct
     )
     {
-        if (!await operators.IsOperatorAsync(accessor.Current, ct))
-            return Results.Unauthorized();
+        var gate = await Gate.RequireOperatorAsync(accessor, operators, ct);
+        if (gate is not GateOutcome.Allowed)
+            return gate.ToResult();
         var orgs = await db
             .Organizations.OrderBy(o => o.Name)
             .Select(o => new
@@ -93,11 +94,11 @@ public static class OperatorOrgEndpoints
         CancellationToken ct
     )
     {
+        var gate = await Gate.RequireOperatorAsync(accessor, operators, ct);
         if (
-            accessor.Current is not Principal.User { UserId: var operatorId } principal
-            || !await operators.IsOperatorAsync(principal, ct)
+            gate is not GateOutcome.Allowed { Principal: Principal.User { UserId: var operatorId } }
         )
-            return Results.Unauthorized();
+            return gate.ToResult();
         var target = new OrgId(orgId);
         var org = await db.Organizations.FirstOrDefaultAsync(o => o.Id == target, ct);
         if (org is null)

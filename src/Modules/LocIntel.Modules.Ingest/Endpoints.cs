@@ -45,12 +45,10 @@ public static class IngestEndpoints
         CancellationToken ct
     )
     {
-        if (
-            accessor.Current
-                is not Principal.User { ActiveOrg: { } org, UserId: var userId } principal
-            || !await scopes.CanAsync(principal, Capabilities.IngestManage, ct)
-        )
-            return Results.Unauthorized();
+        var gate = await Gate.RequireUserAsync(accessor, scopes, Capabilities.IngestManage, ct);
+        if (gate is not GateOutcome.Allowed { Principal: Principal.User principal, Org: var org })
+            return gate.ToResult();
+        var userId = principal.UserId;
 
         var file = await files.GetAsync(request.FileId, ct);
         if (file is null)
@@ -87,7 +85,7 @@ public static class IngestEndpoints
     )
     {
         if (!await scopes.CanAsync(accessor.Current, Capabilities.IngestManage, ct))
-            return Results.Unauthorized();
+            return new GateOutcome.Forbidden(Capabilities.IngestManage).ToResult();
         var batch = await db.Batches.FirstOrDefaultAsync(b => b.Id == id, ct);
         if (batch is null)
             return Results.NotFound();
@@ -126,7 +124,7 @@ public static class IngestEndpoints
     )
     {
         if (!await scopes.CanAsync(accessor.Current, Capabilities.IngestManage, ct))
-            return Results.Unauthorized();
+            return new GateOutcome.Forbidden(Capabilities.IngestManage).ToResult();
         var batches = await db
             .Batches.OrderByDescending(b => b.CreatedAt)
             .Take(50)
@@ -167,12 +165,10 @@ public static class IngestEndpoints
         CancellationToken ct
     )
     {
-        if (
-            accessor.Current
-                is not Principal.User { ActiveOrg: { } org, UserId: var userId } principal
-            || !await scopes.CanAsync(principal, Capabilities.IngestManage, ct)
-        )
-            return Results.Unauthorized();
+        var gate = await Gate.RequireUserAsync(accessor, scopes, Capabilities.IngestManage, ct);
+        if (gate is not GateOutcome.Allowed { Principal: Principal.User principal, Org: var org })
+            return gate.ToResult();
+        var userId = principal.UserId;
         var batch = await db.Batches.FirstOrDefaultAsync(b => b.Id == id, ct);
         if (batch is null)
             return Results.NotFound();
@@ -207,12 +203,10 @@ public static class IngestEndpoints
         CancellationToken ct
     )
     {
-        if (
-            accessor.Current
-                is not Principal.User { ActiveOrg: { } org, UserId: var userId } principal
-            || !await scopes.CanAsync(principal, Capabilities.IngestManage, ct)
-        )
-            return Results.Unauthorized();
+        var gate = await Gate.RequireUserAsync(accessor, scopes, Capabilities.IngestManage, ct);
+        if (gate is not GateOutcome.Allowed { Principal: Principal.User principal, Org: var org })
+            return gate.ToResult();
+        var userId = principal.UserId;
         var batch = await db.Batches.FirstOrDefaultAsync(b => b.Id == id, ct);
         if (batch is null)
             return Results.NotFound();
@@ -263,11 +257,9 @@ public static class IngestEndpoints
         CancellationToken ct
     )
     {
-        if (
-            accessor.Current is not Principal.User { ActiveOrg: { } org } principal
-            || !await scopes.CanAsync(principal, Capabilities.IngestManage, ct)
-        )
-            return Results.Unauthorized();
+        var gate = await Gate.RequireUserAsync(accessor, scopes, Capabilities.IngestManage, ct);
+        if (gate is not GateOutcome.Allowed { Principal: Principal.User principal, Org: var org })
+            return gate.ToResult();
 
         var connector = new SiteConnector
         {
@@ -296,7 +288,7 @@ public static class IngestEndpoints
     )
     {
         if (!await scopes.CanAsync(accessor.Current, Capabilities.IngestManage, ct))
-            return Results.Unauthorized();
+            return new GateOutcome.Forbidden(Capabilities.IngestManage).ToResult();
         var connectors = await db
             .Connectors.OrderBy(c => c.Name)
             .Select(c => new
@@ -327,7 +319,7 @@ public static class IngestEndpoints
     )
     {
         if (!await scopes.CanAsync(accessor.Current, Capabilities.IngestManage, ct))
-            return Results.Unauthorized();
+            return new GateOutcome.Forbidden(Capabilities.IngestManage).ToResult();
         var connector = await db.Connectors.FirstOrDefaultAsync(c => c.Id == id, ct);
         if (connector is null)
             return Results.NotFound();
@@ -359,12 +351,10 @@ public static class IngestEndpoints
         CancellationToken ct
     )
     {
-        if (
-            accessor.Current
-                is not Principal.User { ActiveOrg: { } org, UserId: var userId } principal
-            || !await scopes.CanAsync(principal, Capabilities.IngestManage, ct)
-        )
-            return Results.Unauthorized();
+        var gate = await Gate.RequireUserAsync(accessor, scopes, Capabilities.IngestManage, ct);
+        if (gate is not GateOutcome.Allowed { Principal: Principal.User principal, Org: var org })
+            return gate.ToResult();
+        var userId = principal.UserId;
         var connector = await db.Connectors.FirstOrDefaultAsync(c => c.Id == id, ct);
         if (connector is null)
             return Results.NotFound();
@@ -390,11 +380,9 @@ public static class IngestEndpoints
         CancellationToken ct
     )
     {
-        if (
-            accessor.Current is not Principal.User { ActiveOrg: { } org } principal
-            || !await scopes.CanAsync(principal, Capabilities.IngestManage, ct)
-        )
-            return Results.Unauthorized();
+        var gate = await Gate.RequireUserAsync(accessor, scopes, Capabilities.IngestManage, ct);
+        if (gate is not GateOutcome.Allowed { Principal: Principal.User principal, Org: var org })
+            return gate.ToResult();
         if (!await db.Connectors.AnyAsync(c => c.Id == id, ct))
             return Results.NotFound();
         await bus.PublishAsync(

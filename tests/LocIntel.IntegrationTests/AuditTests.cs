@@ -156,7 +156,7 @@ public class AuditTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         await fixture.CreateMemberAsync("noaudit@locintel.local", fixture.OrgA);
         var viewer = await fixture.LoginAsync("noaudit@locintel.local");
         var denied = await viewer.GetAsync("/api/audit/changes");
-        Assert.Equal(HttpStatusCode.Unauthorized, denied.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
     }
 
     [Fact]

@@ -1,3 +1,4 @@
+using LocIntel.Contracts;
 using LocIntel.Modules.Storage.Data;
 using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Storage;
@@ -42,12 +43,10 @@ public static class FileEndpoints
         CancellationToken ct
     )
     {
-        if (
-            accessor.Current
-                is not Principal.User { ActiveOrg: { } org, UserId: var userId } principal
-            || !await scopes.CanAsync(principal, Capabilities.FilesManage, ct)
-        )
-            return Results.Unauthorized();
+        var gate = await Gate.RequireUserAsync(accessor, scopes, Capabilities.FilesManage, ct);
+        if (gate is not GateOutcome.Allowed { Principal: Principal.User principal, Org: var org })
+            return gate.ToResult();
+        var userId = principal.UserId;
         if (request.SizeBytes is <= 0 or > MaxUploadBytes)
             return Results.BadRequest(new { error = $"size must be 1..{MaxUploadBytes} bytes" });
 
@@ -90,7 +89,7 @@ public static class FileEndpoints
     )
     {
         if (!await scopes.CanAsync(accessor.Current, Capabilities.FilesManage, ct))
-            return Results.Unauthorized();
+            return new GateOutcome.Forbidden(Capabilities.FilesManage).ToResult();
         var file = await db.Files.FirstOrDefaultAsync(f => f.Id == id, ct);
         if (file is null)
             return Results.NotFound();
@@ -123,7 +122,7 @@ public static class FileEndpoints
     )
     {
         if (!await scopes.CanAsync(accessor.Current, Capabilities.FilesRead, ct))
-            return Results.Unauthorized();
+            return new GateOutcome.Forbidden(Capabilities.FilesRead).ToResult();
         var query = trash is true
             ? db.Files.Where(f => f.Status == FileStatus.Deleted)
             : db.Files.Where(f => f.Status != FileStatus.Erased && f.Status != FileStatus.Deleted);
@@ -170,7 +169,7 @@ public static class FileEndpoints
     )
     {
         if (!await scopes.CanAsync(accessor.Current, Capabilities.FilesRead, ct))
-            return Results.Unauthorized();
+            return new GateOutcome.Forbidden(Capabilities.FilesRead).ToResult();
         var file = await db.Files.FirstOrDefaultAsync(f => f.Id == id, ct);
         // quarantined/pending/erased are all 404: never confirm undownloadable bytes
         if (file is null || file.Status != FileStatus.Clean)
@@ -192,7 +191,7 @@ public static class FileEndpoints
     )
     {
         if (!await scopes.CanAsync(accessor.Current, Capabilities.FilesManage, ct))
-            return Results.Unauthorized();
+            return new GateOutcome.Forbidden(Capabilities.FilesManage).ToResult();
         var file = await db.Files.FirstOrDefaultAsync(f => f.Id == id, ct);
         if (file is null)
             return Results.NotFound();
@@ -227,7 +226,7 @@ public static class FileEndpoints
     )
     {
         if (!await scopes.CanAsync(accessor.Current, Capabilities.FilesManage, ct))
-            return Results.Unauthorized();
+            return new GateOutcome.Forbidden(Capabilities.FilesManage).ToResult();
         var file = await db.Files.FirstOrDefaultAsync(f => f.Id == id, ct);
         if (file is null || file.Status is FileStatus.Erased or FileStatus.Deleted)
             return Results.NotFound();
@@ -274,7 +273,7 @@ public static class FileEndpoints
     )
     {
         if (!await scopes.CanAsync(accessor.Current, Capabilities.FilesManage, ct))
-            return Results.Unauthorized();
+            return new GateOutcome.Forbidden(Capabilities.FilesManage).ToResult();
         var file = await db.Files.FirstOrDefaultAsync(f => f.Id == id, ct);
         if (file is null || file.Status != FileStatus.Deleted)
             return Results.NotFound();

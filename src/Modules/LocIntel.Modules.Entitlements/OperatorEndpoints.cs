@@ -40,8 +40,9 @@ public static class OperatorEntitlementEndpoints
         CancellationToken ct
     )
     {
-        if (!await operators.IsOperatorAsync(accessor.Current, ct))
-            return Results.Unauthorized();
+        var gate = await Gate.RequireOperatorAsync(accessor, operators, ct);
+        if (gate is not GateOutcome.Allowed)
+            return gate.ToResult();
         var target = new OrgId(orgId);
         return await TenantScope.RunAsAsync(
             http.RequestServices,
@@ -70,11 +71,11 @@ public static class OperatorEntitlementEndpoints
         CancellationToken ct
     )
     {
+        var gate = await Gate.RequireOperatorAsync(accessor, operators, ct);
         if (
-            accessor.Current is not Principal.User { UserId: var operatorId } principal
-            || !await operators.IsOperatorAsync(principal, ct)
+            gate is not GateOutcome.Allowed { Principal: Principal.User { UserId: var operatorId } }
         )
-            return Results.Unauthorized();
+            return gate.ToResult();
         if (!EntitlementCatalog.Definitions.TryGetValue(code, out var descriptor))
             return Results.NotFound();
 
@@ -157,11 +158,11 @@ public static class OperatorEntitlementEndpoints
         CancellationToken ct
     )
     {
+        var gate = await Gate.RequireOperatorAsync(accessor, operators, ct);
         if (
-            accessor.Current is not Principal.User { UserId: var operatorId } principal
-            || !await operators.IsOperatorAsync(principal, ct)
+            gate is not GateOutcome.Allowed { Principal: Principal.User { UserId: var operatorId } }
         )
-            return Results.Unauthorized();
+            return gate.ToResult();
         if (!EntitlementCatalog.Definitions.ContainsKey(code))
             return Results.NotFound();
         if (request.ExpiresAt <= DateTimeOffset.UtcNow)
