@@ -95,19 +95,9 @@ public static class {name}Module
 {{
     public static IServiceCollection Add{name}Module(this IServiceCollection services)
     {{
-        services.AddDbContextWithWolverineIntegration<{name}DbContext>((sp, options) =>
-        {{
-            // Options are SINGLETON: never resolve scoped services here (dev
-            // scope-validation rejects it). v1 is single-region (ADR 35);
-            // multi-region moves connection selection to a per-scope interceptor.
-            var regions = sp.GetRequiredService<IRegionDataSources>();
-            options
-                .UseNpgsql(regions.For(RegionId.Default), npgsql =>
-                    npgsql.MigrationsHistoryTable("__ef_migrations_history", "{schema}"))
-                .AddInterceptors(
-                    TenantSessionInterceptor.Instance,
-                    sp.GetRequiredService<LocIntel.Platform.Audit.AuditSaveChangesInterceptor>());
-        }});
+        // persistence is built in ONE place (ModulePersistence, ADR 35): the
+        // schema is the only fact a module supplies
+        services.AddModuleDbContext<{name}DbContext>("{schema}");
         services.AddScoped<LocIntel.Contracts.IOrgDataExporter, {name}Exporter>();
         return services;
     }}

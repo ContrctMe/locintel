@@ -24,6 +24,7 @@ public class RlsCoverageTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         "identity.api_keys", // looked up by unguessable secret hash
         "identity.memberships", // filtered by the authenticated user id
         "identity.org_directory", // the pre-tenant org read model
+        "marketplace.vendor_directory", // public projection of published vendors (ADR 48 open pull); holds nothing a vendor keeps private
     ];
 
     [Fact]

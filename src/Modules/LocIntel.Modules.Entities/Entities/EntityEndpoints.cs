@@ -41,12 +41,12 @@ public static class EntityEndpoints
         CancellationToken ct
     )
     {
-        var scope = await scopes.ScopeForAsync(accessor.Current, Capabilities.EntitiesRead, ct);
-        if (scope is NodeScope.None)
-            return Results.Unauthorized();
+        var gate = await Gate.RequireAsync(accessor, scopes, Capabilities.EntitiesRead, ct);
+        if (gate is not GateOutcome.Allowed { Scope: var scope })
+            return gate.ToResult();
         var manage = await scopes.CanAsync(accessor.Current, Capabilities.EntitiesManage, ct);
         if (trash is true && !manage)
-            return Results.Unauthorized();
+            return new GateOutcome.Forbidden(Capabilities.EntitiesManage).ToResult();
         var now = time.GetUtcNow();
         var query = EntityVisibility.Visible(db, scope, accessor.Current, manage, now);
         if (trash is true)
@@ -115,9 +115,9 @@ public static class EntityEndpoints
     {
         if (ActorRef.From(accessor.Current) is not { } actor)
             return Results.Unauthorized();
-        var scope = await scopes.ScopeForAsync(accessor.Current, Capabilities.EntitiesRead, ct);
-        if (scope is NodeScope.None)
-            return Results.Unauthorized();
+        var gate = await Gate.RequireAsync(accessor, scopes, Capabilities.EntitiesRead, ct);
+        if (gate is not GateOutcome.Allowed { Scope: var scope })
+            return gate.ToResult();
         var manage = await scopes.CanAsync(accessor.Current, Capabilities.EntitiesManage, ct);
         var now = time.GetUtcNow();
         var visible = EntityVisibility.Visible(db, scope, accessor.Current, manage, now);
@@ -212,7 +212,7 @@ public static class EntityEndpoints
         if (ActorRef.From(accessor.Current) is not { } actor)
             return Results.Unauthorized();
         if (!await scopes.CanAsync(accessor.Current, Capabilities.EntitiesManage, ct))
-            return Results.Unauthorized();
+            return new GateOutcome.Forbidden(Capabilities.EntitiesManage).ToResult();
         var now = time.GetUtcNow();
         var expiresAt = request.ExpiresAt ?? EntityRetention.Default(now);
         if (Validate(request.DisplayName, request.Descriptors, expiresAt, now) is { } error)
@@ -393,7 +393,7 @@ public static class EntityEndpoints
         if (ActorRef.From(accessor.Current) is not { } actor)
             return Results.Unauthorized();
         if (!await scopes.CanAsync(accessor.Current, Capabilities.EntitiesManage, ct))
-            return Results.Unauthorized();
+            return new GateOutcome.Forbidden(Capabilities.EntitiesManage).ToResult();
         var entity = await db
             .Entities.IgnoreQueryFilters([ModuleDbContext.SoftDeleteFilter])
             .FirstOrDefaultAsync(e => e.Id == id && e.DeletedAt != null, ct);
@@ -427,7 +427,7 @@ public static class EntityEndpoints
         if (ActorRef.From(accessor.Current) is not { } actor)
             return Results.Unauthorized();
         if (!await scopes.CanAsync(accessor.Current, Capabilities.EntitiesManage, ct))
-            return Results.Unauthorized();
+            return new GateOutcome.Forbidden(Capabilities.EntitiesManage).ToResult();
         var now = time.GetUtcNow();
         var pending = await db.Entities.CountAsync(e => e.ExpiresAt <= now && !e.LegalHold, ct);
         await bus.PublishAsync(

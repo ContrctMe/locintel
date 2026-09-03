@@ -33,11 +33,9 @@ public static class HierarchyEndpoints
         CancellationToken ct
     )
     {
-        if (
-            accessor.Current is not Principal.User { ActiveOrg: { } org }
-            || !await scopes.CanAsync(accessor.Current, Capabilities.HierarchyManage, ct)
-        )
-            return Results.Unauthorized();
+        var gate = await Gate.RequireUserAsync(accessor, scopes, Capabilities.HierarchyManage, ct);
+        if (gate is not GateOutcome.Allowed { Principal: Principal.User principal, Org: var org })
+            return gate.ToResult();
         if (request.Levels.Length == 0)
             return Results.BadRequest(new { error = "at least one level is required" });
 
@@ -45,15 +43,13 @@ public static class HierarchyEndpoints
         // canonical structural-capability example).
         var depthLimit = await entitlements.LimitAsync(org, EntitlementCatalog.HierarchyDepth, ct);
         if (request.Levels.Length > depthLimit)
-            return Results.Json(
-                new
-                {
-                    error = "plan allows fewer hierarchy levels",
-                    code = EntitlementCatalog.HierarchyDepth,
-                    limit = depthLimit,
-                    requested = request.Levels.Length,
-                },
-                statusCode: StatusCodes.Status402PaymentRequired
+            return GateResults.LimitReached(
+                new EntitlementDecision(
+                    EntitlementOutcome.Blocked,
+                    EntitlementCatalog.HierarchyDepth,
+                    depthLimit,
+                    request.Levels.Length
+                )
             );
         if (await db.Hierarchies.AnyAsync(h => h.IsAuthoritative, ct))
             return Results.Conflict(new { error = "hierarchy already exists" });

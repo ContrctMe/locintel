@@ -1,3 +1,4 @@
+using LocIntel.Contracts;
 using LocIntel.Platform.Kernel;
 using Wolverine.Persistence.Durability;
 using Wolverine.Persistence.Durability.DeadLetterManagement;
@@ -26,8 +27,9 @@ public static class DeadLetterEndpoints
                 CancellationToken ct
             ) =>
             {
-                if (!await operators.IsOperatorAsync(accessor.Current, ct))
-                    return Results.Unauthorized();
+                var gate = await Gate.RequireOperatorAsync(accessor, operators, ct);
+                if (gate is not GateOutcome.Allowed)
+                    return gate.ToResult();
                 var results = await store.DeadLetters.QueryAsync(
                     new DeadLetterEnvelopeQuery { PageSize = Math.Clamp(limit ?? 50, 1, 200) },
                     ct
@@ -61,8 +63,9 @@ public static class DeadLetterEndpoints
                 CancellationToken ct
             ) =>
             {
-                if (!await operators.IsOperatorAsync(accessor.Current, ct))
-                    return Results.Unauthorized();
+                var gate = await Gate.RequireOperatorAsync(accessor, operators, ct);
+                if (gate is not GateOutcome.Allowed)
+                    return gate.ToResult();
                 await store.DeadLetters.ReplayAsync(new DeadLetterEnvelopeQuery([id]), ct);
                 return Results.Accepted();
             }
@@ -78,8 +81,9 @@ public static class DeadLetterEndpoints
                 CancellationToken ct
             ) =>
             {
-                if (!await operators.IsOperatorAsync(accessor.Current, ct))
-                    return Results.Unauthorized();
+                var gate = await Gate.RequireOperatorAsync(accessor, operators, ct);
+                if (gate is not GateOutcome.Allowed)
+                    return gate.ToResult();
                 await store.DeadLetters.DiscardAsync(new DeadLetterEnvelopeQuery([id]), ct);
                 return Results.NoContent();
             }

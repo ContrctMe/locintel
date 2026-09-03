@@ -43,9 +43,9 @@ public static class ImportEndpoints
     {
         if (ActorRef.From(accessor.Current) is not { } actor)
             return Results.Unauthorized();
-        var scope = await scopes.ScopeForAsync(accessor.Current, Capabilities.IncidentsManage, ct);
-        if (scope is NodeScope.None)
-            return Results.Unauthorized();
+        var gate = await Gate.RequireAsync(accessor, scopes, Capabilities.IncidentsManage, ct);
+        if (gate is not GateOutcome.Allowed { Scope: var scope })
+            return gate.ToResult();
         var file = await files.GetAsync(request.FileId, ct);
         if (file is null)
             return Results.NotFound();
@@ -213,7 +213,7 @@ public static class ImportEndpoints
     )
     {
         if (!await scopes.CanAsync(accessor.Current, Capabilities.IncidentsManage, ct))
-            return Results.Unauthorized();
+            return new GateOutcome.Forbidden(Capabilities.IncidentsManage).ToResult();
         var batches = await db
             .ImportBatches.OrderByDescending(b => b.CreatedAt)
             .Take(50)
@@ -240,7 +240,7 @@ public static class ImportEndpoints
     )
     {
         if (!await scopes.CanAsync(accessor.Current, Capabilities.IncidentsManage, ct))
-            return Results.Unauthorized();
+            return new GateOutcome.Forbidden(Capabilities.IncidentsManage).ToResult();
         var batch = await db.ImportBatches.FirstOrDefaultAsync(b => b.Id == id, ct);
         if (batch is null)
             return Results.NotFound();
@@ -284,9 +284,9 @@ public static class ImportEndpoints
     {
         if (ActorRef.From(accessor.Current) is not { } actor)
             return Results.Unauthorized();
-        var scope = await scopes.ScopeForAsync(accessor.Current, Capabilities.IncidentsManage, ct);
-        if (scope is NodeScope.None)
-            return Results.Unauthorized();
+        var gate = await Gate.RequireAsync(accessor, scopes, Capabilities.IncidentsManage, ct);
+        if (gate is not GateOutcome.Allowed { Scope: var scope })
+            return gate.ToResult();
         var batch = await db.ImportBatches.FirstOrDefaultAsync(b => b.Id == id, ct);
         if (batch is null)
             return Results.NotFound();
@@ -359,7 +359,7 @@ public static class ImportEndpoints
     )
     {
         if (!await scopes.CanAsync(accessor.Current, Capabilities.IncidentsManage, ct))
-            return Results.Unauthorized();
+            return new GateOutcome.Forbidden(Capabilities.IncidentsManage).ToResult();
         var batch = await db.ImportBatches.FirstOrDefaultAsync(b => b.Id == id, ct);
         if (batch is null)
             return Results.NotFound();

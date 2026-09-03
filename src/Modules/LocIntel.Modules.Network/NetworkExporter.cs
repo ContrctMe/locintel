@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LocIntel.Modules.Network;
 
-/// <summary>Network's slice of the offboarding export: the org's standing in each share and what IT published. Other orgs' bulletins are theirs.</summary>
+/// <summary>Network's slice of the offboarding export: the org's standing in each share, what IT published, and the copies it received (ADR 48: all its own rows).</summary>
 public sealed class NetworkExporter(NetworkDbContext db) : IOrgDataExporter
 {
     public string Section => "network";
@@ -27,7 +27,7 @@ public sealed class NetworkExporter(NetworkDbContext db) : IOrgDataExporter
             .ToListAsync(ct);
         var published = await db
             .Bulletins.IgnoreQueryFilters()
-            .Where(b => b.PublisherOrgId == org)
+            .Where(b => b.OrgId == org)
             .Select(b => new
             {
                 b.Id,
@@ -44,8 +44,27 @@ public sealed class NetworkExporter(NetworkDbContext db) : IOrgDataExporter
                 b.WithdrawnAt,
             })
             .ToListAsync(ct);
+        var received = await db
+            .BulletinCopies.IgnoreQueryFilters()
+            .Where(c => c.OrgId == org)
+            .Select(c => new
+            {
+                c.BulletinId,
+                c.ShareId,
+                c.PublisherName,
+                kind = c.Kind.ToString(),
+                c.Title,
+                c.PublishedAt,
+                c.WithdrawnAt,
+            })
+            .ToListAsync(ct);
         return JsonSerializer.Serialize(
-            new { shares = access, published },
+            new
+            {
+                shares = access,
+                published,
+                received,
+            },
             new JsonSerializerOptions(JsonSerializerDefaults.Web) { WriteIndented = true }
         );
     }

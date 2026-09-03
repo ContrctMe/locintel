@@ -1,3 +1,4 @@
+using LocIntel.Contracts;
 using LocIntel.Modules.Identity.Data;
 using LocIntel.Modules.Tenancy.Data;
 using LocIntel.Modules.Tenancy.Organizations;
@@ -29,8 +30,9 @@ public static class OperatorOverviewEndpoint
                 CancellationToken ct
             ) =>
             {
-                if (!await operators.IsOperatorAsync(accessor.Current, ct))
-                    return Results.Unauthorized();
+                var gate = await Gate.RequireOperatorAsync(accessor, operators, ct);
+                if (gate is not GateOutcome.Allowed)
+                    return gate.ToResult();
                 var orgsByStatus = await tenancy
                     .Organizations.Where(o => !o.IsPlatform)
                     .GroupBy(o => o.Status)

@@ -2,10 +2,12 @@ using System.Text.Json;
 using LocIntel.Contracts;
 using LocIntel.Contracts.Entities;
 using LocIntel.Modules.Network.Bulletins.Api;
+using LocIntel.Modules.Network.Bulletins.Messages;
 using LocIntel.Modules.Network.Data;
 using LocIntel.Modules.Network.Shares;
 using LocIntel.Platform.Entitlements;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,9 +18,10 @@ using Wolverine.Http;
 namespace LocIntel.Modules.Network.Bulletins;
 
 /// <summary>
-/// What flows through a share: copies, published by an active member from
-/// what THEY may see, readable by every active member, withdrawn only by
-/// the publisher, importable by any other member as their own record.
+/// What flows through a share (ADR 48): a publisher owns what it published;
+/// every active member owns a COPY, materialized through the outbox and
+/// withdrawn the same way. A member reads its copies, imports one as its
+/// own record, and withdraws only what it published.
 /// </summary>
 public static class SharedBulletinEndpoints
 {
@@ -41,42 +44,49 @@ public static class SharedBulletinEndpoints
         CancellationToken ct
     )
     {
-        if (ActorRef.From(accessor.Current) is not { } actor)
-            return Results.Unauthorized();
-        if (!await scopes.CanAsync(accessor.Current, Capabilities.NetworkRead, ct))
-            return Results.Unauthorized();
+        var gate = await ActorGate.RequireAsync(accessor, scopes, Capabilities.NetworkRead, ct);
+        if (gate.Actor is not { } actor)
+            return gate.ToResult();
         var now = time.GetUtcNow();
-        var query = db.Bulletins.AsQueryable();
+        var mine = db.Bulletins.AsQueryable();
+        var copies = db.BulletinCopies.AsQueryable();
         if (shareId is { } share)
-            query = query.Where(b => b.ShareId == share);
+        {
+            mine = mine.Where(b => b.ShareId == share);
+            copies = copies.Where(c => c.ShareId == share);
+        }
         if (includeInactive is not true)
-            query = query.Where(b => b.WithdrawnAt == null && b.ExpiresAt > now);
+        {
+            mine = mine.Where(b => b.WithdrawnAt == null && b.ExpiresAt > now);
+            copies = copies.Where(c => c.WithdrawnAt == null && c.ExpiresAt > now);
+        }
         if (!string.IsNullOrWhiteSpace(q))
         {
             var needle = $"%{q.Trim()}%";
-            query = query.Where(b =>
+            mine = mine.Where(b =>
                 EF.Functions.ILike(b.Title, needle)
                 || EF.Functions.ILike(b.Body, needle)
                 || (b.DisplayName != null && EF.Functions.ILike(b.DisplayName, needle))
                 || b.Aliases.Any(a => EF.Functions.ILike(a, needle))
             );
+            copies = copies.Where(c =>
+                EF.Functions.ILike(c.Title, needle)
+                || EF.Functions.ILike(c.Body, needle)
+                || (c.DisplayName != null && EF.Functions.ILike(c.DisplayName, needle))
+                || c.Aliases.Any(a => EF.Functions.ILike(a, needle))
+            );
         }
-        var total = await query.CountAsync(ct);
+        var shareNames = await db.Access.ToDictionaryAsync(a => a.ShareId, a => a.ShareName, ct);
+        var all = (await mine.ToListAsync(ct))
+            .Select(b => View(b, shareNames.GetValueOrDefault(b.ShareId, ""), now))
+            .Concat((await copies.ToListAsync(ct)).Select(c => View(c, now)))
+            .OrderByDescending(v => v.PublishedAt)
+            .ThenByDescending(v => v.Id)
+            .ToList();
+        var total = all.Count;
         var take = Math.Clamp(limit ?? 50, 1, 200);
         var skip = Math.Max(offset ?? 0, 0);
-        var rows = await query
-            .OrderByDescending(b => b.PublishedAt)
-            .Skip(skip)
-            .Take(take)
-            .ToListAsync(ct);
-        var shareIds = rows.Select(r => r.ShareId).Distinct().ToArray();
-        var names = await db
-            .Access.Where(a => shareIds.Contains(a.ShareId))
-            .ToDictionaryAsync(a => a.ShareId, a => a.ShareName, ct);
-        var items = rows.Select(b =>
-                View(b, actor.Org, names.GetValueOrDefault(b.ShareId, ""), now)
-            )
-            .ToList();
+        var items = all.Skip(skip).Take(take).ToList();
         return Results.Ok(
             new SharedBulletinListResponse(
                 items,
@@ -102,18 +112,17 @@ public static class SharedBulletinEndpoints
         CancellationToken ct
     )
     {
-        if (ActorRef.From(accessor.Current) is not { } actor)
-            return Results.Unauthorized();
-        if (!await scopes.CanAsync(accessor.Current, Capabilities.NetworkManage, ct))
-            return Results.Unauthorized();
+        var gate = await ActorGate.RequireAsync(accessor, scopes, Capabilities.NetworkManage, ct);
+        if (gate.Actor is not { } actor)
+            return gate.ToResult();
         if (await ShareEndpoints.Upsell(entitlements, actor.Org, ct) is { } upsell)
             return upsell;
-        var (share, access) = await ShareEndpoints.Load(id, db, ct);
-        if (share is null)
+        var access = await ShareEndpoints.LoadAsync(id, db, ct);
+        if (access is null)
             return Results.NotFound();
-        if (access!.Status != MembershipStatus.Active)
+        if (access.Status != MembershipStatus.Active)
             return Results.Conflict(new { error = "accept the invitation before publishing" });
-        if (share.Status == ShareStatus.Closed)
+        if (access.ShareStatus == ShareStatus.Closed)
             return Results.Conflict(new { error = "the share is closed" });
         if (string.IsNullOrWhiteSpace(request.Title) || request.Title.Trim().Length > 200)
             return Results.BadRequest(
@@ -136,16 +145,12 @@ public static class SharedBulletinEndpoints
                 return Results.NotFound();
         }
         var publisher =
-            await db
-                .Members.Where(m => m.ShareId == id && m.OrgId == actor.Org)
-                .Select(m => m.OrgName)
-                .FirstOrDefaultAsync(ct)
-            ?? "Member";
+            access.Roster().FirstOrDefault(m => m.OrgId == actor.Org.Value)?.OrgName ?? "Member";
         var bulletin = new SharedBulletin
         {
             Id = Guid.CreateVersion7(),
             ShareId = id,
-            PublisherOrgId = actor.Org,
+            OrgId = actor.Org,
             PublisherName = publisher,
             Kind = request.Kind,
             Severity = request.Severity,
@@ -169,25 +174,21 @@ public static class SharedBulletinEndpoints
         };
         db.Bulletins.Add(bulletin);
         await db.SaveChangesAsync(ct);
-        var recipients = await db
-            .Members.Where(m =>
-                m.ShareId == id && m.Status == MembershipStatus.Active && m.OrgId != actor.Org
-            )
-            .Select(m => m.OrgId)
-            .ToListAsync(ct);
-        foreach (var org in recipients)
-            await bus.PublishAsync(
+        var peers = ShareRoster.ActivePeers(access).ToList();
+        await bus.FanOutAsync(peers, bulletin.Offered(access.ShareName), bulletin.Id);
+        foreach (var org in peers)
+            await bus.PublishForOrgAsync(
+                org,
                 new SendOrgNotice(
-                    $"Shared {bulletin.Kind.ToString().ToUpperInvariant()} in {share.Name}: {bulletin.Title}",
+                    $"Shared {bulletin.Kind.ToString().ToUpperInvariant()} in {access.ShareName}: {bulletin.Title}",
                     [
                         $"From {publisher}.",
                         bulletin.Body,
                         "Open Network in the console to review or import it.",
                     ],
                     "network",
-                    $"Shared {bulletin.Kind.ToString().ToUpperInvariant()} in {share.Name}: {bulletin.Title}"
-                ),
-                new DeliveryOptions { TenantId = org.Value.ToString() }
+                    $"Shared {bulletin.Kind.ToString().ToUpperInvariant()} in {access.ShareName}: {bulletin.Title}"
+                )
             );
         await bus.AuditAsync(
             actor.Org,
@@ -216,20 +217,23 @@ public static class SharedBulletinEndpoints
         CancellationToken ct
     )
     {
-        if (ActorRef.From(accessor.Current) is not { } actor)
-            return Results.Unauthorized();
-        if (!await scopes.CanAsync(accessor.Current, Capabilities.NetworkManage, ct))
-            return Results.Unauthorized();
-        var bulletin = await db.Bulletins.FirstOrDefaultAsync(
-            b => b.Id == id && b.PublisherOrgId == actor.Org,
-            ct
-        );
+        var gate = await ActorGate.RequireAsync(accessor, scopes, Capabilities.NetworkManage, ct);
+        if (gate.Actor is not { } actor)
+            return gate.ToResult();
+        var bulletin = await db.Bulletins.FirstOrDefaultAsync(b => b.Id == id, ct);
         if (bulletin is null)
             return Results.NotFound();
         if (bulletin.WithdrawnAt is null)
         {
             bulletin.WithdrawnAt = DateTimeOffset.UtcNow;
             await db.SaveChangesAsync(ct);
+            var access = await ShareEndpoints.LoadAsync(bulletin.ShareId, db, ct);
+            if (access is not null)
+                await bus.FanOutAsync(
+                    ShareRoster.ActivePeers(access),
+                    new SharedBulletinWithdrawn(bulletin.Id, bulletin.WithdrawnAt.Value),
+                    bulletin.Id
+                );
             await bus.AuditAsync(
                 actor.Org,
                 actor.Audit,
@@ -254,51 +258,42 @@ public static class SharedBulletinEndpoints
         CancellationToken ct
     )
     {
-        if (ActorRef.From(accessor.Current) is not { } actor)
-            return Results.Unauthorized();
-        if (!await scopes.CanAsync(accessor.Current, Capabilities.NetworkManage, ct))
-            return Results.Unauthorized();
+        var gate = await ActorGate.RequireAsync(accessor, scopes, Capabilities.NetworkManage, ct);
+        if (gate.Actor is not { } actor)
+            return gate.ToResult();
         var now = time.GetUtcNow();
-        var bulletin = await db.Bulletins.FirstOrDefaultAsync(
-            b => b.Id == id && b.WithdrawnAt == null && b.ExpiresAt > now,
+        if (await db.Bulletins.AnyAsync(b => b.Id == id, ct))
+            return Results.Conflict(new { error = "this is your own record" });
+        var copy = await db.BulletinCopies.FirstOrDefaultAsync(
+            c => c.BulletinId == id && c.WithdrawnAt == null && c.ExpiresAt > now,
             ct
         );
-        if (bulletin is null)
+        if (copy is null)
             return Results.NotFound();
-        if (bulletin.PublisherOrgId == actor.Org)
-            return Results.Conflict(new { error = "this is your own record" });
-        if (bulletin.DisplayName is null)
+        if (copy.DisplayName is null)
             return Results.Conflict(new { error = "this bulletin carries no record to import" });
-        var shareName =
-            await db
-                .Access.Where(a => a.ShareId == bulletin.ShareId)
-                .Select(a => a.ShareName)
-                .FirstOrDefaultAsync(ct)
-            ?? "a share";
-        await bus.PublishAsync(
+        await bus.PublishForOrgAsync(
+            actor.Org,
             new ImportEntityRequested(
-                bulletin.EntityKind ?? "Person",
-                bulletin.DisplayName,
-                bulletin.Aliases,
-                JsonSerializer.Deserialize<Dictionary<string, string>>(bulletin.DescriptorsJson)
-                    ?? [],
-                $"Imported from \"{shareName}\", published by {bulletin.PublisherName} on {bulletin.PublishedAt:yyyy-MM-dd}: {bulletin.Title}. {bulletin.Body}",
+                copy.EntityKind ?? "Person",
+                copy.DisplayName,
+                copy.Aliases,
+                JsonSerializer.Deserialize<Dictionary<string, string>>(copy.DescriptorsJson) ?? [],
+                $"Imported from \"{copy.ShareName}\", published by {copy.PublisherName} on {copy.PublishedAt:yyyy-MM-dd}: {copy.Title}. {copy.Body}",
                 actor.Id
-            ),
-            new DeliveryOptions { TenantId = actor.Org.Value.ToString() }
+            )
         );
         await bus.AuditAsync(
             actor.Org,
             actor.Audit,
             "network.bulletin_imported",
-            new { bulletin.Id, bulletin.ShareId }
+            new { BulletinId = copy.BulletinId, copy.ShareId }
         );
-        return Results.Ok(new ImportQueued(bulletin.Id));
+        return Results.Ok(new ImportQueued(copy.BulletinId));
     }
 
     private static SharedBulletinView View(
         SharedBulletin b,
-        OrgId reader,
         string shareName,
         DateTimeOffset now
     ) =>
@@ -306,9 +301,9 @@ public static class SharedBulletinEndpoints
             b.Id,
             b.ShareId,
             shareName,
-            b.PublisherOrgId.Value,
+            b.OrgId.Value,
             b.PublisherName,
-            b.PublisherOrgId == reader,
+            true,
             b.Kind,
             b.Severity,
             b.Title,
@@ -322,5 +317,28 @@ public static class SharedBulletinEndpoints
             b.ExpiresAt,
             b.WithdrawnAt,
             b.WithdrawnAt == null && b.ExpiresAt > now
+        );
+
+    private static SharedBulletinView View(SharedBulletinCopy c, DateTimeOffset now) =>
+        new(
+            c.BulletinId,
+            c.ShareId,
+            c.ShareName,
+            c.PublisherOrgId.Value,
+            c.PublisherName,
+            false,
+            c.Kind,
+            c.Severity,
+            c.Title,
+            c.Body,
+            c.EntityKind,
+            c.DisplayName,
+            c.Aliases,
+            JsonSerializer.Deserialize<Dictionary<string, string>>(c.DescriptorsJson) ?? [],
+            c.Areas,
+            c.PublishedAt,
+            c.ExpiresAt,
+            c.WithdrawnAt,
+            c.WithdrawnAt == null && c.ExpiresAt > now
         );
 }

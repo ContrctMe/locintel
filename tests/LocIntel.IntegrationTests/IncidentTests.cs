@@ -154,7 +154,7 @@ public class IncidentTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         );
         var viewer = await fixture.LoginAsync(ApiFixture.ViewerA);
         Assert.Equal(
-            HttpStatusCode.Unauthorized,
+            HttpStatusCode.Forbidden,
             (await viewer.GetAsync($"/api/incidents/{id}")).StatusCode
         );
 

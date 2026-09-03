@@ -16075,7 +16075,9 @@
         "enum": [
           "Invited",
           "Quoted",
-          "Declined"
+          "Declined",
+          "Assigned",
+          "NotSelected"
         ]
       },
       "RecipientView": {

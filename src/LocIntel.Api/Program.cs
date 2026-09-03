@@ -388,36 +388,24 @@ builder.Services.AddRateLimiter(limiter =>
         // ADR 30: org-level quota from the metered entitlement, over the per-principal limiter
         PartitionedRateLimiter.Create<HttpContext, string>(http =>
         {
-            // service principals carry no claims: their org rides
-            // HttpContext.Items (found by the load-baseline work - API keys
-            // were falling into the per-IP guest bucket and skipping the
-            // org quota entirely)
-            Guid? serviceOrg =
-                http.Items.TryGetValue(RequestPrincipalAccessor.ServiceKeyItem, out var rawKey)
-                && rawKey is (Guid, OrgId serviceKeyOrg)
-                    ? serviceKeyOrg.Value
-                    : null;
-            if (
-                serviceOrg is { } fromKey
-                || (
-                    http
-                        .User.FindFirst(LocIntel.Modules.Identity.Auth.LocIntelClaims.ActiveOrg)
-                        ?.Value
-                        is { } activeOrg
-                    && Guid.TryParse(activeOrg, out var claimOrg)
-                )
-            )
+            // ONE resolver for "who is this request": the same Principal the
+            // endpoints see. This lambda used to re-parse claims and Items
+            // itself, and the two readings drifted - API keys fell into the
+            // per-IP guest bucket and skipped the org quota entirely.
+            var principal = http.RequestServices.GetRequiredService<IPrincipalAccessor>().Current;
+            OrgId? org = principal switch
             {
-                var orgGuid =
-                    serviceOrg
-                    ?? Guid.Parse(
-                        http.User.FindFirst(
-                            LocIntel.Modules.Identity.Auth.LocIntelClaims.ActiveOrg
-                        )!.Value
-                    );
+                Principal.User { ActiveOrg: { } active } => active,
+                Principal.Service service => service.Org,
+                Principal.Contact contact => contact.Org,
+                _ => null,
+            };
+            if (org is { } quotaOrg)
+            {
+                var orgGuid = quotaOrg.Value;
                 var orgLimit = http
                     .RequestServices.GetRequiredService<OrgRateLimitCache>()
-                    .LimitFor(new OrgId(orgGuid));
+                    .LimitFor(quotaOrg);
                 // the limit is part of the KEY: partition limiters are
                 // created once and cached, so a quota change must roll to a
                 // fresh partition or a hot org keeps its old limit forever
@@ -436,18 +424,21 @@ builder.Services.AddRateLimiter(limiter =>
         }),
         PartitionedRateLimiter.Create<HttpContext, string>(http =>
         {
-            var (key, permits) =
-                http.Items.TryGetValue(RequestPrincipalAccessor.ServiceKeyItem, out var rawKey)
-                && rawKey is (Guid keyId, OrgId)
-                    // an API key is a first-class principal (ADR 40): its own
-                    // bucket at the USER limit, never the per-IP guest bucket
-                    ? ($"key:{keyId}", userLimit)
-                : http.User.FindFirst(LocIntel.Modules.Identity.Auth.LocIntelClaims.UserId)?.Value
-                    is { } userId
-                    ? ($"user:{userId}", userLimit)
-                : http.Request.Cookies.TryGetValue(GuestSessionMiddleware.CookieName, out var guest)
+            var (key, permits) = http
+                .RequestServices.GetRequiredService<IPrincipalAccessor>()
+                .Current switch
+            {
+                // an API key is a first-class principal (ADR 40): its own
+                // bucket at the USER limit, never the per-IP guest bucket
+                Principal.Service service => ($"key:{service.KeyId}", userLimit),
+                Principal.User user => ($"user:{user.UserId}", userLimit),
+                _ => http.Request.Cookies.TryGetValue(
+                    GuestSessionMiddleware.CookieName,
+                    out var guest
+                )
                     ? ($"guest:{guest}", guestLimit)
-                : ($"ip:{http.Connection.RemoteIpAddress}", guestLimit);
+                    : ($"ip:{http.Connection.RemoteIpAddress}", guestLimit),
+            };
             return RateLimitPartition.GetFixedWindowLimiter(
                 key,
                 _ => new FixedWindowRateLimiterOptions

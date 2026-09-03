@@ -104,7 +104,7 @@ public class ApiFixture : IAsyncLifetime
         }.ConnectionString;
         var appCs = AppConnectionString;
 
-        await using (var seed = CreateTenancyContext(adminCs))
+        await using (var seed = CreateModuleContext<TenancyDbContext>(adminCs, "tenancy"))
         {
             seed.Organizations.AddRange(
                 new Organization
@@ -136,7 +136,7 @@ public class ApiFixture : IAsyncLifetime
             );
             await seed.SaveChangesAsync();
         }
-        await using (var seed = CreateIdentityContext(adminCs))
+        await using (var seed = CreateModuleContext<IdentityDbContext>(adminCs, "identity"))
         {
             var a = AppUser.Create("local", UserA, UserA, "User A");
             var b = AppUser.Create("local", UserB, UserB, "User B");
@@ -176,16 +176,7 @@ public class ApiFixture : IAsyncLifetime
             foreach (var (org, ownerRole) in owners)
             {
                 seed.Roles.Add(ownerRole);
-                seed.RoleGrants.Add(
-                    new RoleGrant
-                    {
-                        Id = Guid.CreateVersion7(),
-                        OrgId = org,
-                        RoleId = ownerRole.Id,
-                        Domain = "*",
-                        Action = "*",
-                    }
-                );
+                seed.RoleGrants.Add(RoleGrant.Wildcard(ownerRole));
             }
             foreach (var (membership, isOwner) in memberships.Where(m => m.Item2))
                 seed.MembershipRoles.Add(
@@ -257,7 +248,7 @@ public class ApiFixture : IAsyncLifetime
         await WaitUntilAsync(
             async () =>
             {
-                await using var check = CreateIdentityContext(adminCs);
+                await using var check = CreateModuleContext<IdentityDbContext>(adminCs, "identity");
                 return await check.OrgDirectory.CountAsync() >= 3;
             },
             "the seeded orgs to reach the org directory read model"
@@ -288,7 +279,10 @@ public class ApiFixture : IAsyncLifetime
 
     public async Task<List<(DateTimeOffset start, DateTimeOffset end)>> QueryWindows(Guid siteId)
     {
-        await using var db = CreateTenancyContext(_postgres.GetConnectionString());
+        await using var db = CreateModuleContext<TenancyDbContext>(
+            _postgres.GetConnectionString(),
+            "tenancy"
+        );
         var typed = new SiteId(siteId);
         return (
             await db
@@ -335,7 +329,10 @@ public class ApiFixture : IAsyncLifetime
 
     public async Task DeleteWindows(Guid siteId)
     {
-        await using var db = CreateTenancyContext(_postgres.GetConnectionString());
+        await using var db = CreateModuleContext<TenancyDbContext>(
+            _postgres.GetConnectionString(),
+            "tenancy"
+        );
         var typed = new SiteId(siteId);
         await db
             .SiteOpenWindows.IgnoreQueryFilters()
@@ -498,7 +495,10 @@ public class ApiFixture : IAsyncLifetime
     /// <summary>A user with NO org at all - the day-zero starting state.</summary>
     public async Task<Guid> CreateUserOnly(string email)
     {
-        await using var db = CreateIdentityContext(_postgres.GetConnectionString());
+        await using var db = CreateModuleContext<IdentityDbContext>(
+            _postgres.GetConnectionString(),
+            "identity"
+        );
         var user = AppUser.Create("local", email, email, email.Split('@')[0]);
         db.Users.Add(user);
         await db.SaveChangesAsync();
@@ -507,7 +507,10 @@ public class ApiFixture : IAsyncLifetime
 
     public async Task<string> ExternalOrgIdOf(Guid orgId)
     {
-        await using var db = CreateTenancyContext(_postgres.GetConnectionString());
+        await using var db = CreateModuleContext<TenancyDbContext>(
+            _postgres.GetConnectionString(),
+            "tenancy"
+        );
         var typed = new OrgId(orgId);
         return await db
             .Organizations.Where(o => o.Id == typed)
@@ -518,7 +521,10 @@ public class ApiFixture : IAsyncLifetime
     /// <summary>Fresh role-less member of the org - for order-independent grant tests.</summary>
     public async Task<Guid> CreateMemberAsync(string email, OrgId org)
     {
-        await using var db = CreateIdentityContext(_postgres.GetConnectionString());
+        await using var db = CreateModuleContext<IdentityDbContext>(
+            _postgres.GetConnectionString(),
+            "identity"
+        );
         var user = AppUser.Create("local", email, email, email.Split('@')[0]);
         db.Users.Add(user);
         db.Memberships.Add(Membership.Create(user.Id, org));
@@ -528,13 +534,19 @@ public class ApiFixture : IAsyncLifetime
 
     public async Task<Guid> UserIdOf(string email)
     {
-        await using var db = CreateIdentityContext(_postgres.GetConnectionString());
+        await using var db = CreateModuleContext<IdentityDbContext>(
+            _postgres.GetConnectionString(),
+            "identity"
+        );
         return await db.Users.Where(u => u.Email == email).Select(u => u.Id).SingleAsync();
     }
 
     public async Task<Guid> SettingIdOf(OrgId org, string key)
     {
-        await using var db = CreateTenancyContext(_postgres.GetConnectionString());
+        await using var db = CreateModuleContext<TenancyDbContext>(
+            _postgres.GetConnectionString(),
+            "tenancy"
+        );
         return await db
             .OrganizationSettings.IgnoreQueryFilters()
             .Where(s => s.OrgId == org && s.Key == key)
@@ -542,17 +554,12 @@ public class ApiFixture : IAsyncLifetime
             .SingleAsync();
     }
 
-    private static TenancyDbContext CreateTenancyContext(string cs) =>
-        new(
-            new DbContextOptionsBuilder<TenancyDbContext>()
-                .UseNpgsql(cs, n => n.MigrationsHistoryTable("__ef_migrations_history", "tenancy"))
-                .Options,
-            new TenantContext()
-        );
-
     public async Task SeedAuditChange(OrgId org, Guid id, DateTimeOffset occurredAt)
     {
-        await using var db = CreateAuditContext(_postgres.GetConnectionString());
+        await using var db = CreateModuleContext<AuditDbContext>(
+            _postgres.GetConnectionString(),
+            "audit"
+        );
         db.Changes.Add(
             new LocIntel.Platform.Audit.AuditChangeLog
             {
@@ -587,7 +594,10 @@ public class ApiFixture : IAsyncLifetime
 
     public async Task<List<T>> QueryAudit<T>(Func<AuditDbContext, IQueryable<T>> query)
     {
-        await using var db = CreateAuditContext(_postgres.GetConnectionString());
+        await using var db = CreateModuleContext<AuditDbContext>(
+            _postgres.GetConnectionString(),
+            "audit"
+        );
         return await query(db).ToListAsync();
     }
 
@@ -601,33 +611,6 @@ public class ApiFixture : IAsyncLifetime
                     .Options,
                 new TenantContext()
             )!;
-
-    private static AuditDbContext CreateAuditContext(string cs) =>
-        new(
-            new DbContextOptionsBuilder<AuditDbContext>()
-                .UseNpgsql(cs, n => n.MigrationsHistoryTable("__ef_migrations_history", "audit"))
-                .Options,
-            new TenantContext()
-        );
-
-    private static EntitlementsDbContext CreateEntitlementsContext(string cs) =>
-        new(
-            new DbContextOptionsBuilder<EntitlementsDbContext>()
-                .UseNpgsql(
-                    cs,
-                    n => n.MigrationsHistoryTable("__ef_migrations_history", "entitlements")
-                )
-                .Options,
-            new TenantContext()
-        );
-
-    private static IdentityDbContext CreateIdentityContext(string cs) =>
-        new(
-            new DbContextOptionsBuilder<IdentityDbContext>()
-                .UseNpgsql(cs, n => n.MigrationsHistoryTable("__ef_migrations_history", "identity"))
-                .Options,
-            new TenantContext()
-        );
 
     public virtual async Task DisposeAsync()
     {

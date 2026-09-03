@@ -192,16 +192,7 @@ public sealed class DevBootstrap(
                 identity.Users.Add(user);
                 identity.Memberships.Add(membership);
                 identity.Roles.Add(role);
-                identity.RoleGrants.Add(
-                    new LocIntel.Modules.Identity.Access.RoleGrant
-                    {
-                        Id = Guid.CreateVersion7(),
-                        OrgId = orgId,
-                        RoleId = role.Id,
-                        Domain = "*",
-                        Action = "*",
-                    }
-                );
+                identity.RoleGrants.Add(LocIntel.Modules.Identity.Access.RoleGrant.Wildcard(role));
                 identity.MembershipRoles.Add(
                     new LocIntel.Modules.Identity.Access.MembershipRole
                     {

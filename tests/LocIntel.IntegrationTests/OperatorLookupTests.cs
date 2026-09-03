@@ -27,7 +27,7 @@ public class OperatorLookupTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         );
         var owner = await fixture.LoginAsync(ApiFixture.UserA);
         Assert.Equal(
-            HttpStatusCode.Unauthorized,
+            HttpStatusCode.Forbidden,
             (await owner.GetAsync("/api/operator/users?q=user")).StatusCode
         );
     }

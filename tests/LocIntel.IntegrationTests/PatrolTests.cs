@@ -196,7 +196,7 @@ public class PatrolTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         // gates: no role holds nothing; another org sees nothing; guests nothing
         var viewer = await fixture.LoginAsync(ApiFixture.ViewerA);
         Assert.Equal(
-            HttpStatusCode.Unauthorized,
+            HttpStatusCode.Forbidden,
             (await viewer.GetAsync($"/api/patrols/today?siteId={siteId}")).StatusCode
         );
         var outsider = await fixture.LoginAsync(ApiFixture.UserB);

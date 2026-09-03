@@ -101,17 +101,20 @@ public class CaseTests(ApiFixture fixture) : IClassFixture<ApiFixture>
             await owner.PostAsJsonAsync($"/api/cases/{caseId}/hold", new { hold = true })
         ).EnsureSuccessStatusCode();
         var held = false;
-        for (var i = 0; i < 50 && !held; i++)
-        {
-            await Task.Delay(100);
-            var file = await owner.GetFromJsonAsync<JsonElement>($"/api/files?q=receipt");
-            held = file.GetProperty("items")
-                .EnumerateArray()
-                .Any(f =>
-                    f.GetProperty("id").GetGuid() == fileId
-                    && f.GetProperty("legalHold").GetBoolean()
-                );
-        }
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+            {
+                var file = await owner.GetFromJsonAsync<JsonElement>($"/api/files?q=receipt");
+                held = file.GetProperty("items")
+                    .EnumerateArray()
+                    .Any(f =>
+                        f.GetProperty("id").GetGuid() == fileId
+                        && f.GetProperty("legalHold").GetBoolean()
+                    );
+                return !(!held);
+            },
+            "held"
+        );
         Assert.True(held, "the evidence file should be under legal hold after the case is held");
         Assert.Equal(
             HttpStatusCode.Conflict,
@@ -239,7 +242,7 @@ public class CaseTests(ApiFixture fixture) : IClassFixture<ApiFixture>
             await reader.PostAsJsonAsync($"/api/cases/{caseId}/notes", new { body = "On it." })
         ).EnsureSuccessStatusCode();
         Assert.Equal(
-            HttpStatusCode.Unauthorized,
+            HttpStatusCode.Forbidden,
             (
                 await reader.PostAsJsonAsync(
                     $"/api/cases/{caseId}/close",
@@ -248,7 +251,7 @@ public class CaseTests(ApiFixture fixture) : IClassFixture<ApiFixture>
             ).StatusCode
         );
         Assert.Equal(
-            HttpStatusCode.Unauthorized,
+            HttpStatusCode.Forbidden,
             (
                 await reader.PostAsJsonAsync(
                     $"/api/cases/{caseId}/members",
@@ -279,7 +282,7 @@ public class CaseTests(ApiFixture fixture) : IClassFixture<ApiFixture>
             (await fixture.GuestClient().GetAsync("/api/cases")).StatusCode
         );
         var viewer = await fixture.LoginAsync(ApiFixture.ViewerA);
-        Assert.Equal(HttpStatusCode.Unauthorized, (await viewer.GetAsync("/api/cases")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await viewer.GetAsync("/api/cases")).StatusCode);
     }
 
     private static async Task<Guid> RootAsync(HttpClient client)

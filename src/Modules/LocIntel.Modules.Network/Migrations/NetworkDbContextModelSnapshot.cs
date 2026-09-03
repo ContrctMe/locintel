@@ -69,6 +69,10 @@ namespace LocIntel.Modules.Network.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("kind");
 
+                    b.Property<Guid>("OrgId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("publisher_org_id");
+
                     b.Property<DateTimeOffset>("PublishedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("published_at");
@@ -82,10 +86,6 @@ namespace LocIntel.Modules.Network.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
                         .HasColumnName("publisher_name");
-
-                    b.Property<Guid>("PublisherOrgId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("publisher_org_id");
 
                     b.Property<string>("Severity")
                         .IsRequired()
@@ -116,6 +116,114 @@ namespace LocIntel.Modules.Network.Migrations
                     b.HasIndex("ShareId", "PublishedAt");
 
                     b.ToTable("shared_bulletins", "network");
+                });
+
+            modelBuilder.Entity("LocIntel.Modules.Network.Bulletins.SharedBulletinCopy", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.PrimitiveCollection<string[]>("Aliases")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("aliases");
+
+                    b.PrimitiveCollection<string[]>("Areas")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("areas");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("body");
+
+                    b.Property<Guid>("BulletinId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("bulletin_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("DescriptorsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("descriptors");
+
+                    b.Property<string>("DisplayName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("display_name");
+
+                    b.Property<string>("EntityKind")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("entity_kind");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("kind");
+
+                    b.Property<Guid>("OrgId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("org_id");
+
+                    b.Property<DateTimeOffset>("PublishedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("published_at");
+
+                    b.Property<string>("PublisherName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("publisher_name");
+
+                    b.Property<Guid>("PublisherOrgId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("publisher_org_id");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("severity");
+
+                    b.Property<Guid>("ShareId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("share_id");
+
+                    b.Property<string>("ShareName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("share_name");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTimeOffset?>("WithdrawnAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("withdrawn_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrgId", "BulletinId")
+                        .IsUnique();
+
+                    b.HasIndex("ShareId", "PublishedAt");
+
+                    b.ToTable("shared_bulletin_copies", "network");
                 });
 
             modelBuilder.Entity("LocIntel.Modules.Network.Shares.Share", b =>
@@ -180,6 +288,11 @@ namespace LocIntel.Modules.Network.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
                     b.Property<Guid?>("InvitedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("invited_by");
@@ -192,11 +305,26 @@ namespace LocIntel.Modules.Network.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("org_id");
 
+                    b.Property<string>("OwnerName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("owner_name");
+
+                    b.Property<Guid>("OwnerOrgId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("owner_org_id");
+
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("role");
+
+                    b.Property<string>("RosterJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("roster");
 
                     b.Property<Guid>("ShareId")
                         .HasColumnType("uuid")
@@ -207,6 +335,12 @@ namespace LocIntel.Modules.Network.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
                         .HasColumnName("share_name");
+
+                    b.Property<string>("ShareStatus")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("share_status");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -236,6 +370,10 @@ namespace LocIntel.Modules.Network.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("joined_at");
 
+                    b.Property<Guid>("MemberOrgId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("member_org_id");
+
                     b.Property<Guid>("OrgId")
                         .HasColumnType("uuid")
                         .HasColumnName("org_id");
@@ -264,7 +402,7 @@ namespace LocIntel.Modules.Network.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ShareId", "OrgId")
+                    b.HasIndex("ShareId", "MemberOrgId")
                         .IsUnique();
 
                     b.ToTable("share_members", "network");

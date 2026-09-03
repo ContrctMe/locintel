@@ -1,7 +1,7 @@
-using System.Text.Json;
 using LocIntel.Contracts;
 using LocIntel.Modules.Marketplace.Data;
 using LocIntel.Modules.Marketplace.Marketplace;
+using LocIntel.Modules.Marketplace.Requests.Messages;
 using LocIntel.Modules.Marketplace.Vendors;
 using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Messaging;
@@ -14,10 +14,11 @@ namespace LocIntel.Modules.Marketplace.Requests;
 
 /// <summary>
 /// Escalates the org's submitted requests whose response window passed:
-/// a broadcast widens to the next matching vendors (who get the dispatch,
-/// SMS included for emergencies); a direct request nudges the buyer to
-/// broadcast instead. Each escalation extends the window; after
-/// MaxEscalations the buyer is told the request is unanswered.
+/// a broadcast widens to the next matching vendors (each gets its own
+/// assignment row and the dispatch, SMS included for emergencies); a direct
+/// request nudges the buyer to broadcast instead. Each escalation extends
+/// the window; after MaxEscalations the buyer is told the request is
+/// unanswered. Runs as the requester; every participant gets the new state.
 /// </summary>
 public static class EscalateOverdueRequestsHandler
 {
@@ -46,6 +47,7 @@ public static class EscalateOverdueRequestsHandler
                 && r.ResponseDueAt <= now
             )
             .ToListAsync(ct);
+        var system = new ActorRef(org, Guid.Empty, "system");
         foreach (var row in overdue)
         {
             row.EscalationCount++;
@@ -53,14 +55,14 @@ public static class EscalateOverdueRequestsHandler
             row.ResponseDueAt = now + options.Value.Window(row.Urgency);
             row.UpdatedAt = now;
             var exhausted = row.EscalationCount > options.Value.MaxEscalations;
-            var added = 0;
+            var next = new List<OrgId>();
             if (row.Mode == RequestMode.Broadcast && !exhausted)
             {
                 var already = await db
                     .Recipients.Where(x => x.RequestId == row.Id)
-                    .Select(x => x.CounterpartyOrgId)
+                    .Select(x => x.VendorOrgId)
                     .ToListAsync(ct);
-                var next = (
+                next = (
                     await VendorMatcher.MatchAsync(
                         db,
                         org,
@@ -75,50 +77,54 @@ public static class EscalateOverdueRequestsHandler
                     .Take(options.Value.EscalationRecipients)
                     .ToList();
                 foreach (var vendorOrg in next)
-                {
                     db.Recipients.Add(
                         new RequestRecipient
                         {
                             Id = Guid.CreateVersion7(),
                             OrgId = org,
-                            CounterpartyOrgId = vendorOrg,
+                            VendorOrgId = vendorOrg,
                             RequestId = row.Id,
                         }
                     );
-                    await bus.PublishAsync(
-                        new SendOrgNotice(
-                            $"Request for quotes ({row.Urgency}): {row.Title}",
-                            [
-                                $"{row.RequesterName} is still looking for {row.Category} at {row.SiteName}.",
-                                $"Starts {row.StartsAt:u}.",
-                                "Open the vendor console to quote or decline.",
-                            ],
-                            "marketplace",
-                            row.Urgency == RequestUrgency.Emergency
-                                ? $"URGENT request for quotes: {row.Title} at {row.SiteName}"
-                                : null
-                        ),
-                        new DeliveryOptions { TenantId = vendorOrg.Value.ToString() }
-                    );
-                    added++;
-                }
             }
-            db.Events.Add(
-                new RequestEvent
-                {
-                    Id = Guid.CreateVersion7(),
-                    OrgId = org,
-                    CounterpartyOrgId = row.CounterpartyOrgId,
-                    RequestId = row.Id,
-                    ActorOrgId = org,
-                    ActorId = Guid.Empty,
-                    Kind = RequestEventKind.StatusChange,
-                    Body =
-                        exhausted ? "No response after repeated escalation"
-                        : row.Mode == RequestMode.Broadcast
-                            ? $"No response by the deadline; widened to {added} more vendor(s)"
-                        : "No response by the deadline; the vendor was reminded",
-                }
+            var added = next.Count;
+            var evt = RequestViews.StatusEvent(
+                row,
+                system,
+                exhausted ? "No response after repeated escalation"
+                    : row.Mode == RequestMode.Broadcast
+                        ? $"No response by the deadline; widened to {added} more vendor(s)"
+                    : "No response by the deadline; the vendor was reminded"
+            );
+            db.Events.Add(evt);
+            await db.SaveChangesAsync(ct);
+
+            await bus.FanOutAsync(
+                next,
+                new RequestOffered(row.Snapshot(), RecipientStatus.Invited),
+                row.Id
+            );
+            foreach (var vendorOrg in next)
+                await bus.PublishForOrgAsync(
+                    vendorOrg,
+                    new SendOrgNotice(
+                        $"Request for quotes ({row.Urgency}): {row.Title}",
+                        [
+                            $"{row.RequesterName} is still looking for {row.Category} at {row.SiteName}.",
+                            $"Starts {row.StartsAt:u}.",
+                            "Open the vendor console to quote or decline.",
+                        ],
+                        "marketplace",
+                        row.Urgency == RequestUrgency.Emergency
+                            ? $"URGENT request for quotes: {row.Title} at {row.SiteName}"
+                            : null
+                    )
+                );
+            await RequestFanOut.StateAsync(db, bus, row, ct);
+            await RequestFanOut.EventAsync(
+                bus,
+                await RequestFanOut.CounterpartiesAsync(db, row, ct),
+                evt
             );
             var buyerLines =
                 exhausted
@@ -140,7 +146,8 @@ public static class EscalateOverdueRequestsHandler
                     $"{row.Title} at {row.SiteName} has not been answered by the vendor.",
                     "Consider broadcasting it for quotes instead.",
                 ];
-            await bus.PublishAsync(
+            await bus.PublishForOrgAsync(
+                org,
                 new SendOrgNotice(
                     $"Unanswered request: {row.Title}",
                     buyerLines,
@@ -148,11 +155,11 @@ public static class EscalateOverdueRequestsHandler
                     row.Urgency == RequestUrgency.Emergency
                         ? $"Unanswered emergency request: {row.Title} at {row.SiteName}"
                         : null
-                ),
-                new DeliveryOptions { TenantId = org.Value.ToString() }
+                )
             );
-            if (row.Mode == RequestMode.Direct && row.CounterpartyOrgId is { } vendor && !exhausted)
-                await bus.PublishAsync(
+            if (row.Mode == RequestMode.Direct && row.VendorOrgId is { } vendor && !exhausted)
+                await bus.PublishForOrgAsync(
+                    vendor,
                     new SendOrgNotice(
                         $"Reminder: {row.Title} awaits your response",
                         [
@@ -163,8 +170,7 @@ public static class EscalateOverdueRequestsHandler
                         row.Urgency == RequestUrgency.Emergency
                             ? $"URGENT: {row.Title} at {row.SiteName} awaits your response"
                             : null
-                    ),
-                    new DeliveryOptions { TenantId = vendor.Value.ToString() }
+                    )
                 );
             await bus.AuditAsync(
                 org,
@@ -179,7 +185,5 @@ public static class EscalateOverdueRequestsHandler
                 }
             );
         }
-        if (overdue.Count > 0)
-            await db.SaveChangesAsync(ct);
     }
 }

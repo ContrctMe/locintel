@@ -36,7 +36,7 @@ public sealed class RequestPrincipalAccessor(IHttpContextAccessor accessor) : IP
             if (
                 user.Identity?.IsAuthenticated == true
                 && user.FindFirst(LocIntelClaims.Tier)?.Value == "contact"
-                && Guid.TryParse(user.FindFirst("locintel:contact_id")?.Value, out var contactId)
+                && Guid.TryParse(user.FindFirst(LocIntelClaims.ContactId)?.Value, out var contactId)
                 && Guid.TryParse(
                     user.FindFirst(LocIntelClaims.ActiveOrg)?.Value,
                     out var contactOrg

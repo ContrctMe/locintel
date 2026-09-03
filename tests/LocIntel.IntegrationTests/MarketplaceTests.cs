@@ -51,18 +51,35 @@ public class MarketplaceTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         (
             await vendor.PostAsJsonAsync("/api/vendor/profile/publish", new { published = false })
         ).EnsureSuccessStatusCode();
-        var hidden = await buyer.GetFromJsonAsync<JsonElement>("/api/marketplace/vendors");
-        Assert.DoesNotContain(
-            hidden.GetProperty("items").EnumerateArray(),
-            v => v.GetProperty("orgId").GetGuid() == fixture.OrgB.Value
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+                !(await buyer.GetFromJsonAsync<JsonElement>("/api/marketplace/vendors"))
+                    .GetProperty("items")
+                    .EnumerateArray()
+                    .Any(v => v.GetProperty("orgId").GetGuid() == fixture.OrgB.Value),
+            "the unpublished vendor to leave the directory"
         );
         (
             await vendor.PostAsJsonAsync("/api/vendor/profile/publish", new { published = true })
         ).EnsureSuccessStatusCode();
 
-        // the catalog crosses the org line, credentials included
-        var catalog = await buyer.GetFromJsonAsync<JsonElement>(
-            "/api/marketplace/vendors?category=GuardService&area=ca"
+        // the catalog is a projection: it crosses the org line through the outbox, credentials included
+        JsonElement catalog = default;
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+            {
+                catalog = await buyer.GetFromJsonAsync<JsonElement>(
+                    "/api/marketplace/vendors?category=GuardService&area=ca"
+                );
+                return catalog
+                    .GetProperty("items")
+                    .EnumerateArray()
+                    .Any(v =>
+                        v.GetProperty("orgId").GetGuid() == fixture.OrgB.Value
+                        && v.GetProperty("validCredentials").GetInt32() == 1
+                    );
+            },
+            "the published vendor and its credential to reach the directory"
         );
         var listed = Assert.Single(
             catalog.GetProperty("items").EnumerateArray(),
@@ -144,7 +161,13 @@ public class MarketplaceTests(ApiFixture fixture) : IClassFixture<ApiFixture>
             await buyer.PostAsync($"/api/marketplace/requests/{requestId}/submit", null)
         ).EnsureSuccessStatusCode();
 
-        // now it does; the vendor sees the requester's name and the site snapshot
+        // now it does - as the vendor's OWN row, materialized through the outbox;
+        // the vendor sees the requester's name and the site snapshot
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+                (await vendor.GetAsync($"/api/vendor/requests/{requestId}")).IsSuccessStatusCode,
+            "the vendor's assignment row to arrive"
+        );
         var incoming = await vendor.GetFromJsonAsync<JsonElement>(
             $"/api/vendor/requests/{requestId}"
         );
@@ -203,11 +226,20 @@ public class MarketplaceTests(ApiFixture fixture) : IClassFixture<ApiFixture>
             )
         ).EnsureSuccessStatusCode();
 
-        // the buyer sees the whole timeline with sides, and verifies
-        var detail = await buyer.GetFromJsonAsync<JsonElement>(
-            $"/api/marketplace/requests/{requestId}"
+        // the buyer sees the whole timeline with sides (its own copies, one per
+        // entry the vendor made), and verifies
+        JsonElement detail = default;
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+            {
+                detail = await buyer.GetFromJsonAsync<JsonElement>(
+                    $"/api/marketplace/requests/{requestId}"
+                );
+                return detail.GetProperty("status").GetString() == "Completed"
+                    && detail.GetProperty("events").GetArrayLength() == 7;
+            },
+            "the vendor's work to reach the buyer's request"
         );
-        Assert.Equal("Completed", detail.GetProperty("status").GetString());
         Assert.Equal("Bravo Guard Services", detail.GetProperty("vendorName").GetString());
         var kinds = detail
             .GetProperty("events")
@@ -290,11 +322,11 @@ public class MarketplaceTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         );
         var viewer = await fixture.LoginAsync(ApiFixture.ViewerA);
         Assert.Equal(
-            HttpStatusCode.Unauthorized,
+            HttpStatusCode.Forbidden,
             (await viewer.GetAsync("/api/marketplace/requests")).StatusCode
         );
         Assert.Equal(
-            HttpStatusCode.Unauthorized,
+            HttpStatusCode.Forbidden,
             (await viewer.GetAsync("/api/vendor/profile")).StatusCode
         );
     }
@@ -317,6 +349,14 @@ public class MarketplaceTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         (
             await vendor.PostAsJsonAsync("/api/vendor/profile/publish", new { published = true })
         ).EnsureSuccessStatusCode();
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+                (await buyer.GetFromJsonAsync<JsonElement>("/api/marketplace/vendors"))
+                    .GetProperty("items")
+                    .EnumerateArray()
+                    .Any(v => v.GetProperty("orgId").GetGuid() == fixture.OrgB.Value),
+            "the published vendor to reach the directory"
+        );
         var expired = await vendor.PostAsJsonAsync(
             "/api/vendor/credentials",
             new
@@ -352,6 +392,11 @@ public class MarketplaceTests(ApiFixture fixture) : IClassFixture<ApiFixture>
             await buyer.PostAsync($"/api/marketplace/requests/{requestId}/submit", null)
         ).EnsureSuccessStatusCode();
 
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+                (await vendor.GetAsync($"/api/vendor/requests/{requestId}")).IsSuccessStatusCode,
+            "the vendor's assignment row to arrive"
+        );
         var refused = await vendor.PostAsync($"/api/vendor/requests/{requestId}/accept", null);
         Assert.Equal(HttpStatusCode.Conflict, refused.StatusCode);
         (
@@ -378,6 +423,13 @@ public class MarketplaceTests(ApiFixture fixture) : IClassFixture<ApiFixture>
                 new { reason = "Window replaced early" }
             )
         ).EnsureSuccessStatusCode();
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+                (await vendor.GetFromJsonAsync<JsonElement>($"/api/vendor/requests/{requestId}"))
+                    .GetProperty("status")
+                    .GetString() == "Cancelled",
+            "the cancellation to reach the vendor's row"
+        );
         Assert.Equal(
             HttpStatusCode.Conflict,
             (await vendor.PostAsync($"/api/vendor/requests/{requestId}/start", null)).StatusCode

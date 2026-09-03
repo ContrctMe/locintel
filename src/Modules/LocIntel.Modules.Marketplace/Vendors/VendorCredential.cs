@@ -4,12 +4,13 @@ using LocIntel.Platform.Kernel;
 namespace LocIntel.Modules.Marketplace.Vendors;
 
 /// <summary>
-/// A license, insurance certificate, or certification with an expiry.
-/// Readable across orgs while the vendor's profile is published (a buyer
-/// checks before hiring); expired credentials block new assignments.
-/// Tier 3. ExpiresAt / CreatedAt are UTC instants.
+/// A license, insurance certificate, or certification with an expiry. Owned
+/// by the vendor; buyers see a public summary (kind, label, jurisdiction,
+/// expiry - never the number) through the vendor directory projection.
+/// Expired credentials block new assignments. Tier 3. ExpiresAt / CreatedAt
+/// are UTC instants.
 /// </summary>
-public sealed class VendorCredential
+public sealed class VendorCredential : IOrgScoped
 {
     public required Guid Id { get; init; }
     public required OrgId OrgId { get; init; }

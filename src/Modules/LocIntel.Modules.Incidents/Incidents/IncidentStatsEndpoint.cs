@@ -1,3 +1,4 @@
+using LocIntel.Contracts;
 using LocIntel.Modules.Incidents.Data;
 using LocIntel.Modules.Incidents.Incidents.Api;
 using LocIntel.Platform.Data;
@@ -32,9 +33,9 @@ public static class IncidentStatsEndpoint
         CancellationToken ct
     )
     {
-        var scope = await scopes.ScopeForAsync(accessor.Current, Capabilities.IncidentsRead, ct);
-        if (scope is NodeScope.None)
-            return Results.Unauthorized();
+        var gate = await Gate.RequireAsync(accessor, scopes, Capabilities.IncidentsRead, ct);
+        if (gate is not GateOutcome.Allowed { Scope: var scope })
+            return gate.ToResult();
         var end = to ?? DateOnly.FromDateTime(time.GetUtcNow().UtcDateTime);
         var start = from ?? end.AddDays(-29);
         if (start > end)

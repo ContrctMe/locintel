@@ -17,45 +17,23 @@ migration files; always add a new one.
    ```bash
    dotnet ef migrations add <Name> --project src/Modules/LocIntel.Modules.<Name> --startup-project src/Modules/LocIntel.Modules.<Name> --context <Name>DbContext
    ```
-3. **RLS checklist - every new tenant-scoped table.** Use the helper for the
-   shape you have; never hand-write the policy SQL:
-   - Single owner (the common case): `migrationBuilder.EnableTenantRls(schema, table)`
-     on an entity implementing `IOrgScoped`.
-   - **Two-party with a REQUIRED counterparty** (a quote has no meaning
-     without a vendor): implement `IRequiredCounterpartyScoped` and use the
-     same `EnableTwoPartyRls`. Do NOT use the nullable interface for a NOT
-     NULL column - that forces `required OrgId?` plus `.IsRequired()` plus a
-     null-forgiving accessor on the entity, and the `!` lies about the model.
-   - **Two-party** (owner + counterparty: a request and its vendor, a shared
-     case): `EnableTwoPartyRls(schema, table, "counterparty_org_id")` on an
-     entity implementing `ITwoPartyScoped`. Both sides read and write; the
-     WITH CHECK stops a third org forging a row between two others.
-   - **Published catalog** (owner writes, everyone reads once published):
-     `EnablePublishedCatalogRls(schema, table)` on `IPublishedCatalogScoped`.
-     This is deliberately TWO policies - a single `FOR ALL` policy allowing
-     published reads would also allow published *writes* by any tenant.
-   - **Recipient list** (owner + optional counterparty + every org in a side
-     table: a broadcast and its recipients, a share and its members):
-     `EnableRecipientListRls(schema, table, recipientsTable, fkColumn,
-     recipientOrgColumn)`, paired with `AddRecipientListFilter` in the
-     context. The side table gets its OWN plain policy, never one referencing
-     the parent. Being on the list grants READ only - the WITH CHECK omits
-     the recipient clause, so a recipient cannot edit the parent (award a
-     request to itself); Postgres refuses that write loudly (42501).
-     Two options cover the harder cases: `recipientPredicate` gates the
-     lookup on the recipient row's own state (`"status <> 'Removed'"` - a
-     removal usually KEEPS the row for the audit trail, so listing alone
-     cannot mean access), and `writableByRecipient: true` extends WITH CHECK
-     with the SAME gated lookup for rows the recipient authors (a member
-     editing its membership, a publisher posting into a share). Reusing the
-     gated lookup is the point: a predicate on reads only would leave a
-     removed member able to write. For a single-owner parent use
-     `AddOwnerAndRecipientsFilter` instead of `AddRecipientListFilter`.
-   - **Recursion rule.** A policy may reference ANOTHER table, never its own -
-     a self-referencing policy recurses and the query fails at runtime. For
-     "can this org see it through a grant", anchor visibility on one
-     single-owner access table and have the other tables' policies `EXISTS`
-     against it.
+3. **RLS checklist - every new tenant-scoped table** (ADR 48):
+   - The entity implements `IOrgScoped` and the migration calls
+     `migrationBuilder.EnableTenantRls(schema, table)`. **That is the only
+     tenancy shape.** Every row has exactly one owning org.
+   - Need another org to see or act on this row? Do NOT add a counterparty
+     column, a recipients table, or a `published` flag - those give a row
+     more than one owner and are exactly what ADR 48 removed. Instead the
+     owner's aggregate holds who-it-is-shared-with as DATA, publishes an
+     event, and a handler materializes an `IOrgScoped` row in EACH other
+     org's tenant (`PublishForOrgAsync` to that org, so it lands under their
+     RLS session). `org_directory` is the worked example. Read ADR 48 and
+     `docs/cross-tenant-sharing.md` before modeling any cross-org feature:
+     the recipe covers targeted push (`FanOutAsync`) versus open pull (a
+     platform-global projection), and maps every removed shape to its owned
+     equivalent.
+   - Workflow authority ("may a vendor award?") is a command on the object
+     you own, never a `WITH CHECK` clause.
    - Raw SQL goes in the migration via `migrationBuilder.Sql(...)`.
    - Platform-global tables (no org_id) are the exception - say so explicitly in
      a migration comment AND add them to `RlsCoverageTests.PlatformGlobal`,

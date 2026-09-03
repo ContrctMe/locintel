@@ -1,3 +1,4 @@
+using LocIntel.Contracts;
 using LocIntel.Modules.Alerts.Alerts.Api;
 using LocIntel.Modules.Alerts.Bulletins;
 using LocIntel.Modules.Alerts.Data;
@@ -28,9 +29,9 @@ public static class AlertEndpoints
     {
         if (accessor.Current is not Principal.User { UserId: var userId })
             return Results.Unauthorized();
-        var scope = await scopes.ScopeForAsync(accessor.Current, Capabilities.AlertsRead, ct);
-        if (scope is NodeScope.None)
-            return Results.Unauthorized();
+        var gate = await Gate.RequireAsync(accessor, scopes, Capabilities.AlertsRead, ct);
+        if (gate is not GateOutcome.Allowed { Scope: var scope })
+            return gate.ToResult();
         var visible = ScopeOverlap.Alerts(db.Alerts, scope);
         var unread = await visible.CountAsync(
             a => !db.Reads.Any(r => r.AlertId == a.Id && r.UserId == userId),
@@ -85,9 +86,9 @@ public static class AlertEndpoints
     {
         if (accessor.Current is not Principal.User { ActiveOrg: { } org, UserId: var userId })
             return Results.Unauthorized();
-        var scope = await scopes.ScopeForAsync(accessor.Current, Capabilities.AlertsRead, ct);
-        if (scope is NodeScope.None)
-            return Results.Unauthorized();
+        var gate = await Gate.RequireAsync(accessor, scopes, Capabilities.AlertsRead, ct);
+        if (gate is not GateOutcome.Allowed { Scope: var scope })
+            return gate.ToResult();
         var alert = await ScopeOverlap
             .Alerts(db.Alerts, scope)
             .FirstOrDefaultAsync(a => a.Id == id, ct);
@@ -125,9 +126,9 @@ public static class AlertEndpoints
     {
         if (accessor.Current is not Principal.User { UserId: var userId })
             return Results.Unauthorized();
-        var scope = await scopes.ScopeForAsync(accessor.Current, Capabilities.AlertsRead, ct);
-        if (scope is NodeScope.None)
-            return Results.Unauthorized();
+        var gate = await Gate.RequireAsync(accessor, scopes, Capabilities.AlertsRead, ct);
+        if (gate is not GateOutcome.Allowed { Scope: var scope })
+            return gate.ToResult();
         var now = time.GetUtcNow();
         var unread = await ScopeOverlap
             .Alerts(db.Alerts, scope)

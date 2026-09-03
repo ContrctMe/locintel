@@ -358,6 +358,14 @@ public class TenantIsolationTests(ApiFixture fixture) : IClassFixture<ApiFixture
             await vendor.PostAsJsonAsync("/api/vendor/profile/publish", new { published = true })
         ).EnsureSuccessStatusCode();
         var clientA = await fixture.LoginAsync(ApiFixture.UserA);
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+                (await clientA.GetFromJsonAsync<JsonElement>("/api/marketplace/vendors"))
+                    .GetProperty("items")
+                    .EnumerateArray()
+                    .Any(v => v.GetProperty("orgId").GetGuid() == fixture.OrgB.Value),
+            "the published vendor to reach the directory"
+        );
         var hierarchy = await clientA.GetAsync("/api/hierarchy");
         Guid rootId;
         if (hierarchy.StatusCode == HttpStatusCode.OK)

@@ -1,6 +1,6 @@
 # Architecture Decision Records
 
-The 47 settled decisions for this template, from the design brainstorm of
+The 48 settled decisions for this template, from the design brainstorm of
 2026-08-29. The human-readable register (same content, with the three-gates
 overview and build sequence) is published from `design-decisions.html`.
 
@@ -64,3 +64,4 @@ confirmation on edits under this directory.
 - [0045. Checklists: the reference vertical, and the ops mobile answer](0045-checklists-reference-vertical.md)
 - [0046. Org-defined site attributes](0046-org-defined-site-attributes.md)
 - [0047. Localization and accessibility posture](0047-i18n-a11y-posture.md)
+- [0048. One owner per row; cross-tenant sharing by materialization](0048-one-owner-per-row.md) — pinned

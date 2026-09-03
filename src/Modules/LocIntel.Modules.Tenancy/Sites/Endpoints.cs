@@ -1,3 +1,4 @@
+using LocIntel.Contracts;
 using LocIntel.Modules.Tenancy.Data;
 using LocIntel.Modules.Tenancy.Hierarchy;
 using LocIntel.Platform.Data;
@@ -113,16 +114,7 @@ public static class SiteEndpoints
             ct
         );
         if (!decision.IsAllowed)
-            return Results.Json(
-                new
-                {
-                    error = "plan limit reached",
-                    decision.Code,
-                    decision.Limit,
-                    current = siteCount,
-                },
-                statusCode: StatusCodes.Status402PaymentRequired
-            );
+            return GateResults.LimitReached(decision);
 
         var id = SiteId.New();
         var site = new Site

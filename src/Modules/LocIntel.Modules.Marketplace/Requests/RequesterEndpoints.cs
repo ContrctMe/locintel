@@ -3,9 +3,11 @@ using LocIntel.Contracts;
 using LocIntel.Modules.Marketplace.Data;
 using LocIntel.Modules.Marketplace.Marketplace;
 using LocIntel.Modules.Marketplace.Requests.Api;
+using LocIntel.Modules.Marketplace.Requests.Messages;
 using LocIntel.Modules.Marketplace.Vendors;
 using LocIntel.Platform.Entitlements;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -17,10 +19,12 @@ using Wolverine.Http;
 namespace LocIntel.Modules.Marketplace.Requests;
 
 /// <summary>
-/// The buyer's side. Gate 1 is real here: marketplace.enabled (402 with an
-/// upsell code) guards raising and submitting. marketplace:read lists what
-/// is in the reader's site scope; marketplace:manage raises, submits,
-/// cancels, verifies, disputes.
+/// The buyer's side, on rows the buyer OWNS (ADR 48). Every change to the
+/// request fans RequestStateChanged out to its participants; every timeline
+/// entry fans out as a copy. Gate 1 is real here: marketplace.enabled (402
+/// with an upsell code) guards raising and submitting. marketplace:read
+/// lists what is in the reader's site scope; marketplace:manage raises,
+/// submits, cancels, awards, verifies, disputes.
 /// </summary>
 public static class RequesterEndpoints
 {
@@ -41,10 +45,10 @@ public static class RequesterEndpoints
         CancellationToken ct
     )
     {
-        var scope = await scopes.ScopeForAsync(accessor.Current, Capabilities.MarketplaceRead, ct);
-        if (scope is NodeScope.None)
-            return Results.Unauthorized();
-        var query = RequestViews.InScope(db.Requests, scope);
+        var gate = await Gate.RequireAsync(accessor, scopes, Capabilities.MarketplaceRead, ct);
+        if (gate is not GateOutcome.Allowed allowed)
+            return gate.ToResult();
+        var query = RequestViews.InScope(db.Requests, allowed.Scope);
         if (status is { } s)
             query = query.Where(r => r.Status == s);
         if (category is { } c)
@@ -70,11 +74,11 @@ public static class RequesterEndpoints
         CancellationToken ct
     )
     {
-        var (request, actor, manage, error) = await Load(id, db, accessor, scopes, false, ct);
+        var (request, _, manage, error) = await Load(id, db, accessor, scopes, false, ct);
         if (error is not null)
             return error;
         return Results.Ok(
-            await RequestViews.DetailAsync(request!, actor!.Value.Org, manage, db, actors, ct)
+            await RequestViews.RequesterDetailAsync(request!, manage, db, actors, ct)
         );
     }
 
@@ -93,29 +97,25 @@ public static class RequesterEndpoints
         CancellationToken ct
     )
     {
-        if (ActorRef.From(accessor.Current) is not { } actor)
-            return Results.Unauthorized();
-        var scope = await scopes.ScopeForAsync(
-            accessor.Current,
+        var gate = await ActorGate.RequireAsync(
+            accessor,
+            scopes,
             Capabilities.MarketplaceManage,
             ct
         );
-        if (scope is NodeScope.None)
-            return Results.Unauthorized();
+        if (gate.Actor is not { } actor)
+            return gate.ToResult();
         if (await Upsell(entitlements, actor.Org, ct) is { } upsell)
             return upsell;
         var site = await sites.FindAsync(request.SiteId, ct);
-        if (site is null || !scope.Covers(site.Path))
+        if (site is null || !gate.Scope!.Covers(site.Path))
             return Results.NotFound();
         OrgId? vendorOrg = request.VendorOrgId is { } chosen ? new OrgId(chosen) : null;
         if (vendorOrg == actor.Org)
             return Results.BadRequest(new { error = "an org cannot hire itself" });
         if (vendorOrg is { } direct)
         {
-            var vendor = await db.Profiles.FirstOrDefaultAsync(
-                p => p.OrgId == direct && p.Published,
-                ct
-            );
+            var vendor = await db.Directory.FirstOrDefaultAsync(p => p.OrgId == direct, ct);
             if (vendor is null)
                 return Results.NotFound();
             if (!vendor.Offers(request.Category))
@@ -160,7 +160,7 @@ public static class RequesterEndpoints
         {
             Id = Guid.CreateVersion7(),
             OrgId = actor.Org,
-            CounterpartyOrgId = vendorOrg,
+            VendorOrgId = vendorOrg,
             Mode = vendorOrg is null ? RequestMode.Broadcast : RequestMode.Direct,
             Category = request.Category,
             Urgency = request.Urgency,
@@ -246,7 +246,7 @@ public static class RequesterEndpoints
         return Results.Ok(RequestViews.Mutated(row));
     }
 
-    /// <summary>Submit: the vendor is notified; the request leaves the requester's hands.</summary>
+    /// <summary>Submit: each vendor gets its own assignment row (pushed through the outbox) and a notice; the request leaves the requester's hands.</summary>
     [Transactional(typeof(MarketplaceDbContext))]
     [WolverinePost("/api/marketplace/requests/{id}/submit")]
     [ProducesResponseType(typeof(RequestMutated), StatusCodes.Status200OK)]
@@ -272,18 +272,14 @@ public static class RequesterEndpoints
         List<OrgId> recipients;
         if (row.Mode == RequestMode.Direct)
         {
-            var vendor = await db.Profiles.FirstOrDefaultAsync(
-                p => p.OrgId == row.CounterpartyOrgId && p.Published,
-                ct
-            );
-            if (vendor is null)
+            if (!await db.Directory.AnyAsync(p => p.OrgId == row.VendorOrgId, ct))
                 return Results.Conflict(new { error = "the vendor is no longer published" });
-            recipients = [row.CounterpartyOrgId!.Value];
+            recipients = [row.VendorOrgId!.Value];
         }
         else
         {
-            // broadcast: every matching vendor gets a recipient row (which is
-            // what lets them see the request) - preferred vendors first, ten at most
+            // broadcast: every matching vendor gets a recipient row here and an
+            // assignment row in its own tenant - preferred first, ten at most
             recipients = (
                 await VendorMatcher.MatchAsync(
                     db,
@@ -307,7 +303,7 @@ public static class RequesterEndpoints
                     {
                         Id = Guid.CreateVersion7(),
                         OrgId = row.OrgId,
-                        CounterpartyOrgId = vendorOrg,
+                        VendorOrgId = vendorOrg,
                         RequestId = row.Id,
                     }
                 );
@@ -316,18 +312,27 @@ public static class RequesterEndpoints
         row.SubmittedAt = now;
         row.ResponseDueAt = now + options.Value.Window(row.Urgency);
         row.UpdatedAt = now;
-        db.Events.Add(
-            RequestViews.StatusEvent(
-                row,
-                actor.Value,
-                row.Mode == RequestMode.Broadcast
-                    ? $"Sent to {recipients.Count} vendor(s) for quotes"
-                    : "Submitted"
-            )
+        var evt = RequestViews.StatusEvent(
+            row,
+            actor.Value,
+            row.Mode == RequestMode.Broadcast
+                ? $"Sent to {recipients.Count} vendor(s) for quotes"
+                : "Submitted"
         );
+        db.Events.Add(evt);
         await db.SaveChangesAsync(ct);
+        await bus.FanOutAsync(
+            recipients,
+            new RequestOffered(
+                row.Snapshot(),
+                row.Mode == RequestMode.Direct ? RecipientStatus.Assigned : RecipientStatus.Invited
+            ),
+            row.Id
+        );
+        await RequestFanOut.EventAsync(bus, recipients, evt);
         foreach (var vendorOrg in recipients)
-            await bus.PublishAsync(
+            await bus.PublishForOrgAsync(
+                vendorOrg,
                 new SendOrgNotice(
                     row.Mode == RequestMode.Broadcast
                         ? $"Request for quotes: {Label(row.Category)} - {row.Title}"
@@ -343,8 +348,7 @@ public static class RequesterEndpoints
                     row.Mode == RequestMode.Broadcast
                         ? $"Request for quotes: {Label(row.Category)} - {row.Title}"
                         : $"New {Label(row.Category)} request: {row.Title}"
-                ),
-                new DeliveryOptions { TenantId = vendorOrg.Value.ToString() }
+                )
             );
         await bus.AuditAsync(
             actor.Value.Org,
@@ -380,33 +384,23 @@ public static class RequesterEndpoints
             );
         if (string.IsNullOrWhiteSpace(request.Reason))
             return Results.BadRequest(new { error = "cancelling needs a reason" });
-        var wasVisibleToVendor = row.Status != RequestStatus.Draft;
         var now = DateTimeOffset.UtcNow;
         row.Status = RequestStatus.Cancelled;
         row.CancelledAt = now;
         row.CancelReason = request.Reason.Trim();
         row.UpdatedAt = now;
-        db.Events.Add(
-            RequestViews.StatusEvent(row, actor!.Value, $"Cancelled: {row.CancelReason}")
-        );
-        await db.SaveChangesAsync(ct);
-        if (wasVisibleToVendor)
-            await bus.PublishAsync(
-                new SendOrgNotice(
-                    $"Request cancelled: {row.Title}",
-                    [$"{row.RequesterName} cancelled: {row.CancelReason}"],
-                    "marketplace",
-                    $"Request cancelled: {row.Title}"
-                ),
-                new DeliveryOptions { TenantId = row.CounterpartyOrgId!.Value.Value.ToString() }
-            );
-        await bus.AuditAsync(
-            actor.Value.Org,
-            actor.Value.Audit,
+        return await Changed(
+            row,
+            actor!.Value,
+            $"Cancelled: {row.CancelReason}",
+            $"Request cancelled: {row.Title}",
+            [$"{row.RequesterName} cancelled: {row.CancelReason}"],
             "marketplace.request_cancelled",
-            new { row.Id, row.CancelReason }
+            new { row.Id, row.CancelReason },
+            db,
+            bus,
+            ct
         );
-        return Results.Ok(RequestViews.Mutated(row));
     }
 
     [Transactional(typeof(MarketplaceDbContext))]
@@ -432,24 +426,18 @@ public static class RequesterEndpoints
         row.Status = RequestStatus.Verified;
         row.VerifiedAt = now;
         row.UpdatedAt = now;
-        db.Events.Add(RequestViews.StatusEvent(row, actor!.Value, "Verified"));
-        await db.SaveChangesAsync(ct);
-        await bus.PublishAsync(
-            new SendOrgNotice(
-                $"Work verified: {row.Title}",
-                [$"{row.RequesterName} verified the work at {row.SiteName}."],
-                "marketplace",
-                $"Work verified: {row.Title}"
-            ),
-            new DeliveryOptions { TenantId = row.CounterpartyOrgId!.Value.Value.ToString() }
-        );
-        await bus.AuditAsync(
-            actor.Value.Org,
-            actor.Value.Audit,
+        return await Changed(
+            row,
+            actor!.Value,
+            "Verified",
+            $"Work verified: {row.Title}",
+            [$"{row.RequesterName} verified the work at {row.SiteName}."],
             "marketplace.request_verified",
-            new { row.Id }
+            new { row.Id },
+            db,
+            bus,
+            ct
         );
-        return Results.Ok(RequestViews.Mutated(row));
     }
 
     [Transactional(typeof(MarketplaceDbContext))]
@@ -476,26 +464,18 @@ public static class RequesterEndpoints
         row.Status = RequestStatus.Disputed;
         row.DisputeReason = request.Reason.Trim();
         row.UpdatedAt = now;
-        db.Events.Add(
-            RequestViews.StatusEvent(row, actor!.Value, $"Disputed: {row.DisputeReason}")
-        );
-        await db.SaveChangesAsync(ct);
-        await bus.PublishAsync(
-            new SendOrgNotice(
-                $"Work disputed: {row.Title}",
-                [$"{row.RequesterName} disputed: {row.DisputeReason}"],
-                "marketplace",
-                $"Work disputed: {row.Title}"
-            ),
-            new DeliveryOptions { TenantId = row.CounterpartyOrgId!.Value.Value.ToString() }
-        );
-        await bus.AuditAsync(
-            actor.Value.Org,
-            actor.Value.Audit,
+        return await Changed(
+            row,
+            actor!.Value,
+            $"Disputed: {row.DisputeReason}",
+            $"Work disputed: {row.Title}",
+            [$"{row.RequesterName} disputed: {row.DisputeReason}"],
             "marketplace.request_disputed",
-            new { row.Id, row.DisputeReason }
+            new { row.Id, row.DisputeReason },
+            db,
+            bus,
+            ct
         );
-        return Results.Ok(RequestViews.Mutated(row));
     }
 
     [Transactional(typeof(MarketplaceDbContext))]
@@ -507,6 +487,7 @@ public static class RequesterEndpoints
         MarketplaceDbContext db,
         IPrincipalAccessor accessor,
         IScopeResolver scopes,
+        IMessageBus bus,
         CancellationToken ct
     )
     {
@@ -515,24 +496,28 @@ public static class RequesterEndpoints
             return error;
         if (string.IsNullOrWhiteSpace(request.Body))
             return Results.BadRequest(new { error = "a message needs a body" });
-        var evt = new RequestEvent
-        {
-            Id = Guid.CreateVersion7(),
-            OrgId = row!.OrgId,
-            CounterpartyOrgId = row.CounterpartyOrgId,
-            RequestId = row.Id,
-            ActorOrgId = actor!.Value.Org,
-            ActorId = actor.Value.Id,
-            Kind = RequestEventKind.Message,
-            Body = request.Body.Trim(),
-        };
+        var evt = RequestViews.Event(
+            row!.OrgId,
+            row.Id,
+            actor!.Value,
+            RequestEventKind.Message,
+            request.Body.Trim(),
+            null,
+            null,
+            null
+        );
         db.Events.Add(evt);
         row.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
-        return Results.Ok(new RequestEventCreated(evt.Id, null, null));
+        await RequestFanOut.EventAsync(
+            bus,
+            await RequestFanOut.CounterpartiesAsync(db, row, ct),
+            evt
+        );
+        return Results.Ok(new RequestEventCreated(evt.SourceId, null, null));
     }
 
-    /// <summary>Award a broadcast: the quote's vendor becomes THE vendor, the request is Accepted, other quotes are rejected.</summary>
+    /// <summary>Award a broadcast: a command on the requester's request (ADR 48). The winning vendor becomes THE vendor; every quoting vendor learns its outcome.</summary>
     [Transactional(typeof(MarketplaceDbContext))]
     [WolverinePost("/api/marketplace/requests/{id}/quotes/{quoteId}/accept")]
     [ProducesResponseType(typeof(RequestMutated), StatusCodes.Status200OK)]
@@ -553,9 +538,9 @@ public static class RequesterEndpoints
             return Results.Conflict(
                 new { error = "only an open broadcast request can be awarded" }
             );
-        var quotes = await db.Quotes.Where(q => q.RequestId == id).ToListAsync(ct);
+        var quotes = await db.ReceivedQuotes.Where(q => q.RequestId == id).ToListAsync(ct);
         var winner = quotes.FirstOrDefault(q =>
-            q.Id == quoteId && q.Status == QuoteStatus.Submitted
+            q.QuoteId == quoteId && q.Status == QuoteStatus.Submitted
         );
         if (winner is null)
             return Results.NotFound();
@@ -565,28 +550,45 @@ public static class RequesterEndpoints
         winner.Status = QuoteStatus.Accepted;
         winner.UpdatedAt = now;
         var losers = quotes
-            .Where(q => q.Id != quoteId && q.Status == QuoteStatus.Submitted)
+            .Where(q => q.QuoteId != quoteId && q.Status == QuoteStatus.Submitted)
             .ToList();
         foreach (var other in losers)
         {
             other.Status = QuoteStatus.Rejected;
             other.UpdatedAt = now;
         }
-        row.CounterpartyOrgId = winner.CounterpartyOrgId;
+        foreach (var recipient in await db.Recipients.Where(x => x.RequestId == id).ToListAsync(ct))
+            if (recipient.Status != RecipientStatus.Declined)
+                recipient.Status =
+                    recipient.VendorOrgId == winner.VendorOrgId
+                        ? RecipientStatus.Assigned
+                        : RecipientStatus.NotSelected;
+        row.VendorOrgId = winner.VendorOrgId;
         row.BudgetAmount = winner.Amount;
         row.Currency = winner.Currency;
         row.Status = RequestStatus.Accepted;
         row.AcceptedAt = now;
         row.UpdatedAt = now;
-        db.Events.Add(
-            RequestViews.StatusEvent(
-                row,
-                actor!.Value,
-                $"Awarded: {winner.Currency} {winner.Amount:0.00}"
-            )
+        var evt = RequestViews.StatusEvent(
+            row,
+            actor!.Value,
+            $"Awarded: {winner.Currency} {winner.Amount:0.00}"
         );
+        db.Events.Add(evt);
         await db.SaveChangesAsync(ct);
-        await bus.PublishAsync(
+        await bus.PublishForOrgAsync(
+            winner.VendorOrgId,
+            new QuoteDecided(row.Id, winner.QuoteId, true, now)
+        );
+        foreach (var other in losers)
+            await bus.PublishForOrgAsync(
+                other.VendorOrgId,
+                new QuoteDecided(row.Id, other.QuoteId, false, now)
+            );
+        await RequestFanOut.StateAsync(db, bus, row, ct);
+        await RequestFanOut.EventAsync(bus, [winner.VendorOrgId], evt);
+        await bus.PublishForOrgAsync(
+            winner.VendorOrgId,
             new SendOrgNotice(
                 $"Quote accepted: {row.Title}",
                 [
@@ -595,18 +597,17 @@ public static class RequesterEndpoints
                 ],
                 "marketplace",
                 $"Quote accepted: {row.Title}"
-            ),
-            new DeliveryOptions { TenantId = winner.CounterpartyOrgId.Value.ToString() }
+            )
         );
         foreach (var other in losers)
-            await bus.PublishAsync(
+            await bus.PublishForOrgAsync(
+                other.VendorOrgId,
                 new SendOrgNotice(
                     $"Quote not selected: {row.Title}",
                     [$"{row.RequesterName} awarded this request to another vendor."],
                     "marketplace",
                     $"Quote not selected: {row.Title}"
-                ),
-                new DeliveryOptions { TenantId = other.CounterpartyOrgId.Value.ToString() }
+                )
             );
         await bus.AuditAsync(
             actor.Value.Org,
@@ -616,7 +617,7 @@ public static class RequesterEndpoints
             {
                 row.Id,
                 QuoteId = quoteId,
-                VendorOrgId = winner.CounterpartyOrgId.Value,
+                VendorOrgId = winner.VendorOrgId.Value,
                 winner.Amount,
             }
         );
@@ -636,10 +637,14 @@ public static class RequesterEndpoints
         CancellationToken ct
     )
     {
-        if (ActorRef.From(accessor.Current) is not { } actor)
-            return Results.Unauthorized();
-        if (!await scopes.CanAsync(accessor.Current, Capabilities.MarketplaceManage, ct))
-            return Results.Unauthorized();
+        var gate = await ActorGate.RequireAsync(
+            accessor,
+            scopes,
+            Capabilities.MarketplaceManage,
+            ct
+        );
+        if (gate.Actor is not { } actor)
+            return gate.ToResult();
         var now = time.GetUtcNow();
         var overdue = await db.Requests.CountAsync(
             r =>
@@ -649,14 +654,40 @@ public static class RequesterEndpoints
                 && r.ResponseDueAt <= now,
             ct
         );
-        await bus.PublishAsync(
-            new EscalateOverdueRequests(),
-            new DeliveryOptions { TenantId = actor.Org.Value.ToString() }
-        );
+        await bus.PublishForOrgAsync(actor.Org, new EscalateOverdueRequests());
         return Results.Ok(new SlaSweepQueued(now, overdue));
     }
 
-    /// <summary>The requester side of a row: in the reader's org AND site scope, or a 404.</summary>
+    /// <summary>A requester-side change: own timeline entry, state to every participant, the entry to the counterparties, a notice to the vendor, an audit record.</summary>
+    private static async Task<IResult> Changed(
+        ServiceRequest row,
+        ActorRef actor,
+        string eventBody,
+        string noticeSubject,
+        string[] noticeLines,
+        string auditEvent,
+        object auditPayload,
+        MarketplaceDbContext db,
+        IMessageBus bus,
+        CancellationToken ct
+    )
+    {
+        var evt = RequestViews.StatusEvent(row, actor, eventBody);
+        db.Events.Add(evt);
+        await db.SaveChangesAsync(ct);
+        var counterparties = await RequestFanOut.CounterpartiesAsync(db, row, ct);
+        await RequestFanOut.StateAsync(db, bus, row, ct);
+        await RequestFanOut.EventAsync(bus, counterparties, evt);
+        foreach (var org in counterparties)
+            await bus.PublishForOrgAsync(
+                org,
+                new SendOrgNotice(noticeSubject, noticeLines, "marketplace", noticeSubject)
+            );
+        await bus.AuditAsync(actor.Org, actor.Audit, auditEvent, auditPayload);
+        return Results.Ok(RequestViews.Mutated(row));
+    }
+
+    /// <summary>The requester side of a row: in the reader's org AND site scope, or a 404. A reader without marketplace:manage may look but not act.</summary>
     private static async Task<(ServiceRequest?, ActorRef?, bool, IResult?)> Load(
         Guid id,
         MarketplaceDbContext db,
@@ -666,23 +697,31 @@ public static class RequesterEndpoints
         CancellationToken ct
     )
     {
-        if (ActorRef.From(accessor.Current) is not { } actor)
-            return (null, null, false, Results.Unauthorized());
-        var scope = await scopes.ScopeForAsync(accessor.Current, Capabilities.MarketplaceRead, ct);
+        var read = await ActorGate.RequireAsync(accessor, scopes, Capabilities.MarketplaceRead, ct);
         var manageScope = await scopes.ScopeForAsync(
             accessor.Current,
             Capabilities.MarketplaceManage,
             ct
         );
         var manage = manageScope is not NodeScope.None;
-        if (scope is NodeScope.None && !manage)
-            return (null, null, false, Results.Unauthorized());
-        var visible = RequestViews.InScope(db.Requests, manage ? manageScope : scope);
+        if (read.Actor is not { } actor)
+        {
+            // manage implies read; only a principal with neither is refused
+            if (!manage || ActorRef.From(accessor.Current) is not { } manager)
+                return (null, null, false, read.ToResult());
+            actor = manager;
+        }
+        var visible = RequestViews.InScope(db.Requests, manage ? manageScope : read.Scope!);
         var row = await visible.FirstOrDefaultAsync(r => r.Id == id && r.OrgId == actor.Org, ct);
         if (row is null)
             return (null, null, false, Results.NotFound());
         if (requireManage && !manage)
-            return (null, null, false, Results.Unauthorized());
+            return (
+                null,
+                null,
+                false,
+                new GateOutcome.Forbidden(Capabilities.MarketplaceManage).ToResult()
+            );
         return (row, actor, manage, null);
     }
 
@@ -693,14 +732,7 @@ public static class RequesterEndpoints
     ) =>
         await entitlements.HasAsync(org, EntitlementCatalog.MarketplaceEnabled, ct)
             ? null
-            : Results.Json(
-                new
-                {
-                    error = "the marketplace is not part of this plan",
-                    code = EntitlementCatalog.MarketplaceEnabled,
-                },
-                statusCode: StatusCodes.Status402PaymentRequired
-            );
+            : GateResults.FeatureOff(EntitlementCatalog.MarketplaceEnabled);
 
     private static string? Validate(
         string title,

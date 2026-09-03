@@ -140,7 +140,7 @@ public class IncidentImportTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         );
         var viewer = await fixture.LoginAsync(ApiFixture.ViewerA);
         Assert.Equal(
-            HttpStatusCode.Unauthorized,
+            HttpStatusCode.Forbidden,
             (await viewer.GetAsync("/api/incidents/imports")).StatusCode
         );
     }

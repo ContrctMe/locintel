@@ -41,14 +41,14 @@ public static class IncidentEndpoints
         CancellationToken ct
     )
     {
-        var scope = await scopes.ScopeForAsync(accessor.Current, Capabilities.IncidentsRead, ct);
-        if (scope is NodeScope.None)
-            return Results.Unauthorized();
+        var gate = await Gate.RequireAsync(accessor, scopes, Capabilities.IncidentsRead, ct);
+        if (gate is not GateOutcome.Allowed { Scope: var scope })
+            return gate.ToResult();
         IQueryable<Incident> query = db.Incidents;
         if (trash is true)
         {
             if (!await scopes.CanAsync(accessor.Current, Capabilities.IncidentsManage, ct))
-                return Results.Unauthorized();
+                return new GateOutcome.Forbidden(Capabilities.IncidentsManage).ToResult();
             query = query
                 .IgnoreQueryFilters([ModuleDbContext.SoftDeleteFilter])
                 .Where(i => i.DeletedAt != null);
@@ -117,9 +117,9 @@ public static class IncidentEndpoints
         CancellationToken ct
     )
     {
-        var scope = await scopes.ScopeForAsync(accessor.Current, Capabilities.IncidentsRead, ct);
-        if (scope is NodeScope.None)
-            return Results.Unauthorized();
+        var gate = await Gate.RequireAsync(accessor, scopes, Capabilities.IncidentsRead, ct);
+        if (gate is not GateOutcome.Allowed { Scope: var scope })
+            return gate.ToResult();
         // the trash is visible to managers (restore screen); the SoftDelete
         // filter is the only one disabled - Tenant stays on, RLS backstops
         var manage = await scopes.CanAsync(accessor.Current, Capabilities.IncidentsManage, ct);
@@ -215,9 +215,9 @@ public static class IncidentEndpoints
     {
         if (ActorRef.From(accessor.Current) is not { } actor)
             return Results.Unauthorized();
-        var scope = await scopes.ScopeForAsync(accessor.Current, Capabilities.IncidentsReport, ct);
-        if (scope is NodeScope.None)
-            return Results.Unauthorized();
+        var gate = await Gate.RequireAsync(accessor, scopes, Capabilities.IncidentsReport, ct);
+        if (gate is not GateOutcome.Allowed { Scope: var scope })
+            return gate.ToResult();
         var site = await sites.FindAsync(request.SiteId, ct);
         if (site is null || !scope.Covers(site.Path))
             return Results.NotFound();
@@ -525,9 +525,9 @@ public static class IncidentEndpoints
     {
         if (ActorRef.From(accessor.Current) is not { } actor)
             return Results.Unauthorized();
-        var scope = await scopes.ScopeForAsync(accessor.Current, Capabilities.IncidentsManage, ct);
-        if (scope is NodeScope.None)
-            return Results.Unauthorized();
+        var gate = await Gate.RequireAsync(accessor, scopes, Capabilities.IncidentsManage, ct);
+        if (gate is not GateOutcome.Allowed { Scope: var scope })
+            return gate.ToResult();
         var incident = await db
             .Incidents.IgnoreQueryFilters([ModuleDbContext.SoftDeleteFilter])
             .InScope(scope)

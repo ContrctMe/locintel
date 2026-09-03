@@ -7,11 +7,11 @@ using Microsoft.EntityFrameworkCore;
 namespace LocIntel.Modules.Marketplace.Data;
 
 /// <summary>
-/// The first context with CROSS-ORG rows. The base class's convention adds
-/// a single-owner "Tenant" filter to IOrgScoped entities; the two-party
-/// and catalog entities here are deliberately not IOrgScoped and get their
-/// own "Tenant" filter (same name, so nothing can disable one and not the
-/// other), mirrored exactly by the RLS policies in the migration.
+/// Every row here has ONE owner (ADR 48). The requester owns its request,
+/// recipient list, timeline copies and received quotes; the vendor owns its
+/// assignments, quotes, profile and credentials. The one table without a
+/// tenant is the vendor directory: a platform-global projection, like
+/// identity.org_directory.
 /// </summary>
 public sealed class MarketplaceDbContext(
     DbContextOptions<MarketplaceDbContext> options,
@@ -22,10 +22,13 @@ public sealed class MarketplaceDbContext(
 
     public DbSet<VendorProfile> Profiles => Set<VendorProfile>();
     public DbSet<VendorCredential> Credentials => Set<VendorCredential>();
+    public DbSet<VendorListing> Directory => Set<VendorListing>();
     public DbSet<PreferredVendor> Preferred => Set<PreferredVendor>();
     public DbSet<ServiceRequest> Requests => Set<ServiceRequest>();
     public DbSet<RequestEvent> Events => Set<RequestEvent>();
     public DbSet<RequestRecipient> Recipients => Set<RequestRecipient>();
+    public DbSet<QuoteReceived> ReceivedQuotes => Set<QuoteReceived>();
+    public DbSet<VendorAssignment> Assignments => Set<VendorAssignment>();
     public DbSet<Quote> Quotes => Set<Quote>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -52,8 +55,6 @@ public sealed class MarketplaceDbContext(
             b.Property(x => x.CreatedAt).HasColumnName("created_at");
             b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
             b.HasIndex(x => x.OrgId).IsUnique();
-            b.HasIndex(x => x.Published);
-            // catalog read: published to everyone, unpublished to the owner
         });
 
         modelBuilder.Entity<VendorCredential>(b =>
@@ -69,10 +70,24 @@ public sealed class MarketplaceDbContext(
             b.Property(x => x.ExpiresAt).HasColumnName("expires_at");
             b.Property(x => x.CreatedAt).HasColumnName("created_at");
             b.HasIndex(x => x.OrgId);
-            b.HasQueryFilter(
-                TenantFilter,
-                c => c.OrgId == CurrentOrg || Profiles.Any(p => p.OrgId == c.OrgId && p.Published)
-            );
+        });
+
+        modelBuilder.Entity<VendorListing>(b =>
+        {
+            b.ToTable("vendor_directory");
+            b.HasKey(x => x.OrgId);
+            b.Property(x => x.OrgId).HasColumnName("org_id").ValueGeneratedNever();
+            b.Property(x => x.Name).HasColumnName("name").HasMaxLength(200);
+            b.Property(x => x.Description).HasColumnName("description");
+            b.Property(x => x.Categories).HasColumnName("categories");
+            b.Property(x => x.ServiceAreas).HasColumnName("service_areas");
+            b.Property(x => x.Latitude).HasColumnName("latitude");
+            b.Property(x => x.Longitude).HasColumnName("longitude");
+            b.Property(x => x.ServiceRadiusKm).HasColumnName("service_radius_km");
+            b.Property(x => x.ContactEmail).HasColumnName("contact_email").HasMaxLength(320);
+            b.Property(x => x.ContactPhone).HasColumnName("contact_phone").HasMaxLength(40);
+            b.Property(x => x.CredentialsJson).HasColumnName("credentials").HasColumnType("jsonb");
+            b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         });
 
         modelBuilder.Entity<PreferredVendor>(b =>
@@ -96,7 +111,7 @@ public sealed class MarketplaceDbContext(
             b.HasKey(x => x.Id);
             b.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
             b.Property(x => x.OrgId).HasColumnName("org_id");
-            b.Property(x => x.CounterpartyOrgId).HasColumnName("vendor_org_id");
+            b.Property(x => x.VendorOrgId).HasColumnName("vendor_org_id");
             b.Property(x => x.Mode).HasColumnName("mode").HasConversion<string>().HasMaxLength(20);
             b.Property(x => x.Category)
                 .HasColumnName("category")
@@ -154,20 +169,7 @@ public sealed class MarketplaceDbContext(
                 x.Status,
                 x.UpdatedAt,
             });
-            // owner, awarded vendor, and every broadcast recipient can read a
-            // request; only the two parties may write it (Platform recipient-list shape)
-            AddRecipientListFilter<ServiceRequest>(
-                modelBuilder,
-                r => Recipients.Any(x => x.RequestId == r.Id && x.CounterpartyOrgId == CurrentOrg)
-            );
-            b.HasIndex(x => new
-            {
-                x.CounterpartyOrgId,
-                x.Status,
-                x.UpdatedAt,
-            });
             b.HasIndex(x => x.Path).HasMethod("gist");
-            // two-party, plus the vendors a broadcast was sent to (before award)
         });
 
         modelBuilder.Entity<RequestEvent>(b =>
@@ -176,7 +178,7 @@ public sealed class MarketplaceDbContext(
             b.HasKey(x => x.Id);
             b.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
             b.Property(x => x.OrgId).HasColumnName("org_id");
-            b.Property(x => x.CounterpartyOrgId).HasColumnName("vendor_org_id");
+            b.Property(x => x.SourceId).HasColumnName("source_id");
             b.Property(x => x.RequestId).HasColumnName("request_id");
             b.Property(x => x.ActorOrgId).HasColumnName("actor_org_id");
             b.Property(x => x.ActorId).HasColumnName("actor_id");
@@ -187,6 +189,7 @@ public sealed class MarketplaceDbContext(
             b.Property(x => x.DistanceFromSiteMeters).HasColumnName("distance_from_site_m");
             b.Property(x => x.At).HasColumnName("at");
             b.HasIndex(x => new { x.RequestId, x.At });
+            b.HasIndex(x => new { x.OrgId, x.SourceId }).IsUnique();
         });
 
         modelBuilder.Entity<RequestRecipient>(b =>
@@ -195,7 +198,7 @@ public sealed class MarketplaceDbContext(
             b.HasKey(x => x.Id);
             b.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
             b.Property(x => x.OrgId).HasColumnName("org_id");
-            b.Property(x => x.CounterpartyOrgId).HasColumnName("vendor_org_id");
+            b.Property(x => x.VendorOrgId).HasColumnName("vendor_org_id");
             b.Property(x => x.RequestId).HasColumnName("request_id");
             b.Property(x => x.Status)
                 .HasColumnName("status")
@@ -203,7 +206,98 @@ public sealed class MarketplaceDbContext(
                 .HasMaxLength(20);
             b.Property(x => x.NotifiedAt).HasColumnName("notified_at");
             b.Property(x => x.RespondedAt).HasColumnName("responded_at");
-            b.HasIndex(x => new { x.RequestId, x.CounterpartyOrgId }).IsUnique();
+            b.HasIndex(x => new { x.RequestId, x.VendorOrgId }).IsUnique();
+        });
+
+        modelBuilder.Entity<QuoteReceived>(b =>
+        {
+            b.ToTable("received_quotes");
+            b.HasKey(x => x.Id);
+            b.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
+            b.Property(x => x.OrgId).HasColumnName("org_id");
+            b.Property(x => x.RequestId).HasColumnName("request_id");
+            b.Property(x => x.QuoteId).HasColumnName("quote_id");
+            b.Property(x => x.VendorOrgId).HasColumnName("vendor_org_id");
+            b.Property(x => x.VendorName).HasColumnName("vendor_name").HasMaxLength(200);
+            b.Property(x => x.Amount).HasColumnName("amount").HasPrecision(14, 2);
+            b.Property(x => x.Currency).HasColumnName("currency").HasMaxLength(3);
+            b.Property(x => x.Notes).HasColumnName("notes").HasMaxLength(2000);
+            b.Property(x => x.ValidUntil).HasColumnName("valid_until");
+            b.Property(x => x.Status)
+                .HasColumnName("status")
+                .HasConversion<string>()
+                .HasMaxLength(20);
+            b.Property(x => x.SubmittedAt).HasColumnName("submitted_at");
+            b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+            b.HasIndex(x => new { x.OrgId, x.QuoteId }).IsUnique();
+            b.HasIndex(x => new { x.RequestId, x.VendorOrgId }).IsUnique();
+        });
+
+        modelBuilder.Entity<VendorAssignment>(b =>
+        {
+            b.ToTable("vendor_assignments");
+            b.HasKey(x => x.Id);
+            b.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
+            b.Property(x => x.OrgId).HasColumnName("org_id");
+            b.Property(x => x.RequestId).HasColumnName("request_id");
+            b.Property(x => x.RequesterOrgId).HasColumnName("requester_org_id");
+            b.Property(x => x.RequesterName).HasColumnName("requester_name").HasMaxLength(200);
+            b.Property(x => x.Mode).HasColumnName("mode").HasConversion<string>().HasMaxLength(20);
+            b.Property(x => x.Category)
+                .HasColumnName("category")
+                .HasConversion<string>()
+                .HasMaxLength(30);
+            b.Property(x => x.Urgency)
+                .HasColumnName("urgency")
+                .HasConversion<string>()
+                .HasMaxLength(20);
+            b.Property(x => x.Status)
+                .HasColumnName("status")
+                .HasConversion<string>()
+                .HasMaxLength(20);
+            b.Property(x => x.Participation)
+                .HasColumnName("participation")
+                .HasConversion<string>()
+                .HasMaxLength(20);
+            b.Property(x => x.SiteId).HasColumnName("site_id");
+            b.Property(x => x.SiteName).HasColumnName("site_name").HasMaxLength(200);
+            b.Property(x => x.SiteTimeZone).HasColumnName("site_time_zone").HasMaxLength(64);
+            b.Property(x => x.SiteLatitude).HasColumnName("site_latitude");
+            b.Property(x => x.SiteLongitude).HasColumnName("site_longitude");
+            b.Property(x => x.SiteCountryCode).HasColumnName("site_country_code").HasMaxLength(2);
+            b.Property(x => x.Title).HasColumnName("title").HasMaxLength(200);
+            b.Property(x => x.Details).HasColumnName("details");
+            b.Property(x => x.SpecJson).HasColumnName("spec").HasColumnType("jsonb");
+            b.Property(x => x.StartsAt).HasColumnName("starts_at");
+            b.Property(x => x.EndsAt).HasColumnName("ends_at");
+            b.Property(x => x.Rrule).HasColumnName("rrule").HasMaxLength(500);
+            b.Property(x => x.BudgetAmount).HasColumnName("budget_amount").HasPrecision(14, 2);
+            b.Property(x => x.Currency).HasColumnName("currency").HasMaxLength(3);
+            b.Property(x => x.SubmittedAt).HasColumnName("submitted_at");
+            b.Property(x => x.ResponseDueAt).HasColumnName("response_due_at");
+            b.Property(x => x.EscalatedAt).HasColumnName("escalated_at");
+            b.Property(x => x.EscalationCount).HasColumnName("escalation_count");
+            b.Property(x => x.AcceptedAt).HasColumnName("accepted_at");
+            b.Property(x => x.DeclineReason).HasColumnName("decline_reason").HasMaxLength(1000);
+            b.Property(x => x.StartedAt).HasColumnName("started_at");
+            b.Property(x => x.CompletedAt).HasColumnName("completed_at");
+            b.Property(x => x.CompletionSummary)
+                .HasColumnName("completion_summary")
+                .HasMaxLength(4000);
+            b.Property(x => x.VerifiedAt).HasColumnName("verified_at");
+            b.Property(x => x.DisputeReason).HasColumnName("dispute_reason").HasMaxLength(2000);
+            b.Property(x => x.CancelledAt).HasColumnName("cancelled_at");
+            b.Property(x => x.CancelReason).HasColumnName("cancel_reason").HasMaxLength(1000);
+            b.Property(x => x.CreatedAt).HasColumnName("created_at");
+            b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+            b.Ignore(x => x.IsAssigned);
+            b.HasIndex(x => new { x.OrgId, x.RequestId }).IsUnique();
+            b.HasIndex(x => new
+            {
+                x.OrgId,
+                x.Status,
+                x.UpdatedAt,
+            });
         });
 
         modelBuilder.Entity<Quote>(b =>
@@ -212,7 +306,7 @@ public sealed class MarketplaceDbContext(
             b.HasKey(x => x.Id);
             b.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
             b.Property(x => x.OrgId).HasColumnName("org_id");
-            b.Property(x => x.CounterpartyOrgId).HasColumnName("vendor_org_id");
+            b.Property(x => x.RequesterOrgId).HasColumnName("requester_org_id");
             b.Property(x => x.RequestId).HasColumnName("request_id");
             b.Property(x => x.Amount).HasColumnName("amount").HasPrecision(14, 2);
             b.Property(x => x.Currency).HasColumnName("currency").HasMaxLength(3);
@@ -225,7 +319,7 @@ public sealed class MarketplaceDbContext(
             b.Property(x => x.SubmittedBy).HasColumnName("submitted_by");
             b.Property(x => x.CreatedAt).HasColumnName("created_at");
             b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
-            b.HasIndex(x => new { x.RequestId, x.CounterpartyOrgId }).IsUnique();
+            b.HasIndex(x => new { x.OrgId, x.RequestId }).IsUnique();
         });
     }
 }

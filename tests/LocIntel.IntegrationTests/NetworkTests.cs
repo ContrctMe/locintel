@@ -54,14 +54,17 @@ public class NetworkTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         // the invitee's access row is written under their own tenant, asynchronously
         JsonElement mine = default;
         var invited = false;
-        for (var i = 0; i < 50 && !invited; i++)
-        {
-            await Task.Delay(100);
-            mine = await b.GetFromJsonAsync<JsonElement>("/api/network/shares");
-            invited = mine.GetProperty("items")
-                .EnumerateArray()
-                .Any(s => s.GetProperty("id").GetGuid() == shareId);
-        }
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+            {
+                mine = await b.GetFromJsonAsync<JsonElement>("/api/network/shares");
+                invited = mine.GetProperty("items")
+                    .EnumerateArray()
+                    .Any(s => s.GetProperty("id").GetGuid() == shareId);
+                return !(!invited);
+            },
+            "invited"
+        );
         Assert.True(invited, "org B should see the invitation");
         var pending = mine.GetProperty("items")
             .EnumerateArray()
@@ -125,16 +128,26 @@ public class NetworkTests(ApiFixture fixture) : IClassFixture<ApiFixture>
             await b.PostAsync($"/api/network/shares/{shareId}/accept", null)
         ).EnsureSuccessStatusCode();
 
-        var detail = await b.GetFromJsonAsync<JsonElement>($"/api/network/shares/{shareId}");
-        Assert.Equal(
-            2,
-            detail
-                .GetProperty("members")
-                .EnumerateArray()
-                .Count(m => m.GetProperty("status").GetString() == "Active")
+        // the owner records the join and republishes the roster to every member
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+                (await b.GetFromJsonAsync<JsonElement>($"/api/network/shares/{shareId}"))
+                    .GetProperty("members")
+                    .EnumerateArray()
+                    .Count(m => m.GetProperty("status").GetString() == "Active") == 2,
+            "the roster to reach the new member"
         );
-        var seen = await b.GetFromJsonAsync<JsonElement>(
-            $"/api/network/bulletins?shareId={shareId}"
+        // ...and re-offers what was published before the member joined: its own copy
+        JsonElement seen = default;
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+            {
+                seen = await b.GetFromJsonAsync<JsonElement>(
+                    $"/api/network/bulletins?shareId={shareId}"
+                );
+                return seen.GetProperty("total").GetInt32() == 1;
+            },
+            "the earlier bulletin's copy to reach the new member"
         );
         var copy = Assert.Single(seen.GetProperty("items").EnumerateArray());
         Assert.Equal("Blue Cap", copy.GetProperty("displayName").GetString());
@@ -165,12 +178,15 @@ public class NetworkTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         ).EnsureSuccessStatusCode();
         var imported = false;
         JsonElement bEntities = default;
-        for (var i = 0; i < 50 && !imported; i++)
-        {
-            await Task.Delay(100);
-            bEntities = await b.GetFromJsonAsync<JsonElement>("/api/entities?q=Blue%20Cap");
-            imported = bEntities.GetProperty("total").GetInt32() > 0;
-        }
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+            {
+                bEntities = await b.GetFromJsonAsync<JsonElement>("/api/entities?q=Blue%20Cap");
+                imported = bEntities.GetProperty("total").GetInt32() > 0;
+                return !(!imported);
+            },
+            "imported"
+        );
         Assert.True(imported, "the import should have created a record in org B");
         var local = bEntities.GetProperty("items")[0];
         Assert.Equal("Suspected", local.GetProperty("status").GetString());
@@ -212,21 +228,28 @@ public class NetworkTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         (
             await a.PostAsync($"/api/network/bulletins/{bulletinId}/withdraw", null)
         ).EnsureSuccessStatusCode();
-        var after = await b.GetFromJsonAsync<JsonElement>(
-            $"/api/network/bulletins?shareId={shareId}"
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+                (await b.GetFromJsonAsync<JsonElement>($"/api/network/bulletins?shareId={shareId}"))
+                    .GetProperty("total")
+                    .GetInt32() == 0,
+            "the withdrawal to reach the member's copy"
         );
-        Assert.Equal(0, after.GetProperty("total").GetInt32());
         Assert.Equal(
             HttpStatusCode.Conflict,
             (await a.PostAsync($"/api/network/shares/{shareId}/leave", null)).StatusCode
         );
         (await b.PostAsync($"/api/network/shares/{shareId}/leave", null)).EnsureSuccessStatusCode();
-        var roster = await a.GetFromJsonAsync<JsonElement>($"/api/network/shares/{shareId}");
-        Assert.Contains(
-            roster.GetProperty("members").EnumerateArray(),
-            m =>
-                m.GetProperty("orgId").GetGuid() == fixture.OrgB.Value
-                && m.GetProperty("status").GetString() == "Left"
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+                (await a.GetFromJsonAsync<JsonElement>($"/api/network/shares/{shareId}"))
+                    .GetProperty("members")
+                    .EnumerateArray()
+                    .Any(m =>
+                        m.GetProperty("orgId").GetGuid() == fixture.OrgB.Value
+                        && m.GetProperty("status").GetString() == "Left"
+                    ),
+            "the departure to reach the owner's roster"
         );
 
         // guests and role-less members hold nothing
@@ -236,7 +259,7 @@ public class NetworkTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         );
         var viewer = await fixture.LoginAsync(ApiFixture.ViewerA);
         Assert.Equal(
-            HttpStatusCode.Unauthorized,
+            HttpStatusCode.Forbidden,
             (await viewer.GetAsync("/api/network/bulletins")).StatusCode
         );
     }

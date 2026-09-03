@@ -29,9 +29,9 @@ public static class RouteEndpoints
         CancellationToken ct
     )
     {
-        var scope = await scopes.ScopeForAsync(accessor.Current, Capabilities.PatrolsRead, ct);
-        if (scope is NodeScope.None)
-            return Results.Unauthorized();
+        var gate = await Gate.RequireAsync(accessor, scopes, Capabilities.PatrolsRead, ct);
+        if (gate is not GateOutcome.Allowed { Scope: var scope })
+            return gate.ToResult();
         var query = db.Routes.InScope(scope);
         if (siteId is { } site)
             query = query.Where(r => r.SiteId == site);
@@ -61,9 +61,9 @@ public static class RouteEndpoints
     {
         if (ActorRef.From(accessor.Current) is not { } actor)
             return Results.Unauthorized();
-        var scope = await scopes.ScopeForAsync(accessor.Current, Capabilities.PatrolsManage, ct);
-        if (scope is NodeScope.None)
-            return Results.Unauthorized();
+        var gate = await Gate.RequireAsync(accessor, scopes, Capabilities.PatrolsManage, ct);
+        if (gate is not GateOutcome.Allowed { Scope: var scope })
+            return gate.ToResult();
         var site = await sites.FindAsync(request.SiteId, ct);
         if (site is null || !scope.Covers(site.Path))
             return Results.NotFound();

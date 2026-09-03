@@ -158,9 +158,6 @@ public class WebhookTests(ApiFixture fixture) : IClassFixture<ApiFixture>
     public async Task Webhook_custody_needs_org_manage()
     {
         var viewer = await fixture.LoginAsync(ApiFixture.ViewerA);
-        Assert.Equal(
-            HttpStatusCode.Unauthorized,
-            (await viewer.GetAsync("/api/webhooks")).StatusCode
-        );
+        Assert.Equal(HttpStatusCode.Forbidden, (await viewer.GetAsync("/api/webhooks")).StatusCode);
     }
 }

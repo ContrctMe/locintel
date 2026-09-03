@@ -1,10 +1,10 @@
-using System.Text.Json;
 using LocIntel.Contracts;
-using LocIntel.Modules.Network.Bulletins;
 using LocIntel.Modules.Network.Data;
 using LocIntel.Modules.Network.Shares.Api;
+using LocIntel.Modules.Network.Shares.Messages;
 using LocIntel.Platform.Entitlements;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,9 +15,11 @@ using Wolverine.Http;
 namespace LocIntel.Modules.Network.Shares;
 
 /// <summary>
-/// Shares: create (owner), invite by slug, accept, leave, remove. Gate 1 is
-/// network.enabled for creating and inviting; network:read sees the org's
-/// shares; network:manage acts. Every membership change is a domain event.
+/// Shares, on rows each org OWNS (ADR 48): the owner acts on the share and
+/// its roster; a member acts on its own access row and tells the owner.
+/// Every org reads a share from its access row - the owner's projection of
+/// it. Gate 1 is network.enabled for creating and inviting; network:read
+/// sees the org's shares; network:manage acts.
 /// </summary>
 public static class ShareEndpoints
 {
@@ -32,33 +34,19 @@ public static class ShareEndpoints
         CancellationToken ct
     )
     {
-        if (ActorRef.From(accessor.Current) is not { } actor)
-            return Results.Unauthorized();
-        if (!await scopes.CanAsync(accessor.Current, Capabilities.NetworkRead, ct))
-            return Results.Unauthorized();
+        var gate = await ActorGate.RequireAsync(accessor, scopes, Capabilities.NetworkRead, ct);
+        if (gate.Actor is null)
+            return gate.ToResult();
         var now = time.GetUtcNow();
-        var rows = await (
-            from a in db.Access
-            join s in db.Shares on a.ShareId equals s.Id
-            where a.Status != MembershipStatus.Removed
-            orderby a.Status, s.Name
-            select new ShareSummary(
-                s.Id,
-                s.Name,
-                s.Description,
-                s.OwnerName,
-                s.OrgId == actor.Org,
-                a.Role,
-                a.Status,
-                s.Status,
-                db.Members.Count(m => m.ShareId == s.Id && m.Status == MembershipStatus.Active),
-                db.Bulletins.Count(b =>
-                    b.ShareId == s.Id && b.WithdrawnAt == null && b.ExpiresAt > now
-                ),
-                s.CreatedAt
-            )
-        ).ToListAsync(ct);
-        return Results.Ok(new ShareListResponse(rows));
+        var rows = await db
+            .Access.Where(a => a.Status != MembershipStatus.Removed)
+            .OrderBy(a => a.Status)
+            .ThenBy(a => a.ShareName)
+            .ToListAsync(ct);
+        var items = new List<ShareSummary>();
+        foreach (var a in rows)
+            items.Add(await SummaryAsync(a, db, now, ct));
+        return Results.Ok(new ShareListResponse(items));
     }
 
     [Transactional(typeof(NetworkDbContext))]
@@ -73,44 +61,29 @@ public static class ShareEndpoints
         CancellationToken ct
     )
     {
-        if (ActorRef.From(accessor.Current) is not { } actor)
-            return Results.Unauthorized();
-        if (!await scopes.CanAsync(accessor.Current, Capabilities.NetworkRead, ct))
-            return Results.Unauthorized();
-        var (share, access) = await Load(id, db, ct);
-        if (share is null)
+        var gate = await ActorGate.RequireAsync(accessor, scopes, Capabilities.NetworkRead, ct);
+        if (gate.Actor is null)
+            return gate.ToResult();
+        var access = await LoadAsync(id, db, ct);
+        if (access is null)
             return Results.NotFound();
-        var now = time.GetUtcNow();
-        var members = await db
-            .Members.Where(m => m.ShareId == id)
-            .OrderBy(m => m.CreatedAt)
-            .ToListAsync(ct);
+        // the owner reads its roster live; a member reads the snapshot the owner published
+        var roster =
+            access.Role == MemberRole.Owner
+                ? (
+                    await db
+                        .Members.Where(m => m.ShareId == id)
+                        .OrderBy(m => m.CreatedAt)
+                        .ToListAsync(ct)
+                )
+                    .Select(m => m.Entry())
+                    .ToList()
+                : access.Roster();
         return Results.Ok(
             new ShareDetail(
-                new ShareSummary(
-                    share.Id,
-                    share.Name,
-                    share.Description,
-                    share.OwnerName,
-                    share.OrgId == actor.Org,
-                    access!.Role,
-                    access.Status,
-                    share.Status,
-                    members.Count(m => m.Status == MembershipStatus.Active),
-                    await db.Bulletins.CountAsync(
-                        b => b.ShareId == id && b.WithdrawnAt == null && b.ExpiresAt > now,
-                        ct
-                    ),
-                    share.CreatedAt
-                ),
-                members
-                    .Select(m => new MemberView(
-                        m.OrgId.Value,
-                        m.OrgName,
-                        m.Role,
-                        m.Status,
-                        m.JoinedAt
-                    ))
+                await SummaryAsync(access, db, time.GetUtcNow(), ct),
+                roster
+                    .Select(m => new MemberView(m.OrgId, m.OrgName, m.Role, m.Status, m.JoinedAt))
                     .ToList()
             )
         );
@@ -130,10 +103,9 @@ public static class ShareEndpoints
         CancellationToken ct
     )
     {
-        if (ActorRef.From(accessor.Current) is not { } actor)
-            return Results.Unauthorized();
-        if (!await scopes.CanAsync(accessor.Current, Capabilities.NetworkManage, ct))
-            return Results.Unauthorized();
+        var gate = await ActorGate.RequireAsync(accessor, scopes, Capabilities.NetworkManage, ct);
+        if (gate.Actor is not { } actor)
+            return gate.ToResult();
         if (await Upsell(entitlements, actor.Org, ct) is { } upsell)
             return upsell;
         if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Trim().Length > 200)
@@ -152,29 +124,33 @@ public static class ShareEndpoints
             CreatedBy = actor.Id,
         };
         var now = DateTimeOffset.UtcNow;
+        var self = new ShareMember
+        {
+            Id = Guid.CreateVersion7(),
+            OrgId = actor.Org,
+            ShareId = share.Id,
+            MemberOrgId = actor.Org,
+            OrgName = ownerName,
+            Role = MemberRole.Owner,
+            Status = MembershipStatus.Active,
+            JoinedAt = now,
+        };
         db.Shares.Add(share);
+        db.Members.Add(self);
         db.Access.Add(
             new ShareAccess
             {
                 Id = Guid.CreateVersion7(),
                 OrgId = actor.Org,
                 ShareId = share.Id,
+                OwnerOrgId = actor.Org,
                 ShareName = share.Name,
+                Description = share.Description,
+                OwnerName = ownerName,
                 Role = MemberRole.Owner,
                 Status = MembershipStatus.Active,
                 JoinedAt = now,
-            }
-        );
-        db.Members.Add(
-            new ShareMember
-            {
-                Id = Guid.CreateVersion7(),
-                ShareId = share.Id,
-                OrgId = actor.Org,
-                OrgName = ownerName,
-                Role = MemberRole.Owner,
-                Status = MembershipStatus.Active,
-                JoinedAt = now,
+                RosterJson = ShareRoster.Json([self]),
             }
         );
         await db.SaveChangesAsync(ct);
@@ -202,18 +178,15 @@ public static class ShareEndpoints
         CancellationToken ct
     )
     {
-        if (ActorRef.From(accessor.Current) is not { } actor)
-            return Results.Unauthorized();
-        if (!await scopes.CanAsync(accessor.Current, Capabilities.NetworkManage, ct))
-            return Results.Unauthorized();
+        var gate = await ActorGate.RequireAsync(accessor, scopes, Capabilities.NetworkManage, ct);
+        if (gate.Actor is not { } actor)
+            return gate.ToResult();
         if (await Upsell(entitlements, actor.Org, ct) is { } upsell)
             return upsell;
-        var (share, access) = await Load(id, db, ct);
-        if (share is null)
-            return Results.NotFound();
-        if (share.OrgId != actor.Org)
-            return Results.Unauthorized();
-        if (share.Status == ShareStatus.Closed)
+        var (share, error) = await OwnedAsync(id, db, ct);
+        if (error is not null)
+            return error;
+        if (share!.Status == ShareStatus.Closed)
             return Results.Conflict(new { error = "the share is closed" });
         var invitee = await orgs.FindBySlugAsync(request.Slug?.Trim().ToLowerInvariant() ?? "", ct);
         if (invitee is null)
@@ -221,7 +194,7 @@ public static class ShareEndpoints
         if (invitee.Id == actor.Org)
             return Results.BadRequest(new { error = "your org already owns this share" });
         var member = await db.Members.FirstOrDefaultAsync(
-            m => m.ShareId == id && m.OrgId == invitee.Id,
+            m => m.ShareId == id && m.MemberOrgId == invitee.Id,
             ct
         );
         if (member is { Status: MembershipStatus.Active or MembershipStatus.Invited })
@@ -231,8 +204,9 @@ public static class ShareEndpoints
                 new ShareMember
                 {
                     Id = Guid.CreateVersion7(),
+                    OrgId = actor.Org,
                     ShareId = id,
-                    OrgId = invitee.Id,
+                    MemberOrgId = invitee.Id,
                     OrgName = invitee.Name,
                     Role = MemberRole.Member,
                 }
@@ -243,11 +217,22 @@ public static class ShareEndpoints
             member.JoinedAt = null;
         }
         await db.SaveChangesAsync(ct);
-        // the invitee's own access row is created under THEIR tenant
-        await bus.PublishAsync(
-            new ShareInvitationRequested(share.Id, share.Name, share.OwnerName, actor.Id),
-            new DeliveryOptions { TenantId = invitee.Id.Value.ToString() }
+        // the invitee's own access row is created under THEIR tenant, with the projection
+        var roster = ShareRoster.Json(await db.Members.Where(m => m.ShareId == id).ToListAsync(ct));
+        await bus.PublishForOrgAsync(
+            invitee.Id,
+            new ShareInvitationRequested(
+                share.Id,
+                share.OrgId,
+                share.Name,
+                share.Description,
+                share.OwnerName,
+                share.Status,
+                roster,
+                actor.Id
+            )
         );
+        await ShareRoster.PublishAsync(db, bus, share, ct);
         await bus.AuditAsync(
             actor.Org,
             actor.Audit,
@@ -274,28 +259,22 @@ public static class ShareEndpoints
         CancellationToken ct
     )
     {
-        if (ActorRef.From(accessor.Current) is not { } actor)
-            return Results.Unauthorized();
-        if (!await scopes.CanAsync(accessor.Current, Capabilities.NetworkManage, ct))
-            return Results.Unauthorized();
-        var (share, access) = await Load(id, db, ct);
-        if (share is null)
+        var gate = await ActorGate.RequireAsync(accessor, scopes, Capabilities.NetworkManage, ct);
+        if (gate.Actor is not { } actor)
+            return gate.ToResult();
+        var access = await LoadAsync(id, db, ct);
+        if (access is null)
             return Results.NotFound();
-        if (access!.Status != MembershipStatus.Invited)
+        if (access.Status != MembershipStatus.Invited)
             return Results.Conflict(new { error = "no pending invitation" });
         var now = DateTimeOffset.UtcNow;
         access.Status = MembershipStatus.Active;
         access.JoinedAt = now;
-        var member = await db.Members.FirstOrDefaultAsync(
-            m => m.ShareId == id && m.OrgId == actor.Org,
-            ct
-        );
-        if (member is not null)
-        {
-            member.Status = MembershipStatus.Active;
-            member.JoinedAt = now;
-        }
         await db.SaveChangesAsync(ct);
+        await bus.PublishForOrgAsync(
+            access.OwnerOrgId,
+            new ShareMembershipChanged(id, actor.Org, MembershipStatus.Active, now)
+        );
         await bus.AuditAsync(actor.Org, actor.Audit, "network.share_joined", new { ShareId = id });
         return Results.Ok(new ShareMutated(id, access.Status));
     }
@@ -312,25 +291,24 @@ public static class ShareEndpoints
         CancellationToken ct
     )
     {
-        if (ActorRef.From(accessor.Current) is not { } actor)
-            return Results.Unauthorized();
-        if (!await scopes.CanAsync(accessor.Current, Capabilities.NetworkManage, ct))
-            return Results.Unauthorized();
-        var (share, access) = await Load(id, db, ct);
-        if (share is null)
+        var gate = await ActorGate.RequireAsync(accessor, scopes, Capabilities.NetworkManage, ct);
+        if (gate.Actor is not { } actor)
+            return gate.ToResult();
+        var access = await LoadAsync(id, db, ct);
+        if (access is null)
             return Results.NotFound();
-        if (share.OrgId == actor.Org)
+        if (access.Role == MemberRole.Owner)
             return Results.Conflict(
                 new { error = "the owner closes a share instead of leaving it" }
             );
-        access!.Status = MembershipStatus.Left;
-        var member = await db.Members.FirstOrDefaultAsync(
-            m => m.ShareId == id && m.OrgId == actor.Org,
-            ct
-        );
-        if (member is not null)
-            member.Status = MembershipStatus.Left;
+        access.Status = MembershipStatus.Left;
+        // leaving is deletion of what the share gave you (ADR 48)
+        await db.BulletinCopies.Where(c => c.ShareId == id).ExecuteDeleteAsync(ct);
         await db.SaveChangesAsync(ct);
+        await bus.PublishForOrgAsync(
+            access.OwnerOrgId,
+            new ShareMembershipChanged(id, actor.Org, MembershipStatus.Left, null)
+        );
         await bus.AuditAsync(actor.Org, actor.Audit, "network.share_left", new { ShareId = id });
         return Results.Ok(new ShareMutated(id, access.Status));
     }
@@ -348,30 +326,25 @@ public static class ShareEndpoints
         CancellationToken ct
     )
     {
-        if (ActorRef.From(accessor.Current) is not { } actor)
-            return Results.Unauthorized();
-        if (!await scopes.CanAsync(accessor.Current, Capabilities.NetworkManage, ct))
-            return Results.Unauthorized();
-        var (share, _) = await Load(id, db, ct);
-        if (share is null)
-            return Results.NotFound();
-        if (share.OrgId != actor.Org)
-            return Results.Unauthorized();
+        var gate = await ActorGate.RequireAsync(accessor, scopes, Capabilities.NetworkManage, ct);
+        if (gate.Actor is not { } actor)
+            return gate.ToResult();
+        var (share, error) = await OwnedAsync(id, db, ct);
+        if (error is not null)
+            return error;
         var target = new OrgId(orgId);
         if (target == actor.Org)
             return Results.BadRequest(new { error = "the owner cannot be removed" });
         var member = await db.Members.FirstOrDefaultAsync(
-            m => m.ShareId == id && m.OrgId == target,
+            m => m.ShareId == id && m.MemberOrgId == target,
             ct
         );
         if (member is null || member.Status == MembershipStatus.Removed)
             return Results.NotFound();
         member.Status = MembershipStatus.Removed;
         await db.SaveChangesAsync(ct);
-        await bus.PublishAsync(
-            new ShareAccessRevoked(id),
-            new DeliveryOptions { TenantId = target.Value.ToString() }
-        );
+        await bus.PublishForOrgAsync(target, new ShareAccessRevoked(id));
+        await ShareRoster.PublishAsync(db, bus, share!, ct);
         await bus.AuditAsync(
             actor.Org,
             actor.Audit,
@@ -393,36 +366,72 @@ public static class ShareEndpoints
         CancellationToken ct
     )
     {
-        if (ActorRef.From(accessor.Current) is not { } actor)
-            return Results.Unauthorized();
-        if (!await scopes.CanAsync(accessor.Current, Capabilities.NetworkManage, ct))
-            return Results.Unauthorized();
-        var (share, access) = await Load(id, db, ct);
-        if (share is null)
-            return Results.NotFound();
-        if (share.OrgId != actor.Org)
-            return Results.Unauthorized();
-        share.Status = ShareStatus.Closed;
+        var gate = await ActorGate.RequireAsync(accessor, scopes, Capabilities.NetworkManage, ct);
+        if (gate.Actor is not { } actor)
+            return gate.ToResult();
+        var (share, error) = await OwnedAsync(id, db, ct);
+        if (error is not null)
+            return error;
+        share!.Status = ShareStatus.Closed;
         share.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
+        await ShareRoster.PublishAsync(db, bus, share, ct);
         await bus.AuditAsync(actor.Org, actor.Audit, "network.share_closed", new { ShareId = id });
-        return Results.Ok(new ShareMutated(id, access!.Status));
+        var access = await LoadAsync(id, db, ct);
+        return Results.Ok(new ShareMutated(id, access?.Status ?? MembershipStatus.Active));
     }
 
-    internal static async Task<(Share?, ShareAccess?)> Load(
+    /// <summary>The caller's own standing in the share, if any: what every read hangs off.</summary>
+    internal static Task<ShareAccess?> LoadAsync(
+        Guid id,
+        NetworkDbContext db,
+        CancellationToken ct
+    ) =>
+        db.Access.FirstOrDefaultAsync(
+            a => a.ShareId == id && a.Status != MembershipStatus.Removed,
+            ct
+        );
+
+    /// <summary>The share itself, which only its owner holds: 404 for a member (it is not theirs), 403 never - the row simply is not in their tenant.</summary>
+    private static async Task<(Share?, IResult?)> OwnedAsync(
         Guid id,
         NetworkDbContext db,
         CancellationToken ct
     )
     {
-        var access = await db.Access.FirstOrDefaultAsync(
-            a => a.ShareId == id && a.Status != MembershipStatus.Removed,
-            ct
-        );
-        if (access is null)
-            return (null, null);
         var share = await db.Shares.FirstOrDefaultAsync(s => s.Id == id, ct);
-        return share is null ? (null, null) : (share, access);
+        return share is null ? (null, Results.NotFound()) : (share, null);
+    }
+
+    private static async Task<ShareSummary> SummaryAsync(
+        ShareAccess a,
+        NetworkDbContext db,
+        DateTimeOffset now,
+        CancellationToken ct
+    )
+    {
+        var active =
+            await db.Bulletins.CountAsync(
+                b => b.ShareId == a.ShareId && b.WithdrawnAt == null && b.ExpiresAt > now,
+                ct
+            )
+            + await db.BulletinCopies.CountAsync(
+                c => c.ShareId == a.ShareId && c.WithdrawnAt == null && c.ExpiresAt > now,
+                ct
+            );
+        return new ShareSummary(
+            a.ShareId,
+            a.ShareName,
+            a.Description,
+            a.OwnerName,
+            a.Role == MemberRole.Owner,
+            a.Role,
+            a.Status,
+            a.ShareStatus,
+            a.Roster().Count(m => m.Status == MembershipStatus.Active),
+            active,
+            a.CreatedAt
+        );
     }
 
     internal static async Task<IResult?> Upsell(
@@ -432,12 +441,5 @@ public static class ShareEndpoints
     ) =>
         await entitlements.HasAsync(org, EntitlementCatalog.NetworkEnabled, ct)
             ? null
-            : Results.Json(
-                new
-                {
-                    error = "intelligence sharing is not part of this plan",
-                    code = EntitlementCatalog.NetworkEnabled,
-                },
-                statusCode: StatusCodes.Status402PaymentRequired
-            );
+            : GateResults.FeatureOff(EntitlementCatalog.NetworkEnabled);
 }

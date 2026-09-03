@@ -87,6 +87,6 @@ public class AuditExportTests(ApiFixture fixture) : IClassFixture<ApiFixture>
     {
         var viewer = await fixture.LoginAsync(ApiFixture.ViewerA);
         var denied = await viewer.PostAsync("/api/audit/export", null);
-        Assert.Equal(System.Net.HttpStatusCode.Unauthorized, denied.StatusCode);
+        Assert.Equal(System.Net.HttpStatusCode.Forbidden, denied.StatusCode);
     }
 }

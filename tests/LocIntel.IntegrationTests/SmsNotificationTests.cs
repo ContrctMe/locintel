@@ -99,13 +99,16 @@ public class SmsNotificationTests(ApiFixture fixture) : IClassFixture<ApiFixture
         ).EnsureSuccessStatusCode();
         var catcher = fixture.Factory.Services.GetRequiredService<LocalSmsCatcher>();
         var got = false;
-        for (var i = 0; i < 50 && !got; i++)
-        {
-            await Task.Delay(100);
-            got = catcher.Sent.Any(m =>
-                m.To == "+14155550101" && m.Body.Contains("Critical robbery")
-            );
-        }
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+            {
+                got = catcher.Sent.Any(m =>
+                    m.To == "+14155550101" && m.Body.Contains("Critical robbery")
+                );
+                return !(!got);
+            },
+            "got"
+        );
         Assert.True(got, "the opted-in owner should have been texted about the critical incident");
 
         // marketplace kind is off for the owner: a vendor's request submission texts nobody in org A...
@@ -153,13 +156,16 @@ public class SmsNotificationTests(ApiFixture fixture) : IClassFixture<ApiFixture
             await owner.PostAsync($"/api/marketplace/requests/{requestId}/submit", null)
         ).EnsureSuccessStatusCode();
         var vendorGot = false;
-        for (var i = 0; i < 50 && !vendorGot; i++)
-        {
-            await Task.Delay(100);
-            vendorGot = catcher.Sent.Any(m =>
-                m.To == "+14155550202" && m.Body.Contains("Keys tonight")
-            );
-        }
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+            {
+                vendorGot = catcher.Sent.Any(m =>
+                    m.To == "+14155550202" && m.Body.Contains("Keys tonight")
+                );
+                return !(!vendorGot);
+            },
+            "vendorGot"
+        );
         Assert.True(vendorGot, "the vendor's opted-in member should have been texted the dispatch");
         await Task.Delay(300);
         Assert.Equal(before, catcher.Sent.Count(m => m.To == "+14155550101"));
@@ -192,13 +198,16 @@ public class SmsNotificationTests(ApiFixture fixture) : IClassFixture<ApiFixture
             )
         ).EnsureSuccessStatusCode();
         var ownerBulletin = false;
-        for (var i = 0; i < 50 && !ownerBulletin; i++)
-        {
-            await Task.Delay(100);
-            ownerBulletin = catcher.Sent.Any(m =>
-                m.To == "+14155550101" && m.Body.Contains("Blue van")
-            );
-        }
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+            {
+                ownerBulletin = catcher.Sent.Any(m =>
+                    m.To == "+14155550101" && m.Body.Contains("Blue van")
+                );
+                return !(!ownerBulletin);
+            },
+            "ownerBulletin"
+        );
         Assert.True(ownerBulletin);
         Assert.DoesNotContain(catcher.Sent, m => m.To == "+14155550303");
         // guests hold nothing here

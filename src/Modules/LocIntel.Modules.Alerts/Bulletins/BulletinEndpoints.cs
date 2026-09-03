@@ -43,9 +43,9 @@ public static class BulletinEndpoints
     {
         if (accessor.Current is not Principal.User { UserId: var userId })
             return Results.Unauthorized();
-        var scope = await scopes.ScopeForAsync(accessor.Current, Capabilities.AlertsRead, ct);
-        if (scope is NodeScope.None)
-            return Results.Unauthorized();
+        var gate = await Gate.RequireAsync(accessor, scopes, Capabilities.AlertsRead, ct);
+        if (gate is not GateOutcome.Allowed { Scope: var scope })
+            return gate.ToResult();
         var now = time.GetUtcNow();
         var query = ScopeOverlap.Bulletins(db.Bulletins, scope);
         if (includeInactive is not true)
@@ -86,9 +86,9 @@ public static class BulletinEndpoints
     {
         if (accessor.Current is not Principal.User { UserId: var userId })
             return Results.Unauthorized();
-        var scope = await scopes.ScopeForAsync(accessor.Current, Capabilities.AlertsRead, ct);
-        if (scope is NodeScope.None)
-            return Results.Unauthorized();
+        var gate = await Gate.RequireAsync(accessor, scopes, Capabilities.AlertsRead, ct);
+        if (gate is not GateOutcome.Allowed { Scope: var scope })
+            return gate.ToResult();
         var bulletin = await ScopeOverlap
             .Bulletins(db.Bulletins, scope)
             .FirstOrDefaultAsync(b => b.Id == id, ct);
@@ -135,9 +135,9 @@ public static class BulletinEndpoints
     {
         if (ActorRef.From(accessor.Current) is not { } actor)
             return Results.Unauthorized();
-        var scope = await scopes.ScopeForAsync(accessor.Current, Capabilities.AlertsManage, ct);
-        if (scope is NodeScope.None)
-            return Results.Unauthorized();
+        var gate = await Gate.RequireAsync(accessor, scopes, Capabilities.AlertsManage, ct);
+        if (gate is not GateOutcome.Allowed { Scope: var scope })
+            return gate.ToResult();
         if (string.IsNullOrWhiteSpace(request.Title) || request.Title.Trim().Length > 200)
             return Results.BadRequest(
                 new { error = "a bulletin needs a title of up to 200 characters" }
@@ -239,9 +239,9 @@ public static class BulletinEndpoints
     {
         if (ActorRef.From(accessor.Current) is not { } actor)
             return Results.Unauthorized();
-        var scope = await scopes.ScopeForAsync(accessor.Current, Capabilities.AlertsManage, ct);
-        if (scope is NodeScope.None)
-            return Results.Unauthorized();
+        var gate = await Gate.RequireAsync(accessor, scopes, Capabilities.AlertsManage, ct);
+        if (gate is not GateOutcome.Allowed { Scope: var scope })
+            return gate.ToResult();
         var bulletin = await ScopeOverlap
             .Bulletins(db.Bulletins, scope)
             .FirstOrDefaultAsync(b => b.Id == id, ct);
@@ -272,9 +272,9 @@ public static class BulletinEndpoints
     {
         if (accessor.Current is not Principal.User { ActiveOrg: { } org, UserId: var userId })
             return Results.Unauthorized();
-        var scope = await scopes.ScopeForAsync(accessor.Current, Capabilities.AlertsRead, ct);
-        if (scope is NodeScope.None)
-            return Results.Unauthorized();
+        var gate = await Gate.RequireAsync(accessor, scopes, Capabilities.AlertsRead, ct);
+        if (gate is not GateOutcome.Allowed { Scope: var scope })
+            return gate.ToResult();
         var now = time.GetUtcNow();
         var bulletin = await ScopeOverlap
             .Bulletins(db.Bulletins, scope)

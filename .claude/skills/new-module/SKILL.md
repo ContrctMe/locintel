@@ -75,3 +75,21 @@ rather than re-do
 - Register services by TYPE (`AddScoped<IFoo, Foo>()`), never lambda factories.
 - Registering a DERIVED interface does not satisfy a BASE one: if something
   resolves the base port, register it explicitly.
+
+## Endpoint authorization
+
+Never hand-roll the principal/capability/status dance. One call per endpoint:
+
+```csharp
+var gate = await Gate.RequireUserAsync(accessor, scopes, Capabilities.ThingManage, ct);
+if (gate is not GateOutcome.Allowed { Principal: Principal.User user, Org: var org, Scope: var scope })
+    return gate.ToResult();
+```
+
+`RequireAsync` for surfaces API keys may call; `RequireUserAsync` for
+human-only ones; `RequireOperatorAsync` for platform operators. Gate 1 at a
+creation point returns `GateResults.LimitReached(decision)` or
+`GateResults.FeatureOff(code)`. Reads that should narrow silently call
+`ScopeForAsync` and filter - a role-less member gets an empty list, never
+an error. `GateCeremonyTests` refuses an inline `Results.Unauthorized()`
+after a resolver call and any inline 402 body.

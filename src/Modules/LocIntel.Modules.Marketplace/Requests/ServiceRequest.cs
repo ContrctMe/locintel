@@ -5,23 +5,22 @@ using Microsoft.EntityFrameworkCore;
 namespace LocIntel.Modules.Marketplace.Requests;
 
 /// <summary>
-/// The two-party row (blueprint: marketplace tenancy). OrgId is the
-/// requester, CounterpartyOrgId the fulfiller; RLS and the context's "Tenant"
-/// filter admit EITHER org, and each side's endpoints narrow to their own
-/// role. Site facts are snapshotted at creation (name, zone, coordinates,
-/// ancestor path) because the vendor's tenant context can never read the
-/// requester's Tenancy rows. Deletion tier 1: cancelled, never deleted.
-/// Temporal: StartsAt/EndsAt and the *At stamps are UTC instants; Rrule is
-/// a wall-clock recurring rule in the site's zone (ADR 26/27).
+/// The requester's aggregate (ADR 48: one owner per row). The vendor never
+/// reads this row: it holds its own VendorAssignment, materialized from
+/// RequestOffered / RequestStateChanged through the outbox. VendorOrgId is
+/// DATA - who was awarded - never a policy. Site facts are snapshotted at
+/// creation because the vendor's copy can never read Tenancy here.
+/// Deletion tier 1: cancelled, never deleted. Temporal: StartsAt/EndsAt and
+/// the *At stamps are UTC instants; Rrule is a wall-clock recurring rule in
+/// the site's zone (ADR 26/27).
 /// </summary>
-public sealed class ServiceRequest : ITwoPartyScoped
+public sealed class ServiceRequest : IOrgScoped
 {
     public required Guid Id { get; init; }
     public required OrgId OrgId { get; init; }
 
-    /// <summary>Null while a Broadcast request is out for quotes; set when the buyer awards one.</summary>
-    /// <summary>The awarded vendor (ITwoPartyScoped's counterparty); null until award.</summary>
-    public OrgId? CounterpartyOrgId { get; set; }
+    /// <summary>The awarded (or directly chosen) vendor; null while a broadcast is out for quotes.</summary>
+    public OrgId? VendorOrgId { get; set; }
     public RequestMode Mode { get; init; } = RequestMode.Direct;
     public required ServiceCategory Category { get; init; }
     public required RequestUrgency Urgency { get; set; }
@@ -67,4 +66,45 @@ public sealed class ServiceRequest : ITwoPartyScoped
 
     public bool IsTerminal =>
         Status is RequestStatus.Declined or RequestStatus.Verified or RequestStatus.Cancelled;
+
+    /// <summary>What every participant may know: the request minus the requester's private links (incident, case, path).</summary>
+    public RequestSnapshot Snapshot() =>
+        new(
+            Id,
+            OrgId,
+            RequesterName,
+            VendorOrgId,
+            Mode,
+            Category,
+            Urgency,
+            Status,
+            SiteId,
+            SiteName,
+            SiteTimeZone,
+            SiteLatitude,
+            SiteLongitude,
+            SiteCountryCode,
+            Title,
+            Details,
+            SpecJson,
+            StartsAt,
+            EndsAt,
+            Rrule,
+            BudgetAmount,
+            Currency,
+            SubmittedAt,
+            ResponseDueAt,
+            EscalatedAt,
+            EscalationCount,
+            AcceptedAt,
+            DeclineReason,
+            StartedAt,
+            CompletedAt,
+            CompletionSummary,
+            VerifiedAt,
+            DisputeReason,
+            CancelledAt,
+            CancelReason,
+            UpdatedAt
+        );
 }

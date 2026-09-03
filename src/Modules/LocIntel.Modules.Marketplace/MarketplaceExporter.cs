@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LocIntel.Modules.Marketplace;
 
-/// <summary>Marketplace's slice of the offboarding export: the org's side of every request, its vendor profile, its preferred list.</summary>
+/// <summary>Marketplace's slice of the offboarding export: what the org OWNS - its requests, its assignments as a vendor, its quotes, its profile, its preferred list (ADR 48: nothing here belongs to another org).</summary>
 public sealed class MarketplaceExporter(MarketplaceDbContext db) : IOrgDataExporter
 {
     public string Section => "marketplace";
@@ -38,11 +38,11 @@ public sealed class MarketplaceExporter(MarketplaceDbContext db) : IOrgDataExpor
             .ToListAsync(ct);
         var requests = await db
             .Requests.IgnoreQueryFilters()
-            .Where(r => r.OrgId == org || r.CounterpartyOrgId == org)
+            .Where(r => r.OrgId == org)
             .Select(r => new
             {
                 r.Id,
-                role = r.OrgId == org ? "requester" : "vendor",
+                vendorOrgId = r.VendorOrgId == null ? (Guid?)null : r.VendorOrgId.Value.Value,
                 category = r.Category.ToString(),
                 urgency = r.Urgency.ToString(),
                 status = r.Status.ToString(),
@@ -59,7 +59,7 @@ public sealed class MarketplaceExporter(MarketplaceDbContext db) : IOrgDataExpor
                 r.VerifiedAt,
                 events = db
                     .Events.IgnoreQueryFilters()
-                    .Where(e => e.RequestId == r.Id)
+                    .Where(e => e.OrgId == org && e.RequestId == r.Id)
                     .OrderBy(e => e.At)
                     .Select(e => new
                     {
@@ -69,6 +69,57 @@ public sealed class MarketplaceExporter(MarketplaceDbContext db) : IOrgDataExpor
                         e.DistanceFromSiteMeters,
                     })
                     .ToList(),
+                quotes = db
+                    .ReceivedQuotes.IgnoreQueryFilters()
+                    .Where(q => q.OrgId == org && q.RequestId == r.Id)
+                    .Select(q => new
+                    {
+                        vendorOrgId = q.VendorOrgId.Value,
+                        q.VendorName,
+                        q.Amount,
+                        q.Currency,
+                        status = q.Status.ToString(),
+                    })
+                    .ToList(),
+            })
+            .ToListAsync(ct);
+        var assignments = await db
+            .Assignments.IgnoreQueryFilters()
+            .Where(a => a.OrgId == org)
+            .Select(a => new
+            {
+                a.RequestId,
+                requesterOrgId = a.RequesterOrgId.Value,
+                a.RequesterName,
+                category = a.Category.ToString(),
+                status = a.Status.ToString(),
+                participation = a.Participation.ToString(),
+                a.SiteName,
+                a.Title,
+                a.StartsAt,
+                a.CompletedAt,
+                events = db
+                    .Events.IgnoreQueryFilters()
+                    .Where(e => e.OrgId == org && e.RequestId == a.RequestId)
+                    .OrderBy(e => e.At)
+                    .Select(e => new
+                    {
+                        kind = e.Kind.ToString(),
+                        e.Body,
+                        e.At,
+                        e.DistanceFromSiteMeters,
+                    })
+                    .ToList(),
+                quote = db
+                    .Quotes.IgnoreQueryFilters()
+                    .Where(q => q.OrgId == org && q.RequestId == a.RequestId)
+                    .Select(q => new
+                    {
+                        q.Amount,
+                        q.Currency,
+                        status = q.Status.ToString(),
+                    })
+                    .FirstOrDefault(),
             })
             .ToListAsync(ct);
         return JsonSerializer.Serialize(
@@ -77,6 +128,7 @@ public sealed class MarketplaceExporter(MarketplaceDbContext db) : IOrgDataExpor
                 profile,
                 preferred,
                 requests,
+                assignments,
             },
             new JsonSerializerOptions(JsonSerializerDefaults.Web) { WriteIndented = true }
         );

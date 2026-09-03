@@ -12,7 +12,7 @@ using Wolverine.Http;
 
 namespace LocIntel.Modules.Marketplace.Vendors;
 
-/// <summary>The buyer's view of the catalog (published vendors) and their own preferred/blocked list.</summary>
+/// <summary>The buyer's view of the catalog - the platform-global vendor directory (ADR 48) - and their own preferred/blocked list.</summary>
 public static class VendorDirectoryEndpoints
 {
     [Transactional(typeof(MarketplaceDbContext))]
@@ -32,12 +32,11 @@ public static class VendorDirectoryEndpoints
         CancellationToken ct
     )
     {
-        if (ActorRef.From(accessor.Current) is not { } actor)
-            return Results.Unauthorized();
-        if (!await scopes.CanAsync(accessor.Current, Capabilities.MarketplaceRead, ct))
-            return Results.Unauthorized();
+        var gate = await ActorGate.RequireAsync(accessor, scopes, Capabilities.MarketplaceRead, ct);
+        if (gate.Actor is not { } actor)
+            return gate.ToResult();
         var now = time.GetUtcNow();
-        var query = db.Profiles.Where(p => p.Published && p.OrgId != actor.Org);
+        var query = db.Directory.Where(p => p.OrgId != actor.Org);
         if (category is { } c)
         {
             var name = c.ToString();
@@ -60,22 +59,33 @@ public static class VendorDirectoryEndpoints
         var total = await query.CountAsync(ct);
         var take = Math.Clamp(limit ?? 50, 1, 200);
         var skip = Math.Max(offset ?? 0, 0);
-        var items = await query
+        var rows = await query
             .OrderBy(p => p.Name)
             .Skip(skip)
             .Take(take)
-            .Select(p => new VendorSummary(
-                p.OrgId.Value,
-                p.Name,
-                p.Description,
-                p.Categories,
-                p.ServiceAreas,
-                db.Credentials.Count(x => x.OrgId == p.OrgId && x.ExpiresAt > now),
-                db.Credentials.Count(x => x.OrgId == p.OrgId && x.ExpiresAt <= now),
-                db.Preferred.Any(x => x.VendorOrgId == p.OrgId && !x.Blocked),
-                db.Preferred.Any(x => x.VendorOrgId == p.OrgId && x.Blocked)
-            ))
+            .Select(p => new
+            {
+                Listing = p,
+                Preferred = db.Preferred.Any(x => x.VendorOrgId == p.OrgId && !x.Blocked),
+                Blocked = db.Preferred.Any(x => x.VendorOrgId == p.OrgId && x.Blocked),
+            })
             .ToListAsync(ct);
+        var items = rows.Select(r =>
+            {
+                var credentials = VendorMatcher.Credentials(r.Listing);
+                return new VendorSummary(
+                    r.Listing.OrgId.Value,
+                    r.Listing.Name,
+                    r.Listing.Description,
+                    r.Listing.Categories,
+                    r.Listing.ServiceAreas,
+                    credentials.Count(x => x.ExpiresAt > now),
+                    credentials.Count(x => x.ExpiresAt <= now),
+                    r.Preferred,
+                    r.Blocked
+                );
+            })
+            .ToList();
         return Results.Ok(
             new VendorListResponse(
                 items,
@@ -97,13 +107,42 @@ public static class VendorDirectoryEndpoints
         CancellationToken ct
     )
     {
-        if (!await scopes.CanAsync(accessor.Current, Capabilities.MarketplaceRead, ct))
-            return Results.Unauthorized();
+        var gate = await Gate.RequireAsync(accessor, scopes, Capabilities.MarketplaceRead, ct);
+        if (gate is not GateOutcome.Allowed)
+            return gate.ToResult();
         var id = new OrgId(orgId);
-        var profile = await db.Profiles.FirstOrDefaultAsync(p => p.OrgId == id && p.Published, ct);
-        if (profile is null)
+        var listing = await db.Directory.FirstOrDefaultAsync(p => p.OrgId == id, ct);
+        if (listing is null)
             return Results.NotFound();
-        return Results.Ok(await VendorProfileEndpoints.ViewAsync(profile, db, time, ct));
+        var now = time.GetUtcNow();
+        return Results.Ok(
+            new VendorProfileView(
+                listing.OrgId.Value,
+                listing.Name,
+                listing.Description,
+                listing.Categories,
+                listing.ServiceAreas,
+                listing.Latitude,
+                listing.Longitude,
+                listing.ServiceRadiusKm,
+                listing.ContactEmail,
+                listing.ContactPhone,
+                true,
+                listing.UpdatedAt,
+                VendorMatcher
+                    .Credentials(listing)
+                    .Select(c => new CredentialView(
+                        c.Id,
+                        c.Kind,
+                        c.Label,
+                        null, // the number is the vendor's own business
+                        c.Jurisdiction,
+                        c.ExpiresAt,
+                        c.ExpiresAt <= now
+                    ))
+                    .ToList()
+            )
+        );
     }
 
     [Transactional(typeof(MarketplaceDbContext))]
@@ -116,15 +155,16 @@ public static class VendorDirectoryEndpoints
         CancellationToken ct
     )
     {
-        if (!await scopes.CanAsync(accessor.Current, Capabilities.MarketplaceRead, ct))
-            return Results.Unauthorized();
+        var gate = await Gate.RequireAsync(accessor, scopes, Capabilities.MarketplaceRead, ct);
+        if (gate is not GateOutcome.Allowed)
+            return gate.ToResult();
         var items = await db
             .Preferred.OrderBy(p => p.Blocked)
             .ThenBy(p => p.CreatedAt)
             .Select(p => new PreferredVendorView(
                 p.Id,
                 p.VendorOrgId.Value,
-                db.Profiles.Where(v => v.OrgId == p.VendorOrgId)
+                db.Directory.Where(v => v.OrgId == p.VendorOrgId)
                     .Select(v => v.Name)
                     .FirstOrDefault(),
                 p.Categories,
@@ -148,12 +188,16 @@ public static class VendorDirectoryEndpoints
         CancellationToken ct
     )
     {
-        if (ActorRef.From(accessor.Current) is not { } actor)
-            return Results.Unauthorized();
-        if (!await scopes.CanAsync(accessor.Current, Capabilities.MarketplaceManage, ct))
-            return Results.Unauthorized();
+        var gate = await ActorGate.RequireAsync(
+            accessor,
+            scopes,
+            Capabilities.MarketplaceManage,
+            ct
+        );
+        if (gate.Actor is not { } actor)
+            return gate.ToResult();
         var vendorOrg = new OrgId(request.VendorOrgId);
-        if (!await db.Profiles.AnyAsync(p => p.OrgId == vendorOrg && p.Published, ct))
+        if (!await db.Directory.AnyAsync(p => p.OrgId == vendorOrg, ct))
             return Results.NotFound();
         var row = await db.Preferred.FirstOrDefaultAsync(p => p.VendorOrgId == vendorOrg, ct);
         var created = row is null;
@@ -190,8 +234,9 @@ public static class VendorDirectoryEndpoints
         CancellationToken ct
     )
     {
-        if (!await scopes.CanAsync(accessor.Current, Capabilities.MarketplaceManage, ct))
-            return Results.Unauthorized();
+        var gate = await Gate.RequireAsync(accessor, scopes, Capabilities.MarketplaceManage, ct);
+        if (gate is not GateOutcome.Allowed)
+            return gate.ToResult();
         var row = await db.Preferred.FirstOrDefaultAsync(p => p.Id == id, ct);
         if (row is null)
             return Results.NotFound();

@@ -8,95 +8,198 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LocIntel.Modules.Marketplace.Requests;
 
-/// <summary>Projections shared by both sides; the reader's org decides which actor labels resolve.</summary>
+/// <summary>
+/// Each side reads the API shape from the rows IT owns (ADR 48): the
+/// requester from its request, recipients, received quotes and timeline
+/// copies; the vendor from its assignment, its own quote and its copies.
+/// The reader's org decides which actor labels resolve.
+/// </summary>
 public static class RequestViews
 {
-    public static async Task<RequestDetail> DetailAsync(
+    public static async Task<RequestDetail> RequesterDetailAsync(
         ServiceRequest request,
-        OrgId readerOrg,
         bool canManage,
         MarketplaceDbContext db,
         IActorDirectory actors,
         CancellationToken ct
     )
     {
-        var vendorName = request.CounterpartyOrgId is { } vendorOrg
-            ? await db
-                .Profiles.Where(p => p.OrgId == vendorOrg)
-                .Select(p => p.Name)
-                .FirstOrDefaultAsync(ct)
-            : null;
         var quotes = await db
-            .Quotes.Where(q => q.RequestId == request.Id)
+            .ReceivedQuotes.Where(q => q.RequestId == request.Id)
             .OrderBy(q => q.Amount)
             .ToListAsync(ct);
         var recipients = await db
             .Recipients.Where(x => x.RequestId == request.Id)
             .OrderBy(x => x.NotifiedAt)
             .ToListAsync(ct);
-        var vendorIds = quotes
-            .Select(q => q.CounterpartyOrgId)
-            .Concat(recipients.Select(x => x.CounterpartyOrgId))
+        var vendorIds = recipients
+            .Select(x => x.VendorOrgId)
+            .Concat(request.VendorOrgId is { } v ? [v] : [])
             .Distinct()
             .ToArray();
-        var vendorNames = await db
-            .Profiles.Where(p => vendorIds.Contains(p.OrgId))
+        var names = await db
+            .Directory.Where(p => vendorIds.Contains(p.OrgId))
             .ToDictionaryAsync(p => p.OrgId, p => p.Name, ct);
-        // the other side never sees competing quotes: a vendor sees only its own
-        var mine = readerOrg == request.OrgId;
+        foreach (var q in quotes)
+            names.TryAdd(q.VendorOrgId, q.VendorName);
+        var vendorName = request.VendorOrgId is { } vendor ? names.GetValueOrDefault(vendor) : null;
         var events = await db
             .Events.Where(e => e.RequestId == request.Id)
             .OrderBy(e => e.At)
+            .ThenBy(e => e.Id)
             .ToListAsync(ct);
-        // labels only for your own org's people: the other party sees a side, not a name
         var labels = await actors.LabelsAsync(
-            events.Where(e => e.ActorOrgId == readerOrg).Select(e => e.ActorId).Distinct().ToList(),
+            events
+                .Where(e => e.ActorOrgId == request.OrgId)
+                .Select(e => e.ActorId)
+                .Distinct()
+                .ToList(),
             ct
         );
-        return new RequestDetail(
-            request.Id,
-            request.CounterpartyOrgId?.Value,
+        return Detail(
+            request.Snapshot(),
+            request.OrgId,
+            request.VendorOrgId?.Value,
             vendorName,
-            request.Mode,
-            request.RequesterName,
-            request.Category,
-            request.Urgency,
-            request.Status,
-            request.SiteId,
-            request.SiteName,
-            request.SiteTimeZone,
-            request.SiteLatitude,
-            request.SiteLongitude,
-            request.Title,
-            request.Details,
-            JsonSerializer.Deserialize<Dictionary<string, string>>(request.SpecJson) ?? [],
-            request.StartsAt,
-            request.EndsAt,
-            request.Rrule,
-            request.BudgetAmount,
-            request.Currency,
             request.IncidentId,
             request.CaseId,
             request.CreatedAt,
-            request.UpdatedAt,
-            request.SubmittedAt,
-            request.ResponseDueAt,
-            request.EscalatedAt,
-            request.EscalationCount,
-            request.AcceptedAt,
-            request.DeclineReason,
-            request.StartedAt,
-            request.CompletedAt,
-            request.CompletionSummary,
-            request.VerifiedAt,
-            request.DisputeReason,
-            request.CancelledAt,
-            request.CancelReason,
+            canManage,
+            events,
+            labels,
+            quotes
+                .Select(q => new QuoteView(
+                    q.QuoteId,
+                    q.VendorOrgId.Value,
+                    q.VendorName,
+                    q.Amount,
+                    q.Currency,
+                    q.Notes,
+                    q.ValidUntil,
+                    q.Status,
+                    q.SubmittedAt
+                ))
+                .ToList(),
+            recipients
+                .Select(x => new RecipientView(
+                    x.VendorOrgId.Value,
+                    names.GetValueOrDefault(x.VendorOrgId),
+                    x.Status,
+                    x.NotifiedAt
+                ))
+                .ToList()
+        );
+    }
+
+    public static async Task<RequestDetail> VendorDetailAsync(
+        VendorAssignment a,
+        string ownName,
+        MarketplaceDbContext db,
+        IActorDirectory actors,
+        CancellationToken ct
+    )
+    {
+        var quote = await db.Quotes.FirstOrDefaultAsync(q => q.RequestId == a.RequestId, ct);
+        var events = await db
+            .Events.Where(e => e.RequestId == a.RequestId)
+            .OrderBy(e => e.At)
+            .ThenBy(e => e.Id)
+            .ToListAsync(ct);
+        var labels = await actors.LabelsAsync(
+            events.Where(e => e.ActorOrgId == a.OrgId).Select(e => e.ActorId).Distinct().ToList(),
+            ct
+        );
+        return Detail(
+            Snapshot(a),
+            a.RequesterOrgId,
+            a.IsAssigned ? a.OrgId.Value : null,
+            a.IsAssigned ? ownName : null,
+            null,
+            null,
+            a.CreatedAt,
+            true,
+            events,
+            labels,
+            quote is null
+                ? [] // the other side's quotes are theirs: a vendor sees only its own
+                :
+                [
+                    new QuoteView(
+                        quote.Id,
+                        a.OrgId.Value,
+                        ownName,
+                        quote.Amount,
+                        quote.Currency,
+                        quote.Notes,
+                        quote.ValidUntil,
+                        quote.Status,
+                        quote.CreatedAt
+                    ),
+                ],
+            a.Mode == RequestMode.Broadcast
+                ? [new RecipientView(a.OrgId.Value, ownName, a.Participation, a.CreatedAt)]
+                : []
+        );
+    }
+
+    private static RequestDetail Detail(
+        RequestSnapshot s,
+        OrgId requester,
+        Guid? vendorOrgId,
+        string? vendorName,
+        Guid? incidentId,
+        Guid? caseId,
+        DateTimeOffset createdAt,
+        bool canManage,
+        List<RequestEvent> events,
+        IReadOnlyDictionary<Guid, string> labels,
+        List<QuoteView> quotes,
+        List<RecipientView> recipients
+    ) =>
+        new(
+            s.RequestId,
+            vendorOrgId,
+            vendorName,
+            s.Mode,
+            s.RequesterName,
+            s.Category,
+            s.Urgency,
+            s.Status,
+            s.SiteId,
+            s.SiteName,
+            s.SiteTimeZone,
+            s.SiteLatitude,
+            s.SiteLongitude,
+            s.Title,
+            s.Details,
+            JsonSerializer.Deserialize<Dictionary<string, string>>(s.SpecJson) ?? [],
+            s.StartsAt,
+            s.EndsAt,
+            s.Rrule,
+            s.BudgetAmount,
+            s.Currency,
+            incidentId,
+            caseId,
+            createdAt,
+            s.UpdatedAt,
+            s.SubmittedAt,
+            s.ResponseDueAt,
+            s.EscalatedAt,
+            s.EscalationCount,
+            s.AcceptedAt,
+            s.DeclineReason,
+            s.StartedAt,
+            s.CompletedAt,
+            s.CompletionSummary,
+            s.VerifiedAt,
+            s.DisputeReason,
+            s.CancelledAt,
+            s.CancelReason,
             canManage,
             events
                 .Select(e => new RequestEventView(
-                    e.Id,
-                    e.ActorOrgId == request.OrgId ? "requester" : "vendor",
+                    e.SourceId,
+                    e.ActorOrgId == requester ? "requester" : "vendor",
                     e.ActorId,
                     labels.GetValueOrDefault(e.ActorId),
                     e.Kind,
@@ -108,31 +211,49 @@ public static class RequestViews
                     e.At
                 ))
                 .ToList(),
-            quotes
-                .Where(q => mine || q.CounterpartyOrgId == readerOrg)
-                .Select(q => new QuoteView(
-                    q.Id,
-                    q.CounterpartyOrgId.Value,
-                    vendorNames.GetValueOrDefault(q.CounterpartyOrgId),
-                    q.Amount,
-                    q.Currency,
-                    q.Notes,
-                    q.ValidUntil,
-                    q.Status,
-                    q.CreatedAt
-                ))
-                .ToList(),
+            quotes,
             recipients
-                .Where(x => mine || x.CounterpartyOrgId == readerOrg)
-                .Select(x => new RecipientView(
-                    x.CounterpartyOrgId.Value,
-                    vendorNames.GetValueOrDefault(x.CounterpartyOrgId),
-                    x.Status,
-                    x.NotifiedAt
-                ))
-                .ToList()
         );
-    }
+
+    private static RequestSnapshot Snapshot(VendorAssignment a) =>
+        new(
+            a.RequestId,
+            a.RequesterOrgId,
+            a.RequesterName,
+            a.IsAssigned ? a.OrgId : null,
+            a.Mode,
+            a.Category,
+            a.Urgency,
+            a.Status,
+            a.SiteId,
+            a.SiteName,
+            a.SiteTimeZone,
+            a.SiteLatitude,
+            a.SiteLongitude,
+            a.SiteCountryCode,
+            a.Title,
+            a.Details,
+            a.SpecJson,
+            a.StartsAt,
+            a.EndsAt,
+            a.Rrule,
+            a.BudgetAmount,
+            a.Currency,
+            a.SubmittedAt,
+            a.ResponseDueAt,
+            a.EscalatedAt,
+            a.EscalationCount,
+            a.AcceptedAt,
+            a.DeclineReason,
+            a.StartedAt,
+            a.CompletedAt,
+            a.CompletionSummary,
+            a.VerifiedAt,
+            a.DisputeReason,
+            a.CancelledAt,
+            a.CancelReason,
+            a.UpdatedAt
+        );
 
     public static async Task<RequestListResponse> ListAsync(
         IQueryable<ServiceRequest> query,
@@ -152,11 +273,11 @@ public static class RequestViews
             .Take(take)
             .Select(r => new RequestSummary(
                 r.Id,
-                r.CounterpartyOrgId == null ? null : r.CounterpartyOrgId.Value.Value,
-                r.CounterpartyOrgId == null
+                r.VendorOrgId == null ? null : r.VendorOrgId.Value.Value,
+                r.VendorOrgId == null
                     ? null
                     : db
-                        .Profiles.Where(p => p.OrgId == r.CounterpartyOrgId)
+                        .Directory.Where(p => p.OrgId == r.VendorOrgId)
                         .Select(p => p.Name)
                         .FirstOrDefault(),
                 r.Mode,
@@ -182,21 +303,93 @@ public static class RequestViews
         );
     }
 
+    public static async Task<RequestListResponse> VendorListAsync(
+        IQueryable<VendorAssignment> query,
+        string ownName,
+        int? limit,
+        int? offset,
+        CancellationToken ct
+    )
+    {
+        var total = await query.CountAsync(ct);
+        var take = Math.Clamp(limit ?? 50, 1, 200);
+        var skip = Math.Max(offset ?? 0, 0);
+        var rows = await query
+            .OrderByDescending(a => a.UpdatedAt)
+            .ThenByDescending(a => a.Id)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(ct);
+        var items = rows.Select(a => new RequestSummary(
+                a.RequestId,
+                a.IsAssigned ? a.OrgId.Value : null,
+                a.IsAssigned ? ownName : null,
+                a.Mode,
+                a.RequesterName,
+                a.Category,
+                a.Urgency,
+                a.Status,
+                a.SiteId,
+                a.SiteName,
+                a.Title,
+                a.StartsAt,
+                a.EndsAt,
+                a.BudgetAmount,
+                a.Currency,
+                a.UpdatedAt,
+                a.ResponseDueAt
+            ))
+            .ToList();
+        return new RequestListResponse(
+            items,
+            total,
+            skip + items.Count < total ? skip + items.Count : null
+        );
+    }
+
+    /// <summary>The requester's own timeline entry; fan it out with RequestFanOut.EventAsync.</summary>
     public static RequestEvent StatusEvent(ServiceRequest request, ActorRef actor, string body) =>
+        Event(
+            request.OrgId,
+            request.Id,
+            actor,
+            RequestEventKind.StatusChange,
+            body,
+            null,
+            null,
+            null
+        );
+
+    public static RequestEvent Event(
+        OrgId holder,
+        Guid requestId,
+        ActorRef actor,
+        RequestEventKind kind,
+        string? body,
+        double? lat,
+        double? lng,
+        double? distance
+    ) =>
         new()
         {
             Id = Guid.CreateVersion7(),
-            OrgId = request.OrgId,
-            CounterpartyOrgId = request.CounterpartyOrgId,
-            RequestId = request.Id,
+            OrgId = holder,
+            SourceId = Guid.CreateVersion7(),
+            RequestId = requestId,
             ActorOrgId = actor.Org,
             ActorId = actor.Id,
-            Kind = RequestEventKind.StatusChange,
+            Kind = kind,
             Body = body,
+            Latitude = lat,
+            Longitude = lng,
+            DistanceFromSiteMeters = distance,
         };
 
     public static RequestMutated Mutated(ServiceRequest request) =>
         new(request.Id, request.Status, request.UpdatedAt);
+
+    public static RequestMutated Mutated(VendorAssignment a) =>
+        new(a.RequestId, a.Status, a.UpdatedAt);
 
     public static IQueryable<ServiceRequest> InScope(
         IQueryable<ServiceRequest> query,

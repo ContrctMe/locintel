@@ -1,8 +1,11 @@
+using System.Text.Json;
 using LocIntel.Contracts;
 using LocIntel.Modules.Marketplace.Data;
 using LocIntel.Modules.Marketplace.Marketplace;
 using LocIntel.Modules.Marketplace.Vendors.Api;
+using LocIntel.Modules.Marketplace.Vendors.Messages;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,7 +17,8 @@ namespace LocIntel.Modules.Marketplace.Vendors;
 
 /// <summary>
 /// The vendor's own catalog entry (vendor:manage, inside the vendor org).
-/// Publishing is what opens the row to every other org's reads.
+/// Publishing projects it into the platform-global directory buyers search
+/// (ADR 48 "open: pull"); every later change re-projects while published.
 /// </summary>
 public static class VendorProfileEndpoints
 {
@@ -29,10 +33,9 @@ public static class VendorProfileEndpoints
         CancellationToken ct
     )
     {
-        if (ActorRef.From(accessor.Current) is not { } actor)
-            return Results.Unauthorized();
-        if (!await scopes.CanAsync(accessor.Current, Capabilities.VendorManage, ct))
-            return Results.Unauthorized();
+        var gate = await ActorGate.RequireAsync(accessor, scopes, Capabilities.VendorManage, ct);
+        if (gate.Actor is not { } actor)
+            return gate.ToResult();
         var profile = await db.Profiles.FirstOrDefaultAsync(p => p.OrgId == actor.Org, ct);
         if (profile is null)
             return Results.NotFound();
@@ -52,10 +55,9 @@ public static class VendorProfileEndpoints
         CancellationToken ct
     )
     {
-        if (ActorRef.From(accessor.Current) is not { } actor)
-            return Results.Unauthorized();
-        if (!await scopes.CanAsync(accessor.Current, Capabilities.VendorManage, ct))
-            return Results.Unauthorized();
+        var gate = await ActorGate.RequireAsync(accessor, scopes, Capabilities.VendorManage, ct);
+        if (gate.Actor is not { } actor)
+            return gate.ToResult();
         if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Trim().Length > 200)
             return Results.BadRequest(
                 new { error = "a vendor needs a name of up to 200 characters" }
@@ -95,6 +97,7 @@ public static class VendorProfileEndpoints
         if (created)
             db.Profiles.Add(profile);
         await db.SaveChangesAsync(ct);
+        await ProjectAsync(profile, db, bus, ct);
         await bus.AuditAsync(
             actor.Org,
             actor.Audit,
@@ -117,16 +120,16 @@ public static class VendorProfileEndpoints
         CancellationToken ct
     )
     {
-        if (ActorRef.From(accessor.Current) is not { } actor)
-            return Results.Unauthorized();
-        if (!await scopes.CanAsync(accessor.Current, Capabilities.VendorManage, ct))
-            return Results.Unauthorized();
+        var gate = await ActorGate.RequireAsync(accessor, scopes, Capabilities.VendorManage, ct);
+        if (gate.Actor is not { } actor)
+            return gate.ToResult();
         var profile = await db.Profiles.FirstOrDefaultAsync(p => p.OrgId == actor.Org, ct);
         if (profile is null)
             return Results.NotFound();
         profile.Published = request.Published;
         profile.UpdatedAt = time.GetUtcNow();
         await db.SaveChangesAsync(ct);
+        await ProjectAsync(profile, db, bus, ct);
         await bus.AuditAsync(
             actor.Org,
             actor.Audit,
@@ -144,18 +147,20 @@ public static class VendorProfileEndpoints
         MarketplaceDbContext db,
         IPrincipalAccessor accessor,
         IScopeResolver scopes,
+        IMessageBus bus,
+        TimeProvider time,
         CancellationToken ct
     )
     {
-        if (ActorRef.From(accessor.Current) is not { } actor)
-            return Results.Unauthorized();
-        if (!await scopes.CanAsync(accessor.Current, Capabilities.VendorManage, ct))
-            return Results.Unauthorized();
+        var gate = await ActorGate.RequireAsync(accessor, scopes, Capabilities.VendorManage, ct);
+        if (gate.Actor is not { } actor)
+            return gate.ToResult();
         if (string.IsNullOrWhiteSpace(request.Label) || request.Label.Trim().Length > 200)
             return Results.BadRequest(
                 new { error = "a credential needs a label of up to 200 characters" }
             );
-        if (!await db.Profiles.AnyAsync(p => p.OrgId == actor.Org, ct))
+        var profile = await db.Profiles.FirstOrDefaultAsync(p => p.OrgId == actor.Org, ct);
+        if (profile is null)
             return Results.NotFound();
         var credential = new VendorCredential
         {
@@ -168,7 +173,9 @@ public static class VendorProfileEndpoints
             ExpiresAt = request.ExpiresAt.ToUniversalTime(),
         };
         db.Credentials.Add(credential);
+        profile.UpdatedAt = time.GetUtcNow();
         await db.SaveChangesAsync(ct);
+        await ProjectAsync(profile, db, bus, ct);
         return Results.Ok(new CredentialCreated(credential.Id));
     }
 
@@ -180,22 +187,62 @@ public static class VendorProfileEndpoints
         MarketplaceDbContext db,
         IPrincipalAccessor accessor,
         IScopeResolver scopes,
+        IMessageBus bus,
+        TimeProvider time,
         CancellationToken ct
     )
     {
-        if (ActorRef.From(accessor.Current) is not { } actor)
-            return Results.Unauthorized();
-        if (!await scopes.CanAsync(accessor.Current, Capabilities.VendorManage, ct))
-            return Results.Unauthorized();
-        var credential = await db.Credentials.FirstOrDefaultAsync(
-            c => c.Id == id && c.OrgId == actor.Org,
-            ct
-        );
+        var gate = await ActorGate.RequireAsync(accessor, scopes, Capabilities.VendorManage, ct);
+        if (gate.Actor is not { } actor)
+            return gate.ToResult();
+        var credential = await db.Credentials.FirstOrDefaultAsync(c => c.Id == id, ct);
         if (credential is null)
             return Results.NotFound();
         db.Credentials.Remove(credential);
+        var profile = await db.Profiles.FirstOrDefaultAsync(p => p.OrgId == actor.Org, ct);
+        if (profile is not null)
+            profile.UpdatedAt = time.GetUtcNow();
         await db.SaveChangesAsync(ct);
+        if (profile is not null)
+            await ProjectAsync(profile, db, bus, ct);
         return Results.Ok(new CredentialRemoved(credential.Id));
+    }
+
+    /// <summary>The directory row follows the profile: published means projected, unpublished means withdrawn.</summary>
+    internal static async Task ProjectAsync(
+        VendorProfile profile,
+        MarketplaceDbContext db,
+        IMessageBus bus,
+        CancellationToken ct
+    )
+    {
+        if (!profile.Published)
+        {
+            await bus.PublishForOrgAsync(profile.OrgId, new VendorListingWithdrawn(profile.OrgId));
+            return;
+        }
+        var credentials = await db
+            .Credentials.Where(c => c.OrgId == profile.OrgId)
+            .OrderBy(c => c.ExpiresAt)
+            .Select(c => new PublicCredential(c.Id, c.Kind, c.Label, c.Jurisdiction, c.ExpiresAt))
+            .ToListAsync(ct);
+        await bus.PublishForOrgAsync(
+            profile.OrgId,
+            new VendorListingPublished(
+                profile.OrgId,
+                profile.Name,
+                profile.Description,
+                profile.Categories,
+                profile.ServiceAreas,
+                profile.Latitude,
+                profile.Longitude,
+                profile.ServiceRadiusKm,
+                profile.ContactEmail,
+                profile.ContactPhone,
+                JsonSerializer.Serialize(credentials),
+                profile.UpdatedAt
+            )
+        );
     }
 
     internal static async Task<VendorProfileView> ViewAsync(

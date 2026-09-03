@@ -5,13 +5,12 @@ namespace LocIntel.Modules.Marketplace.Vendors;
 
 /// <summary>
 /// A vendor is an ORGANIZATION (ADR 5: its people are ordinary members) that
-/// published a profile. This row is the catalog entry: owned by the vendor
-/// org, READABLE by every org once Published - the first table in the
-/// product whose read policy crosses the org line, on purpose. Not
-/// IOrgScoped: the context adds the two-sided "Tenant" filter itself.
-/// Deletion: unpublish (tier 1); never deleted.
+/// keeps a profile. Owned by the vendor org and read only there (ADR 48);
+/// publishing projects it into the platform-global vendor directory that
+/// buyers search, and unpublishing withdraws it. Deletion: unpublish (tier
+/// 1); never deleted.
 /// </summary>
-public sealed class VendorProfile : IPublishedCatalogScoped
+public sealed class VendorProfile : IOrgScoped
 {
     public required Guid Id { get; init; }
     public required OrgId OrgId { get; init; }
@@ -29,6 +28,4 @@ public sealed class VendorProfile : IPublishedCatalogScoped
     public bool Published { get; set; }
     public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
-
-    public bool Offers(ServiceCategory category) => Categories.Contains(category.ToString());
 }

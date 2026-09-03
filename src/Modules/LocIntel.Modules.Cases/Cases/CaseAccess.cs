@@ -1,3 +1,4 @@
+using LocIntel.Contracts;
 using LocIntel.Modules.Cases.Data;
 using LocIntel.Platform.Data;
 using LocIntel.Platform.Kernel;
@@ -27,7 +28,7 @@ public sealed record CaseAccess(Case Case, ActorRef Actor, bool Manage, bool Mem
             return (null, Results.Unauthorized());
         var scope = await scopes.ScopeForAsync(accessor.Current, Capabilities.CasesRead, ct);
         if (scope is NodeScope.None)
-            return (null, Results.Unauthorized());
+            return (null, new GateOutcome.Forbidden(Capabilities.CasesRead).ToResult());
         var manage = await scopes.CanAsync(accessor.Current, Capabilities.CasesManage, ct);
         var visible = CaseVisibility.Visible(db, scope, accessor.Current, manage);
         if (manage)

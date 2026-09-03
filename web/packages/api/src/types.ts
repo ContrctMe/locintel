@@ -6280,7 +6280,7 @@ export interface components {
             reason: string;
         };
         /** @enum {unknown} */
-        RecipientStatus: "Invited" | "Quoted" | "Declined";
+        RecipientStatus: "Invited" | "Quoted" | "Declined" | "Assigned" | "NotSelected";
         RecipientView: {
             /** Format: uuid */
             vendorOrgId: string;

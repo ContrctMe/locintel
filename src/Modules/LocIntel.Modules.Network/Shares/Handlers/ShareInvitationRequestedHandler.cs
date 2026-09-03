@@ -1,11 +1,13 @@
 using LocIntel.Contracts;
 using LocIntel.Modules.Network.Data;
+using LocIntel.Modules.Network.Shares.Messages;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
 using Microsoft.EntityFrameworkCore;
 using Wolverine;
 using Wolverine.Attributes;
 
-namespace LocIntel.Modules.Network.Shares;
+namespace LocIntel.Modules.Network.Shares.Handlers;
 
 public static class ShareInvitationRequestedHandler
 {
@@ -26,25 +28,32 @@ public static class ShareInvitationRequestedHandler
         var existing = await db.Access.FirstOrDefaultAsync(a => a.ShareId == message.ShareId, ct);
         if (existing is null)
         {
-            db.Access.Add(
-                new ShareAccess
-                {
-                    Id = Guid.CreateVersion7(),
-                    OrgId = org,
-                    ShareId = message.ShareId,
-                    ShareName = message.ShareName,
-                    Role = MemberRole.Member,
-                    InvitedBy = message.InvitedBy,
-                }
-            );
+            existing = new ShareAccess
+            {
+                Id = Guid.CreateVersion7(),
+                OrgId = org,
+                ShareId = message.ShareId,
+                OwnerOrgId = message.OwnerOrgId,
+                ShareName = message.ShareName,
+                OwnerName = message.OwnerName,
+                Role = MemberRole.Member,
+                InvitedBy = message.InvitedBy,
+            };
+            db.Access.Add(existing);
         }
         else if (existing.Status is MembershipStatus.Left or MembershipStatus.Removed)
         {
             existing.Status = MembershipStatus.Invited;
             existing.JoinedAt = null;
         }
+        existing.ShareName = message.ShareName;
+        existing.Description = message.Description;
+        existing.OwnerName = message.OwnerName;
+        existing.ShareStatus = message.ShareStatus;
+        existing.RosterJson = message.RosterJson;
         await db.SaveChangesAsync(ct);
-        await bus.PublishAsync(
+        await bus.PublishForOrgAsync(
+            org,
             new SendOrgNotice(
                 $"Invitation to share intelligence: {message.ShareName}",
                 [
@@ -53,8 +62,7 @@ public static class ShareInvitationRequestedHandler
                 ],
                 "network",
                 $"Invitation to share intelligence: {message.ShareName}"
-            ),
-            new DeliveryOptions { TenantId = org.Value.ToString() }
+            )
         );
     }
 }

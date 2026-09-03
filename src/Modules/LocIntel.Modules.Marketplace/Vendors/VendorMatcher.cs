@@ -1,3 +1,4 @@
+using System.Text.Json;
 using LocIntel.Modules.Marketplace.Data;
 using LocIntel.Modules.Marketplace.Marketplace;
 using LocIntel.Platform.Kernel;
@@ -6,11 +7,12 @@ using Microsoft.EntityFrameworkCore;
 namespace LocIntel.Modules.Marketplace.Vendors;
 
 /// <summary>
-/// Who can serve a request: published, offers the category, not blocked by
-/// the buyer, and REACHES the site - by service area (a vendor listing
-/// areas must list the site's country) and by radius (a vendor with a
-/// base and radius must have the site inside it; a vendor without either
-/// serves anywhere). Preferred first, then nearest, then by name.
+/// Who can serve a request, from the platform-global directory: published,
+/// offers the category, not blocked by the buyer, and REACHES the site - by
+/// service area (a vendor listing areas must list the site's country) and
+/// by radius (a vendor with a base and radius must have the site inside it;
+/// a vendor without either serves anywhere). Preferred first, then nearest,
+/// then by name.
 /// </summary>
 public static class VendorMatcher
 {
@@ -26,7 +28,7 @@ public static class VendorMatcher
     {
         var name = category.ToString();
         var candidates = await db
-            .Profiles.Where(p => p.Published && p.OrgId != requester && p.Categories.Contains(name))
+            .Directory.Where(p => p.OrgId != requester && p.Categories.Contains(name))
             .Where(p => !db.Preferred.Any(x => x.VendorOrgId == p.OrgId && x.Blocked))
             .Select(p => new
             {
@@ -63,4 +65,7 @@ public static class VendorMatcher
             .Select(v => v.OrgId)
             .ToList();
     }
+
+    public static List<PublicCredential> Credentials(VendorListing listing) =>
+        JsonSerializer.Deserialize<List<PublicCredential>>(listing.CredentialsJson) ?? [];
 }

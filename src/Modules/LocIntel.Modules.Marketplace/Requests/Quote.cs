@@ -3,15 +3,16 @@ using LocIntel.Platform.Kernel;
 
 namespace LocIntel.Modules.Marketplace.Requests;
 
-/// <summary>A vendor's price for a broadcast request. Two-party row. Tier 1 (status). ValidUntil / CreatedAt are UTC instants.</summary>
-public sealed class Quote : IRequiredCounterpartyScoped
+/// <summary>
+/// The vendor's OWN quote on a broadcast (ADR 48): written only by the
+/// vendor; the requester holds a QuoteReceived projection of it and decides
+/// there. Tier 1 (status). ValidUntil / CreatedAt are UTC instants.
+/// </summary>
+public sealed class Quote : IOrgScoped
 {
     public required Guid Id { get; init; }
     public required OrgId OrgId { get; init; }
-
-    /// <summary>The vendor: always present, so the required-counterparty shape.</summary>
-    public required OrgId CounterpartyOrgId { get; init; }
-
+    public required OrgId RequesterOrgId { get; init; }
     public required Guid RequestId { get; init; }
     public required decimal Amount { get; set; }
     public required string Currency { get; init; }

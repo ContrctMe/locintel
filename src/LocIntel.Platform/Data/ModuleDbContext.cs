@@ -1,4 +1,3 @@
-using System.Linq.Expressions;
 using System.Reflection;
 using LocIntel.Platform.Audit;
 using LocIntel.Platform.Kernel;
@@ -75,12 +74,6 @@ public abstract class ModuleDbContext(DbContextOptions options, ITenantContext t
         {
             if (typeof(IOrgScoped).IsAssignableFrom(entity.ClrType))
                 InvokeFilter(nameof(AddTenantFilter), entity.ClrType, modelBuilder);
-            if (typeof(ITwoPartyScoped).IsAssignableFrom(entity.ClrType))
-                InvokeFilter(nameof(AddTwoPartyFilter), entity.ClrType, modelBuilder);
-            if (typeof(IRequiredCounterpartyScoped).IsAssignableFrom(entity.ClrType))
-                InvokeFilter(nameof(AddRequiredCounterpartyFilter), entity.ClrType, modelBuilder);
-            if (typeof(IPublishedCatalogScoped).IsAssignableFrom(entity.ClrType))
-                InvokeFilter(nameof(AddPublishedCatalogFilter), entity.ClrType, modelBuilder);
             if (typeof(ISoftDeletable).IsAssignableFrom(entity.ClrType))
                 InvokeFilter(nameof(AddSoftDeleteFilter), entity.ClrType, modelBuilder);
         }
@@ -95,103 +88,6 @@ public abstract class ModuleDbContext(DbContextOptions options, ITenantContext t
     private void AddTenantFilter<TEntity>(ModelBuilder modelBuilder)
         where TEntity : class, IOrgScoped =>
         modelBuilder.Entity<TEntity>().HasQueryFilter(TenantFilter, e => e.OrgId == CurrentOrg);
-
-    // both sides see the row; the SAME filter name as the single-owner one,
-    // so a fork cannot accidentally stack two tenant filters on one entity
-    private void AddTwoPartyFilter<TEntity>(ModelBuilder modelBuilder)
-        where TEntity : class, ITwoPartyScoped =>
-        modelBuilder
-            .Entity<TEntity>()
-            .HasQueryFilter(
-                TenantFilter,
-                e => e.OrgId == CurrentOrg || e.CounterpartyOrgId == CurrentOrg
-            );
-
-    // same either-side predicate as the nullable shape; separate only because
-    // the property types differ
-    private void AddRequiredCounterpartyFilter<TEntity>(ModelBuilder modelBuilder)
-        where TEntity : class, IRequiredCounterpartyScoped =>
-        modelBuilder
-            .Entity<TEntity>()
-            .HasQueryFilter(
-                TenantFilter,
-                e => e.OrgId == CurrentOrg || e.CounterpartyOrgId == CurrentOrg
-            );
-
-    private void AddPublishedCatalogFilter<TEntity>(ModelBuilder modelBuilder)
-        where TEntity : class, IPublishedCatalogScoped =>
-        modelBuilder
-            .Entity<TEntity>()
-            .HasQueryFilter(TenantFilter, e => e.Published || e.OrgId == CurrentOrg);
-
-    /// <summary>
-    /// The query-filter half of <c>EnableRecipientListRls</c> (the policy is
-    /// the enforcement; this keeps LINQ reads agreeing with it). The caller
-    /// supplies the side-table lookup, because only it knows the foreign key:
-    ///
-    /// <code>
-    /// AddRecipientListFilter&lt;Request&gt;(
-    ///     modelBuilder,
-    ///     r => Recipients.Any(x => x.RequestId == r.Id &amp;&amp; x.CounterpartyOrgId == CurrentOrg));
-    /// </code>
-    ///
-    /// Gate the lookup on the recipient row's own state where membership can
-    /// lapse - `&amp;&amp; a.Status != MembershipStatus.Removed` - because a
-    /// removal usually KEEPS the row for the audit trail, so listing alone
-    /// cannot mean access.
-    ///
-    /// Read-only unless the policy was written with
-    /// <c>writableByRecipient</c>; the filter governs reads either way.
-    /// </summary>
-    protected void AddRecipientListFilter<TEntity>(
-        ModelBuilder modelBuilder,
-        Expression<Func<TEntity, bool>> visibleToRecipient
-    )
-        where TEntity : class, ITwoPartyScoped
-    {
-        var entity = Expression.Parameter(typeof(TEntity), "e");
-        var standard =
-            (Expression<Func<TEntity, bool>>)(
-                e => e.OrgId == CurrentOrg || e.CounterpartyOrgId == CurrentOrg
-            );
-        var combined = Expression.OrElse(
-            new Rebind(standard.Parameters[0], entity).Visit(standard.Body)!,
-            new Rebind(visibleToRecipient.Parameters[0], entity).Visit(visibleToRecipient.Body)!
-        );
-        modelBuilder
-            .Entity<TEntity>()
-            .HasQueryFilter(TenantFilter, Expression.Lambda<Func<TEntity, bool>>(combined, entity));
-    }
-
-    /// <summary>
-    /// The same shape for a SINGLE-OWNER parent - a share and its members,
-    /// where there is no counterparty. Separate name because C# cannot
-    /// overload on the type constraint alone.
-    /// </summary>
-    protected void AddOwnerAndRecipientsFilter<TEntity>(
-        ModelBuilder modelBuilder,
-        Expression<Func<TEntity, bool>> visibleToRecipient
-    )
-        where TEntity : class, IOrgScoped
-    {
-        var entity = Expression.Parameter(typeof(TEntity), "e");
-        var owner = (Expression<Func<TEntity, bool>>)(e => e.OrgId == CurrentOrg);
-        var combined = Expression.OrElse(
-            new Rebind(owner.Parameters[0], entity).Visit(owner.Body)!,
-            new Rebind(visibleToRecipient.Parameters[0], entity).Visit(visibleToRecipient.Body)!
-        );
-        modelBuilder
-            .Entity<TEntity>()
-            .HasQueryFilter(TenantFilter, Expression.Lambda<Func<TEntity, bool>>(combined, entity));
-    }
-
-    /// <summary>Points two lambdas at one parameter so their bodies can be OR-ed.</summary>
-    private sealed class Rebind(ParameterExpression from, ParameterExpression to)
-        : ExpressionVisitor
-    {
-        protected override Expression VisitParameter(ParameterExpression node) =>
-            node == from ? to : base.VisitParameter(node);
-    }
 
     private void AddSoftDeleteFilter<TEntity>(ModelBuilder modelBuilder)
         where TEntity : class, ISoftDeletable =>

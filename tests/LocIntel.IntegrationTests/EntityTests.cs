@@ -100,7 +100,7 @@ public class EntityTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         );
         // and no manage reach at all
         Assert.Equal(
-            HttpStatusCode.Unauthorized,
+            HttpStatusCode.Forbidden,
             (
                 await analyst.PostAsJsonAsync(
                     "/api/entities",
@@ -193,10 +193,7 @@ public class EntityTests(ApiFixture fixture) : IClassFixture<ApiFixture>
             ).StatusCode
         );
         var viewer = await fixture.LoginAsync(ApiFixture.ViewerA);
-        Assert.Equal(
-            HttpStatusCode.Unauthorized,
-            (await viewer.GetAsync("/api/entities")).StatusCode
-        );
+        Assert.Equal(HttpStatusCode.Forbidden, (await viewer.GetAsync("/api/entities")).StatusCode);
         Assert.Equal(
             HttpStatusCode.Unauthorized,
             (await fixture.GuestClient().GetAsync($"/api/entities/{eastPerson}")).StatusCode
@@ -204,19 +201,22 @@ public class EntityTests(ApiFixture fixture) : IClassFixture<ApiFixture>
 
         // the fifth audit kind: the analyst's read of the East person is on record
         List<LocIntel.Modules.Audit.Data.DomainLogEntry> views = [];
-        for (var i = 0; i < 50 && views.Count == 0; i++)
-        {
-            await Task.Delay(100);
-            views = await fixture.QueryAudit(db =>
-                db.DomainEvents.IgnoreQueryFilters()
-                    .Where(a =>
-                        a.OrgId == fixture.OrgA.Value
-                        && a.EventName == "entity.viewed"
-                        && a.ActorId == analystId
-                    )
-            );
-            views = views.Where(v => v.Payload.Contains(eastPerson.ToString())).ToList();
-        }
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+            {
+                views = await fixture.QueryAudit(db =>
+                    db.DomainEvents.IgnoreQueryFilters()
+                        .Where(a =>
+                            a.OrgId == fixture.OrgA.Value
+                            && a.EventName == "entity.viewed"
+                            && a.ActorId == analystId
+                        )
+                );
+                views = views.Where(v => v.Payload.Contains(eastPerson.ToString())).ToList();
+                return !(views.Count == 0);
+            },
+            "views.Count == 0"
+        );
         Assert.NotEmpty(views);
     }
 
@@ -264,16 +264,19 @@ public class EntityTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         (await owner.PostAsync("/api/entities/retention/sweep", null)).EnsureSuccessStatusCode();
         JsonElement trash = default;
         var trashed = new List<Guid>();
-        for (var i = 0; i < 50 && !trashed.Contains(expired); i++)
-        {
-            await Task.Delay(100);
-            trash = await owner.GetFromJsonAsync<JsonElement>("/api/entities?trash=true");
-            trashed = trash
-                .GetProperty("items")
-                .EnumerateArray()
-                .Select(e => e.GetProperty("id").GetGuid())
-                .ToList();
-        }
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+            {
+                trash = await owner.GetFromJsonAsync<JsonElement>("/api/entities?trash=true");
+                trashed = trash
+                    .GetProperty("items")
+                    .EnumerateArray()
+                    .Select(e => e.GetProperty("id").GetGuid())
+                    .ToList();
+                return !(!trashed.Contains(expired));
+            },
+            "trashed.Contains expired"
+        );
         Assert.Contains(expired, trashed);
         Assert.DoesNotContain(held, trashed);
         Assert.DoesNotContain(fresh, trashed);

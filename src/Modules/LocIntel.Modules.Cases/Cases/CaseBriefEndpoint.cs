@@ -44,16 +44,9 @@ public static class CaseBriefEndpoint
         if (error is not null)
             return error;
         if (!access!.CanWork)
-            return Results.Unauthorized();
+            return new GateOutcome.Forbidden(Capabilities.CasesManage).ToResult();
         if (!await entitlements.HasAsync(access.Actor.Org, EntitlementCatalog.AiAssist, ct))
-            return Results.Json(
-                new
-                {
-                    error = "AI assistance is not part of this plan",
-                    code = EntitlementCatalog.AiAssist,
-                },
-                statusCode: StatusCodes.Status402PaymentRequired
-            );
+            return GateResults.FeatureOff(EntitlementCatalog.AiAssist);
         var @case = access.Case;
         var incidentLines = new List<string>();
         foreach (

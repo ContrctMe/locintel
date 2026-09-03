@@ -38,9 +38,9 @@ public static class PatrolEndpoints
         CancellationToken ct
     )
     {
-        var scope = await scopes.ScopeForAsync(accessor.Current, Capabilities.PatrolsRead, ct);
-        if (scope is NodeScope.None)
-            return Results.Unauthorized();
+        var gate = await Gate.RequireAsync(accessor, scopes, Capabilities.PatrolsRead, ct);
+        if (gate is not GateOutcome.Allowed { Scope: var scope })
+            return gate.ToResult();
         var site = await sites.FindAsync(siteId, ct);
         if (site is null || !scope.Covers(site.Path))
             return Results.NotFound();
@@ -65,9 +65,9 @@ public static class PatrolEndpoints
         CancellationToken ct
     )
     {
-        var scope = await scopes.ScopeForAsync(accessor.Current, Capabilities.PatrolsRead, ct);
-        if (scope is NodeScope.None)
-            return Results.Unauthorized();
+        var gate = await Gate.RequireAsync(accessor, scopes, Capabilities.PatrolsRead, ct);
+        if (gate is not GateOutcome.Allowed { Scope: var scope })
+            return gate.ToResult();
         var site = await sites.FindAsync(siteId, ct);
         if (site is null || !scope.Covers(site.Path))
             return Results.NotFound();
@@ -112,9 +112,9 @@ public static class PatrolEndpoints
         CancellationToken ct
     )
     {
-        var scope = await scopes.ScopeForAsync(accessor.Current, Capabilities.PatrolsRead, ct);
-        if (scope is NodeScope.None)
-            return Results.Unauthorized();
+        var gate = await Gate.RequireAsync(accessor, scopes, Capabilities.PatrolsRead, ct);
+        if (gate is not GateOutcome.Allowed { Scope: var scope })
+            return gate.ToResult();
         var patrol = await db.Patrols.InScope(scope).FirstOrDefaultAsync(p => p.Id == id, ct);
         if (patrol is null)
             return Results.NotFound();
@@ -146,9 +146,9 @@ public static class PatrolEndpoints
     {
         if (ActorRef.From(accessor.Current) is not { } actor)
             return Results.Unauthorized();
-        var scope = await scopes.ScopeForAsync(accessor.Current, Capabilities.PatrolsPerform, ct);
-        if (scope is NodeScope.None)
-            return Results.Unauthorized();
+        var gate = await Gate.RequireAsync(accessor, scopes, Capabilities.PatrolsPerform, ct);
+        if (gate is not GateOutcome.Allowed { Scope: var scope })
+            return gate.ToResult();
         var route = await db
             .Routes.InScope(scope)
             .FirstOrDefaultAsync(r => r.Id == request.RouteId && !r.Archived, ct);

@@ -141,7 +141,7 @@ public static class CaseEvidenceEndpoints
         if (error is not null)
             return error;
         if (!access!.CanWork)
-            return Results.Unauthorized();
+            return new GateOutcome.Forbidden(Capabilities.CasesManage).ToResult();
         var item = await db.Evidence.FirstOrDefaultAsync(
             e => e.Id == evidenceId && e.CaseId == id,
             ct

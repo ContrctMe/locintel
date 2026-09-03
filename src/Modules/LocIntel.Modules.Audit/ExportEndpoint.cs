@@ -21,12 +21,10 @@ public static class ExportEndpoint
         CancellationToken ct
     )
     {
-        if (
-            accessor.Current
-                is not Principal.User { ActiveOrg: { } org, UserId: var userId } principal
-            || !await scopes.CanAsync(principal, Capabilities.AuditRead, ct)
-        )
-            return Results.Unauthorized();
+        var gate = await Gate.RequireUserAsync(accessor, scopes, Capabilities.AuditRead, ct);
+        if (gate is not GateOutcome.Allowed { Principal: Principal.User principal, Org: var org })
+            return gate.ToResult();
+        var userId = principal.UserId;
         await bus.PublishAsync(
             new ExportAuditTrail(userId),
             new DeliveryOptions { TenantId = org.Value.ToString() }

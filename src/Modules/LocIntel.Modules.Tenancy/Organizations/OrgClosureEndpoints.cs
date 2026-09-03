@@ -38,11 +38,9 @@ public static class OrgClosureEndpoints
         CancellationToken ct
     )
     {
-        if (
-            accessor.Current is not Principal.User { ActiveOrg: { } orgId } principal
-            || !await scopes.CanAsync(principal, Capabilities.OrgManage, ct)
-        )
-            return Results.Unauthorized();
+        var gate = await Gate.RequireUserAsync(accessor, scopes, Capabilities.OrgManage, ct);
+        if (gate is not GateOutcome.Allowed { Principal: Principal.User principal, Org: var orgId })
+            return gate.ToResult();
         var requestedAt = await db
             .Organizations.Where(o => o.Id == orgId)
             .Select(o => o.CloseRequestedAt)
@@ -64,12 +62,10 @@ public static class OrgClosureEndpoints
         CancellationToken ct
     )
     {
-        if (
-            accessor.Current
-                is not Principal.User { ActiveOrg: { } orgId, UserId: var userId } principal
-            || !await scopes.CanAsync(principal, Capabilities.OrgManage, ct)
-        )
-            return Results.Unauthorized();
+        var gate = await Gate.RequireUserAsync(accessor, scopes, Capabilities.OrgManage, ct);
+        if (gate is not GateOutcome.Allowed { Principal: Principal.User principal, Org: var orgId })
+            return gate.ToResult();
+        var userId = principal.UserId;
         var org = await db.Organizations.FirstAsync(o => o.Id == orgId, ct);
         if (org.IsPlatform)
             return Results.BadRequest(new { error = "the platform org cannot be closed" });
@@ -110,12 +106,10 @@ public static class OrgClosureEndpoints
         CancellationToken ct
     )
     {
-        if (
-            accessor.Current
-                is not Principal.User { ActiveOrg: { } orgId, UserId: var userId } principal
-            || !await scopes.CanAsync(principal, Capabilities.OrgManage, ct)
-        )
-            return Results.Unauthorized();
+        var gate = await Gate.RequireUserAsync(accessor, scopes, Capabilities.OrgManage, ct);
+        if (gate is not GateOutcome.Allowed { Principal: Principal.User principal, Org: var orgId })
+            return gate.ToResult();
+        var userId = principal.UserId;
         var org = await db.Organizations.FirstAsync(o => o.Id == orgId, ct);
         if (org.CloseRequestedAt is null)
             return Results.NoContent();

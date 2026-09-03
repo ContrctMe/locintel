@@ -246,6 +246,58 @@ smaller: the owner of the PARENT may also write the child) and
 can adopt it. Files: `src/Modules/LocIntel.Modules.Network/Data/NetworkDbContext.cs`,
 `Migrations/20260902042111_Initial.cs`.
 
+## Round five (after the fourth sync, 2026-09-03: ADR 48)
+
+Round four came back as an architecture review that reversed rounds two
+to four: ADR 48 removed the multi-owner shapes and shipped the
+materialization recipe instead. The fork adopted it in full (marketplace and
+network remodeled onto owned rows - see the blueprint's decisions log for
+the shape). The reasoning held up in practice; what the adoption surfaced:
+
+### 19. Removing a migration helper breaks every applied migration that used it
+
+`EnableTwoPartyRls` and `EnableRecipientListRls` were deleted from Platform,
+so the fork's applied migrations - which ADR 48 itself says must never be
+edited - stopped compiling. The fork froze the removed helpers' SQL as a
+per-module `Migrations/LegacyTenancyShapes.cs`. The template should say
+this is the pattern (or ship the frozen helpers itself under an
+`[Obsolete]` name) whenever a migration-time helper is removed: a helper
+called from a migration is part of that migration's frozen text.
+
+### 20. The gate module needs an actor-flavoured entry (**lift**)
+
+`Gate.RequireAsync` returns the Principal; every fork endpoint whose writer
+may be a person OR an API key (ADR 40) then repeats `ActorRef.From(...)`
+and has to answer 401 for a contact that somehow holds the capability. The
+fork added `ActorGate.RequireAsync` in Contracts (`src/LocIntel.Contracts/ActorGate.cs`),
+returning the outcome, the `ActorRef` and the scope in one call; 40+
+endpoints use it. Lift it next to `Gate`.
+
+### 21. The materialization recipe should say what to do about reordering
+
+Two vendor actions published seconds apart (Accepted, then Started) can
+reach the requester's handler in either order on a busy outbox. The recipe
+puts authority on the owner but does not say how the owner should treat an
+action that arrives before its predecessor. The fork's answer: read each
+action as "the other party reached this point" and apply it monotonically
+(`VendorRespondedHandler.Apply` in the marketplace); a late-arriving earlier
+step is stale, and the owner's `RequestStateChanged` re-syncs the sender
+either way. A sentence in `docs/cross-tenant-sharing.md` and a
+`FanOutTests` case would make this the default rather than a discovery.
+
+### 22. Platform-global tables are declared in a test file
+
+A fork adding an "open: pull" projection (`marketplace.vendor_directory`)
+has to edit `RlsCoverageTests.PlatformGlobal` - an upstream test - to
+allow-list it, which is a merge conflict waiting to happen and the wrong
+place for a design decision. Let `ModuleDescriptor` (or the module's
+registration) declare its platform-global tables with the reason, and have
+the coverage test read the catalog.
+The same test keys on a column literally named `org_id`: `shares`
+(`owner_org_id`) and `shared_bulletins` (`publisher_org_id`) are `IOrgScoped`
+in the model yet invisible to the coverage check. Reading the EF model
+(every `IOrgScoped` entity's mapped column) would close that gap too.
+
 ## Suggested prompt for the template session
 
-> Read `/Users/jarod/coding/locintel/docs/template-feedback.md`, section "Round four" (item 18; rounds one to three are merged). Extend `EnableRecipientListRls` with a `parentKeyColumn` parameter and, if it fits cleanly, a parent-owner write clause; cover both in `TenancyShapeRlsTests`. Keep the suite shuffled and green, and note in the commit message which item it closes.
+> Read `/Users/jarod/coding/locintel/docs/template-feedback.md`, section "Round five" (items 19-22; rounds one to four are merged, and ADR 48 is adopted). Item 20 is a lift from `src/LocIntel.Contracts/ActorGate.cs`; item 22 moves the platform-global allow-list into the module catalog; items 19 and 21 are documentation plus one test each. Keep the suite shuffled and green, and note in the commit message which item it closes.

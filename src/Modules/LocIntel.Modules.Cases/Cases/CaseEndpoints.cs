@@ -45,12 +45,12 @@ public static class CaseEndpoints
     {
         if (ActorRef.From(accessor.Current) is not { } actor)
             return Results.Unauthorized();
-        var scope = await scopes.ScopeForAsync(accessor.Current, Capabilities.CasesRead, ct);
-        if (scope is NodeScope.None)
-            return Results.Unauthorized();
+        var gate = await Gate.RequireAsync(accessor, scopes, Capabilities.CasesRead, ct);
+        if (gate is not GateOutcome.Allowed { Scope: var scope })
+            return gate.ToResult();
         var manage = await scopes.CanAsync(accessor.Current, Capabilities.CasesManage, ct);
         if (trash is true && !manage)
-            return Results.Unauthorized();
+            return new GateOutcome.Forbidden(Capabilities.CasesManage).ToResult();
         var query = CaseVisibility.Visible(db, scope, accessor.Current, manage);
         if (trash is true)
             query = query
@@ -162,9 +162,9 @@ public static class CaseEndpoints
     {
         if (ActorRef.From(accessor.Current) is not { } actor)
             return Results.Unauthorized();
-        var scope = await scopes.ScopeForAsync(accessor.Current, Capabilities.CasesManage, ct);
-        if (scope is NodeScope.None)
-            return Results.Unauthorized();
+        var gate = await Gate.RequireAsync(accessor, scopes, Capabilities.CasesManage, ct);
+        if (gate is not GateOutcome.Allowed { Scope: var scope })
+            return gate.ToResult();
         if (string.IsNullOrWhiteSpace(request.Title) || request.Title.Trim().Length > 200)
             return Results.BadRequest(
                 new { error = "a case needs a title of up to 200 characters" }
@@ -513,7 +513,9 @@ public static class CaseEndpoints
         var (access, error) = await CaseAccess.LoadAsync(id, db, accessor, scopes, ct);
         if (error is not null)
             return (null, error);
-        return access!.Manage ? (access, null) : (null, Results.Unauthorized());
+        return access!.Manage
+            ? (access, null)
+            : (null, new GateOutcome.Forbidden(Capabilities.CasesManage).ToResult());
     }
 
     internal static async Task<(CaseAccess?, IResult?)> LoadForWork(
@@ -529,7 +531,9 @@ public static class CaseEndpoints
             return (null, error);
         if (access!.Case.DeletedAt is not null)
             return (null, Results.NotFound());
-        return access.CanWork ? (access, null) : (null, Results.Unauthorized());
+        return access.CanWork
+            ? (access, null)
+            : (null, new GateOutcome.Forbidden(Capabilities.CasesManage).ToResult());
     }
 
     internal static CaseIncident NewLink(Case @case, IncidentInfo incident, ActorRef actor) =>

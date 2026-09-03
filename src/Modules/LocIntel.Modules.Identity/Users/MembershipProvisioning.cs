@@ -69,16 +69,7 @@ public static class MembershipBootstrap
         {
             var owner = Role.Create(orgId, "Owner");
             db.Roles.Add(owner);
-            db.RoleGrants.Add(
-                new RoleGrant
-                {
-                    Id = Guid.CreateVersion7(),
-                    OrgId = orgId,
-                    RoleId = owner.Id,
-                    Domain = "*",
-                    Action = "*",
-                }
-            );
+            db.RoleGrants.Add(RoleGrant.Wildcard(owner));
             db.MembershipRoles.Add(
                 new MembershipRole
                 {

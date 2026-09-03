@@ -369,3 +369,40 @@ jurisdiction.
   parent's `share_id`, not its `id`, which the helper fixes - filed as
   round-four feedback. The fork's own tests already had no hand-rolled
   waits, so the new hygiene test passed untouched.
+- 2026-09-03: **Fourth template sync: ADR 48 adopted in full.** Upstream
+  removed every multi-owner tenancy shape (two-party, required counterparty,
+  published catalog, recipient list) and replaced them with materialization
+  through the outbox. The marketplace and network were remodeled onto
+  owned rows:
+  - Marketplace: the requester owns `requests`, `request_recipients` (its
+    list as data), `request_events` (its timeline copies) and
+    `received_quotes` (its projection of each vendor's quote); the vendor
+    owns `vendor_assignments` (its projection of the request plus its own
+    standing), `quotes`, its profile and credentials. `RequestOffered` /
+    `RequestStateChanged` fan out the requester's snapshot; `VendorResponded`
+    and `QuoteSubmitted` go back to the requester, whose handler arbitrates
+    (monotonically - a Started arriving before its Accepted still applies)
+    and answers with the state that sticks. Published profiles project into
+    the platform-global `vendor_directory` (allow-listed in the RLS coverage
+    test) that matching, the buyer catalog and vendor names read from;
+    credential numbers never leave the vendor. Timeline entries share a
+    `SourceId` across copies. Migration `OneOwnerPerRow` splits existing rows
+    into each side's own rows before the shared columns and policies go.
+  - Network: the owner owns `shares` and `share_members` (the roster as
+    data); each member's `share_access` row is its projection of the share
+    (owner, description, status, roster snapshot) kept current by
+    `ShareRosterChanged`; members change their own standing and tell the
+    owner (`ShareMembershipChanged`); a publisher owns `shared_bulletins` and
+    every active member gets a `shared_bulletin_copies` row, re-offered on
+    every roster change so a late joiner receives what it missed; leaving or
+    removal deletes the copies.
+  - Consequences accepted: cross-org reads are eventual (the tests wait on
+    the outbox where they used to read the shared row), and each feature
+    has more parts (event, handler, projection). The API records did not
+    change shape; the console needed nothing.
+  - Also from this round: the one-call gate (`Gate` / `GateResults`, plus a
+    fork-side `ActorGate` for endpoints whose writer may be an API key) -
+    a signed-in principal missing a grant now answers 403 everywhere;
+    `AddModuleDbContext` in every module; the removed shape helpers' SQL
+    frozen as `LegacyTenancyShapes` per module so applied migrations keep
+    compiling.

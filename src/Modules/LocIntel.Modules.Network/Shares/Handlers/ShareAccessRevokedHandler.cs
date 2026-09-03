@@ -1,10 +1,11 @@
 using LocIntel.Modules.Network.Data;
+using LocIntel.Modules.Network.Shares.Messages;
 using LocIntel.Platform.Kernel;
 using Microsoft.EntityFrameworkCore;
 using Wolverine;
 using Wolverine.Attributes;
 
-namespace LocIntel.Modules.Network.Shares;
+namespace LocIntel.Modules.Network.Shares.Handlers;
 
 public static class ShareAccessRevokedHandler
 {
@@ -25,6 +26,8 @@ public static class ShareAccessRevokedHandler
         if (access is null)
             return;
         access.Status = MembershipStatus.Removed;
+        // revocation is deletion (ADR 48): the copies go with the access
+        await db.BulletinCopies.Where(c => c.ShareId == message.ShareId).ExecuteDeleteAsync(ct);
         await db.SaveChangesAsync(ct);
     }
 }

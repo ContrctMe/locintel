@@ -26,6 +26,14 @@ public class MarketplaceRfqTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         (
             await vendor.PostAsJsonAsync("/api/vendor/profile/publish", new { published = true })
         ).EnsureSuccessStatusCode();
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+                (await buyer.GetFromJsonAsync<JsonElement>("/api/marketplace/vendors"))
+                    .GetProperty("items")
+                    .EnumerateArray()
+                    .Any(v => v.GetProperty("orgId").GetGuid() == fixture.OrgB.Value),
+            "the published vendor to reach the directory"
+        );
 
         var hierarchy = await buyer.GetAsync("/api/hierarchy");
         Guid rootId;
@@ -109,10 +117,13 @@ public class MarketplaceRfqTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         (
             await buyer.PostAsync($"/api/marketplace/requests/{requestId}/submit", null)
         ).EnsureSuccessStatusCode();
-        var queue = await vendor.GetFromJsonAsync<JsonElement>("/api/vendor/requests");
-        Assert.Contains(
-            queue.GetProperty("items").EnumerateArray(),
-            r => r.GetProperty("id").GetGuid() == requestId
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+                (await vendor.GetFromJsonAsync<JsonElement>("/api/vendor/requests"))
+                    .GetProperty("items")
+                    .EnumerateArray()
+                    .Any(r => r.GetProperty("id").GetGuid() == requestId),
+            "the broadcast to reach the vendor's queue"
         );
         var seen = await vendor.GetFromJsonAsync<JsonElement>($"/api/vendor/requests/{requestId}");
         Assert.Equal("Submitted", seen.GetProperty("status").GetString());
@@ -143,8 +154,17 @@ public class MarketplaceRfqTests(ApiFixture fixture) : IClassFixture<ApiFixture>
             )
         ).EnsureSuccessStatusCode();
 
-        var detail = await buyer.GetFromJsonAsync<JsonElement>(
-            $"/api/marketplace/requests/{requestId}"
+        JsonElement detail = default;
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+            {
+                detail = await buyer.GetFromJsonAsync<JsonElement>(
+                    $"/api/marketplace/requests/{requestId}"
+                );
+                var quotes = detail.GetProperty("quotes").EnumerateArray().ToList();
+                return quotes.Count == 1 && quotes[0].GetProperty("amount").GetDecimal() == 1200m;
+            },
+            "the vendor's (re)quote to reach the buyer"
         );
         var quote = Assert.Single(detail.GetProperty("quotes").EnumerateArray());
         Assert.Equal(1200m, quote.GetProperty("amount").GetDecimal());
@@ -179,7 +199,15 @@ public class MarketplaceRfqTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         Assert.Equal(1200m, detail.GetProperty("budgetAmount").GetDecimal());
         Assert.Equal("Accepted", detail.GetProperty("quotes")[0].GetProperty("status").GetString());
 
-        // from here the ordinary flow: the awarded vendor starts and completes, the buyer verifies
+        // from here the ordinary flow: the award reaches the vendor's row, the
+        // awarded vendor starts and completes, the buyer verifies
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+                (await vendor.GetFromJsonAsync<JsonElement>($"/api/vendor/requests/{requestId}"))
+                    .GetProperty("status")
+                    .GetString() == "Accepted",
+            "the award to reach the vendor's row"
+        );
         (
             await vendor.PostAsync($"/api/vendor/requests/{requestId}/start", null)
         ).EnsureSuccessStatusCode();
@@ -189,6 +217,17 @@ public class MarketplaceRfqTests(ApiFixture fixture) : IClassFixture<ApiFixture>
                 new { summary = "Boarded and swept." }
             )
         ).EnsureSuccessStatusCode();
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+                (
+                    await buyer.GetFromJsonAsync<JsonElement>(
+                        $"/api/marketplace/requests/{requestId}"
+                    )
+                )
+                    .GetProperty("status")
+                    .GetString() == "Completed",
+            "the completion to reach the buyer's request"
+        );
         (
             await buyer.PostAsync($"/api/marketplace/requests/{requestId}/verify", null)
         ).EnsureSuccessStatusCode();
@@ -216,14 +255,28 @@ public class MarketplaceRfqTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         (
             await buyer.PostAsync($"/api/marketplace/requests/{anotherId}/submit", null)
         ).EnsureSuccessStatusCode();
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+                (await vendor.GetAsync($"/api/vendor/requests/{anotherId}")).IsSuccessStatusCode,
+            "the second broadcast to reach the vendor"
+        );
         (
             await vendor.PostAsJsonAsync(
                 $"/api/vendor/requests/{anotherId}/decline",
                 new { reason = "No coverage that weekend" }
             )
         ).EnsureSuccessStatusCode();
-        var declined = await buyer.GetFromJsonAsync<JsonElement>(
-            $"/api/marketplace/requests/{anotherId}"
+        JsonElement declined = default;
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+            {
+                declined = await buyer.GetFromJsonAsync<JsonElement>(
+                    $"/api/marketplace/requests/{anotherId}"
+                );
+                return declined.GetProperty("recipients")[0].GetProperty("status").GetString()
+                    == "Declined";
+            },
+            "the decline to reach the buyer's recipient list"
         );
         Assert.Equal("Submitted", declined.GetProperty("status").GetString()); // still open for other vendors
         Assert.Equal(

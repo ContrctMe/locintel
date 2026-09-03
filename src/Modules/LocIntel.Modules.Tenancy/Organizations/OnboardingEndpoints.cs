@@ -108,12 +108,10 @@ public static class OrgSettingsEndpoints
         CancellationToken ct
     )
     {
-        if (
-            accessor.Current
-                is not Principal.User { ActiveOrg: { } orgId, UserId: var userId } principal
-            || !await scopes.CanAsync(principal, Capabilities.OrgManage, ct)
-        )
-            return Results.Unauthorized();
+        var gate = await Gate.RequireUserAsync(accessor, scopes, Capabilities.OrgManage, ct);
+        if (gate is not GateOutcome.Allowed { Principal: Principal.User principal, Org: var orgId })
+            return gate.ToResult();
+        var userId = principal.UserId;
         if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Length > 200)
             return Results.BadRequest(new { error = "name must be 1-200 characters" });
 

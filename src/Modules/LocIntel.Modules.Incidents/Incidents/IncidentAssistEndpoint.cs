@@ -38,18 +38,11 @@ public static class IncidentAssistEndpoint
     {
         if (ActorRef.From(accessor.Current) is not { } actor)
             return Results.Unauthorized();
-        var scope = await scopes.ScopeForAsync(accessor.Current, Capabilities.IncidentsReport, ct);
-        if (scope is NodeScope.None)
-            return Results.Unauthorized();
+        var gate = await Gate.RequireAsync(accessor, scopes, Capabilities.IncidentsReport, ct);
+        if (gate is not GateOutcome.Allowed { Scope: var scope })
+            return gate.ToResult();
         if (!await entitlements.HasAsync(actor.Org, EntitlementCatalog.AiAssist, ct))
-            return Results.Json(
-                new
-                {
-                    error = "AI assistance is not part of this plan",
-                    code = EntitlementCatalog.AiAssist,
-                },
-                statusCode: StatusCodes.Status402PaymentRequired
-            );
+            return GateResults.FeatureOff(EntitlementCatalog.AiAssist);
         var incident = await db.Incidents.InScope(scope).FirstOrDefaultAsync(i => i.Id == id, ct);
         if (incident is null)
             return Results.NotFound();

@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using LocIntel.Contracts;
 using LocIntel.Modules.Audit.Data;
 using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Secrets;
@@ -31,8 +32,9 @@ public static class WebhookManagementEndpoints
         CancellationToken ct
     )
     {
-        if (!await Allowed(accessor, scopes, ct))
-            return Results.Unauthorized();
+        var gate = await Allowed(accessor, scopes, ct);
+        if (gate is not GateOutcome.Allowed)
+            return gate.ToResult();
         var endpoints = await db
             .WebhookEndpoints.OrderByDescending(e => e.CreatedAt)
             .Select(e => new
@@ -72,8 +74,9 @@ public static class WebhookManagementEndpoints
     {
         if (accessor.Current is not Principal.User { ActiveOrg: { } org, UserId: var userId })
             return Results.Unauthorized();
-        if (!await Allowed(accessor, scopes, ct))
-            return Results.Unauthorized();
+        var gate = await Allowed(accessor, scopes, ct);
+        if (gate is not GateOutcome.Allowed)
+            return gate.ToResult();
         if (!Uri.TryCreate(request.Url, UriKind.Absolute, out var uri))
             return Results.BadRequest(new { error = "url must be absolute" });
         if (environment.IsProduction())
@@ -143,11 +146,9 @@ public static class WebhookManagementEndpoints
         CancellationToken ct
     )
     {
-        if (
-            accessor.Current is not Principal.User { ActiveOrg: { } org } principal
-            || !await scopes.CanAsync(principal, Capabilities.OrgManage, ct)
-        )
-            return Results.Unauthorized();
+        var gate = await Gate.RequireUserAsync(accessor, scopes, Capabilities.OrgManage, ct);
+        if (gate is not GateOutcome.Allowed { Principal: Principal.User principal, Org: var org })
+            return gate.ToResult();
         var endpoint = await db.WebhookEndpoints.FirstOrDefaultAsync(
             w => w.Id == id && w.OrgId == org,
             ct
@@ -187,8 +188,9 @@ public static class WebhookManagementEndpoints
         CancellationToken ct
     )
     {
-        if (!await Allowed(accessor, scopes, ct))
-            return Results.Unauthorized();
+        var gate = await Allowed(accessor, scopes, ct);
+        if (gate is not GateOutcome.Allowed)
+            return gate.ToResult();
         var endpoint = await db.WebhookEndpoints.FirstOrDefaultAsync(e => e.Id == id, ct);
         if (endpoint is null)
             return Results.NotFound();
@@ -208,8 +210,9 @@ public static class WebhookManagementEndpoints
         CancellationToken ct
     )
     {
-        if (!await Allowed(accessor, scopes, ct))
-            return Results.Unauthorized();
+        var gate = await Allowed(accessor, scopes, ct);
+        if (gate is not GateOutcome.Allowed)
+            return gate.ToResult();
         var rows = await db
             .WebhookDeliveries.Where(d => d.EndpointId == id)
             .OrderByDescending(d => d.OccurredAt)
@@ -240,8 +243,9 @@ public static class WebhookManagementEndpoints
     {
         if (accessor.Current is not Principal.User { ActiveOrg: { } org })
             return Results.Unauthorized();
-        if (!await Allowed(accessor, scopes, ct))
-            return Results.Unauthorized();
+        var gate = await Allowed(accessor, scopes, ct);
+        if (gate is not GateOutcome.Allowed)
+            return gate.ToResult();
         if (!await db.WebhookEndpoints.AnyAsync(e => e.Id == id, ct))
             return Results.NotFound();
         await bus.PublishAsync(
@@ -258,11 +262,11 @@ public static class WebhookManagementEndpoints
         return Results.Accepted();
     }
 
-    private static async ValueTask<bool> Allowed(
+    private static ValueTask<GateOutcome> Allowed(
         IPrincipalAccessor accessor,
         IScopeResolver scopes,
         CancellationToken ct
-    ) => await scopes.CanAsync(accessor.Current, Capabilities.OrgManage, ct);
+    ) => Gate.RequireAsync(accessor, scopes, Capabilities.OrgManage, ct);
 
     private static bool IsPrivateOrReserved(System.Net.IPAddress address)
     {

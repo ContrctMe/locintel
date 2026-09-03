@@ -1,6 +1,7 @@
 using LocIntel.Contracts;
 using LocIntel.Modules.Identity.Auth;
 using LocIntel.Modules.Identity.Data;
+using LocIntel.Modules.Identity.Users;
 using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Messaging;
 using Microsoft.AspNetCore.Authentication;
@@ -39,11 +40,11 @@ public static class ImpersonationEndpoints
         CancellationToken ct
     )
     {
+        var gate = await Gate.RequireOperatorAsync(accessor, operators, ct);
         if (
-            !await operators.IsOperatorAsync(accessor.Current, ct)
-            || accessor.Current is not Principal.User { UserId: var operatorId }
+            gate is not GateOutcome.Allowed { Principal: Principal.User { UserId: var operatorId } }
         )
-            return Results.Unauthorized();
+            return gate.ToResult();
         var target = new OrgId(orgId);
         var entry = await db.OrgDirectory.FirstOrDefaultAsync(d => d.OrgId == target, ct);
         if (entry is null)
@@ -101,14 +102,7 @@ public static class ImpersonationEndpoints
 
         // back to the operator's real default org, same rule as login
         var user = await db.Users.FirstAsync(u => u.Id == userId, ct);
-        var homeOrg = await db
-            .Memberships.Where(m => m.UserId == userId)
-            .OrderBy(m => m.CreatedAt)
-            // UUIDv7 tie-break: CreatedAt collides at Postgres microsecond
-            // resolution for memberships created together
-            .ThenBy(m => m.Id)
-            .Select(m => (OrgId?)m.OrgId)
-            .FirstOrDefaultAsync(ct);
+        var homeOrg = await db.DefaultOrgAsync(userId, ct);
         await http.SignInAsync(
             CookieAuthenticationDefaults.AuthenticationScheme,
             AuthEndpoints.BuildClaimsPrincipal(user, homeOrg, AuthEndpoints.GetSessionId(http.User))

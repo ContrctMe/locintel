@@ -139,9 +139,6 @@ public class DayZeroTests(ApiFixture fixture) : IClassFixture<ApiFixture>
     public async Task Member_without_roles_manage_cannot_see_members()
     {
         var viewer = await fixture.LoginAsync(ApiFixture.ViewerA);
-        Assert.Equal(
-            HttpStatusCode.Unauthorized,
-            (await viewer.GetAsync("/api/members")).StatusCode
-        );
+        Assert.Equal(HttpStatusCode.Forbidden, (await viewer.GetAsync("/api/members")).StatusCode);
     }
 }

@@ -1,5 +1,6 @@
 using LocIntel.Contracts;
 using LocIntel.Modules.Identity.Data;
+using LocIntel.Modules.Identity.Users;
 using LocIntel.Platform.Auth;
 using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Messaging;
@@ -72,15 +73,7 @@ public static class MemberEndpoints
         // session still points at the org they left: reissue against the next
         // membership (or none - back to the day-zero screen)
         var user = await db.Users.FirstAsync(u => u.Id == userId, ct);
-        var nextOrg = await db
-            .Memberships.Where(m => m.UserId == userId)
-            .OrderBy(m => m.CreatedAt)
-            // UUIDv7 tie-break: CreatedAt collides at Postgres microsecond
-            // resolution for memberships created together - without this the
-            // default org is a per-boot coin flip
-            .ThenBy(m => m.Id)
-            .Select(m => (OrgId?)m.OrgId)
-            .FirstOrDefaultAsync(ct);
+        var nextOrg = await db.DefaultOrgAsync(userId, ct);
         await http.SignInAsync(
             Microsoft
                 .AspNetCore
@@ -110,11 +103,9 @@ public static class MemberEndpoints
         CancellationToken ct
     )
     {
-        if (
-            accessor.Current is not Principal.User { ActiveOrg: { } org } principal
-            || !await scopes.CanAsync(principal, Capabilities.RolesManage, ct)
-        )
-            return Results.Unauthorized();
+        var gate = await Gate.RequireUserAsync(accessor, scopes, Capabilities.RolesManage, ct);
+        if (gate is not GateOutcome.Allowed { Principal: Principal.User principal, Org: var org })
+            return gate.ToResult();
 
         var query =
             from membership in db.Memberships
@@ -183,12 +174,10 @@ public static class MemberEndpoints
         CancellationToken ct
     )
     {
-        if (
-            accessor.Current
-                is not Principal.User { ActiveOrg: { } org, UserId: var inviter } principal
-            || !await scopes.CanAsync(principal, Capabilities.RolesManage, ct)
-        )
-            return Results.Unauthorized();
+        var gate = await Gate.RequireUserAsync(accessor, scopes, Capabilities.RolesManage, ct);
+        if (gate is not GateOutcome.Allowed { Principal: Principal.User principal, Org: var org })
+            return gate.ToResult();
+        var inviter = principal.UserId;
         if (provider is not IOrganizationDirectory directory)
             return Results.Json(
                 new { error = $"auth provider '{provider.Name}' does not support invitations" },
@@ -234,11 +223,9 @@ public static class MemberEndpoints
         CancellationToken ct
     )
     {
-        if (
-            accessor.Current is not Principal.User { ActiveOrg: { } org } principal
-            || !await scopes.CanAsync(principal, Capabilities.RolesManage, ct)
-        )
-            return Results.Unauthorized();
+        var gate = await Gate.RequireUserAsync(accessor, scopes, Capabilities.RolesManage, ct);
+        if (gate is not GateOutcome.Allowed { Principal: Principal.User principal, Org: var org })
+            return gate.ToResult();
         var directoryEntry = await db.OrgDirectory.FirstOrDefaultAsync(d => d.OrgId == org, ct);
         if (
             provider is not IOrganizationDirectory directory
@@ -274,11 +261,9 @@ public static class MemberEndpoints
         CancellationToken ct
     )
     {
-        if (
-            accessor.Current is not Principal.User { ActiveOrg: not null } principal
-            || !await scopes.CanAsync(principal, Capabilities.RolesManage, ct)
-        )
-            return Results.Unauthorized();
+        var gate = await Gate.RequireUserAsync(accessor, scopes, Capabilities.RolesManage, ct);
+        if (gate is not GateOutcome.Allowed { Principal: Principal.User principal })
+            return gate.ToResult();
         var intent = await db.InvitedRoles.FirstOrDefaultAsync(
             i => i.InvitationExternalId == invitationId,
             ct
@@ -303,12 +288,10 @@ public static class MemberEndpoints
         CancellationToken ct
     )
     {
-        if (
-            accessor.Current
-                is not Principal.User { ActiveOrg: { } org, UserId: var actor } principal
-            || !await scopes.CanAsync(principal, Capabilities.RolesManage, ct)
-        )
-            return Results.Unauthorized();
+        var gate = await Gate.RequireUserAsync(accessor, scopes, Capabilities.RolesManage, ct);
+        if (gate is not GateOutcome.Allowed { Principal: Principal.User principal, Org: var org })
+            return gate.ToResult();
+        var actor = principal.UserId;
         if (userId == actor)
             return Results.BadRequest(
                 new { error = "you cannot remove yourself; use leave instead" }

@@ -28,18 +28,21 @@ public class AlertTests(ApiFixture fixture) : IClassFixture<ApiFixture>
 
         JsonElement feed = default;
         var found = false;
-        for (var i = 0; i < 50 && !found; i++)
-        {
-            await Task.Delay(100);
-            feed = await owner.GetFromJsonAsync<JsonElement>("/api/alerts");
-            found = feed.GetProperty("items")
-                .EnumerateArray()
-                .Any(a =>
-                    a.TryGetProperty("incidentId", out var inc)
-                    && inc.ValueKind == JsonValueKind.String
-                    && inc.GetGuid() == critical
-                );
-        }
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+            {
+                feed = await owner.GetFromJsonAsync<JsonElement>("/api/alerts");
+                found = feed.GetProperty("items")
+                    .EnumerateArray()
+                    .Any(a =>
+                        a.TryGetProperty("incidentId", out var inc)
+                        && inc.ValueKind == JsonValueKind.String
+                        && inc.GetGuid() == critical
+                    );
+                return !(!found);
+            },
+            "found"
+        );
         Assert.True(found, "the critical incident should have produced an alert");
         var alert = feed.GetProperty("items")
             .EnumerateArray()
@@ -87,7 +90,7 @@ public class AlertTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         );
         var viewer = await fixture.LoginAsync(ApiFixture.ViewerA);
         Assert.Equal(
-            HttpStatusCode.Unauthorized,
+            HttpStatusCode.Forbidden,
             (await viewer.GetAsync("/api/alerts/summary")).StatusCode
         );
     }
@@ -183,7 +186,7 @@ public class AlertTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         );
         // and no manage reach
         Assert.Equal(
-            HttpStatusCode.Unauthorized,
+            HttpStatusCode.Forbidden,
             (await staff.PostAsync($"/api/bulletins/{orgWideId}/withdraw", null)).StatusCode
         );
         // the issuance also landed in their feed
@@ -287,21 +290,24 @@ public class AlertTests(ApiFixture fixture) : IClassFixture<ApiFixture>
 
         JsonElement match = default;
         var found = false;
-        for (var i = 0; i < 50 && !found; i++)
-        {
-            await Task.Delay(100);
-            var feed = await owner.GetFromJsonAsync<JsonElement>("/api/alerts");
-            foreach (var a in feed.GetProperty("items").EnumerateArray())
-                if (
-                    a.GetProperty("kind").GetString() == "RepeatOffender"
-                    && a.GetProperty("entityId").ValueKind == JsonValueKind.String
-                    && a.GetProperty("entityId").GetGuid() == entityId
-                )
-                {
-                    match = a;
-                    found = true;
-                }
-        }
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+            {
+                var feed = await owner.GetFromJsonAsync<JsonElement>("/api/alerts");
+                foreach (var a in feed.GetProperty("items").EnumerateArray())
+                    if (
+                        a.GetProperty("kind").GetString() == "RepeatOffender"
+                        && a.GetProperty("entityId").ValueKind == JsonValueKind.String
+                        && a.GetProperty("entityId").GetGuid() == entityId
+                    )
+                    {
+                        match = a;
+                        found = true;
+                    }
+                return !(!found);
+            },
+            "found"
+        );
         Assert.True(found, "the second link should raise a repeat-offender alert");
         Assert.Contains("linked to 2 incidents", match.GetProperty("title").GetString());
         Assert.Equal(second, match.GetProperty("incidentId").GetGuid());

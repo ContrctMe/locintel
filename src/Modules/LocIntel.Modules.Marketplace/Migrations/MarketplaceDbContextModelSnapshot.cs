@@ -35,10 +35,6 @@ namespace LocIntel.Modules.Marketplace.Migrations
                         .HasColumnType("numeric(14,2)")
                         .HasColumnName("amount");
 
-                    b.Property<Guid>("CounterpartyOrgId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("vendor_org_id");
-
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -62,6 +58,10 @@ namespace LocIntel.Modules.Marketplace.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("request_id");
 
+                    b.Property<Guid>("RequesterOrgId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("requester_org_id");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -82,10 +82,83 @@ namespace LocIntel.Modules.Marketplace.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("RequestId", "CounterpartyOrgId")
+                    b.HasIndex("OrgId", "RequestId")
                         .IsUnique();
 
                     b.ToTable("quotes", "marketplace");
+                });
+
+            modelBuilder.Entity("LocIntel.Modules.Marketplace.Requests.QuoteReceived", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(14, 2)
+                        .HasColumnType("numeric(14,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("notes");
+
+                    b.Property<Guid>("OrgId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("org_id");
+
+                    b.Property<Guid>("QuoteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("quote_id");
+
+                    b.Property<Guid>("RequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("request_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("submitted_at");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<DateTimeOffset?>("ValidUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("valid_until");
+
+                    b.Property<string>("VendorName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("vendor_name");
+
+                    b.Property<Guid>("VendorOrgId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("vendor_org_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrgId", "QuoteId")
+                        .IsUnique();
+
+                    b.HasIndex("RequestId", "VendorOrgId")
+                        .IsUnique();
+
+                    b.ToTable("received_quotes", "marketplace");
                 });
 
             modelBuilder.Entity("LocIntel.Modules.Marketplace.Requests.RequestEvent", b =>
@@ -110,10 +183,6 @@ namespace LocIntel.Modules.Marketplace.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)")
                         .HasColumnName("body");
-
-                    b.Property<Guid?>("CounterpartyOrgId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("vendor_org_id");
 
                     b.Property<double?>("DistanceFromSiteMeters")
                         .HasColumnType("double precision")
@@ -141,7 +210,14 @@ namespace LocIntel.Modules.Marketplace.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("request_id");
 
+                    b.Property<Guid>("SourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_id");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("OrgId", "SourceId")
+                        .IsUnique();
 
                     b.HasIndex("RequestId", "At");
 
@@ -153,10 +229,6 @@ namespace LocIntel.Modules.Marketplace.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
                         .HasColumnName("id");
-
-                    b.Property<Guid>("CounterpartyOrgId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("vendor_org_id");
 
                     b.Property<DateTimeOffset>("NotifiedAt")
                         .HasColumnType("timestamp with time zone")
@@ -180,9 +252,13 @@ namespace LocIntel.Modules.Marketplace.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("status");
 
+                    b.Property<Guid>("VendorOrgId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("vendor_org_id");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("RequestId", "CounterpartyOrgId")
+                    b.HasIndex("RequestId", "VendorOrgId")
                         .IsUnique();
 
                     b.ToTable("request_recipients", "marketplace");
@@ -230,10 +306,6 @@ namespace LocIntel.Modules.Marketplace.Migrations
                         .HasMaxLength(4000)
                         .HasColumnType("character varying(4000)")
                         .HasColumnName("completion_summary");
-
-                    b.Property<Guid?>("CounterpartyOrgId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("vendor_org_id");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -378,6 +450,10 @@ namespace LocIntel.Modules.Marketplace.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("urgency");
 
+                    b.Property<Guid?>("VendorOrgId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("vendor_org_id");
+
                     b.Property<DateTimeOffset?>("VerifiedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("verified_at");
@@ -390,11 +466,206 @@ namespace LocIntel.Modules.Marketplace.Migrations
 
                     b.HasIndex("Status", "ResponseDueAt");
 
-                    b.HasIndex("CounterpartyOrgId", "Status", "UpdatedAt");
-
                     b.HasIndex("OrgId", "Status", "UpdatedAt");
 
                     b.ToTable("requests", "marketplace");
+                });
+
+            modelBuilder.Entity("LocIntel.Modules.Marketplace.Requests.VendorAssignment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("AcceptedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("accepted_at");
+
+                    b.Property<decimal?>("BudgetAmount")
+                        .HasPrecision(14, 2)
+                        .HasColumnType("numeric(14,2)")
+                        .HasColumnName("budget_amount");
+
+                    b.Property<string>("CancelReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("cancel_reason");
+
+                    b.Property<DateTimeOffset?>("CancelledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cancelled_at");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("category");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<string>("CompletionSummary")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasColumnName("completion_summary");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency");
+
+                    b.Property<string>("DeclineReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("decline_reason");
+
+                    b.Property<string>("Details")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("details");
+
+                    b.Property<string>("DisputeReason")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("dispute_reason");
+
+                    b.Property<DateTimeOffset?>("EndsAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ends_at");
+
+                    b.Property<DateTimeOffset?>("EscalatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("escalated_at");
+
+                    b.Property<int>("EscalationCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("escalation_count");
+
+                    b.Property<string>("Mode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("mode");
+
+                    b.Property<Guid>("OrgId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("org_id");
+
+                    b.Property<string>("Participation")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("participation");
+
+                    b.Property<Guid>("RequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("request_id");
+
+                    b.Property<string>("RequesterName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("requester_name");
+
+                    b.Property<Guid>("RequesterOrgId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("requester_org_id");
+
+                    b.Property<DateTimeOffset?>("ResponseDueAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("response_due_at");
+
+                    b.Property<string>("Rrule")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("rrule");
+
+                    b.Property<string>("SiteCountryCode")
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)")
+                        .HasColumnName("site_country_code");
+
+                    b.Property<Guid>("SiteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("site_id");
+
+                    b.Property<double?>("SiteLatitude")
+                        .HasColumnType("double precision")
+                        .HasColumnName("site_latitude");
+
+                    b.Property<double?>("SiteLongitude")
+                        .HasColumnType("double precision")
+                        .HasColumnName("site_longitude");
+
+                    b.Property<string>("SiteName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("site_name");
+
+                    b.Property<string>("SiteTimeZone")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("site_time_zone");
+
+                    b.Property<string>("SpecJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("spec");
+
+                    b.Property<DateTimeOffset?>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.Property<DateTimeOffset>("StartsAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("starts_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("submitted_at");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("Urgency")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("urgency");
+
+                    b.Property<DateTimeOffset?>("VerifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("verified_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrgId", "RequestId")
+                        .IsUnique();
+
+                    b.HasIndex("OrgId", "Status", "UpdatedAt");
+
+                    b.ToTable("vendor_assignments", "marketplace");
                 });
 
             modelBuilder.Entity("LocIntel.Modules.Marketplace.Vendors.PreferredVendor", b =>
@@ -488,6 +759,69 @@ namespace LocIntel.Modules.Marketplace.Migrations
                     b.ToTable("vendor_credentials", "marketplace");
                 });
 
+            modelBuilder.Entity("LocIntel.Modules.Marketplace.Vendors.VendorListing", b =>
+                {
+                    b.Property<Guid>("OrgId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("org_id");
+
+                    b.PrimitiveCollection<string[]>("Categories")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("categories");
+
+                    b.Property<string>("ContactEmail")
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("contact_email");
+
+                    b.Property<string>("ContactPhone")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("contact_phone");
+
+                    b.Property<string>("CredentialsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("credentials");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<double?>("Latitude")
+                        .HasColumnType("double precision")
+                        .HasColumnName("latitude");
+
+                    b.Property<double?>("Longitude")
+                        .HasColumnType("double precision")
+                        .HasColumnName("longitude");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.PrimitiveCollection<string[]>("ServiceAreas")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("service_areas");
+
+                    b.Property<double?>("ServiceRadiusKm")
+                        .HasColumnType("double precision")
+                        .HasColumnName("service_radius_km");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("OrgId");
+
+                    b.ToTable("vendor_directory", "marketplace");
+                });
+
             modelBuilder.Entity("LocIntel.Modules.Marketplace.Vendors.VendorProfile", b =>
                 {
                     b.Property<Guid>("Id")
@@ -557,8 +891,6 @@ namespace LocIntel.Modules.Marketplace.Migrations
 
                     b.HasIndex("OrgId")
                         .IsUnique();
-
-                    b.HasIndex("Published");
 
                     b.ToTable("vendor_profiles", "marketplace");
                 });

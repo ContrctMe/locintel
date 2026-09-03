@@ -43,6 +43,18 @@ public class MarketplaceRoutingTests(ApiFixture fixture) : IClassFixture<ApiFixt
         (
             await ops.PostAsJsonAsync("/api/vendor/profile/publish", new { published = true })
         ).EnsureSuccessStatusCode();
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+            {
+                var names = (await buyer.GetFromJsonAsync<JsonElement>("/api/marketplace/vendors"))
+                    .GetProperty("items")
+                    .EnumerateArray()
+                    .Select(v => v.GetProperty("name").GetString())
+                    .ToList();
+                return names.Contains("LA Rapid Guard") && names.Contains("Nationwide Guard");
+            },
+            "both vendors to reach the directory"
+        );
 
         var hierarchy = await buyer.GetAsync("/api/hierarchy");
         Guid rootId;
@@ -187,14 +199,17 @@ public class MarketplaceRoutingTests(ApiFixture fixture) : IClassFixture<ApiFixt
                 >= 2
         );
         var widened = false;
-        for (var i = 0; i < 50 && !widened; i++)
-        {
-            await Task.Delay(100);
-            nearDetail = await buyer.GetFromJsonAsync<JsonElement>(
-                $"/api/marketplace/requests/{nearId}"
-            );
-            widened = nearDetail.GetProperty("recipients").GetArrayLength() == 2;
-        }
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+            {
+                nearDetail = await buyer.GetFromJsonAsync<JsonElement>(
+                    $"/api/marketplace/requests/{nearId}"
+                );
+                widened = nearDetail.GetProperty("recipients").GetArrayLength() == 2;
+                return !(!widened);
+            },
+            "widened"
+        );
         Assert.True(widened, "the broadcast should have been widened to the next vendor");
         Assert.Equal(1, nearDetail.GetProperty("escalationCount").GetInt32());
         Assert.Contains(
@@ -202,10 +217,13 @@ public class MarketplaceRoutingTests(ApiFixture fixture) : IClassFixture<ApiFixt
             e => (e.GetProperty("body").GetString() ?? "").Contains("widened")
         );
         // the nationwide vendor now sees it in the queue and can quote; the LA vendor still can too
-        var opsQueue = await ops.GetFromJsonAsync<JsonElement>("/api/vendor/requests");
-        Assert.Contains(
-            opsQueue.GetProperty("items").EnumerateArray(),
-            r => r.GetProperty("id").GetGuid() == nearId
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+                (await ops.GetFromJsonAsync<JsonElement>("/api/vendor/requests"))
+                    .GetProperty("items")
+                    .EnumerateArray()
+                    .Any(r => r.GetProperty("id").GetGuid() == nearId),
+            "the widened broadcast to reach the nationwide vendor's queue"
         );
         var directDetail = await buyer.GetFromJsonAsync<JsonElement>(
             $"/api/marketplace/requests/{directId}"
