@@ -19,11 +19,11 @@ public static class ShareAccessRevokedHandler
         CancellationToken ct
     )
     {
-        if (tenant.OrgId is null)
+        if (tenant.OrgId is not { } org)
             throw new InvalidOperationException(
                 $"ShareAccessRevoked arrived with no tenant on the envelope (TenantId='{envelope.TenantId}')"
             );
-        await db.TakeAsync(message.ShareId, ct);
+        await db.TakeAsync(org, message.ShareId, ct);
         var access = await db.Access.FirstOrDefaultAsync(a => a.ShareId == message.ShareId, ct);
         if (access is null)
             return;

@@ -35,8 +35,12 @@ writes that org's own `Invitation` row:
 
 ```csharp
 // the handler for InvitationOffered, running as the RECIPIENT
-public static async Task Handle(InvitationOffered m, RequestsDbContext db, ITenantContext tenant)
+public static async Task Handle(InvitationOffered m, RequestsDbContext db, ITenantContext tenant, CancellationToken ct)
 {
+    // first thing: two copies of this event for one org are handled in
+    // parallel by the local queue; serialize them or the second dies on the
+    // unique index and lands on a late retry (AggregateLock)
+    await db.TakeAsync(tenant.OrgId!.Value, m.RequestId, ct);
     // keyed on (correlation, own org): a redelivered fan-out lands once
     var existing = await db.Invitations.FirstOrDefaultAsync(i => i.RequestId == m.RequestId);
     if (existing is not null) return;
@@ -123,6 +127,20 @@ OWNS, with a concurrency check, publishing an event:
 If you find yourself wanting a `WITH CHECK` clause to express who may do
 what, the authority is in the wrong place.
 
+## Projection handlers serialize per aggregate
+
+The upsert above is only once-per-key if the two copies cannot interleave.
+They can: Wolverine's local queue handles messages in parallel, so two
+copies of a fan-out - or two quick events for the same aggregate - each
+miss the other's uncommitted row, and the second dies on the unique index
+and lands on a retry, late. Take `AggregateLock.TakeAsync` first thing in
+every projection handler: a transaction-scoped advisory lock on the
+aggregate id (owner side) or on `(own org, aggregate id)` (a recipient's
+copy, so fifty recipients of one request do not serialize with each
+other). It lives exactly as long as Wolverine's transaction and refuses to
+run outside one. `org_directory`'s handler takes it; `AggregateLockTests`
+proves two transactions on one key serialize and two keys do not.
+
 ## Order is not guaranteed
 
 Two events published seconds apart - a vendor's `Accepted`, then its
@@ -182,6 +200,7 @@ writes itself.
 - [ ] Every decision is a command on an owned object with a concurrency
       check. No policy clause encodes authority.
 - [ ] Limits are entitlements, checked before the fan-out.
+- [ ] Every projection handler takes `AggregateLock` first thing.
 - [ ] The owner applies the other party's actions monotonically: an action
       means "they reached this step"; an earlier step arriving late is stale.
 - [ ] `EnableTenantRls` on every new table; the migration skill's checklist

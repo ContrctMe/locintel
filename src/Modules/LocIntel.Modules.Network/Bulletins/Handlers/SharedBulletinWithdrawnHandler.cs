@@ -19,11 +19,11 @@ public static class SharedBulletinWithdrawnHandler
         CancellationToken ct
     )
     {
-        if (tenant.OrgId is null)
+        if (tenant.OrgId is not { } org)
             throw new InvalidOperationException(
                 $"SharedBulletinWithdrawn arrived with no tenant on the envelope (TenantId='{envelope.TenantId}')"
             );
-        await db.TakeAsync(m.BulletinId, ct);
+        await db.TakeAsync(org, m.BulletinId, ct);
         var copy = await db.BulletinCopies.FirstOrDefaultAsync(
             c => c.BulletinId == m.BulletinId,
             ct

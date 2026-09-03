@@ -26,7 +26,7 @@ public static class ShareInvitationRequestedHandler
             throw new InvalidOperationException(
                 $"ShareInvitationRequested arrived with no tenant on the envelope (TenantId='{envelope.TenantId}')"
             );
-        await db.TakeAsync(message.ShareId, ct);
+        await db.TakeAsync(org, message.ShareId, ct);
         var existing = await db.Access.FirstOrDefaultAsync(a => a.ShareId == message.ShareId, ct);
         if (existing is null)
         {

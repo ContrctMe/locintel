@@ -330,6 +330,12 @@ every projection handler (fourteen in the fork). Lift it, mention it in
 the recipe's handler example, and consider an `AggregateLockTests` case
 that handles two copies concurrently.
 
+## Status after the sixth sync (2026-09-03)
+
+Round six landed; the sync merged with two add/add conflicts and nothing
+to feed back. Every item from rounds one to six is now in the template, and
+the fork carries no copy of anything the template provides.
+
 ## Suggested prompt for the template session
 
-> Read `/Users/jarod/coding/locintel/docs/template-feedback.md`, section "Round six" (items 23-24; rounds one to five are merged). Item 23: change the freeze stamp in `MigrationHelperTests` to the moment ADR 48 landed rather than the day's midnight, or derive it, and add the case of a fork migration stamped earlier that day. Item 24 is a lift from `src/LocIntel.Platform/Data/AggregateLock.cs` with a concurrency test. Keep the suite shuffled and green, and note in the commit message which item it closes.
+> (No open items. The next round starts when the fork's next slices surface something; see the blueprint's decisions log for what is being built.)

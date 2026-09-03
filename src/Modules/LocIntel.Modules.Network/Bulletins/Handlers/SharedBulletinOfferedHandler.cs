@@ -25,7 +25,7 @@ public static class SharedBulletinOfferedHandler
             throw new InvalidOperationException(
                 $"SharedBulletinOffered arrived with no tenant on the envelope (TenantId='{envelope.TenantId}')"
             );
-        await db.TakeAsync(m.BulletinId, ct);
+        await db.TakeAsync(org, m.BulletinId, ct);
         var access = await db.Access.FirstOrDefaultAsync(a => a.ShareId == m.ShareId, ct);
         if (access is null || access.Status != MembershipStatus.Active)
             return;

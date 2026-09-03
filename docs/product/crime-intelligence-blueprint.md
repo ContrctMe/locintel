@@ -423,3 +423,12 @@ jurisdiction.
   lock on its aggregate (`AggregateLock.TakeAsync`) - two copies of a
   fan-out handled in parallel had both inserted the projection and the
   second landed on a late retry (feedback, round six, item 24).
+- 2026-09-03: **Sixth template sync** (upstream `7582d09`, round-six items
+  23-24 landed). `AggregateLock` now comes from the template, with a second
+  overload keyed on (own org, aggregate) so recipients of one fan-out do not
+  serialize with each other: the nine recipient-side handlers moved onto
+  it, the requester- and owner-side ones keep the single-key lock. The
+  helper freeze moment lives on the helper as `[FrozenAt]` (ADR 48's own
+  commit stamp, later than the fork's three shape migrations), so the
+  fork's local adjustment of the test went. Nothing new to feed back from
+  this round.

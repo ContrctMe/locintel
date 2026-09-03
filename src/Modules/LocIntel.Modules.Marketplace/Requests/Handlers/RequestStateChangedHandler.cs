@@ -20,11 +20,11 @@ public static class RequestStateChangedHandler
         CancellationToken ct
     )
     {
-        if (tenant.OrgId is null)
+        if (tenant.OrgId is not { } org)
             throw new InvalidOperationException(
                 $"RequestStateChanged arrived with no tenant on the envelope (TenantId='{envelope.TenantId}')"
             );
-        await db.TakeAsync(message.Request.RequestId, ct);
+        await db.TakeAsync(org, message.Request.RequestId, ct);
         var row = await db.Assignments.FirstOrDefaultAsync(
             a => a.RequestId == message.Request.RequestId,
             ct

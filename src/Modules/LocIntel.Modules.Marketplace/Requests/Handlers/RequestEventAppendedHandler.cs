@@ -24,7 +24,7 @@ public static class RequestEventAppendedHandler
             throw new InvalidOperationException(
                 $"RequestEventAppended arrived with no tenant on the envelope (TenantId='{envelope.TenantId}')"
             );
-        await db.TakeAsync(message.RequestId, ct);
+        await db.TakeAsync(org, message.RequestId, ct);
         if (await db.Events.AnyAsync(e => e.SourceId == message.SourceId, ct))
             return;
         db.Events.Add(RequestEvent.Copy(org, message));
