@@ -1,5 +1,6 @@
 using LocIntel.Modules.Network.Bulletins.Messages;
 using LocIntel.Modules.Network.Data;
+using LocIntel.Platform.Data;
 using LocIntel.Platform.Kernel;
 using Microsoft.EntityFrameworkCore;
 using Wolverine;
@@ -22,6 +23,7 @@ public static class SharedBulletinWithdrawnHandler
             throw new InvalidOperationException(
                 $"SharedBulletinWithdrawn arrived with no tenant on the envelope (TenantId='{envelope.TenantId}')"
             );
+        await db.TakeAsync(m.BulletinId, ct);
         var copy = await db.BulletinCopies.FirstOrDefaultAsync(
             c => c.BulletinId == m.BulletinId,
             ct

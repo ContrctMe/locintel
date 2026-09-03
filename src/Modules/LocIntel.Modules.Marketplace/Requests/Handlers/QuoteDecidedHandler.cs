@@ -1,6 +1,7 @@
 using LocIntel.Modules.Marketplace.Data;
 using LocIntel.Modules.Marketplace.Marketplace;
 using LocIntel.Modules.Marketplace.Requests.Messages;
+using LocIntel.Platform.Data;
 using LocIntel.Platform.Kernel;
 using Microsoft.EntityFrameworkCore;
 using Wolverine;
@@ -24,6 +25,7 @@ public static class QuoteDecidedHandler
             throw new InvalidOperationException(
                 $"QuoteDecided arrived with no tenant on the envelope (TenantId='{envelope.TenantId}')"
             );
+        await db.TakeAsync(m.RequestId, ct);
         var quote = await db.Quotes.FirstOrDefaultAsync(q => q.Id == m.QuoteId, ct);
         if (quote is null)
             return;

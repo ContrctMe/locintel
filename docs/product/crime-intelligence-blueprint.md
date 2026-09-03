@@ -406,3 +406,20 @@ jurisdiction.
     `AddModuleDbContext` in every module; the removed shape helpers' SQL
     frozen as `LegacyTenancyShapes` per module so applied migrations keep
     compiling.
+- 2026-09-03: **Fifth template sync** (upstream `71c4f31`, round-five items
+  19-22 all landed; three add/add conflicts, upstream's versions taken).
+  `ActorGate` and `ActorRef` now come from the template (the fork's copies
+  went); `vendor_directory` is declared platform-global on the marketplace's
+  catalog entry instead of in the coverage test, and that test now reads the
+  EF model, so `shares` and `shared_bulletins` (owner columns not named
+  `org_id`) are covered for the first time. The fork's per-module
+  `LegacyTenancyShapes` shims went in favour of Platform's
+  `FrozenMigrationHelpers`; the two `OneOwnerPerRow` Down() bodies restore
+  the old policies as literal SQL rather than helper calls. One fork-local
+  adjustment to an upstream test: the helper freeze stamp is 2026-09-03 (when
+  ADR 48 landed here), because the fork's three shape migrations are stamped
+  2026-09-02, the day those helpers were still the recommended shape.
+  Also: every projection handler now takes a transaction-scoped advisory
+  lock on its aggregate (`AggregateLock.TakeAsync`) - two copies of a
+  fan-out handled in parallel had both inserted the projection and the
+  second landed on a late retry (feedback, round six, item 24).

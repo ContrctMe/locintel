@@ -1,5 +1,6 @@
 using LocIntel.Modules.Marketplace.Data;
 using LocIntel.Modules.Marketplace.Vendors.Messages;
+using LocIntel.Platform.Data;
 using Microsoft.EntityFrameworkCore;
 using Wolverine.Attributes;
 
@@ -15,6 +16,7 @@ public static class VendorListingPublishedHandler
         CancellationToken ct
     )
     {
+        await db.TakeAsync(m.OrgId.Value, ct);
         var row = await db.Directory.FirstOrDefaultAsync(v => v.OrgId == m.OrgId, ct);
         if (row is not null && row.UpdatedAt > m.UpdatedAt)
             return; // an older projection arriving late never overwrites a newer one

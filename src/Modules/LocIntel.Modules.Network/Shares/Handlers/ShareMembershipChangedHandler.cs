@@ -1,5 +1,6 @@
 using LocIntel.Modules.Network.Data;
 using LocIntel.Modules.Network.Shares.Messages;
+using LocIntel.Platform.Data;
 using LocIntel.Platform.Kernel;
 using Microsoft.EntityFrameworkCore;
 using Wolverine;
@@ -24,6 +25,7 @@ public static class ShareMembershipChangedHandler
             throw new InvalidOperationException(
                 $"ShareMembershipChanged arrived with no tenant on the envelope (TenantId='{envelope.TenantId}')"
             );
+        await db.TakeAsync(message.ShareId, ct);
         var share = await db.Shares.FirstOrDefaultAsync(s => s.Id == message.ShareId, ct);
         var member = await db.Members.FirstOrDefaultAsync(
             m => m.ShareId == message.ShareId && m.MemberOrgId == message.MemberOrgId,

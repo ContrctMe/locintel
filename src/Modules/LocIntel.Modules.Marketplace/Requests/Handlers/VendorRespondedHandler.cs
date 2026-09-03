@@ -2,6 +2,7 @@ using LocIntel.Contracts;
 using LocIntel.Modules.Marketplace.Data;
 using LocIntel.Modules.Marketplace.Marketplace;
 using LocIntel.Modules.Marketplace.Requests.Messages;
+using LocIntel.Platform.Data;
 using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Messaging;
 using Microsoft.EntityFrameworkCore;
@@ -33,6 +34,7 @@ public static class VendorRespondedHandler
             throw new InvalidOperationException(
                 $"VendorResponded arrived with no tenant on the envelope (TenantId='{envelope.TenantId}')"
             );
+        await db.TakeAsync(m.RequestId, ct);
         var row = await db.Requests.FirstOrDefaultAsync(r => r.Id == m.RequestId, ct);
         if (row is null)
             return;

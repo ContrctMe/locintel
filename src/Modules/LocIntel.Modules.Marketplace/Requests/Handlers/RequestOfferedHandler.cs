@@ -1,5 +1,6 @@
 using LocIntel.Modules.Marketplace.Data;
 using LocIntel.Modules.Marketplace.Requests.Messages;
+using LocIntel.Platform.Data;
 using LocIntel.Platform.Kernel;
 using Microsoft.EntityFrameworkCore;
 using Wolverine;
@@ -23,6 +24,7 @@ public static class RequestOfferedHandler
             throw new InvalidOperationException(
                 $"RequestOffered arrived with no tenant on the envelope (TenantId='{envelope.TenantId}')"
             );
+        await db.TakeAsync(message.Request.RequestId, ct);
         var s = message.Request;
         var row = await db.Assignments.FirstOrDefaultAsync(a => a.RequestId == s.RequestId, ct);
         if (row is null)

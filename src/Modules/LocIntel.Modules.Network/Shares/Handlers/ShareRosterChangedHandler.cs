@@ -1,5 +1,6 @@
 using LocIntel.Modules.Network.Data;
 using LocIntel.Modules.Network.Shares.Messages;
+using LocIntel.Platform.Data;
 using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Messaging;
 using Microsoft.EntityFrameworkCore;
@@ -31,6 +32,7 @@ public static class ShareRosterChangedHandler
             throw new InvalidOperationException(
                 $"ShareRosterChanged arrived with no tenant on the envelope (TenantId='{envelope.TenantId}')"
             );
+        await db.TakeAsync(message.ShareId, ct);
         var access = await db.Access.FirstOrDefaultAsync(a => a.ShareId == message.ShareId, ct);
         if (access is null)
             return;

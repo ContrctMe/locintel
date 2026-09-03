@@ -1,5 +1,6 @@
 using LocIntel.Modules.Marketplace.Data;
 using LocIntel.Modules.Marketplace.Vendors.Messages;
+using LocIntel.Platform.Data;
 using Microsoft.EntityFrameworkCore;
 using Wolverine.Attributes;
 
@@ -14,6 +15,7 @@ public static class VendorListingWithdrawnHandler
         CancellationToken ct
     )
     {
+        await db.TakeAsync(m.OrgId.Value, ct);
         await db.Directory.Where(v => v.OrgId == m.OrgId).ExecuteDeleteAsync(ct);
     }
 }

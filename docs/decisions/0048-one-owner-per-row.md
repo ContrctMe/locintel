@@ -113,7 +113,7 @@ primitive. In brief:
 | --- | --- |
 | Two-party (owner + counterparty) | Two owned objects linked by id: the owner's aggregate and the counterparty's own projection of it. Each side writes only its own. |
 | Required counterparty | Same - the counterparty's object is simply required to exist; that is a command precondition, not a column constraint. |
-| Published catalog (`published OR owner`) | The owner's row plus a **platform-global read model** published from it on `Published`/`Unpublished` events - exactly `org_directory`. Platform-global tables carry no RLS by design and are listed in `RlsCoverageTests.PlatformGlobal` with a reason. |
+| Published catalog (`published OR owner`) | The owner's row plus a **platform-global read model** published from it on `Published`/`Unpublished` events - exactly `org_directory`. Platform-global tables carry no RLS by design and are declared `PlatformGlobal` on the module's `ModuleCatalog` entry with a reason; `RlsCoverageTests` reads the catalog. |
 | Recipient list (owner + side table) | The owner's aggregate holding the list as data, plus one owned `Participation`/`Invitation` row per recipient, materialized by event. |
 | Children of a shared thing (members, bulletins) | Children of the OWNER'S aggregate, owned by the owner; each recipient gets its own projection of what it may see. |
 
@@ -158,6 +158,19 @@ listed must grant read and never write, that revocation must revoke writes
 too, that a policy must never reference its own table. Under this model those
 are not properties to test; they are consequences of every row having one
 owner.
+
+## Adoption note (2026-09-03)
+
+Deleting the shape helpers broke the first fork that had used them: its
+applied migrations - which this ADR itself says must never be edited -
+stopped compiling. A helper called from a migration is part of that
+migration's frozen text. The helpers are back as `FrozenMigrationHelpers`,
+signature and SQL unchanged, marked as not for new migrations and refused by
+`MigrationHelperTests` in any migration stamped after 2026-09-02. That is
+the rule from here on: a migration-time helper is frozen, never removed. A
+fork that froze its own copy per module (the first one did, as
+`Migrations/LegacyTenancyShapes.cs`) may keep it; the module's copy wins
+extension-method lookup, so nothing is ambiguous.
 
 ## Why pinned
 

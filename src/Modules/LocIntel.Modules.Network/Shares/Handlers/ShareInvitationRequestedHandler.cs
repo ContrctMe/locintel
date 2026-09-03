@@ -1,6 +1,7 @@
 using LocIntel.Contracts;
 using LocIntel.Modules.Network.Data;
 using LocIntel.Modules.Network.Shares.Messages;
+using LocIntel.Platform.Data;
 using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Messaging;
 using Microsoft.EntityFrameworkCore;
@@ -25,6 +26,7 @@ public static class ShareInvitationRequestedHandler
             throw new InvalidOperationException(
                 $"ShareInvitationRequested arrived with no tenant on the envelope (TenantId='{envelope.TenantId}')"
             );
+        await db.TakeAsync(message.ShareId, ct);
         var existing = await db.Access.FirstOrDefaultAsync(a => a.ShareId == message.ShareId, ct);
         if (existing is null)
         {

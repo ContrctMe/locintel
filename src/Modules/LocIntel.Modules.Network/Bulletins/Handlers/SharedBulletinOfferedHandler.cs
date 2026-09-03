@@ -1,6 +1,7 @@
 using LocIntel.Modules.Network.Bulletins.Messages;
 using LocIntel.Modules.Network.Data;
 using LocIntel.Modules.Network.Shares;
+using LocIntel.Platform.Data;
 using LocIntel.Platform.Kernel;
 using Microsoft.EntityFrameworkCore;
 using Wolverine;
@@ -24,6 +25,7 @@ public static class SharedBulletinOfferedHandler
             throw new InvalidOperationException(
                 $"SharedBulletinOffered arrived with no tenant on the envelope (TenantId='{envelope.TenantId}')"
             );
+        await db.TakeAsync(m.BulletinId, ct);
         var access = await db.Access.FirstOrDefaultAsync(a => a.ShareId == m.ShareId, ct);
         if (access is null || access.Status != MembershipStatus.Active)
             return;

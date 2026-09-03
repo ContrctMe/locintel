@@ -19,7 +19,20 @@ public static class ModuleCatalog
     public static readonly IReadOnlyList<ModuleDescriptor> All =
     [
         new("tenancy", "tenancy", typeof(LocIntel.Modules.Tenancy.Data.TenancyDbContext)),
-        new("identity", "identity", typeof(LocIntel.Modules.Identity.Data.IdentityDbContext)),
+        new("identity", "identity", typeof(LocIntel.Modules.Identity.Data.IdentityDbContext))
+        {
+            // resolved BEFORE any tenant context exists (ADR 7/37): not RLS'd by
+            // design. Declaring one here is a security decision, not a shortcut.
+            PlatformGlobal =
+            [
+                new(
+                    "api_keys",
+                    "looked up by unguessable secret hash, before the principal exists"
+                ),
+                new("memberships", "filtered by the authenticated user id to find their orgs"),
+                new("org_directory", "the pre-tenant org read model (ADR 37)"),
+            ],
+        },
         new(
             "entitlements",
             "entitlements",
@@ -40,7 +53,20 @@ public static class ModuleCatalog
             "marketplace",
             "marketplace",
             typeof(LocIntel.Modules.Marketplace.Data.MarketplaceDbContext)
-        ),
+        )
+        {
+            // ADR 48 "open: pull": the public projection of published vendors that
+            // buyers search and matching reads. Fed by the vendor's own profile
+            // through the outbox and carrying nothing a vendor keeps private (no
+            // credential numbers), so every tenant may read it.
+            PlatformGlobal =
+            [
+                new(
+                    "vendor_directory",
+                    "public projection of published vendors (ADR 48 open pull); holds nothing a vendor keeps private"
+                ),
+            ],
+        },
         new("alerts", "alerts", typeof(LocIntel.Modules.Alerts.Data.AlertsDbContext)),
         new("network", "network", typeof(LocIntel.Modules.Network.Data.NetworkDbContext)),
         new("patrols", "patrols", typeof(LocIntel.Modules.Patrols.Data.PatrolsDbContext)),

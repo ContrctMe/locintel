@@ -63,6 +63,28 @@ public class ModuleCatalogTests
     }
 
     [Fact]
+    public void Platform_global_tables_are_declared_once_each_with_a_reason()
+    {
+        // an org-bearing table without RLS is a security decision; the catalog
+        // is where it is made, and a bare name is not a decision
+        foreach (var module in ModuleCatalog.AllWithPlatform)
+        {
+            foreach (var table in module.PlatformGlobal)
+            {
+                Assert.Equal(table.Table.ToLowerInvariant(), table.Table);
+                Assert.False(
+                    string.IsNullOrWhiteSpace(table.Reason) || table.Reason.Length < 20,
+                    $"{module.Schema}.{table.Table}: say what resolves it and what filters it"
+                );
+            }
+            Assert.Equal(
+                module.PlatformGlobal.Count,
+                module.PlatformGlobal.Select(t => t.Table).Distinct().Count()
+            );
+        }
+    }
+
+    [Fact]
     public void Catalog_names_and_schemas_are_unique_and_lowercase()
     {
         foreach (var module in ModuleCatalog.AllWithPlatform)

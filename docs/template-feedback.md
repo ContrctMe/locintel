@@ -298,6 +298,38 @@ The same test keys on a column literally named `org_id`: `shares`
 in the model yet invisible to the coverage check. Reading the EF model
 (every `IOrgScoped` entity's mapped column) would close that gap too.
 
+## Round six (after the fifth sync, 2026-09-03)
+
+Round five landed in full. The fork deleted its `ActorGate`, `ActorRef`
+and per-module frozen-helper shims in favour of the template's, and moved
+its platform-global declaration onto the catalog. One item surfaced:
+
+### 23. The helper freeze stamp is a day, not a moment
+
+`MigrationHelperTests.FrozenAt` stamps the multi-owner helpers frozen at
+`20260902000000`. ADR 48 landed late on 2026-09-02; a fork that synced the
+shapes that morning (as this one did, rounds two to four) has migrations
+stamped `20260902171347`, `20260902203207` and `20260902223221` that call
+the helpers legitimately and can never be edited. The test flags all
+three. The fork set its copy of the stamp to `20260903000000` - the moment
+the ADR landed in the fork - and the template should use the ADR commit's
+own timestamp (or the next sync boundary) rather than midnight. More
+generally: a freeze stamp is only meaningful relative to when a fork
+received the freeze, so the test might read it from the migration that
+introduced the frozen state rather than a constant.
+
+### 24. Projection handlers race on the local queue (**lift**)
+
+Two copies of a fan-out, or two quick events for the same aggregate, are
+handled in parallel by Wolverine's local queue. Both miss each other's
+uncommitted row; the second dies on the unique index and lands on a retry
+- in the shuffled full suite, later than a 30 s wait. The fork added
+`src/LocIntel.Platform/Data/AggregateLock.cs`: a transaction-scoped
+`pg_advisory_xact_lock` keyed on the aggregate id, taken first thing in
+every projection handler (fourteen in the fork). Lift it, mention it in
+the recipe's handler example, and consider an `AggregateLockTests` case
+that handles two copies concurrently.
+
 ## Suggested prompt for the template session
 
-> Read `/Users/jarod/coding/locintel/docs/template-feedback.md`, section "Round five" (items 19-22; rounds one to four are merged, and ADR 48 is adopted). Item 20 is a lift from `src/LocIntel.Contracts/ActorGate.cs`; item 22 moves the platform-global allow-list into the module catalog; items 19 and 21 are documentation plus one test each. Keep the suite shuffled and green, and note in the commit message which item it closes.
+> Read `/Users/jarod/coding/locintel/docs/template-feedback.md`, section "Round six" (items 23-24; rounds one to five are merged). Item 23: change the freeze stamp in `MigrationHelperTests` to the moment ADR 48 landed rather than the day's midnight, or derive it, and add the case of a fork migration stamped earlier that day. Item 24 is a lift from `src/LocIntel.Platform/Data/AggregateLock.cs` with a concurrency test. Keep the suite shuffled and green, and note in the commit message which item it closes.

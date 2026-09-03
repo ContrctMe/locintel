@@ -26,6 +26,9 @@ public static class GateResults
             _ => throw new ArgumentOutOfRangeException(nameof(outcome)),
         };
 
+    /// <summary>The actor-flavoured gate fails exactly as the plain one does.</summary>
+    public static IResult ToResult(this ActorGateOutcome outcome) => outcome.Gate.ToResult();
+
     /// <summary>
     /// Gate 1 at a creation point (ADR 8/9): a limit failure is 402-and-upsell,
     /// never an error. One body shape for every limit.

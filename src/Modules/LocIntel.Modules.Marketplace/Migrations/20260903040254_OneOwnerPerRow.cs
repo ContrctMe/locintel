@@ -515,21 +515,44 @@ namespace LocIntel.Modules.Marketplace.Migrations
                     WITH CHECK (org_id = NULLIF(current_setting('app.org_id', true), '')::uuid);
                 """
             );
-            migrationBuilder.EnableRecipientListRls(
-                "marketplace",
-                "requests",
-                recipientsTable: "request_recipients",
-                foreignKeyColumn: "request_id",
-                recipientOrgColumn: "vendor_org_id",
-                counterpartyColumn: "vendor_org_id"
+            migrationBuilder.Sql(
+                """
+                ALTER TABLE "marketplace"."requests" ENABLE ROW LEVEL SECURITY;
+                ALTER TABLE "marketplace"."requests" FORCE ROW LEVEL SECURITY;
+                CREATE POLICY tenant_isolation ON "marketplace"."requests"
+                    USING ("org_id" = NULLIF(current_setting('app.org_id', true), '')::uuid OR "vendor_org_id" = NULLIF(current_setting('app.org_id', true), '')::uuid
+                           OR EXISTS (SELECT 1 FROM "marketplace"."request_recipients" r
+                                      WHERE r."request_id" = "requests"."id" AND r."vendor_org_id" = NULLIF(current_setting('app.org_id', true), '')::uuid))
+                    WITH CHECK ("org_id" = NULLIF(current_setting('app.org_id', true), '')::uuid OR "vendor_org_id" = NULLIF(current_setting('app.org_id', true), '')::uuid);
+                """
             );
-            migrationBuilder.EnableTwoPartyRls("marketplace", "request_events", "vendor_org_id");
-            migrationBuilder.EnableTwoPartyRls(
-                "marketplace",
-                "request_recipients",
-                "vendor_org_id"
+            migrationBuilder.Sql(
+                """
+                ALTER TABLE "marketplace"."request_events" ENABLE ROW LEVEL SECURITY;
+                ALTER TABLE "marketplace"."request_events" FORCE ROW LEVEL SECURITY;
+                CREATE POLICY tenant_isolation ON "marketplace"."request_events"
+                    USING ("org_id" = NULLIF(current_setting('app.org_id', true), '')::uuid OR "vendor_org_id" = NULLIF(current_setting('app.org_id', true), '')::uuid)
+                    WITH CHECK ("org_id" = NULLIF(current_setting('app.org_id', true), '')::uuid OR "vendor_org_id" = NULLIF(current_setting('app.org_id', true), '')::uuid);
+                """
             );
-            migrationBuilder.EnableTwoPartyRls("marketplace", "quotes", "vendor_org_id");
+            migrationBuilder.Sql(
+                """
+                ALTER TABLE "marketplace"."request_recipients" ENABLE ROW LEVEL SECURITY;
+                ALTER TABLE "marketplace"."request_recipients" FORCE ROW LEVEL SECURITY;
+                CREATE POLICY tenant_isolation ON "marketplace"."request_recipients"
+                    USING ("org_id" = NULLIF(current_setting('app.org_id', true), '')::uuid OR "vendor_org_id" = NULLIF(current_setting('app.org_id', true), '')::uuid)
+                    WITH CHECK ("org_id" = NULLIF(current_setting('app.org_id', true), '')::uuid OR "vendor_org_id" = NULLIF(current_setting('app.org_id', true), '')::uuid);
+                """
+            );
+            migrationBuilder.Sql(
+                """
+                ALTER TABLE "marketplace"."quotes" ENABLE ROW LEVEL SECURITY;
+                ALTER TABLE "marketplace"."quotes" FORCE ROW LEVEL SECURITY;
+                CREATE POLICY tenant_isolation ON "marketplace"."quotes"
+                    USING ("org_id" = NULLIF(current_setting('app.org_id', true), '')::uuid OR "vendor_org_id" = NULLIF(current_setting('app.org_id', true), '')::uuid)
+                    WITH CHECK ("org_id" = NULLIF(current_setting('app.org_id', true), '')::uuid OR "vendor_org_id" = NULLIF(current_setting('app.org_id', true), '')::uuid);
+                """
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_vendor_profiles_published",

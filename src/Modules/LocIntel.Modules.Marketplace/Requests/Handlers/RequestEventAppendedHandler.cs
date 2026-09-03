@@ -1,5 +1,6 @@
 using LocIntel.Modules.Marketplace.Data;
 using LocIntel.Modules.Marketplace.Requests.Messages;
+using LocIntel.Platform.Data;
 using LocIntel.Platform.Kernel;
 using Microsoft.EntityFrameworkCore;
 using Wolverine;
@@ -23,6 +24,7 @@ public static class RequestEventAppendedHandler
             throw new InvalidOperationException(
                 $"RequestEventAppended arrived with no tenant on the envelope (TenantId='{envelope.TenantId}')"
             );
+        await db.TakeAsync(message.RequestId, ct);
         if (await db.Events.AnyAsync(e => e.SourceId == message.SourceId, ct))
             return;
         db.Events.Add(RequestEvent.Copy(org, message));

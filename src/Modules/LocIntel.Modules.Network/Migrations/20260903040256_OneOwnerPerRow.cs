@@ -250,14 +250,16 @@ namespace LocIntel.Modules.Network.Migrations
                     WITH CHECK (publisher_org_id = NULLIF(current_setting('app.org_id', true), '')::uuid);
                 """
             );
-            migrationBuilder.EnableRecipientListRls(
-                "network",
-                "shares",
-                recipientsTable: "share_access",
-                foreignKeyColumn: "share_id",
-                recipientOrgColumn: "org_id",
-                orgColumn: "owner_org_id",
-                recipientPredicate: "r.status <> 'Removed'"
+            migrationBuilder.Sql(
+                """
+                ALTER TABLE "network"."shares" ENABLE ROW LEVEL SECURITY;
+                ALTER TABLE "network"."shares" FORCE ROW LEVEL SECURITY;
+                CREATE POLICY tenant_isolation ON "network"."shares"
+                    USING ("owner_org_id" = NULLIF(current_setting('app.org_id', true), '')::uuid
+                           OR EXISTS (SELECT 1 FROM "network"."share_access" r
+                                      WHERE r."share_id" = "shares"."id" AND r."org_id" = NULLIF(current_setting('app.org_id', true), '')::uuid AND (r.status <> 'Removed')))
+                    WITH CHECK ("owner_org_id" = NULLIF(current_setting('app.org_id', true), '')::uuid);
+                """
             );
             migrationBuilder.DropTable(name: "shared_bulletin_copies", schema: "network");
 

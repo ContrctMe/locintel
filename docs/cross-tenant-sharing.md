@@ -60,8 +60,8 @@ just to announce something.
 Instead the owner publishes a **public projection** into a platform-global
 read model, and other orgs discover it by reading:
 
-1. A table with NO RLS, listed in `RlsCoverageTests.PlatformGlobal` with a
-   reason ("public projection of open requests; discovery only, holds
+1. A table with NO RLS, declared as `PlatformGlobal` on the module's
+   `ModuleCatalog` entry with a reason ("public projection of open requests; discovery only, holds
    nothing the owner keeps private").
 2. Fed by the owner's events - `RequestOpened` inserts, `RequestClosed`
    deletes - through a handler exactly like `OrgDirectorySync`.
@@ -123,6 +123,38 @@ OWNS, with a concurrency check, publishing an event:
 If you find yourself wanting a `WITH CHECK` clause to express who may do
 what, the authority is in the wrong place.
 
+## Order is not guaranteed
+
+Two events published seconds apart - a vendor's `Accepted`, then its
+`Started` - can reach the owner's handler in either order on a busy outbox,
+and a redelivery can bring an old one back after a newer one landed. The
+owner has the authority, so the owner must decide what an out-of-order
+action means. The default, unless a feature has a reason to differ:
+
+**Read each action as "the other party reached this point", and apply it
+monotonically.** Rank the steps. An action applies when the owned row is at
+or before the step it implies - and it implies every earlier step, so fill
+in the timestamps that were skipped. An action for a step the row has
+already passed is stale: record nothing, change nothing. Either way the
+owner answers with its resulting state (`RequestStateChanged` to every
+participant), which is what corrects the sender's optimistic row when its
+action no longer applied.
+
+```csharp
+// running as the OWNER; the vendor's events may arrive in any order
+static bool Apply(Request row, VendorResponded m) => m.Step switch
+{
+    Step.Accepted   when Rank(row.Status) < Rank(Step.Accepted)   => Advance(row, Step.Accepted, m.At),
+    Step.Started    when Rank(row.Status) < Rank(Step.Started)    => Advance(row, Step.Started, m.At),
+    Step.Completed  when Rank(row.Status) < Rank(Step.Completed)  => Advance(row, Step.Completed, m.At),
+    _ => false, // stale, or a step this row's mode never takes
+};
+```
+
+Terminal and branching steps (declined, cancelled) are not on the ladder:
+gate them on the exact state they leave from. `FanOutOrderingTests` in the
+unit project carries this as a worked example.
+
 ## Entitlements
 
 Recipients per request and whether open broadcast is allowed at all are
@@ -144,11 +176,13 @@ writes itself.
       org holds, and give it its own `IOrgScoped` table.
 - [ ] Targeted or open? If targeted, `FanOutAsync` with the owner id as
       correlation, and an upsert keyed on it in the recipient handler. If
-      open, a platform-global projection carrying only public fields, in
-      the `PlatformGlobal` allowlist with a reason.
+      open, a platform-global projection carrying only public fields,
+      declared `PlatformGlobal` on the module's catalog entry with a reason.
 - [ ] Criteria? Snapshot or live - as an explicit field.
 - [ ] Every decision is a command on an owned object with a concurrency
       check. No policy clause encodes authority.
 - [ ] Limits are entitlements, checked before the fan-out.
+- [ ] The owner applies the other party's actions monotonically: an action
+      means "they reached this step"; an earlier step arriving late is stale.
 - [ ] `EnableTenantRls` on every new table; the migration skill's checklist
       applies unchanged.

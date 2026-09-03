@@ -35,9 +35,19 @@ migration files; always add a new one.
    - Workflow authority ("may a vendor award?") is a command on the object
      you own, never a `WITH CHECK` clause.
    - Raw SQL goes in the migration via `migrationBuilder.Sql(...)`.
+   - **Never delete or change a helper a migration calls.** The helper is part
+     of that migration's frozen text: applied migrations are immutable, so the
+     code they compile against must be too. To retire one, move it to
+     `FrozenMigrationHelpers` with its signature and SQL byte-for-byte and add
+     its freeze date there - not `[Obsolete]` (warnings-as-errors would break
+     exactly the applied migrations the freeze protects). `MigrationHelperTests`
+     refuses a removal and refuses a call to a frozen helper from any migration
+     stamped after the freeze. ADR 48's removal broke a fork this way.
    - Platform-global tables (no org_id) are the exception - say so explicitly in
-     a migration comment AND add them to `RlsCoverageTests.PlatformGlobal`,
-     which is the assertion that would otherwise fail.
+     a migration comment AND declare them as `PlatformGlobal` on the module's
+     `ModuleCatalog` entry with a reason - `RlsCoverageTests` reads the
+     catalog and fails otherwise. It covers every `IOrgScoped` entity by its
+     mapped column, so `owner_org_id` is seen as well as `org_id`.
 4. **Column checklist:**
    - UUIDv7 keys, never sequences/identity for entity ids (ADR 35)
    - timestamptz for instants; document which temporal kind each column is (ADR 26)
