@@ -59,8 +59,9 @@ don't restate them here.
 - **Guests are principals.** No anonymous code paths — the principal pipeline
   builds a tenant-scoped Guest from the request host before authn (ADR 07).
 - **The three gates are one call, never a ceremony.** Endpoints use
-  `Gate.RequireAsync` (any principal), `RequireUserAsync` (humans only) or
-  `RequireOperatorAsync`, then `gate.ToResult()`; gate 1 answers through
+  `Gate.RequireAsync` (any principal), `RequireUserAsync` (humans only),
+  `RequireOperatorAsync`, or `ActorGate.RequireAsync` (a person or an API key,
+  with the `ActorRef` to stamp), then `gate.ToResult()`; gate 1 answers through
   `GateResults.LimitReached`/`FeatureOff`. No principal is 401, a missing
   grant is 403, scope filters. An architecture test refuses the old inline
   shape - 67 sites had answered 401 where the contract says 403.

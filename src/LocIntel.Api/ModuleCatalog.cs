@@ -19,7 +19,20 @@ public static class ModuleCatalog
     public static readonly IReadOnlyList<ModuleDescriptor> All =
     [
         new("tenancy", "tenancy", typeof(LocIntel.Modules.Tenancy.Data.TenancyDbContext)),
-        new("identity", "identity", typeof(LocIntel.Modules.Identity.Data.IdentityDbContext)),
+        new("identity", "identity", typeof(LocIntel.Modules.Identity.Data.IdentityDbContext))
+        {
+            // resolved BEFORE any tenant context exists (ADR 7/37): not RLS'd by
+            // design. Declaring one here is a security decision, not a shortcut.
+            PlatformGlobal =
+            [
+                new(
+                    "api_keys",
+                    "looked up by unguessable secret hash, before the principal exists"
+                ),
+                new("memberships", "filtered by the authenticated user id to find their orgs"),
+                new("org_directory", "the pre-tenant org read model (ADR 37)"),
+            ],
+        },
         new(
             "entitlements",
             "entitlements",
