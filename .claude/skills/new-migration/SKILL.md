@@ -38,11 +38,11 @@ migration files; always add a new one.
    - **Never delete or change a helper a migration calls.** The helper is part
      of that migration's frozen text: applied migrations are immutable, so the
      code they compile against must be too. To retire one, move it to
-     `FrozenMigrationHelpers` with its signature and SQL byte-for-byte and add
-     its freeze date there - not `[Obsolete]` (warnings-as-errors would break
+     `FrozenMigrationHelpers` with its signature and SQL byte-for-byte, stamped
+     `[FrozenAt(<UTC stamp of the freezing commit>)]` - a moment, not a day - not `[Obsolete]` (warnings-as-errors would break
      exactly the applied migrations the freeze protects). `MigrationHelperTests`
      refuses a removal and refuses a call to a frozen helper from any migration
-     stamped after the freeze. ADR 48's removal broke a fork this way.
+     stamped after that moment. ADR 48's removal broke a fork this way.
    - Platform-global tables (no org_id) are the exception - say so explicitly in
      a migration comment AND declare them as `PlatformGlobal` on the module's
      `ModuleCatalog` entry with a reason - `RlsCoverageTests` reads the

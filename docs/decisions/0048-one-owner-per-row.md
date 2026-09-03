@@ -166,7 +166,9 @@ applied migrations - which this ADR itself says must never be edited -
 stopped compiling. A helper called from a migration is part of that
 migration's frozen text. The helpers are back as `FrozenMigrationHelpers`,
 signature and SQL unchanged, marked as not for new migrations and refused by
-`MigrationHelperTests` in any migration stamped after 2026-09-02. That is
+`MigrationHelperTests` in any migration stamped after the moment this ADR
+landed (2026-09-02T23:20:55Z, `[FrozenAt]` on each helper) - a moment, not a
+day: a fork had three legitimate migrations from earlier that day. That is
 the rule from here on: a migration-time helper is frozen, never removed. A
 fork that froze its own copy per module (the first one did, as
 `Migrations/LegacyTenancyShapes.cs`) may keep it; the module's copy wins

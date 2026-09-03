@@ -1,5 +1,6 @@
 using LocIntel.Contracts;
 using LocIntel.Modules.Identity.Data;
+using LocIntel.Platform.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace LocIntel.Modules.Identity.Users;
@@ -13,6 +14,9 @@ public static class OrganizationUpsertedHandler
         CancellationToken ct
     )
     {
+        // two quick upserts for one org are handled in parallel by the local
+        // queue; serialize them so the second sees the first's row (AggregateLock)
+        await db.TakeAsync(evt.OrgId.Value, ct);
         var entry = await db.OrgDirectory.FirstOrDefaultAsync(d => d.OrgId == evt.OrgId, ct);
         if (entry is null)
         {

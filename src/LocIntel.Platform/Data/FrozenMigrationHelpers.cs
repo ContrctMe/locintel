@@ -13,8 +13,8 @@ namespace LocIntel.Platform.Data;
 ///
 /// The rule, enforced by MigrationHelperTests: a migration-time helper is
 /// never deleted or changed. It moves here, keeps its signature and SQL
-/// byte-for-byte, and is refused in any migration stamped after its freeze
-/// date. Not [Obsolete] on purpose - TreatWarningsAsErrors would turn the
+/// byte-for-byte, and is refused in any migration stamped after the moment
+/// it froze ([FrozenAt]). Not [Obsolete] on purpose - TreatWarningsAsErrors would turn the
 /// warning into a build error in exactly the applied migrations this file
 /// exists to keep compiling. EditorBrowsable(Never) keeps them out of
 /// completion instead.
@@ -25,6 +25,10 @@ namespace LocIntel.Platform.Data;
 /// </summary>
 public static class FrozenMigrationHelpers
 {
+    // the commit that removed the shapes (ed069e2) landed 2026-09-02T18:20:55-05:00,
+    // which is 23:20:55Z - EF migration stamps are UTC. A moment, not a day.
+    private const string Adr48 = "20260902232055";
+
     /// <summary>
     /// A row two orgs share (the removed <c>ITwoPartyScoped</c>): either
     /// side sees it. One policy, FOR ALL, so a counterparty can advance the
@@ -32,6 +36,7 @@ public static class FrozenMigrationHelpers
     /// tenant could INSERT a row naming two OTHER orgs.
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
+    [FrozenAt(Adr48)]
     public static void EnableTwoPartyRls(
         this MigrationBuilder migrationBuilder,
         string schema,
@@ -50,6 +55,7 @@ public static class FrozenMigrationHelpers
     /// also allow published WRITES by any tenant.
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
+    [FrozenAt(Adr48)]
     public static void EnablePublishedCatalogRls(
         this MigrationBuilder migrationBuilder,
         string schema,
@@ -105,6 +111,7 @@ public static class FrozenMigrationHelpers
     /// false keeps the safe shape: listing grants read only.
     /// </param>
     [EditorBrowsable(EditorBrowsableState.Never)]
+    [FrozenAt(Adr48)]
     public static void EnableRecipientListRls(
         this MigrationBuilder migrationBuilder,
         string schema,
