@@ -89,6 +89,7 @@ public static class ListingsFeedEndpoint
             .SiteSchedules.Where(sc => siteIds.Contains(sc.SiteId))
             .OrderBy(sc => sc.Name)
             .ToListAsync(ct);
+        var schedulesBySite = schedules.ToLookup(sc => sc.SiteId);
 
         var listings = sites
             .Select(s => new ListingRecord(
@@ -103,8 +104,7 @@ public static class ListingsFeedEndpoint
                 s.Latitude,
                 s.Longitude,
                 $"{publicBase}/sites/{s.Id.Value}",
-                schedules
-                    .Where(sc => sc.SiteId == s.Id)
+                schedulesBySite[s.Id]
                     .Select(sc => new ListingHours(
                         sc.Name,
                         sc.RRule,

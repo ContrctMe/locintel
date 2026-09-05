@@ -1,28 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import { can, type Me } from './session';
+import { parseMe } from './session';
 
-const user = (capabilities: string[]): Me =>
-  ({
-    tier: 'user',
-    userId: 'u1',
-    email: 'x@y.z',
-    activeOrg: 'o1',
-    organizations: [],
-    capabilities,
-  }) as unknown as Me;
+describe('session response validation', () => {
+  it('accepts a complete user session and rejects invalid capabilities', () => {
+    expect(parseMe({
+      tier: 'user',
+      userId: 'user-1',
+      email: 'user@example.test',
+      organizations: [{ id: 'org-1', name: 'One', slug: 'one' }],
+      capabilities: ['sites:read'],
+    })).toMatchObject({ tier: 'user', activeOrg: undefined });
 
-describe('can', () => {
-  it('is false while /me has not resolved - the UI fails closed', () => {
-    expect(can(undefined, 'sites:read')).toBe(false);
-  });
-
-  it('is false for non-user tiers', () => {
-    expect(can({ tier: 'guest' } as unknown as Me, 'sites:read')).toBe(false);
-  });
-
-  it('reflects resolved capabilities exactly', () => {
-    const me = user(['sites:read']);
-    expect(can(me, 'sites:read')).toBe(true);
-    expect(can(me, 'sites:manage')).toBe(false);
+    expect(() => parseMe({
+      tier: 'user',
+      userId: 'user-1',
+      email: 'user@example.test',
+      organizations: [],
+      capabilities: ['not:a-capability'],
+    })).toThrow('invalid session response');
   });
 });

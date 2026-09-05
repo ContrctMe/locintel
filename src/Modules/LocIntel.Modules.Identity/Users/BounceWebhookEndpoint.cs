@@ -1,5 +1,6 @@
 using LocIntel.Modules.Identity.Data;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Wolverine.Attributes;
@@ -21,6 +22,7 @@ public static class BounceWebhookEndpoint
 {
     [Transactional(typeof(IdentityDbContext))]
     [WolverinePost("/notifications/bounce")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
     public static async Task<IResult> Receive(
         BounceReport report,
         HttpContext http,

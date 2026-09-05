@@ -16,7 +16,10 @@ namespace LocIntel.Platform.Messaging;
 /// shutdown, opening a scope per tick rather than per process, and never
 /// letting one org's failure kill the sweep for the rest.
 ///
-/// Subclasses supply the interval and the message; everything else is here.
+/// Subclasses supply the interval and the message; everything else is here -
+/// including the per-period lease (<see cref="ISweepLease"/>): with several
+/// worker replicas each ticking its own timer, only the first to claim a
+/// period publishes, so a fleet produces one logical sweep per period.
 /// </summary>
 /// <typeparam name="TMessage">
 /// A parameterless message - the org travels on the envelope, never in the body.
@@ -29,12 +32,28 @@ public abstract class PerOrgSweepService<TMessage>(IServiceProvider services) : 
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        // Hosted services start in registration order and the modules register
+        // before Wolverine: a first tick that publishes before Wolverine's own
+        // hosted service has started throws WolverineHasNotStartedException
+        // and, under the host's default StopHost behaviour, takes the process
+        // down. Seen in the image smoke, never in the test host (timing). Wait
+        // for the host to be fully started before the first tick.
+        await HostStarted.WaitAsync(services, stoppingToken);
         using var timer = new PeriodicTimer(Interval);
         try
         {
             do
             {
                 await using var scope = services.CreateAsyncScope();
+                var lease = scope.ServiceProvider.GetRequiredService<ISweepLease>();
+                if (
+                    !await lease.TryClaimAsync(
+                        SweepIdentity.For<TMessage>(),
+                        Interval,
+                        stoppingToken
+                    )
+                )
+                    continue; // another replica owns this period
                 var orgs = scope.ServiceProvider.GetRequiredService<IOrganizationEnumerator>();
                 var bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
                 foreach (var org in await orgs.ListIdsAsync(stoppingToken))

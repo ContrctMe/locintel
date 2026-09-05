@@ -18,6 +18,9 @@ fail() { echo "FAIL: $*" >&2; exit 1; }
 # An upstream the test can move without touching the real repo.
 upstream="$work/upstream"
 git clone -q "$template" "$upstream"
+# CI checks out a detached PR merge; local runs may start on a feature branch.
+# The fixture must advance main, which the sync command reads by default.
+git -C "$upstream" switch -q -C main
 git -C "$upstream" config user.email t@example.com
 git -C "$upstream" config user.name Test
 # The working-tree copies of the tooling, so the test exercises what is being
@@ -56,6 +59,7 @@ sync_once() {
   local touched
   touched=$(git -C "$fork" diff --cached --name-only | wc -l | tr -d ' ')
   echo "  $label: $touched file(s) touched, $conflicts conflict(s)"
+  [ "$touched" -ge 1 ] || fail "$label delivered no staged change"
 
   # The property under test: a sync touches the files upstream changed, not
   # the whole renamed tree. A wrong merge base shows up as dozens.

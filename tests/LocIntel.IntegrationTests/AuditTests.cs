@@ -164,8 +164,15 @@ public class AuditTests(ApiFixture fixture) : IClassFixture<ApiFixture>
     {
         // seed a 100-day-old entry directly (default retention: 90)
         var oldId = Guid.CreateVersion7();
+        var otherOldId = Guid.CreateVersion7();
+        var freshId = Guid.CreateVersion7();
         await fixture.SeedAuditChange(fixture.OrgA, oldId, DateTimeOffset.UtcNow.AddDays(-100));
-        await fixture.SeedAuditChange(fixture.OrgA, Guid.CreateVersion7(), DateTimeOffset.UtcNow);
+        await fixture.SeedAuditChange(
+            fixture.OrgB,
+            otherOldId,
+            DateTimeOffset.UtcNow.AddDays(-100)
+        );
+        await fixture.SeedAuditChange(fixture.OrgA, freshId, DateTimeOffset.UtcNow);
 
         await fixture.PublishForOrgA(new LocIntel.Modules.Audit.PurgeAuditData());
 
@@ -177,6 +184,15 @@ public class AuditTests(ApiFixture fixture) : IClassFixture<ApiFixture>
                     )
                 ).Count == 0,
             "the 100-day-old audit row to be purged by 90-day retention"
+        );
+        Assert.Equal(
+            2,
+            (
+                await fixture.QueryAudit(db =>
+                    db.Changes.IgnoreQueryFilters()
+                        .Where(a => a.Id == otherOldId || a.Id == freshId)
+                )
+            ).Count
         );
     }
 

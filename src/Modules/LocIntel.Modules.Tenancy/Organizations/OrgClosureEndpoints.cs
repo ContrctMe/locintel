@@ -98,6 +98,7 @@ public static class OrgClosureEndpoints
 
     [Transactional(typeof(TenancyDbContext))]
     [WolverinePost("/api/org/close/cancel")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public static async Task<IResult> Cancel(
         TenancyDbContext db,
         IPrincipalAccessor accessor,

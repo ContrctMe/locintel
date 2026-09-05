@@ -30,6 +30,13 @@ public static class AccountEndpoints
 {
     public sealed record UpdateProfileRequest(string Name);
 
+    public sealed record SessionResponse(
+        Guid Id,
+        string? UserAgent,
+        DateTimeOffset CreatedAt,
+        bool Current
+    );
+
     public static IEndpointRouteBuilder MapAccountEndpoints(this IEndpointRouteBuilder app)
     {
         app.MapPut(
@@ -103,26 +110,27 @@ public static class AccountEndpoints
         );
 
         app.MapGet(
-            "/auth/sessions",
-            async (HttpContext http, IdentityDbContext db, CancellationToken ct) =>
-            {
-                if (GetUserId(http) is not { } userId)
-                    return Results.Unauthorized();
-                var current = AuthEndpoints.GetSessionId(http.User);
-                var sessions = await db
-                    .Sessions.Where(s => s.UserId == userId && s.RevokedAt == null)
-                    .OrderByDescending(s => s.CreatedAt)
-                    .Select(s => new
-                    {
-                        s.Id,
-                        s.UserAgent,
-                        s.CreatedAt,
-                        current = s.Id == current,
-                    })
-                    .ToListAsync(ct);
-                return Results.Ok(sessions);
-            }
-        );
+                "/auth/sessions",
+                async (HttpContext http, IdentityDbContext db, CancellationToken ct) =>
+                {
+                    if (GetUserId(http) is not { } userId)
+                        return Results.Unauthorized();
+                    var current = AuthEndpoints.GetSessionId(http.User);
+                    var sessions = await db
+                        .Sessions.Where(s => s.UserId == userId && s.RevokedAt == null)
+                        .OrderByDescending(s => s.CreatedAt)
+                        .Select(s => new
+                        {
+                            s.Id,
+                            s.UserAgent,
+                            s.CreatedAt,
+                            current = s.Id == current,
+                        })
+                        .ToListAsync(ct);
+                    return Results.Ok(sessions);
+                }
+            )
+            .Produces<List<SessionResponse>>();
 
         app.MapDelete(
             "/auth/sessions/{id:guid}",

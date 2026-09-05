@@ -53,6 +53,7 @@ public static class ProcessOrgClosureHandler
                 org.Slug,
                 org.Region,
                 org.ExternalId,
+                org.Version,
                 org.Status.ToString(),
                 org.IsPlatform
             )
@@ -68,25 +69,8 @@ public static class ProcessOrgClosureHandler
 }
 
 /// <summary>Daily enumerator (same shape as the audit retention sweep).</summary>
-public sealed class OrgClosureService(IServiceProvider services) : BackgroundService
+public sealed class OrgClosureService(IServiceProvider services)
+    : PerOrgSweepService<ProcessOrgClosure>(services)
 {
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-    {
-        using var timer = new PeriodicTimer(TimeSpan.FromHours(24));
-        try
-        {
-            do
-            {
-                await using var scope = services.CreateAsyncScope();
-                var orgs = scope.ServiceProvider.GetRequiredService<IOrganizationLookup>();
-                var bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
-                foreach (var orgId in await orgs.ListIdsAsync(stoppingToken))
-                    await bus.PublishAsync(
-                        new ProcessOrgClosure(),
-                        new DeliveryOptions { TenantId = orgId.Value.ToString() }
-                    );
-            } while (await timer.WaitForNextTickAsync(stoppingToken));
-        }
-        catch (OperationCanceledException) { } // shutdown
-    }
+    protected override TimeSpan Interval => TimeSpan.FromHours(24);
 }

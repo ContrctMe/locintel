@@ -7,17 +7,6 @@ import { useState } from 'react';
 import { fmtDateTime } from '../lib/format';
 import { useApiMutation } from '../lib/mutation';
 
-type Role = { id: string; name: string };
-type ApiKeyRow = {
-  id: string; name: string; prefix: string; role: string;
-  scopePath: string | null; createdAt: string; lastUsedAt: string | null;
-  expiresAt: string | null; revoked: boolean;
-};
-type Webhook = {
-  id: string; url: string; events: string[]; active: boolean; createdAt: string;
-  lastDelivery: { eventName: string; ok: boolean; statusCode: number | null; occurredAt: string } | null;
-};
-
 /** The integration surface (ADR 40): server-to-server keys and outbound webhooks. */
 export function DevelopersPage() {
   return (
@@ -42,11 +31,11 @@ function SecretReveal({ secret, note }: { secret: string; note: string }) {
 function ApiKeysCard() {
   const { data: keys } = useQuery({
     queryKey: ['api-keys'],
-    queryFn: () => api.get<ApiKeyRow[]>('/api/api-keys'),
+    queryFn: ({ signal }) => api.get('/api/api-keys', { signal }),
   });
   const { data: roles } = useQuery({
     queryKey: ['roles'],
-    queryFn: () => api.get<Role[]>('/api/roles'),
+    queryFn: ({ signal }) => api.get('/api/roles', { signal }),
   });
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
@@ -54,19 +43,18 @@ function ApiKeysCard() {
   const [secret, setSecret] = useState<string | null>(null);
 
   const create = useApiMutation({
-    mutationFn: () =>
-      api.post<{ id: string; secret: string }>('/api/api-keys', { name: name.trim(), roleId }),
+    mutationFn: () => api.post('/api/api-keys', { name: name.trim(), roleId }),
     invalidate: [['api-keys']],
     onSuccess: ({ secret: revealed }) => setSecret(revealed),
   });
   const revoke = useApiMutation({
-    mutationFn: (id: string) => api.del(`/api/api-keys/${id}`),
+    mutationFn: (id: string) => api.del('/api/api-keys/{id}', { path: { id } }),
     invalidate: [['api-keys']],
     success: 'Key revoked',
   });
   const rotate = useApiMutation({
     mutationFn: (id: string) =>
-      api.post<{ id: string; secret: string }>(`/api/api-keys/${id}/rotate`, {}),
+      api.post('/api/api-keys/{id}/rotate', {}, { path: { id } }),
     invalidate: [['api-keys']],
     onSuccess: ({ secret: revealed }) => {
       setSecret(revealed);
@@ -198,7 +186,7 @@ function ApiKeysCard() {
 function WebhooksCard() {
   const { data: hooks } = useQuery({
     queryKey: ['webhooks'],
-    queryFn: () => api.get<Webhook[]>('/api/webhooks'),
+    queryFn: ({ signal }) => api.get('/api/webhooks', { signal }),
   });
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState('');
@@ -207,7 +195,7 @@ function WebhooksCard() {
 
   const create = useApiMutation({
     mutationFn: () =>
-      api.post<{ id: string; secret: string }>('/api/webhooks', {
+      api.post('/api/webhooks', {
         url: url.trim(),
         events: events
           .split(',')
@@ -218,17 +206,17 @@ function WebhooksCard() {
     onSuccess: ({ secret: revealed }) => setSecret(revealed),
   });
   const ping = useApiMutation({
-    mutationFn: (id: string) => api.post(`/api/webhooks/${id}/ping`),
+    mutationFn: (id: string) => api.post('/api/webhooks/{id}/ping', undefined, { path: { id } }),
     invalidate: [['webhooks']],
     success: 'Ping queued - check your endpoint',
   });
   const remove = useApiMutation({
-    mutationFn: (id: string) => api.del(`/api/webhooks/${id}`),
+    mutationFn: (id: string) => api.del('/api/webhooks/{id}', { path: { id } }),
     invalidate: [['webhooks']],
     success: 'Webhook deleted',
   });
   const rotateSecret = useApiMutation({
-    mutationFn: (id: string) => api.post<{ secret: string }>(`/api/webhooks/${id}/rotate-secret`),
+    mutationFn: (id: string) => api.post('/api/webhooks/{id}/rotate-secret', undefined, { path: { id } }),
     invalidate: [['webhooks']],
     onSuccess: ({ secret: revealed }) => {
       setSecret(revealed);

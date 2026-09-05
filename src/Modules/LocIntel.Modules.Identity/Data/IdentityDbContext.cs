@@ -125,6 +125,7 @@ public sealed class IdentityDbContext(
             b.Property(d => d.Status).HasColumnName("status").HasMaxLength(20);
             b.Property(d => d.IsPlatform).HasColumnName("is_platform");
             b.Property(d => d.SyncedAt).HasColumnName("synced_at");
+            b.Property(d => d.SourceVersion).HasColumnName("source_version");
             b.HasIndex(d => d.Slug);
             b.HasIndex(d => d.ExternalId);
         });

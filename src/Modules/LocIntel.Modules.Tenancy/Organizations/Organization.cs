@@ -35,6 +35,13 @@ public sealed class Organization
     public DateTimeOffset? CloseRequestedAt { get; set; }
 
     public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.UtcNow;
+
+    /// <summary>
+    /// The row's xmin: the transaction that last wrote it. Every
+    /// OrganizationUpserted carries it as SourceVersion so a read model can
+    /// tell a stale event from a newer one (docs/cross-tenant-sharing.md).
+    /// </summary>
+    public uint Version { get; set; }
 }
 
 public enum OrganizationStatus

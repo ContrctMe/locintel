@@ -141,6 +141,25 @@ other). It lives exactly as long as Wolverine's transaction and refuses to
 run outside one. `org_directory`'s handler takes it; `AggregateLockTests`
 proves two transactions on one key serialize and two keys do not.
 
+## A projection remembers the version it applied
+
+The lock stops two copies interleaving. It does not stop an OLDER event -
+delivered late, or redelivered after a newer one landed - from overwriting
+the row. So every replicated event carries the owner row's version at
+publish time (`OrganizationUpserted.SourceVersion` is the row's `xmin`),
+the read-model row remembers the last version it applied, and the handler
+applies an event only when `ProjectionVersion.IsNewer(incoming, applied)`
+- under the lock, so the compare and the write are one step. Equal is
+stale too: that is the redelivery. The compare is modular, the way
+PostgreSQL compares transaction ids, so a wrapped `xmin` still orders.
+Incoming zero is always invalid, including for a missing row. A stored zero is
+the migration sentinel for an unsynchronized projection and accepts any nonzero
+first version. After synchronization, modular ordering assumes versions are less
+than `2^31` transactions apart. Unit and real-handler tests cover these boundaries,
+wraparound, stale/duplicate events, and concurrent delivery.
+Three rules, then, for every projection handler: take the lock, upsert on
+the key, apply only a newer version. `org_directory` does all three.
+
 ## Order is not guaranteed
 
 Two events published seconds apart - a vendor's `Accepted`, then its
@@ -173,6 +192,15 @@ Terminal and branching steps (declined, cancelled) are not on the ladder:
 gate them on the exact state they leave from. `FanOutOrderingTests` in the
 unit project carries this as a worked example.
 
+That example is not a shipped Request workflow and does not prove a fork's
+handler behavior. The template's production-path evidence is
+`OrgDirectoryVersionTests` (real transactional ordering, redelivery, and
+concurrency), integration `FanOutTests` (tenant-routed outbox delivery), and
+`StorageTests.Idempotency_key_replays_and_conflicts` (HTTP idempotency). A new
+domain workflow still needs its own real-handler ordering and duplicate-delivery
+checks; a stable fan-out deduplication key alone does not supply that guarantee
+on the PostgreSQL transport.
+
 ## Entitlements
 
 Recipients per request and whether open broadcast is allowed at all are
@@ -200,7 +228,8 @@ writes itself.
 - [ ] Every decision is a command on an owned object with a concurrency
       check. No policy clause encodes authority.
 - [ ] Limits are entitlements, checked before the fan-out.
-- [ ] Every projection handler takes `AggregateLock` first thing.
+- [ ] Every projection handler takes `AggregateLock` first thing, and applies
+      an event only when its source version is newer than the one applied.
 - [ ] The owner applies the other party's actions monotonically: an action
       means "they reached this step"; an earlier step arriving late is stale.
 - [ ] `EnableTenantRls` on every new table; the migration skill's checklist

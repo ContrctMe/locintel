@@ -4,12 +4,15 @@ using LocIntel.Modules.Tenancy.Data;
 using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Messaging;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Wolverine;
 using Wolverine.Attributes;
 using Wolverine.Http;
 
 namespace LocIntel.Modules.Tenancy.Organizations;
+
+public sealed record OrgExportQueuedResponse(string Status, string Destination);
 
 /// <summary>
 /// Tenancy's slice of the offboarding export: the org's own shape - profile,
@@ -156,6 +159,7 @@ public static class LifecycleEndpoints
 {
     /// <summary>Self-serve export: any org manager can take the org's data with them.</summary>
     [WolverinePost("/api/org/export")]
+    [ProducesResponseType(typeof(OrgExportQueuedResponse), StatusCodes.Status202Accepted)]
     public static async Task<IResult> ExportSelf(
         IPrincipalAccessor accessor,
         IScopeResolver scopes,
@@ -168,12 +172,13 @@ public static class LifecycleEndpoints
             return gate.ToResult();
         var userId = principal.UserId;
         await bus.PublishForOrgAsync(orgId, new ExportOrgData(userId));
-        return Results.Accepted(value: new { status = "queued", destination = "files" });
+        return Results.Accepted(value: new OrgExportQueuedResponse("queued", "files"));
     }
 
     /// <summary>Operator export: taken before offboarding so nothing leaves undelivered.</summary>
     [Transactional(typeof(TenancyDbContext))]
     [WolverinePost("/api/operator/orgs/{orgId}/export")]
+    [ProducesResponseType(typeof(OrgExportQueuedResponse), StatusCodes.Status202Accepted)]
     public static async Task<IResult> ExportForOrg(
         Guid orgId,
         TenancyDbContext db,
@@ -192,7 +197,7 @@ public static class LifecycleEndpoints
         if (!await db.Organizations.AnyAsync(o => o.Id == target, ct))
             return Results.NotFound();
         await bus.PublishForOrgAsync(target, new ExportOrgData(operatorId));
-        return Results.Accepted(value: new { status = "queued", destination = "files" });
+        return Results.Accepted(value: new OrgExportQueuedResponse("queued", "files"));
     }
 
     /// <summary>
@@ -203,6 +208,7 @@ public static class LifecycleEndpoints
     /// </summary>
     [Transactional(typeof(TenancyDbContext))]
     [WolverinePost("/api/operator/orgs/{orgId}/offboard")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public static async Task<IResult> Offboard(
         Guid orgId,
         TenancyDbContext db,

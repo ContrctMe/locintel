@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LocIntel.Modules.Entitlements;
 
+public sealed record EntitlementSummary(string Value, string Shape, string Policy, long? Usage);
+
 /// <summary>
 /// Gate-1 evaluation, fully in-process (ADR 10). Effective value precedence:
 /// active exception > assigned value > catalog default. Metered counts are
@@ -106,7 +108,7 @@ public sealed class EntitlementsService(EntitlementsDbContext db, TimeProvider t
     /// period counter, limit codes from their registered probe). "You've used
     /// 340 of 1,000" beats a bare "1000" (UX gap: usage visibility).
     /// </summary>
-    public async Task<Dictionary<string, object>> DescribeAllAsync(
+    public async Task<Dictionary<string, EntitlementSummary>> DescribeAllAsync(
         OrgId org,
         IEnumerable<IEntitlementUsageProbe> probes,
         CancellationToken ct
@@ -114,7 +116,7 @@ public sealed class EntitlementsService(EntitlementsDbContext db, TimeProvider t
     {
         var probeByCode = probes.ToDictionary(p => p.Code);
         var now = time.GetUtcNow();
-        var effective = new Dictionary<string, object>();
+        var effective = new Dictionary<string, EntitlementSummary>();
         foreach (var (code, descriptor) in EntitlementCatalog.Definitions)
         {
             long? usage = descriptor.Shape switch
@@ -124,13 +126,12 @@ public sealed class EntitlementsService(EntitlementsDbContext db, TimeProvider t
                     await probe.CurrentUsageAsync(org, ct),
                 _ => null,
             };
-            effective[code] = new
-            {
-                value = await EffectiveValueAsync(org, code, ct),
-                shape = descriptor.Shape.ToString(),
-                policy = descriptor.Policy.ToString(),
-                usage,
-            };
+            effective[code] = new EntitlementSummary(
+                await EffectiveValueAsync(org, code, ct),
+                descriptor.Shape.ToString(),
+                descriptor.Policy.ToString(),
+                usage
+            );
         }
         return effective;
     }

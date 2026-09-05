@@ -81,6 +81,7 @@ public static class ImpersonationEndpoints
     /// </summary>
     [Transactional(typeof(IdentityDbContext))]
     [WolverinePost("/auth/impersonation/stop")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public static async Task<IResult> Stop(
         HttpContext http,
         IdentityDbContext db,

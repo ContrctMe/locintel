@@ -6,6 +6,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LocIntel.Api;
 
+public sealed record OperatorHealthCheckResponse(
+    string Name,
+    bool Ok,
+    long LatencyMs,
+    string? Error
+);
+
+public sealed record OperatorHealthResponse(IReadOnlyList<OperatorHealthCheckResponse> Checks);
+
 /// <summary>
 /// Dependency probes for the on-call human (maturity review, hole 5):
 /// /healthz stays a cheap liveness answer; THIS asks each self-hosted
@@ -23,70 +32,71 @@ public static class OperatorHealthEndpoint
     public static void MapOperatorHealthEndpoint(this WebApplication app)
     {
         app.MapGet(
-            "/api/operator/health",
-            async (
-                IPrincipalAccessor accessor,
-                IOperatorContext operators,
-                LocIntel.Modules.Identity.Data.IdentityDbContext db,
-                IObjectStore store,
-                IConfiguration configuration,
-                CancellationToken ct
-            ) =>
-            {
-                var gate = await Gate.RequireOperatorAsync(accessor, operators, ct);
-                if (gate is not GateOutcome.Allowed)
-                    return gate.ToResult();
-
-                var checks = new List<object>
+                "/api/operator/health",
+                async (
+                    IPrincipalAccessor accessor,
+                    IOperatorContext operators,
+                    LocIntel.Modules.Identity.Data.IdentityDbContext db,
+                    IObjectStore store,
+                    IConfiguration configuration,
+                    CancellationToken ct
+                ) =>
                 {
-                    await ProbeAsync(
-                        "database",
-                        async token => await db.Database.ExecuteSqlRawAsync("SELECT 1", token),
-                        ct
-                    ),
-                    await ProbeAsync(
-                        "objectStore",
-                        async token =>
-                        {
-                            var key = $"healthcheck/{Guid.CreateVersion7()}";
-                            using var probe = new MemoryStream("ok"u8.ToArray());
-                            await store.WriteAsync(key, probe, "text/plain", token);
-                            await using (var read = await store.OpenReadAsync(key, token))
-                                await read.CopyToAsync(Stream.Null, token);
-                            await store.DeleteAsync(key, token);
-                        },
-                        ct
-                    ),
-                };
-                if (configuration["Notifications:Transport"] == "smtp")
-                    checks.Add(
+                    var gate = await Gate.RequireOperatorAsync(accessor, operators, ct);
+                    if (gate is not GateOutcome.Allowed)
+                        return gate.ToResult();
+
+                    var checks = new List<OperatorHealthCheckResponse>
+                    {
                         await ProbeAsync(
-                            "smtp",
+                            "database",
+                            async token => await db.Database.ExecuteSqlRawAsync("SELECT 1", token),
+                            ct
+                        ),
+                        await ProbeAsync(
+                            "objectStore",
                             async token =>
                             {
-                                var smtp = configuration
-                                    .GetSection("Notifications:Smtp")
-                                    .Get<LocIntel.Integrations.Smtp.SmtpOptions>()!;
-                                using var client = new MailKit.Net.Smtp.SmtpClient();
-                                await client.ConnectAsync(
-                                    smtp.Host,
-                                    smtp.Port,
-                                    smtp.UseStartTls
-                                        ? MailKit.Security.SecureSocketOptions.StartTls
-                                        : MailKit.Security.SecureSocketOptions.None,
-                                    token
-                                );
-                                await client.DisconnectAsync(quit: true, token);
+                                var key = $"healthcheck/{Guid.CreateVersion7()}";
+                                using var probe = new MemoryStream("ok"u8.ToArray());
+                                await store.WriteAsync(key, probe, "text/plain", token);
+                                await using (var read = await store.OpenReadAsync(key, token))
+                                    await read.CopyToAsync(Stream.Null, token);
+                                await store.DeleteAsync(key, token);
                             },
                             ct
-                        )
-                    );
-                return Results.Ok(new { checks });
-            }
-        );
+                        ),
+                    };
+                    if (configuration["Notifications:Transport"] == "smtp")
+                        checks.Add(
+                            await ProbeAsync(
+                                "smtp",
+                                async token =>
+                                {
+                                    var smtp = configuration
+                                        .GetSection("Notifications:Smtp")
+                                        .Get<LocIntel.Integrations.Smtp.SmtpOptions>()!;
+                                    using var client = new MailKit.Net.Smtp.SmtpClient();
+                                    await client.ConnectAsync(
+                                        smtp.Host,
+                                        smtp.Port,
+                                        smtp.UseStartTls
+                                            ? MailKit.Security.SecureSocketOptions.StartTls
+                                            : MailKit.Security.SecureSocketOptions.None,
+                                        token
+                                    );
+                                    await client.DisconnectAsync(quit: true, token);
+                                },
+                                ct
+                            )
+                        );
+                    return Results.Ok(new OperatorHealthResponse(checks));
+                }
+            )
+            .Produces<OperatorHealthResponse>();
     }
 
-    private static async Task<object> ProbeAsync(
+    private static async Task<OperatorHealthCheckResponse> ProbeAsync(
         string name,
         Func<CancellationToken, Task> probe,
         CancellationToken ct
@@ -98,25 +108,18 @@ public static class OperatorHealthEndpoint
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
             timeout.CancelAfter(ProbeTimeout);
             await probe(timeout.Token);
-            return new
-            {
-                name,
-                ok = true,
-                latencyMs = stopwatch.ElapsedMilliseconds,
-                error = (string?)null,
-            };
+            return new OperatorHealthCheckResponse(name, true, stopwatch.ElapsedMilliseconds, null);
         }
         catch (Exception exception)
         {
-            return new
-            {
+            return new OperatorHealthCheckResponse(
                 name,
-                ok = false,
-                latencyMs = stopwatch.ElapsedMilliseconds,
-                error = exception is OperationCanceledException
+                false,
+                stopwatch.ElapsedMilliseconds,
+                exception is OperationCanceledException
                     ? $"timed out after {ProbeTimeout.TotalSeconds}s"
-                    : exception.Message,
-            };
+                    : exception.Message
+            );
         }
     }
 }

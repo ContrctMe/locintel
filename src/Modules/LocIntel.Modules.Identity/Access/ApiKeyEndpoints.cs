@@ -6,6 +6,7 @@ using LocIntel.Modules.Identity.Data;
 using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Messaging;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Wolverine;
 using Wolverine.Attributes;
@@ -22,6 +23,27 @@ public sealed record CreateApiKeyRequest(
 
 public sealed record RotateApiKeyRequest(int? OverlapHours = null);
 
+public sealed record ApiKeyResponse(
+    Guid Id,
+    string Name,
+    string Prefix,
+    string Role,
+    string? ScopePath,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? LastUsedAt,
+    DateTimeOffset? ExpiresAt,
+    bool Revoked
+);
+
+public sealed record ApiKeySecretResponse(Guid Id, string Secret, string Prefix);
+
+public sealed record RotatedApiKeyResponse(
+    Guid Id,
+    string Secret,
+    string Prefix,
+    DateTimeOffset? OldKeyExpiresAt
+);
+
 /// <summary>
 /// API-key custody (ADR 40): create shows the secret ONCE, the list shows
 /// prefixes, revocation is immediate (the resolver consults the row per
@@ -32,6 +54,7 @@ public static class ApiKeyEndpoints
 {
     [Transactional(typeof(IdentityDbContext))]
     [WolverineGet("/api/api-keys")]
+    [ProducesResponseType(typeof(List<ApiKeyResponse>), StatusCodes.Status200OK)]
     public static async Task<IResult> List(
         IdentityDbContext db,
         IPrincipalAccessor accessor,
@@ -65,6 +88,7 @@ public static class ApiKeyEndpoints
 
     [Transactional(typeof(IdentityDbContext))]
     [WolverinePost("/api/api-keys")]
+    [ProducesResponseType(typeof(ApiKeySecretResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> Create(
         CreateApiKeyRequest request,
         IdentityDbContext db,
@@ -110,14 +134,7 @@ public static class ApiKeyEndpoints
         await db.SaveChangesAsync(ct);
         await PublishAudit(bus, org, userId, "apikey.created", key.Id, key.Name);
         // the one and only time the secret leaves the server
-        return Results.Ok(
-            new
-            {
-                key.Id,
-                secret,
-                key.Prefix,
-            }
-        );
+        return Results.Ok(new ApiKeySecretResponse(key.Id, secret, key.Prefix));
     }
 
     /// <summary>
@@ -127,6 +144,7 @@ public static class ApiKeyEndpoints
     /// </summary>
     [Transactional(typeof(IdentityDbContext))]
     [WolverinePost("/api/api-keys/{id}/rotate")]
+    [ProducesResponseType(typeof(RotatedApiKeyResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> Rotate(
         Guid id,
         RotateApiKeyRequest request,
@@ -178,18 +196,13 @@ public static class ApiKeyEndpoints
         await PublishAudit(bus, org, userId, "apikey.rotated", replacement.Id, replacement.Name);
         // the one and only time the new secret leaves the server
         return Results.Ok(
-            new
-            {
-                replacement.Id,
-                secret,
-                replacement.Prefix,
-                oldKeyExpiresAt = old.ExpiresAt,
-            }
+            new RotatedApiKeyResponse(replacement.Id, secret, replacement.Prefix, old.ExpiresAt)
         );
     }
 
     [Transactional(typeof(IdentityDbContext))]
     [WolverineDelete("/api/api-keys/{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public static async Task<IResult> Revoke(
         Guid id,
         IdentityDbContext db,

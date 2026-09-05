@@ -69,6 +69,32 @@ namespace LocIntel.Platform.Migrations
 
                     b.ToTable("idempotency_keys", "platform");
                 });
+
+            modelBuilder.Entity("LocIntel.Platform.Infra.SweepRun", b =>
+                {
+                    b.Property<string>("Sweep")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("sweep");
+
+                    b.Property<DateTimeOffset>("Period")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("period");
+
+                    b.Property<DateTimeOffset>("ClaimedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("claimed_at");
+
+                    b.Property<string>("ClaimedBy")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("claimed_by");
+
+                    b.HasKey("Sweep", "Period");
+
+                    b.ToTable("sweep_runs", "platform");
+                });
 #pragma warning restore 612, 618
         }
     }

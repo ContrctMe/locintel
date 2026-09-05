@@ -27,3 +27,9 @@ src/Premise.Api/Internal/Generated/
 
 # test runner output (the shard script writes .trx here)
 TestResults/
+/coverage/
+/tests/Premise.CoverageInput/
+
+# browser suite output (tools/e2e-stack.sh)
+web/tools/e2e/test-results/
+web/tools/e2e/playwright-report/

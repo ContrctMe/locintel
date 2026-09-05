@@ -4,6 +4,7 @@ using LocIntel.Platform.Entitlements;
 using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Messaging;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Wolverine.Attributes;
 using Wolverine.Http;
@@ -20,10 +21,20 @@ public sealed record RenameNodeRequest(string Name);
 
 public sealed record NodeResponse(Guid Id, Guid? ParentId, string Name, int Depth, string Path);
 
+public sealed record HierarchyResponse(
+    Guid Id,
+    string Name,
+    IReadOnlyList<string> Levels,
+    IReadOnlyList<NodeResponse> Nodes
+);
+
+public sealed record HierarchyCreatedResponse(Guid Id, Guid RootNodeId);
+
 public static class HierarchyEndpoints
 {
     [Transactional(typeof(TenancyDbContext))]
     [WolverinePost("/api/hierarchy")]
+    [ProducesResponseType(typeof(HierarchyCreatedResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> Create(
         CreateHierarchyRequest request,
         TenancyDbContext db,
@@ -59,10 +70,11 @@ public static class HierarchyEndpoints
         db.Hierarchies.Add(hierarchy);
         db.HierarchyNodes.Add(root);
         await db.SaveChangesAsync(ct);
-        return Results.Ok(new { hierarchy.Id, rootNodeId = root.Id });
+        return Results.Ok(new HierarchyCreatedResponse(hierarchy.Id, root.Id));
     }
 
     [WolverineGet("/api/hierarchy")]
+    [ProducesResponseType(typeof(HierarchyResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> Get(TenancyDbContext db, CancellationToken ct)
     {
         var hierarchy = await db.Hierarchies.FirstOrDefaultAsync(h => h.IsAuthoritative, ct);
@@ -74,18 +86,13 @@ public static class HierarchyEndpoints
             .Select(n => new NodeResponse(n.Id, n.ParentId, n.Name, n.Depth, n.Path.ToString()))
             .ToListAsync(ct);
         return Results.Ok(
-            new
-            {
-                hierarchy.Id,
-                hierarchy.Name,
-                hierarchy.Levels,
-                nodes,
-            }
+            new HierarchyResponse(hierarchy.Id, hierarchy.Name, hierarchy.Levels, nodes)
         );
     }
 
     [Transactional(typeof(TenancyDbContext))]
     [WolverinePost("/api/hierarchy/nodes")]
+    [ProducesResponseType(typeof(NodeResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> CreateNode(
         CreateNodeRequest request,
         TenancyDbContext db,
@@ -123,6 +130,7 @@ public static class HierarchyEndpoints
     /// </summary>
     [Transactional(typeof(TenancyDbContext))]
     [WolverinePut("/api/hierarchy/nodes/{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public static async Task<IResult> RenameNode(
         Guid id,
         RenameNodeRequest request,
@@ -170,6 +178,7 @@ public static class HierarchyEndpoints
     /// </summary>
     [Transactional(typeof(TenancyDbContext))]
     [WolverineDelete("/api/hierarchy/nodes/{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public static async Task<IResult> DeleteNode(
         Guid id,
         TenancyDbContext db,
@@ -241,6 +250,7 @@ public static class HierarchyEndpoints
     /// </summary>
     [Transactional(typeof(TenancyDbContext))]
     [WolverinePost("/api/hierarchy/nodes/{id}/move")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public static async Task<IResult> MoveNode(
         Guid id,
         MoveNodeRequest request,

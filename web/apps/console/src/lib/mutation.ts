@@ -1,11 +1,13 @@
 import { toast } from '@locintel/ui';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { ApiError, apiProblem } from '@locintel/api';
 
 /** The server's error body, when it sent one - with the trace id support can quote (maturity review, hole 1). */
 export function apiError(error: unknown, fallback: string): string {
-  const body = (error as { body?: { error?: string; traceId?: string } })?.body;
-  const message = body?.error ?? fallback;
-  return body?.traceId ? `${message} (trace ${body.traceId})` : message;
+  if (!(error instanceof ApiError)) return fallback;
+  const problem = apiProblem(error.body);
+  const message = error.message.startsWith('API ') ? fallback : error.message;
+  return problem?.traceId ? `${message} (trace ${problem.traceId})` : message;
 }
 
 /**

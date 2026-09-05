@@ -59,6 +59,7 @@ dotnet build LocIntel.slnx                       # build everything
 dotnet test tests/LocIntel.ArchitectureTests     # fast structural checks
 dotnet test tests/LocIntel.Platform.UnitTests    # pure logic
 dotnet test tests/LocIntel.IntegrationTests      # Testcontainers Postgres
+tools/scale-baseline.sh                         # optional sustained mixed-workload/bundle baseline
 cd web && pnpm install && pnpm typecheck        # frontends
 ```
 
@@ -71,13 +72,23 @@ python3 tools/new-module.py Booking     # scaffold a vertical slice
 
 The rules that keep the template's guarantees intact live in
 [CLAUDE.md](CLAUDE.md) (agents and humans alike), and every structural
-decision has an ADR in [docs/decisions/](docs/decisions/README.md) — 42 of
-them, indexed. **Read an ADR before contradicting it**; the pinned ones are
+decision has an ADR in [docs/decisions/](docs/decisions/README.md), indexed
+there with its status. **Read an ADR before contradicting it**; the pinned ones are
 expensive to reverse once data exists.
 
 Deploying a fork to production: [docs/production.md](docs/production.md) —
 topology, the database role split, the full configuration reference, and the
 guards that refuse to boot until dev-only adapters are replaced.
+
+Current engineering maturity and the prioritized path to production readiness:
+[software maturity review and forward roadmap](docs/software-maturity-review-details.md)
+(follow-up remediation active; deployment readiness conditional; maintained by the project maintainers; last updated 2026-09-05).
+
+Public authentication failure behavior and verification:
+[public session recovery](docs/public-session-recovery.md).
+
+Checklist fleet navigation and failure behavior:
+[checklist site selection](docs/checklist-site-selection.md).
 
 ## Layout
 

@@ -318,6 +318,7 @@ public static class SiteEndpoints
 
     [Transactional(typeof(TenancyDbContext))]
     [WolverinePost("/api/sites/{id}/schedules")]
+    [ProducesResponseType(typeof(ScheduleCreatedResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> CreateSchedule(
         Guid id,
         CreateScheduleRequest request,
@@ -356,7 +357,7 @@ public static class SiteEndpoints
         await db.SaveChangesAsync(ct);
 
         await bus.PublishForOrgAsync(site.OrgId, new RebuildSiteOccurrences(site.Id.Value));
-        return Results.Ok(new { schedule.Id });
+        return Results.Ok(new ScheduleCreatedResponse(schedule.Id));
     }
 
     public sealed record SiteListResponse(
@@ -397,11 +398,20 @@ public sealed record ScheduleResponse(
     DateOnly[] ExDates
 );
 
+public sealed record ScheduleCreatedResponse(Guid Id);
+
+public sealed record SiteWindowResponse(
+    DateTimeOffset StartsAtUtc,
+    DateTimeOffset EndsAtUtc,
+    DateOnly LocalDate
+);
+
 /// <summary>Schedule listing/removal and the projection preview - the hours editor's backend.</summary>
 public static class ScheduleEndpoints
 {
     [Transactional(typeof(TenancyDbContext))]
     [WolverineGet("/api/sites/{id}/schedules")]
+    [ProducesResponseType(typeof(List<ScheduleResponse>), StatusCodes.Status200OK)]
     public static async Task<IResult> List(
         Guid id,
         TenancyDbContext db,
@@ -436,6 +446,7 @@ public static class ScheduleEndpoints
 
     [Transactional(typeof(TenancyDbContext))]
     [WolverineDelete("/api/sites/{id}/schedules/{scheduleId}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public static async Task<IResult> Delete(
         Guid id,
         Guid scheduleId,
@@ -470,6 +481,7 @@ public static class ScheduleEndpoints
     /// <summary>Upcoming open windows from the projection - "what these rules actually mean".</summary>
     [Transactional(typeof(TenancyDbContext))]
     [WolverineGet("/api/sites/{id}/windows")]
+    [ProducesResponseType(typeof(List<SiteWindowResponse>), StatusCodes.Status200OK)]
     public static async Task<IResult> Windows(
         Guid id,
         TenancyDbContext db,
@@ -492,12 +504,7 @@ public static class ScheduleEndpoints
                 w.SiteId == siteId && w.EndsAtUtc > now && w.StartsAtUtc < horizon
             )
             .OrderBy(w => w.StartsAtUtc)
-            .Select(w => new
-            {
-                w.StartsAtUtc,
-                w.EndsAtUtc,
-                w.LocalDate,
-            })
+            .Select(w => new SiteWindowResponse(w.StartsAtUtc, w.EndsAtUtc, w.LocalDate))
             .ToListAsync(ct);
         return Results.Ok(windows);
     }

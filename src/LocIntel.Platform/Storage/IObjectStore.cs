@@ -10,7 +10,10 @@ namespace LocIntel.Platform.Storage;
 /// </summary>
 public interface IObjectStore
 {
-    /// <summary>Short-lived instruction for the CLIENT to upload directly to storage.</summary>
+    /// <summary>
+    /// Short-lived create-only upload instruction. Clients must send every ticket header.
+    /// maxBytes is a hint where the provider supports it; completion MUST verify stored length.
+    /// </summary>
     ValueTask<UploadTicket> CreateUploadTicketAsync(
         string key,
         string contentType,
@@ -21,7 +24,8 @@ public interface IObjectStore
     /// <summary>Short-TTL download URL. Authorization happens BEFORE signing; the URL itself is unguarded.</summary>
     ValueTask<Uri> GetDownloadUrlAsync(string key, TimeSpan ttl, CancellationToken ct = default);
 
-    ValueTask<bool> ExistsAsync(string key, CancellationToken ct = default);
+    /// <summary>Stored byte length, or null only when absent; provider failures must propagate.</summary>
+    ValueTask<long?> GetLengthAsync(string key, CancellationToken ct = default);
     ValueTask<Stream> OpenReadAsync(string key, CancellationToken ct = default);
     ValueTask WriteAsync(
         string key,

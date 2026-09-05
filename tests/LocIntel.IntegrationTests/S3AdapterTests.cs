@@ -53,6 +53,22 @@ public sealed class MinioFixture : IAsyncLifetime
 public class S3AdapterTests(MinioFixture fixture) : IClassFixture<MinioFixture>
 {
     [Fact]
+    public async Task Server_writes_preserve_bytes_and_distinguish_empty_from_missing()
+    {
+        const string key = "primary/test-org/files/server-write";
+        Assert.Null(await fixture.Store.GetLengthAsync(key));
+        await fixture.Store.WriteAsync(key, new MemoryStream(), "text/plain");
+        Assert.Equal(0L, await fixture.Store.GetLengthAsync(key));
+        await fixture.Store.WriteAsync(key, new MemoryStream("preview"u8.ToArray()), "text/plain");
+        Assert.Equal(7L, await fixture.Store.GetLengthAsync(key));
+        await using (var stream = await fixture.Store.OpenReadAsync(key))
+        using (var reader = new StreamReader(stream))
+            Assert.Equal("preview", await reader.ReadToEndAsync());
+        await fixture.Store.DeleteAsync(key);
+        Assert.Null(await fixture.Store.GetLengthAsync(key));
+    }
+
+    [Fact]
     public async Task Presigned_ticket_round_trip()
     {
         var key = "primary/test-org/files/probe";
@@ -66,11 +82,14 @@ public class S3AdapterTests(MinioFixture fixture) : IClassFixture<MinioFixture>
             Content = new ByteArrayContent(payload),
         };
         put.Content.Headers.ContentType = new("text/plain");
+        foreach (var (name, value) in ticket.Headers)
+            if (name != "Content-Type")
+                put.Headers.Add(name, value);
         var uploaded = await http.SendAsync(put);
         Assert.True(uploaded.IsSuccessStatusCode, uploaded.StatusCode.ToString());
 
         // server-side read (scan path)
-        Assert.True(await fixture.Store.ExistsAsync(key));
+        Assert.Equal(payload.LongLength, await fixture.Store.GetLengthAsync(key));
         await using (var stream = await fixture.Store.OpenReadAsync(key))
         using (var reader = new StreamReader(stream))
             Assert.Equal("s3 adapter proves the ticket contract", await reader.ReadToEndAsync());
@@ -79,8 +98,28 @@ public class S3AdapterTests(MinioFixture fixture) : IClassFixture<MinioFixture>
         var url = await fixture.Store.GetDownloadUrlAsync(key, TimeSpan.FromMinutes(1));
         Assert.Equal("s3 adapter proves the ticket contract", await http.GetStringAsync(url));
 
+        // A retained upload ticket must not replace bytes after a clean scan.
+        using var overwrite = new HttpRequestMessage(HttpMethod.Put, ticket.Url)
+        {
+            Content = new ByteArrayContent("replacement bytes"u8.ToArray()),
+        };
+        overwrite.Content.Headers.ContentType = new("text/plain");
+        foreach (var (name, value) in ticket.Headers)
+            if (name != "Content-Type")
+                overwrite.Headers.Add(name, value);
+        Assert.False((await http.SendAsync(overwrite)).IsSuccessStatusCode);
+        Assert.Equal("s3 adapter proves the ticket contract", await http.GetStringAsync(url));
+
+        // The condition must be signed, not merely an optional client header.
+        using var omitCondition = new HttpRequestMessage(HttpMethod.Put, ticket.Url)
+        {
+            Content = new ByteArrayContent(payload),
+        };
+        omitCondition.Content.Headers.ContentType = new("text/plain");
+        Assert.False((await http.SendAsync(omitCondition)).IsSuccessStatusCode);
+
         // erasure path
         await fixture.Store.DeleteAsync(key);
-        Assert.False(await fixture.Store.ExistsAsync(key));
+        Assert.Null(await fixture.Store.GetLengthAsync(key));
     }
 }

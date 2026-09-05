@@ -53,6 +53,18 @@ public class ListingsFeedTests(ApiFixture fixture) : IClassFixture<ApiFixture>
             )
         ).EnsureSuccessStatusCode();
 
+        (
+            await owner.PostAsJsonAsync(
+                "/api/sites",
+                new
+                {
+                    nodeId = rootId,
+                    name = "No Hours",
+                    timeZone = "Etc/UTC",
+                }
+            )
+        ).EnsureSuccessStatusCode();
+
         // a connector consumes with an API key (ADR 40), not a browser session
         var roles = await owner.GetFromJsonAsync<JsonElement>("/api/roles");
         var roleId = roles.EnumerateArray().First().GetProperty("id").GetGuid();
@@ -75,6 +87,13 @@ public class ListingsFeedTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         var hours = listing.GetProperty("hours").EnumerateArray().Single();
         Assert.Contains("BYDAY=MO,TU,WE,TH,FR", hours.GetProperty("rRule").GetString());
         Assert.Equal("09:00", hours.GetProperty("opens").GetString());
+        Assert.Empty(
+            feed.GetProperty("listings")
+                .EnumerateArray()
+                .Single(l => l.GetProperty("name").GetString() == "No Hours")
+                .GetProperty("hours")
+                .EnumerateArray()
+        );
 
         // no grant, no feed: a guest is not a connector
         Assert.Equal(

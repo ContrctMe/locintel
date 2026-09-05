@@ -5,15 +5,9 @@ import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-q
 import { useRef, useState } from 'react';
 import { fmtDateTime } from '../lib/format';
 import { useApiMutation } from '../lib/mutation';
-import type { Page } from '../lib/paging';
 import { uploadFile } from '../lib/uploads';
 import { can, useMe } from '../session';
 import { StatusBadge } from '../shell';
-
-type StoredFile = {
-  id: string; name: string; contentType: string; status: string;
-  legalHold: boolean; hasPreview: boolean; createdAt: string; deletedAt: string | null;
-};
 
 export function FilesPage() {
   const { data: me } = useMe();
@@ -24,10 +18,14 @@ export function FilesPage() {
 
   const filesQuery = useInfiniteQuery({
     queryKey: ['files', 'list', trash],
-    queryFn: ({ pageParam }) =>
-      api.get<Page<StoredFile>>(`/api/files?limit=50&offset=${pageParam}${trash ? '&trash=true' : ''}`),
+    queryFn: ({ pageParam, signal }) =>
+      (api.get('/api/files', {
+        query: { limit: 50, offset: pageParam, trash: trash ? true : undefined },
+        signal,
+      })),
     initialPageParam: 0,
-    getNextPageParam: (last) => last.nextOffset ?? undefined,
+    getNextPageParam: (last) =>
+      last.nextOffset == null ? undefined : Number(last.nextOffset),
   });
   const files = filesQuery.data?.pages.flatMap((p) => p.items);
   const refresh = () => void queryClient.invalidateQueries({ queryKey: ['files'] });
@@ -42,25 +40,25 @@ export function FilesPage() {
   });
   const hold = useApiMutation({
     mutationFn: (input: { id: string; hold: boolean }) =>
-      api.post(`/api/files/${input.id}/hold`, { hold: input.hold }),
+      api.post('/api/files/{id}/hold', { hold: input.hold }, { path: { id: input.id } }),
     invalidate: [['files']],
     success: 'Legal hold updated',
   });
   const erase = useApiMutation({
-    mutationFn: (id: string) => api.del(`/api/files/${id}`),
+    mutationFn: (id: string) => api.del('/api/files/{id}', { path: { id } }),
     invalidate: [['files']],
     success: 'Moved to trash - restorable for 30 days',
     errorFallback: 'Delete failed',
   });
   const restore = useApiMutation({
-    mutationFn: (id: string) => api.post(`/api/files/${id}/restore`),
+    mutationFn: (id: string) => api.post('/api/files/{id}/restore', undefined, { path: { id } }),
     invalidate: [['files']],
     success: 'File restored',
   });
   const fileInput = useRef<HTMLInputElement>(null);
 
   const download = async (id: string) => {
-    const { url } = await api.get<{ url: string }>(`/api/files/${id}/download`);
+    const { url } = await api.get('/api/files/{id}/download', { path: { id } });
     window.open(url, '_blank');
   };
 

@@ -1,0 +1,15 @@
+{
+  "name": "@locintel/e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p .",
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.0",
+    "@axe-core/playwright": "^4.10.2",
+    "@playwright/test": "^1.58.0",
+    "typescript": "^7.0.2"
+  }
+}

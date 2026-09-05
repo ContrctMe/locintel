@@ -50,5 +50,19 @@ if [ -z "$filter" ]; then
 fi
 
 echo "shard $INDEX/$COUNT: $(echo "$filter" | tr '|' '\n' | wc -l | tr -d ' ') classes"
-exec dotnet test "$PROJECT" -c "$CONFIGURATION" --no-build --filter "$filter" \
+# COVERAGE=1 collects line/branch coverage (coverlet, Cobertura) into TestResults/
+# for the CI report; opt-in so a local shard stays fast. Report-only: there is no
+# floor until a few weeks of numbers say where one belongs (maturity review).
+set --
+if [ "${COVERAGE:-0}" = "1" ]; then
+  set -- --collect:"XPlat Code Coverage" --settings coverage.runsettings
+fi
+results="$PROJECT/TestResults/shard-$INDEX-$$"
+dotnet test "$PROJECT" -c "$CONFIGURATION" --no-build --filter "$filter" "$@" \
+  --blame-hang-timeout 5m --blame-hang-dump-type mini \
+  --results-directory "$results" \
   --logger "trx;LogFileName=integration-shard-$INDEX.trx"
+if [ "${COVERAGE:-0}" = "1" ] && ! find "$results" -name coverage.cobertura.xml -print -quit | grep -q .; then
+  echo "shard $INDEX/$COUNT: coverage collector produced no Cobertura report" >&2
+  exit 1
+fi

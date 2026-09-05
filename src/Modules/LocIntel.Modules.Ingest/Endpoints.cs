@@ -6,6 +6,7 @@ using LocIntel.Platform.Messaging;
 using LocIntel.Platform.Secrets;
 using LocIntel.Platform.Storage;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Wolverine;
 using Wolverine.Attributes;
@@ -29,11 +30,55 @@ public sealed record UpdateConnectorRequest(
     int? SyncIntervalHours = null
 );
 
+public sealed record ImportCounts(int Create, int Update, int Close, int Unchanged, int Invalid);
+
+public sealed record StagedUploadResponse(Guid BatchId, ImportCounts Counts);
+
+public sealed record StagedSiteResponse(
+    string ExternalId,
+    string Name,
+    string NodePath,
+    string Action,
+    string[] Errors,
+    string[] Changes
+);
+
+public sealed record IngestPreviewResponse(
+    Guid Id,
+    string Source,
+    string Status,
+    ImportCounts Counts,
+    IReadOnlyList<StagedSiteResponse> Rows
+);
+
+public sealed record ImportBatchResponse(
+    Guid Id,
+    string Source,
+    string Status,
+    ImportCounts Counts,
+    DateTimeOffset CreatedAt
+);
+
+public sealed record CommitBatchResponse(int Applied);
+
+public sealed record ConnectorResponse(
+    Guid Id,
+    string Name,
+    string Type,
+    string Url,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? LastSyncedAt,
+    int? SyncIntervalHours
+);
+
+public sealed record ConnectorCreatedResponse(Guid Id);
+
 public static class IngestEndpoints
 {
     /// <summary>Stage a CLEAN uploaded CSV: parse, validate, diff - nothing applied.</summary>
     [Transactional(typeof(IngestDbContext))]
     [WolverinePost("/api/ingest/uploads")]
+    [ProducesResponseType(typeof(StagedUploadResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> StageUpload(
         StageUploadRequest request,
         IngestDbContext db,
@@ -68,14 +113,13 @@ public static class IngestEndpoints
             return Results.BadRequest(new { error = "no data rows found" });
 
         var batch = await staging.StageAsync(org, userId, "upload", rows, ct);
-        return Results.Ok(
-            new { batchId = batch.Id, counts = JsonSerializer.Deserialize<object>(batch.Counts) }
-        );
+        return Results.Ok(new StagedUploadResponse(batch.Id, Counts(batch.Counts)));
     }
 
     /// <summary>The diff preview (ADR 18): what WOULD happen, row by row.</summary>
     [Transactional(typeof(IngestDbContext))]
     [WolverineGet("/api/ingest/batches/{id}")]
+    [ProducesResponseType(typeof(IngestPreviewResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> Preview(
         Guid id,
         IngestDbContext db,
@@ -116,6 +160,7 @@ public static class IngestEndpoints
     /// <summary>Recent batches, newest first: the ingest history at a glance.</summary>
     [Transactional(typeof(IngestDbContext))]
     [WolverineGet("/api/ingest/batches")]
+    [ProducesResponseType(typeof(List<ImportBatchResponse>), StatusCodes.Status200OK)]
     public static async Task<IResult> ListBatches(
         IngestDbContext db,
         IPrincipalAccessor accessor,
@@ -138,14 +183,15 @@ public static class IngestEndpoints
             })
             .ToListAsync(ct);
         return Results.Ok(
-            batches.Select(b => new
-            {
-                b.Id,
-                b.Source,
-                b.status,
-                counts = JsonSerializer.Deserialize<object>(b.counts),
-                b.CreatedAt,
-            })
+            batches
+                .Select(b => new ImportBatchResponse(
+                    b.Id,
+                    b.Source,
+                    b.status,
+                    Counts(b.counts),
+                    b.CreatedAt
+                ))
+                .ToList()
         );
     }
 
@@ -156,6 +202,7 @@ public static class IngestEndpoints
     /// </summary>
     [Transactional(typeof(IngestDbContext))]
     [WolverinePost("/api/ingest/batches/{id}/discard")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public static async Task<IResult> Discard(
         Guid id,
         IngestDbContext db,
@@ -194,6 +241,7 @@ public static class IngestEndpoints
     /// </summary>
     [Transactional(typeof(IngestDbContext))]
     [WolverinePost("/api/ingest/batches/{id}/commit")]
+    [ProducesResponseType(typeof(CommitBatchResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> Commit(
         Guid id,
         IngestDbContext db,
@@ -241,13 +289,14 @@ public static class IngestEndpoints
             "ingest.batch_committed",
             new { batchId = batch.Id, applied = actionable.Count }
         );
-        return Results.Ok(new { applied = actionable.Count });
+        return Results.Ok(new CommitBatchResponse(actionable.Count));
     }
 
     // ---- connectors (ADR 18/31) ----
 
     [Transactional(typeof(IngestDbContext))]
     [WolverinePost("/api/connectors")]
+    [ProducesResponseType(typeof(ConnectorCreatedResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> CreateConnector(
         CreateConnectorRequest request,
         IngestDbContext db,
@@ -274,12 +323,13 @@ public static class IngestEndpoints
         connector.SyncIntervalHours = request.SyncIntervalHours;
         db.Connectors.Add(connector);
         await db.SaveChangesAsync(ct);
-        return Results.Ok(new { connector.Id });
+        return Results.Ok(new ConnectorCreatedResponse(connector.Id));
     }
 
     /// <summary>Connector inventory - credentials never leave the envelope.</summary>
     [Transactional(typeof(IngestDbContext))]
     [WolverineGet("/api/connectors")]
+    [ProducesResponseType(typeof(List<ConnectorResponse>), StatusCodes.Status200OK)]
     public static async Task<IResult> ListConnectors(
         IngestDbContext db,
         IPrincipalAccessor accessor,
@@ -305,9 +355,22 @@ public static class IngestEndpoints
         return Results.Ok(connectors);
     }
 
+    private static ImportCounts Counts(string json)
+    {
+        var values = JsonSerializer.Deserialize<Dictionary<string, int>>(json)!;
+        return new ImportCounts(
+            values["create"],
+            values["update"],
+            values["close"],
+            values["unchanged"],
+            values["invalid"]
+        );
+    }
+
     /// <summary>Edit a connector; the key only rewraps when a new one is provided.</summary>
     [Transactional(typeof(IngestDbContext))]
     [WolverinePut("/api/connectors/{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public static async Task<IResult> UpdateConnector(
         Guid id,
         UpdateConnectorRequest request,
@@ -342,6 +405,7 @@ public static class IngestEndpoints
     /// <summary>Tier 3: connectors are configuration, hard-deleted. The audit trail keeps the fact.</summary>
     [Transactional(typeof(IngestDbContext))]
     [WolverineDelete("/api/connectors/{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public static async Task<IResult> DeleteConnector(
         Guid id,
         IngestDbContext db,
@@ -371,6 +435,7 @@ public static class IngestEndpoints
 
     [Transactional(typeof(IngestDbContext))]
     [WolverinePost("/api/connectors/{id}/sync")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
     public static async Task<IResult> Sync(
         Guid id,
         IngestDbContext db,

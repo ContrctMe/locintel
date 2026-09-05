@@ -2,11 +2,22 @@ using LocIntel.Contracts;
 using LocIntel.Modules.Identity.Data;
 using LocIntel.Platform.Kernel;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Wolverine.Attributes;
 using Wolverine.Http;
 
 namespace LocIntel.Modules.Identity.Access;
+
+public sealed record OperatorUserOrgResponse(Guid Id, string Name, string Status);
+
+public sealed record OperatorUserResponse(
+    Guid Id,
+    string Email,
+    string? Name,
+    DateTimeOffset CreatedAt,
+    IReadOnlyList<OperatorUserOrgResponse> Orgs
+);
 
 /// <summary>
 /// "A ticket from jane@customer.com - which org is she?" (maturity review,
@@ -19,6 +30,7 @@ public static class OperatorUserLookupEndpoint
 {
     [Transactional(typeof(IdentityDbContext))]
     [WolverineGet("/api/operator/users")]
+    [ProducesResponseType(typeof(List<OperatorUserResponse>), StatusCodes.Status200OK)]
     public static async Task<IResult> Search(
         string q,
         IdentityDbContext db,

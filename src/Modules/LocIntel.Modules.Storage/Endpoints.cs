@@ -28,12 +28,17 @@ public sealed record CreateFileRequest(string Name, string ContentType, long Siz
 
 public sealed record SetHoldRequest(bool Hold);
 
+public sealed record DownloadFileResponse(string Url, int ExpiresInSeconds);
+
+public sealed record CreateFileResponse(Guid FileId, UploadTicket Ticket);
+
 public static class FileEndpoints
 {
     private const long MaxUploadBytes = 100 * 1024 * 1024;
 
     [Transactional(typeof(StorageDbContext))]
     [WolverinePost("/api/files")]
+    [ProducesResponseType(typeof(CreateFileResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> Create(
         CreateFileRequest request,
         StorageDbContext db,
@@ -72,12 +77,13 @@ public static class FileEndpoints
             request.SizeBytes,
             ct
         );
-        return Results.Ok(new { fileId = id, ticket });
+        return Results.Ok(new CreateFileResponse(id, ticket));
     }
 
     /// <summary>Client signals the direct upload finished; scanning starts (quarantine until verdict).</summary>
     [Transactional(typeof(StorageDbContext))]
     [WolverinePost("/api/files/{id}/complete")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
     public static async Task<IResult> Complete(
         Guid id,
         StorageDbContext db,
@@ -95,8 +101,14 @@ public static class FileEndpoints
             return Results.NotFound();
         if (file.Status != FileStatus.PendingUpload)
             return Results.Conflict(new { error = $"file is {file.Status}" });
-        if (!await store.ExistsAsync(file.Key, ct))
+        var length = await store.GetLengthAsync(file.Key, ct);
+        if (length is null or 0)
             return Results.BadRequest(new { error = "no bytes were uploaded for this ticket" });
+        if (length > file.MaxBytes)
+            return Results.Json(
+                new { error = $"uploaded object exceeds the declared {file.MaxBytes} bytes" },
+                statusCode: StatusCodes.Status413PayloadTooLarge
+            );
 
         file.Status = FileStatus.Uploaded;
         await db.SaveChangesAsync(ct);
@@ -159,6 +171,7 @@ public static class FileEndpoints
     /// <summary>Authorization happens HERE, before signing - the URL itself is unguarded (ADR 19).</summary>
     [Transactional(typeof(StorageDbContext))]
     [WolverineGet("/api/files/{id}/download")]
+    [ProducesResponseType(typeof(DownloadFileResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> Download(
         Guid id,
         StorageDbContext db,
@@ -175,11 +188,12 @@ public static class FileEndpoints
         if (file is null || file.Status != FileStatus.Clean)
             return Results.NotFound();
         var url = await store.GetDownloadUrlAsync(file.Key, TimeSpan.FromMinutes(5), ct);
-        return Results.Ok(new { url = url.ToString(), expiresInSeconds = 300 });
+        return Results.Ok(new DownloadFileResponse(url.ToString(), 300));
     }
 
     [Transactional(typeof(StorageDbContext))]
     [WolverinePost("/api/files/{id}/hold")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public static async Task<IResult> SetHold(
         Guid id,
         SetHoldRequest request,
@@ -215,6 +229,7 @@ public static class FileEndpoints
     /// </summary>
     [Transactional(typeof(StorageDbContext))]
     [WolverineDelete("/api/files/{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public static async Task<IResult> Delete(
         Guid id,
         StorageDbContext db,
@@ -263,6 +278,7 @@ public static class FileEndpoints
 
     [Transactional(typeof(StorageDbContext))]
     [WolverinePost("/api/files/{id}/restore")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public static async Task<IResult> Restore(
         Guid id,
         StorageDbContext db,

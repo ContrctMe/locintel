@@ -35,7 +35,11 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "date"
+                  }
                 }
               }
             }
@@ -79,6 +83,14 @@
           "required": true
         },
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -128,6 +140,14 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -416,7 +436,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "$ref": "#/components/schemas/ScheduleCreatedResponse"
                 }
               }
             }
@@ -455,7 +475,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ScheduleResponse"
+                  }
                 }
               }
             }
@@ -500,6 +523,14 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -558,7 +589,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SiteWindowResponse"
+                  }
                 }
               }
             }
@@ -618,7 +652,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "$ref": "#/components/schemas/PublicOrgResponse"
                 }
               }
             }
@@ -808,6 +842,14 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -887,7 +929,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "$ref": "#/components/schemas/SettingResponse"
                 }
               }
             }
@@ -962,6 +1004,16 @@
         "description": "POST_api_org_export",
         "operationId": "POST_api_org_export",
         "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgExportQueuedResponse"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -1003,6 +1055,16 @@
           }
         ],
         "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgExportQueuedResponse"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -1044,6 +1106,14 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -1089,7 +1159,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "$ref": "#/components/schemas/OrgCreatedResponse"
                 }
               }
             }
@@ -1124,6 +1194,14 @@
           "required": true
         },
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -1159,7 +1237,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OperatedOrgResponse"
+                  }
                 }
               }
             }
@@ -1195,6 +1276,14 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -1236,6 +1325,14 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -1326,6 +1423,14 @@
         "description": "POST_api_org_close_cancel",
         "operationId": "POST_api_org_close_cancel",
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -1401,7 +1506,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "$ref": "#/components/schemas/HierarchyCreatedResponse"
                 }
               }
             }
@@ -1429,7 +1534,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "$ref": "#/components/schemas/HierarchyResponse"
                 }
               }
             }
@@ -1469,7 +1574,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "$ref": "#/components/schemas/NodeResponse"
                 }
               }
             }
@@ -1515,6 +1620,14 @@
           "required": true
         },
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -1554,6 +1667,14 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -1605,6 +1726,14 @@
           "required": true
         },
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -1645,6 +1774,14 @@
           "required": true
         },
         "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -1675,6 +1812,14 @@
         "description": "POST_auth_directory_webhook",
         "operationId": "POST_auth_directory_webhook",
         "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -1705,6 +1850,14 @@
         "description": "POST_api_members_leave",
         "operationId": "POST_api_members_leave",
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -1813,7 +1966,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "$ref": "#/components/schemas/InvitationCreatedResponse"
                 }
               }
             }
@@ -1841,7 +1994,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InvitationResponse"
+                  }
                 }
               }
             }
@@ -1876,6 +2032,14 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -1917,6 +2081,14 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -2022,7 +2194,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ContactResponse"
+                  }
                 }
               }
             }
@@ -2058,6 +2233,14 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -2093,7 +2276,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApiKeyResponse"
+                  }
                 }
               }
             }
@@ -2131,7 +2317,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "$ref": "#/components/schemas/ApiKeySecretResponse"
                 }
               }
             }
@@ -2182,7 +2368,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "$ref": "#/components/schemas/RotatedApiKeyResponse"
                 }
               }
             }
@@ -2218,6 +2404,14 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -2253,7 +2447,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RoleResponse"
+                  }
                 }
               }
             }
@@ -2291,7 +2488,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "$ref": "#/components/schemas/RoleCreatedResponse"
                 }
               }
             }
@@ -2337,6 +2534,14 @@
           "required": true
         },
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -2377,6 +2582,14 @@
           "required": true
         },
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -2410,7 +2623,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GrantExceptionResponse"
+                  }
                 }
               }
             }
@@ -2476,6 +2692,14 @@
         "description": "POST_auth_impersonation_stop",
         "operationId": "POST_auth_impersonation_stop",
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -2520,7 +2744,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SuppressionResponse"
+                  }
                 }
               }
             }
@@ -2556,6 +2783,14 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -2600,7 +2835,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OperatorUserResponse"
+                  }
                 }
               }
             }
@@ -2646,6 +2884,14 @@
           "required": true
         },
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -2685,6 +2931,14 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -2735,6 +2989,14 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -2776,6 +3038,14 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -2851,7 +3121,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "$ref": "#/components/schemas/BillingLinkResponse"
                 }
               }
             }
@@ -2891,7 +3161,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "$ref": "#/components/schemas/BillingLinkResponse"
                 }
               }
             }
@@ -2916,6 +3186,14 @@
         "description": "POST_billing_webhook",
         "operationId": "POST_billing_webhook",
         "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -2951,7 +3229,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/EntitlementSummary"
+                  }
                 }
               }
             }
@@ -2992,7 +3273,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/EntitlementSummary"
+                  }
                 }
               }
             }
@@ -3046,6 +3330,14 @@
           "required": true
         },
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -3110,7 +3402,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "$ref": "#/components/schemas/EntitlementExceptionCreatedResponse"
                 }
               }
             }
@@ -3162,7 +3454,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AuditRowResponse"
+                  }
                 }
               }
             }
@@ -3192,7 +3487,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "$ref": "#/components/schemas/AuditConfigResponse"
                 }
               }
             }
@@ -3225,6 +3520,14 @@
           "required": true
         },
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -3255,6 +3558,16 @@
         "description": "POST_api_audit_export",
         "operationId": "POST_api_audit_export",
         "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditExportQueuedResponse"
+                }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -3290,7 +3603,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WebhookResponse"
+                  }
                 }
               }
             }
@@ -3328,7 +3644,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "$ref": "#/components/schemas/WebhookSecretResponse"
                 }
               }
             }
@@ -3369,7 +3685,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "$ref": "#/components/schemas/RotatedWebhookSecretResponse"
                 }
               }
             }
@@ -3405,6 +3721,14 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -3451,7 +3775,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WebhookDeliveryResponse"
+                  }
                 }
               }
             }
@@ -3487,6 +3814,14 @@
           }
         ],
         "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -3532,7 +3867,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "$ref": "#/components/schemas/CreateFileResponse"
                 }
               }
             }
@@ -3636,6 +3971,14 @@
           }
         ],
         "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -3682,7 +4025,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "$ref": "#/components/schemas/DownloadFileResponse"
                 }
               }
             }
@@ -3728,6 +4071,14 @@
           "required": true
         },
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -3769,12 +4120,59 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/IResult"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Storage.FileReadEndpoint"
+        ],
+        "summary": "GET_api_files_id",
+        "description": "GET_api_files_id",
+        "operationId": "GET_api_files_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileSummary"
                 }
               }
             }
@@ -3810,6 +4208,14 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -3855,7 +4261,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "$ref": "#/components/schemas/StagedUploadResponse"
                 }
               }
             }
@@ -3896,7 +4302,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "$ref": "#/components/schemas/IngestPreviewResponse"
                 }
               }
             }
@@ -3926,7 +4332,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ImportBatchResponse"
+                  }
                 }
               }
             }
@@ -3962,6 +4371,14 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -4008,7 +4425,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "$ref": "#/components/schemas/CommitBatchResponse"
                 }
               }
             }
@@ -4048,7 +4465,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "$ref": "#/components/schemas/ConnectorCreatedResponse"
                 }
               }
             }
@@ -4076,7 +4493,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConnectorResponse"
+                  }
                 }
               }
             }
@@ -4122,6 +4542,14 @@
           "required": true
         },
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -4161,6 +4589,14 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -4202,6 +4638,14 @@
           }
         ],
         "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -4278,7 +4722,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/IResult"
+                  "$ref": "#/components/schemas/ChecklistTemplateCreatedResponse"
                 }
               }
             }
@@ -4314,6 +4758,14 @@
           }
         ],
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -4394,6 +4846,14 @@
           "required": true
         },
         "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
           "200": {
             "description": "OK",
             "content": {
@@ -4600,7 +5060,14 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -4646,7 +5113,17 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SessionResponse"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -4763,7 +5240,14 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeadLetterListResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -4821,7 +5305,14 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperatorOverviewResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -4833,7 +5324,14 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperatorHealthResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -4845,7 +5343,14 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -4900,6 +5405,82 @@
           }
         }
       },
+      "ApiKeyResponse": {
+        "required": [
+          "id",
+          "name",
+          "prefix",
+          "role",
+          "scopePath",
+          "createdAt",
+          "lastUsedAt",
+          "expiresAt",
+          "revoked"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "prefix": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "scopePath": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastUsedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "revoked": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ApiKeySecretResponse": {
+        "required": [
+          "id",
+          "secret",
+          "prefix"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "secret": {
+            "type": "string"
+          },
+          "prefix": {
+            "type": "string"
+          }
+        }
+      },
       "AssignRoleRequest": {
         "required": [
           "userId"
@@ -4943,6 +5524,175 @@
           },
           "public": {
             "type": "boolean"
+          }
+        }
+      },
+      "AuditConfigResponse": {
+        "required": [
+          "logGrants",
+          "logReads",
+          "floor"
+        ],
+        "type": "object",
+        "properties": {
+          "logGrants": {
+            "type": "boolean"
+          },
+          "logReads": {
+            "type": "boolean"
+          },
+          "floor": {
+            "$ref": "#/components/schemas/AuditFloorResponse"
+          }
+        }
+      },
+      "AuditExportQueuedResponse": {
+        "required": [
+          "status",
+          "destination"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "destination": {
+            "type": "string"
+          }
+        }
+      },
+      "AuditFloorResponse": {
+        "required": [
+          "domainEvents",
+          "authzDenials",
+          "changeDiffs"
+        ],
+        "type": "object",
+        "properties": {
+          "domainEvents": {
+            "type": "boolean"
+          },
+          "authzDenials": {
+            "type": "boolean"
+          },
+          "changeDiffs": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AuditRowResponse": {
+        "required": [
+          "id",
+          "actorTier",
+          "occurredAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "actorTier": {
+            "type": "string"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actorLabel": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "actorId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "eventName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "payload": { },
+          "schemaName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "tableName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rowId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "operation": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "diff": { },
+          "action": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "outcome": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "scopeSummary": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "method": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "path": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "statusCode": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "BillingLinkResponse": {
+        "required": [
+          "url"
+        ],
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
           }
         }
       },
@@ -5074,6 +5824,18 @@
           }
         }
       },
+      "ChecklistTemplateCreatedResponse": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
       "ChecklistTemplateSummary": {
         "required": [
           "id",
@@ -5193,6 +5955,106 @@
           }
         }
       },
+      "CommitBatchResponse": {
+        "required": [
+          "applied"
+        ],
+        "type": "object",
+        "properties": {
+          "applied": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "ConnectorCreatedResponse": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "ConnectorResponse": {
+        "required": [
+          "id",
+          "name",
+          "type",
+          "url",
+          "createdAt",
+          "lastSyncedAt",
+          "syncIntervalHours"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastSyncedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "syncIntervalHours": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "ContactResponse": {
+        "required": [
+          "id",
+          "email",
+          "createdAt",
+          "revoked"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "revoked": {
+            "type": "boolean"
+          }
+        }
+      },
       "CreateApiKeyRequest": {
         "required": [
           "name",
@@ -5296,6 +6158,22 @@
               "string"
             ],
             "format": "int64"
+          }
+        }
+      },
+      "CreateFileResponse": {
+        "required": [
+          "fileId",
+          "ticket"
+        ],
+        "type": "object",
+        "properties": {
+          "fileId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ticket": {
+            "$ref": "#/components/schemas/UploadTicket"
           }
         }
       },
@@ -5512,6 +6390,134 @@
           }
         }
       },
+      "DeadLetterListResponse": {
+        "required": [
+          "total",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "total": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeadLetterResponse"
+            }
+          }
+        }
+      },
+      "DeadLetterResponse": {
+        "required": [
+          "id",
+          "messageType",
+          "exceptionType",
+          "exceptionMessage",
+          "sentAt",
+          "tenantId",
+          "replayable"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "messageType": {
+            "type": "string"
+          },
+          "exceptionType": {
+            "type": "string"
+          },
+          "exceptionMessage": {
+            "type": "string"
+          },
+          "sentAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "tenantId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "replayable": {
+            "type": "boolean"
+          }
+        }
+      },
+      "DownloadFileResponse": {
+        "required": [
+          "url",
+          "expiresInSeconds"
+        ],
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "expiresInSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "EntitlementExceptionCreatedResponse": {
+        "required": [
+          "code",
+          "expiresAt"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "EntitlementSummary": {
+        "required": [
+          "value",
+          "shape",
+          "policy",
+          "usage"
+        ],
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "shape": {
+            "type": "string"
+          },
+          "policy": {
+            "type": "string"
+          },
+          "usage": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          }
+        }
+      },
       "FileListResponse": {
         "required": [
           "items",
@@ -5590,6 +6596,46 @@
           }
         }
       },
+      "GrantExceptionResponse": {
+        "required": [
+          "id",
+          "email",
+          "domain",
+          "action",
+          "scopePath",
+          "reason",
+          "expiresAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string"
+          },
+          "domain": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "scopePath": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "GrantSpec": {
         "required": [
           "domain",
@@ -5602,6 +6648,72 @@
           },
           "action": {
             "type": "string"
+          }
+        }
+      },
+      "HealthResponse": {
+        "required": [
+          "status",
+          "role",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        }
+      },
+      "HierarchyCreatedResponse": {
+        "required": [
+          "id",
+          "rootNodeId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "rootNodeId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "HierarchyResponse": {
+        "required": [
+          "id",
+          "name",
+          "levels",
+          "nodes"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "levels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "nodes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NodeResponse"
+            }
           }
         }
       },
@@ -5618,6 +6730,160 @@
           },
           "orgName": {
             "type": "string"
+          }
+        }
+      },
+      "ImportBatchResponse": {
+        "required": [
+          "id",
+          "source",
+          "status",
+          "counts",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "source": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/ImportCounts"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ImportCounts": {
+        "required": [
+          "create",
+          "update",
+          "close",
+          "unchanged",
+          "invalid"
+        ],
+        "type": "object",
+        "properties": {
+          "create": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "update": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "close": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "unchanged": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "invalid": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "IngestPreviewResponse": {
+        "required": [
+          "id",
+          "source",
+          "status",
+          "counts",
+          "rows"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "source": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/ImportCounts"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StagedSiteResponse"
+            }
+          }
+        }
+      },
+      "InvitationCreatedResponse": {
+        "required": [
+          "invitationId"
+        ],
+        "type": "object",
+        "properties": {
+          "invitationId": {
+            "type": "string"
+          }
+        }
+      },
+      "InvitationResponse": {
+        "required": [
+          "id",
+          "email",
+          "state",
+          "expiresAt",
+          "role"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "role": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -5866,6 +7132,82 @@
           }
         }
       },
+      "MeResponse": {
+        "required": [
+          "tier"
+        ],
+        "type": "object",
+        "properties": {
+          "tier": {
+            "type": "string"
+          },
+          "userId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "activeOrg": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "organizations": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/SessionOrgResponse"
+            }
+          },
+          "capabilities": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "impersonationExpiresAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "contactId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "org": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
       "MoveNodeRequest": {
         "required": [
           "newParentId"
@@ -5875,6 +7217,76 @@
           "newParentId": {
             "type": "string",
             "format": "uuid"
+          }
+        }
+      },
+      "NodeResponse": {
+        "required": [
+          "id",
+          "parentId",
+          "name",
+          "depth",
+          "path"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "parentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "depth": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "path": {
+            "type": "string"
+          }
+        }
+      },
+      "OperatedOrgResponse": {
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "status",
+          "isPlatform",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "isPlatform": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -5898,6 +7310,92 @@
           }
         }
       },
+      "OperatorHealthCheckResponse": {
+        "required": [
+          "name",
+          "ok",
+          "latencyMs",
+          "error"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "latencyMs": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "error": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "OperatorHealthResponse": {
+        "required": [
+          "checks"
+        ],
+        "type": "object",
+        "properties": {
+          "checks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OperatorHealthCheckResponse"
+            }
+          }
+        }
+      },
+      "OperatorOverviewResponse": {
+        "required": [
+          "orgsByStatus",
+          "closuresPending",
+          "users",
+          "deadLetters"
+        ],
+        "type": "object",
+        "properties": {
+          "orgsByStatus": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrgStatusCountResponse"
+            }
+          },
+          "closuresPending": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "users": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "deadLetters": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "OperatorSetEntitlementRequest": {
         "required": [
           "value"
@@ -5906,6 +7404,112 @@
         "properties": {
           "value": {
             "type": "string"
+          }
+        }
+      },
+      "OperatorUserOrgResponse": {
+        "required": [
+          "id",
+          "name",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "OperatorUserResponse": {
+        "required": [
+          "id",
+          "email",
+          "name",
+          "createdAt",
+          "orgs"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "orgs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OperatorUserOrgResponse"
+            }
+          }
+        }
+      },
+      "OrgCreatedResponse": {
+        "required": [
+          "orgId",
+          "slug"
+        ],
+        "type": "object",
+        "properties": {
+          "orgId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          }
+        }
+      },
+      "OrgExportQueuedResponse": {
+        "required": [
+          "status",
+          "destination"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "destination": {
+            "type": "string"
+          }
+        }
+      },
+      "OrgStatusCountResponse": {
+        "required": [
+          "status",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "count": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -5970,6 +7574,28 @@
           "localDate": {
             "type": "string",
             "format": "date"
+          }
+        }
+      },
+      "PublicOrgResponse": {
+        "required": [
+          "name",
+          "slug",
+          "brandColor"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "brandColor": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -6182,6 +7808,50 @@
           }
         }
       },
+      "RoleCreatedResponse": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "RoleResponse": {
+        "required": [
+          "id",
+          "name",
+          "grants",
+          "assignedCount"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "grants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GrantSpec"
+            }
+          },
+          "assignedCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "RotateApiKeyRequest": {
         "type": "object",
         "properties": {
@@ -6193,6 +7863,169 @@
               "string"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "RotatedApiKeyResponse": {
+        "required": [
+          "id",
+          "secret",
+          "prefix",
+          "oldKeyExpiresAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "secret": {
+            "type": "string"
+          },
+          "prefix": {
+            "type": "string"
+          },
+          "oldKeyExpiresAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "RotatedWebhookSecretResponse": {
+        "required": [
+          "id",
+          "secret",
+          "previousSecretExpiresAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "secret": {
+            "type": "string"
+          },
+          "previousSecretExpiresAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "ScheduleCreatedResponse": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "ScheduleResponse": {
+        "required": [
+          "id",
+          "name",
+          "rRule",
+          "anchorDate",
+          "opens",
+          "closes",
+          "exDates"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "rRule": {
+            "type": "string"
+          },
+          "anchorDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "opens": {
+            "type": "string",
+            "format": "time"
+          },
+          "closes": {
+            "type": "string",
+            "format": "time"
+          },
+          "exDates": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        }
+      },
+      "SessionOrgResponse": {
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "status",
+          "isPlatform"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "isPlatform": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SessionResponse": {
+        "required": [
+          "id",
+          "userAgent",
+          "createdAt",
+          "current"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userAgent": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "current": {
+            "type": "boolean"
           }
         }
       },
@@ -6387,6 +8220,28 @@
           null
         ]
       },
+      "SiteWindowResponse": {
+        "required": [
+          "startsAtUtc",
+          "endsAtUtc",
+          "localDate"
+        ],
+        "type": "object",
+        "properties": {
+          "startsAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "localDate": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
       "SsoPortalLinkResponse": {
         "required": [
           "url"
@@ -6431,6 +8286,59 @@
           }
         }
       },
+      "StagedSiteResponse": {
+        "required": [
+          "externalId",
+          "name",
+          "nodePath",
+          "action",
+          "errors",
+          "changes"
+        ],
+        "type": "object",
+        "properties": {
+          "externalId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "nodePath": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "StagedUploadResponse": {
+        "required": [
+          "batchId",
+          "counts"
+        ],
+        "type": "object",
+        "properties": {
+          "batchId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/ImportCounts"
+          }
+        }
+      },
       "StageUploadRequest": {
         "required": [
           "fileId"
@@ -6440,6 +8348,31 @@
           "fileId": {
             "type": "string",
             "format": "uuid"
+          }
+        }
+      },
+      "SuppressionResponse": {
+        "required": [
+          "id",
+          "email",
+          "reason",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -6602,6 +8535,161 @@
             "format": "uint32"
           }
         }
+      },
+      "UploadTicket": {
+        "required": [
+          "url",
+          "method",
+          "headers",
+          "expiresAt"
+        ],
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "method": {
+            "type": "string"
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "WebhookDeliveryResponse": {
+        "required": [
+          "eventName",
+          "attempt",
+          "statusCode",
+          "ok",
+          "occurredAt"
+        ],
+        "type": "object",
+        "properties": {
+          "eventName": {
+            "type": "string"
+          },
+          "attempt": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "statusCode": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "WebhookDeliverySummary": {
+        "required": [
+          "eventName",
+          "ok",
+          "statusCode",
+          "occurredAt"
+        ],
+        "type": "object",
+        "properties": {
+          "eventName": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "statusCode": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "WebhookResponse": {
+        "required": [
+          "id",
+          "url",
+          "events",
+          "active",
+          "createdAt",
+          "lastDelivery"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "url": {
+            "type": "string"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastDelivery": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WebhookDeliverySummary"
+              }
+            ]
+          }
+        }
+      },
+      "WebhookSecretResponse": {
+        "required": [
+          "id",
+          "secret"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "secret": {
+            "type": "string"
+          }
+        }
       }
     }
   },
@@ -6701,6 +8789,9 @@
     },
     {
       "name": "LocIntel.Modules.Storage.FileEndpoints"
+    },
+    {
+      "name": "LocIntel.Modules.Storage.FileReadEndpoint"
     },
     {
       "name": "LocIntel.Modules.Ingest.IngestEndpoints"

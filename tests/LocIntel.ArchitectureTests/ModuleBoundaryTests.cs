@@ -86,12 +86,38 @@ public class ModuleBoundaryTests
         );
     }
 
+    // every adapter the host wires (the scan used to cover WorkOS alone)
+    public static IEnumerable<object[]> Integrations() =>
+        typeof(LocIntel.Api.ModuleCatalog)
+            .Assembly.GetReferencedAssemblies()
+            .Where(a => a.Name!.StartsWith("LocIntel.Integrations.", StringComparison.Ordinal))
+            .Select(a => new object[] { Assembly.Load(a) });
+
     [Fact]
-    public void Integrations_reference_only_platform()
+    public void Every_integration_project_in_the_solution_is_wired_into_the_host()
+    {
+        // an adapter project the host does not reference cannot be selected by
+        // configuration - a seam that exists in the tree but not in the image
+        var root = RepositoryRoot();
+        var inSolution = File.ReadAllLines(Path.Combine(root, "LocIntel.slnx"))
+            .Where(l =>
+                l.Contains("src/Integrations/LocIntel.Integrations.", StringComparison.Ordinal)
+            )
+            .Select(l => l.Split('/')[2])
+            .Order()
+            .ToArray();
+        var wired = Integrations().Select(a => ((Assembly)a[0]).GetName().Name!).Order().ToArray();
+        Assert.NotEmpty(inSolution);
+        Assert.Equal(inSolution, wired);
+    }
+
+    [Theory]
+    [MemberData(nameof(Integrations))]
+    public void Integrations_reference_only_platform(Assembly integration)
     {
         // ADR 14: adapters implement Platform ports; they never reach into modules.
         var result = Types
-            .InAssembly(typeof(Integrations.WorkOS.WorkOSAuthProvider).Assembly)
+            .InAssembly(integration)
             .ShouldNot()
             .HaveDependencyOnAny(ModulePrefix + "*", "LocIntel.Api")
             .GetResult();
@@ -125,5 +151,14 @@ public class ModuleBoundaryTests
             )
             .GetResult();
         Assert.True(result.IsSuccessful, "Contracts carry DTOs and integration events only.");
+    }
+
+    private static string RepositoryRoot()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "CLAUDE.md")))
+            directory = directory.Parent;
+        Assert.NotNull(directory);
+        return directory.FullName;
     }
 }

@@ -102,6 +102,7 @@ public static class SiteAttributeEndpoints
 
     [Transactional(typeof(TenancyDbContext))]
     [WolverineDelete("/api/sites/attributes/{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public static async Task<IResult> Delete(
         Guid id,
         TenancyDbContext db,

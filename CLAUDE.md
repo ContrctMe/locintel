@@ -60,8 +60,7 @@ don't restate them here.
   builds a tenant-scoped Guest from the request host before authn (ADR 07).
 - **The three gates are one call, never a ceremony.** Endpoints use
   `Gate.RequireAsync` (any principal), `RequireUserAsync` (humans only),
-  `RequireOperatorAsync`, or `ActorGate.RequireAsync` (a person or an API key,
-  with the `ActorRef` to stamp), then `gate.ToResult()`; gate 1 answers through
+  or `RequireOperatorAsync`, then `gate.ToResult()`; gate 1 answers through
   `GateResults.LimitReached`/`FeatureOff`. No principal is 401, a missing
   grant is 403, scope filters. An architecture test refuses the old inline
   shape - 67 sites had answered 401 where the contract says 403.
@@ -132,6 +131,12 @@ don't restate them here.
 - Adding a public-app route: create the file, then `pnpm --filter public run
   routes` — `routeTree.gen.ts` is committed (so a fresh checkout typechecks)
   and goes stale otherwise; CI fails on drift, like `openapi.json`.
+- Coverage, report-only (no floor yet): run the suites with
+  `--collect:"XPlat Code Coverage"` (`COVERAGE=1 tools/run-integration-shard.sh 1 2`),
+  then `tools/coverage-report.sh` - by tier (job) and module (assembly).
+- Browser + a11y suite (Docker, Playwright; the same script CI runs):
+  `tools/e2e-stack.sh` boots Postgres, migrate + api with the local provider,
+  the console dev server, then Playwright with an axe pass per page.
 - Frontend (web/): `pnpm install`, `pnpm typecheck`, `pnpm build`,
   `pnpm dev:console` (SPA, proxies to the API), `pnpm dev:public` (Start/SSR)
 - Contract codegen (ADR 16): run the integration tests (snapshots

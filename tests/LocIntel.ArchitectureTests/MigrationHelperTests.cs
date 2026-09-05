@@ -163,6 +163,82 @@ public partial class MigrationHelperTests
         return offenders;
     }
 
+    /// <summary>
+    /// A frozen helper's compatibility surface is its signature AND the SQL it
+    /// emits: a fork's applied migration compiles against the first and was
+    /// applied with the second. Both are snapshotted here verbatim; changing
+    /// either is changing frozen text.
+    /// </summary>
+    [Fact]
+    public void Frozen_helper_signatures_are_unchanged()
+    {
+        var signatures = typeof(LocIntel.Platform.Data.FrozenMigrationHelpers)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Select(m => m.ToString()!)
+            .Order()
+            .ToArray();
+        Assert.Equal(
+            [
+                "Void EnablePublishedCatalogRls(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder, System.String, System.String, System.String, System.String)",
+                "Void EnableRecipientListRls(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder, System.String, System.String, System.String, System.String, System.String, System.String, System.String, System.String, Boolean, System.String, System.String, System.String)",
+                "Void EnableTwoPartyRls(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder, System.String, System.String, System.String, System.String)",
+            ],
+            signatures
+        );
+    }
+
+    [Fact]
+    public void Frozen_helper_sql_is_unchanged()
+    {
+        Assert.Equal(
+            """
+            ALTER TABLE "s"."t" ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE "s"."t" FORCE ROW LEVEL SECURITY;
+            CREATE POLICY tenant_isolation ON "s"."t"
+                USING (
+                    "org_id" = NULLIF(current_setting('app.org_id', true), '')::uuid
+                    OR "other_org_id" = NULLIF(current_setting('app.org_id', true), '')::uuid
+                )
+                WITH CHECK (
+                    "org_id" = NULLIF(current_setting('app.org_id', true), '')::uuid
+                    OR "other_org_id" = NULLIF(current_setting('app.org_id', true), '')::uuid
+                );
+            """,
+            LocIntel.Platform.Data.FrozenMigrationHelpers.TwoPartySql("s", "t", "other_org_id")
+        );
+        Assert.Equal(
+            """
+            ALTER TABLE "s"."t" ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE "s"."t" FORCE ROW LEVEL SECURITY;
+            CREATE POLICY catalog_read ON "s"."t" FOR SELECT
+                USING (
+                    "published"
+                    OR "org_id" = NULLIF(current_setting('app.org_id', true), '')::uuid
+                );
+            CREATE POLICY owner_write ON "s"."t" FOR ALL
+                USING ("org_id" = NULLIF(current_setting('app.org_id', true), '')::uuid)
+                WITH CHECK ("org_id" = NULLIF(current_setting('app.org_id', true), '')::uuid);
+            """,
+            LocIntel.Platform.Data.FrozenMigrationHelpers.CatalogSql("s", "t")
+        );
+        Assert.Equal(
+            """
+            ALTER TABLE "s"."t" ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE "s"."t" FORCE ROW LEVEL SECURITY;
+            CREATE POLICY tenant_isolation ON "s"."t"
+                USING ("org_id" = NULLIF(current_setting('app.org_id', true), '')::uuid OR EXISTS (SELECT 1 FROM "s"."t_recipients" r WHERE r."t_id" = "t"."id" AND r."recipient_org_id" = NULLIF(current_setting('app.org_id', true), '')::uuid))
+                WITH CHECK ("org_id" = NULLIF(current_setting('app.org_id', true), '')::uuid);
+            """,
+            LocIntel.Platform.Data.FrozenMigrationHelpers.RecipientListSql(
+                "s",
+                "t",
+                "t_recipients",
+                "t_id",
+                "recipient_org_id"
+            )
+        );
+    }
+
     private static string RepositoryRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

@@ -46,12 +46,18 @@ public interface IEntitlementUsageProbe
 /// becomes a service, its contract reads become event-fed projections like
 /// this one instead of network calls.
 /// </summary>
+/// <param name="SourceVersion">
+/// The owner row's version (its xmin) at publish time. Two events for one
+/// org can reach a read model in either order; the handler applies an event
+/// only when this is newer than what it last applied (ProjectionVersion).
+/// </param>
 public sealed record OrganizationUpserted(
     OrgId OrgId,
     string Name,
     string Slug,
     RegionId Region,
     string? ExternalId,
+    long SourceVersion,
     string Status = "Active",
     bool IsPlatform = false
 );

@@ -1,9 +1,6 @@
-using System.Globalization;
 using System.Reflection;
-using System.Threading.RateLimiting;
 using JasperFx;
 using LocIntel.Api;
-using LocIntel.Integrations.WorkOS;
 using LocIntel.Modules.Audit;
 using LocIntel.Modules.Checklists;
 using LocIntel.Modules.Entitlements;
@@ -17,13 +14,9 @@ using LocIntel.Platform.Auth;
 using LocIntel.Platform.Data;
 using LocIntel.Platform.Infra;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Messaging;
 using LocIntel.Platform.Notifications;
-using LocIntel.Platform.Secrets;
 using LocIntel.Platform.Storage;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.DataProtection;
-using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.EntityFrameworkCore;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -31,6 +24,7 @@ using OpenTelemetry.Trace;
 using Wolverine;
 using Wolverine.Http;
 using Wolverine.Postgresql;
+using static LocIntel.Api.ProviderOptionsValidation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -42,8 +36,14 @@ builder.Host.UseDefaultServiceProvider(o =>
     o.ValidateOnBuild = false; // Wolverine registers open generics that trip build validation
 });
 
-// Role flag (ADR 34): one image, run as "api" or "worker".
+// Role flag (ADR 34): one image, run as "migrate", "api" or "worker". An
+// unknown value used to start a host that mapped nothing and swept nothing
+// - a typo in a manifest looked like a healthy process. Refused instead.
 var role = builder.Configuration["ROLE"] ?? "api";
+if (role is not ("migrate" or "api" or "worker"))
+    throw new InvalidOperationException(
+        $"ROLE '{role}' is not a role this image runs; use migrate, api or worker (ADR 34)."
+    );
 
 // "What version are you running?" must be answerable (maturity review,
 // hole 4): CI stamps Build:Version (see docs/production.md); local builds
@@ -72,6 +72,21 @@ if (role != "migrate" && builder.Configuration["Database:AppUser"] is { Length: 
         Username = appUser,
         Password = builder.Configuration["Database:AppPassword"],
     }.ConnectionString;
+}
+
+// Independent EF, messaging, and direct-connection pools share one server budget.
+// Bound the default before registering any consumer; native connection-string
+// overrides remain authoritative for deployments with a different replica budget.
+if (builder.Configuration.GetConnectionString("locintel") is { } databaseConnection)
+{
+    var settings = new Npgsql.NpgsqlConnectionStringBuilder(databaseConnection);
+    var explicitSettings = new System.Data.Common.DbConnectionStringBuilder
+    {
+        ConnectionString = settings.ConnectionString,
+    };
+    if (!explicitSettings.ContainsKey("Maximum Pool Size"))
+        settings.MaxPoolSize = Math.Max(20, settings.MinPoolSize);
+    builder.Configuration["ConnectionStrings:locintel"] = settings.ConnectionString;
 }
 
 // Observability (ADR 33): OTLP only - the standard OTEL_EXPORTER_OTLP_*
@@ -121,77 +136,7 @@ builder.Services.AddScoped<IScopeResolver, AuditedScopeResolver>();
 builder.Services.AddSingleton<AuditPolicyCache>();
 builder.Services.AddSingleton<AuditSaveChangesInterceptor>();
 
-// Auth seam (ADR 14): provider selected by config; WorkOS is the built-in
-// full-capability implementation, local is the dev/test base implementation.
-var authProvider = builder.Configuration["Auth:Provider"] ?? "local";
-switch (authProvider)
-{
-    case "workos":
-        builder.Services.Configure<WorkOSOptions>(builder.Configuration.GetSection("Auth:WorkOS"));
-        builder.Services.AddSingleton<IAuthProvider, WorkOSAuthProvider>();
-        break;
-    case "local" when !builder.Environment.IsProduction():
-        builder.Services.AddSingleton<IAuthProvider, LocalAuthProvider>();
-        break;
-    default:
-        throw new InvalidOperationException(
-            $"Auth:Provider '{authProvider}' is not valid for {builder.Environment.EnvironmentName}. "
-                + "Use 'workos' in Production; 'local' is dev/test only (ADR 14)."
-        );
-}
-
-// Data protection (security review): the keyring protects auth-ticket
-// cookies AND contact magic-link tokens. The framework default is a
-// per-process filesystem keyring, unencrypted - which means (a) across
-// REPLICAS a cookie/token minted by one instance cannot be read by
-// another (broken sessions and dead magic links behind a load balancer),
-// and (b) keys vanish on a fresh container. A shared, protected store is
-// therefore REQUIRED in any multi-replica deployment.
-//
-// The application name is pinned so a shared ring is unambiguous; the
-// persistence directory (a mounted volume or network path all replicas
-// share) is config-driven, and Production REFUSES to boot on the
-// ephemeral default rather than silently breaking sessions after the
-// first scale-out. Forks on a cloud should point this at a blob/secret
-// store and wrap it with their KMS (see docs/production.md).
-var dataProtection = builder.Services.AddDataProtection().SetApplicationName("locintel");
-if (builder.Configuration["DataProtection:KeyPath"] is { Length: > 0 } keyPath)
-    dataProtection.PersistKeysToFileSystem(new DirectoryInfo(keyPath));
-else if (builder.Environment.IsProduction() && role != "migrate")
-    throw new InvalidOperationException(
-        "DataProtection:KeyPath is required in Production (a store all replicas share); "
-            + "the default per-process keyring breaks sessions and magic links after scale-out."
-    );
-
-// Cookie session (ADR 21): HttpOnly, no token ever reachable from JS.
-builder
-    .Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
-    {
-        options.Cookie.Name = "locintel_session";
-        options.Cookie.HttpOnly = true;
-        options.Cookie.SameSite = SameSiteMode.Lax;
-        // Production is a hard floor: Always, so a fork that forgets to
-        // trust its proxy's X-Forwarded-Proto gets broken logins (loud)
-        // instead of session cookies over plain HTTP (silent). Elsewhere
-        // SameAsRequest keeps http://localhost working.
-        options.Cookie.SecurePolicy = builder.Environment.IsProduction()
-            ? CookieSecurePolicy.Always
-            : CookieSecurePolicy.SameAsRequest;
-        options.SlidingExpiration = true;
-        options.ExpireTimeSpan = TimeSpan.FromHours(12);
-        // API, not a browser app: never redirect to a login page.
-        options.Events.OnRedirectToLogin = ctx =>
-        {
-            ctx.Response.StatusCode = 401;
-            return Task.CompletedTask;
-        };
-        options.Events.OnRedirectToAccessDenied = ctx =>
-        {
-            ctx.Response.StatusCode = 403;
-            return Task.CompletedTask;
-        };
-    });
+builder.AddAuthenticationHosting(role);
 
 builder.Services.AddTenancyModule(runBackgroundWork: role == "worker");
 builder.Services.AddIdentityModule();
@@ -201,51 +146,43 @@ builder.Services.AddStorageModule(runBackgroundWork: role == "worker");
 builder.Services.AddIngestModule(runBackgroundWork: role == "worker");
 builder.Services.AddChecklistsModule();
 
-// Platform infra context (idempotency, ADR 29)
-builder.Services.AddDbContext<PlatformDbContext>(
-    (sp, options) =>
-    {
-        // singleton options: default region only (see module registrations / ADR 35)
-        var regions = sp.GetRequiredService<IRegionDataSources>();
-        options
-            .UseNpgsql(
-                regions.For(RegionId.Default),
-                npgsql => npgsql.MigrationsHistoryTable("__ef_migrations_history", "platform")
-            )
-            .AddInterceptors(TenantSessionInterceptor.Instance);
-    }
-);
+// Platform infra context (idempotency, ADR 29; sweep leases)
+builder.Services.AddScoped<ISweepLease, SweepLease>(); // by TYPE: Wolverine codegen refuses factories
+builder.Services.AddModuleDbContext<PlatformDbContext>("platform", audited: false); // by TYPE, not a factory: a handler that takes this context (CleanupIdempotencyHandler) is refused by Wolverine codegen otherwise
 if (role == "worker")
     builder.Services.AddHostedService<IdempotencyCleanupService>();
 
-// Object storage (ADR 19): local adapter by default; forks swap in
-// S3ObjectStore (LocIntel.Integrations.AmazonS3), AzureBlobObjectStore
-// (LocIntel.Integrations.AzureBlob), or their own - both cloud adapters are
-// smoke-tested against MinIO/Azurite in the integration suite.
-builder.Services.AddSingleton<IObjectStore, LocalObjectStore>();
-builder.Services.AddSingleton<IVirusScanner, EicarScanner>();
-
-// Secrets (ADR 31): local wrapper is DEV/TEST ONLY - Production must boot a
-// KMS (KmsKeyWrapper in LocIntel.Integrations.AmazonS3, LocalStack-tested).
-if (builder.Configuration["Secrets:LocalMasterKey"] is { } localKey)
-{
-    if (builder.Environment.IsProduction())
-        throw new InvalidOperationException(
-            "LocalKeyWrapper is dev/test only (ADR 31); configure a cloud KMS adapter."
-        );
-    builder.Services.AddSingleton<IKeyWrapper>(
-        new LocalKeyWrapper(Convert.FromBase64String(localKey))
-    );
-}
+var storageProvider = builder.AddStorageHosting();
 
 // Billing (ADR 39): local provider is DEV/TEST ONLY - Production must boot a
 // real one (StripeBillingProvider in LocIntel.Integrations.Stripe, or a fork's).
 switch (builder.Configuration["Billing:Provider"] ?? "local")
 {
     case "stripe":
-        builder.Services.Configure<LocIntel.Integrations.Stripe.StripeOptions>(
-            builder.Configuration.GetSection("Billing:Stripe")
-        );
+        builder
+            .Services.AddOptions<LocIntel.Integrations.Stripe.StripeOptions>()
+            .Bind(builder.Configuration.GetSection("Billing:Stripe"))
+            .Validate(
+                o => !string.IsNullOrWhiteSpace(o.ApiKey),
+                "Billing:Stripe:ApiKey is required."
+            )
+            .Validate(
+                o => !string.IsNullOrWhiteSpace(o.WebhookSecret),
+                "Billing:Stripe:WebhookSecret is required."
+            )
+            .Validate(
+                o => IsHttpUrl(o.ApiBase),
+                "Billing:Stripe:ApiBase must be an absolute HTTP(S) URL."
+            )
+            .Validate(
+                o =>
+                    LocIntel.Platform.Billing.PlanCatalog.Plans.All(plan =>
+                        o.PriceIds.TryGetValue(plan.Id, out var priceId)
+                        && !string.IsNullOrWhiteSpace(priceId)
+                    ),
+                "Billing:Stripe:PriceIds must contain every PlanCatalog plan."
+            )
+            .ValidateOnStart();
         builder.Services.AddSingleton<
             LocIntel.Platform.Billing.IBillingProvider,
             LocIntel.Integrations.Stripe.StripeBillingProvider
@@ -292,9 +229,29 @@ switch (builder.Configuration["Notifications:Sms"] ?? "off")
 switch (builder.Configuration["Notifications:Transport"] ?? "local")
 {
     case "smtp":
-        builder.Services.Configure<LocIntel.Integrations.Smtp.SmtpOptions>(
-            builder.Configuration.GetSection("Notifications:Smtp")
-        );
+        builder
+            .Services.AddOptions<LocIntel.Integrations.Smtp.SmtpOptions>()
+            .Bind(builder.Configuration.GetSection("Notifications:Smtp"))
+            .Validate(
+                o => !string.IsNullOrWhiteSpace(o.Host),
+                "Notifications:Smtp:Host is required."
+            )
+            .Validate(
+                o => o.Port is >= 1 and <= 65535,
+                "Notifications:Smtp:Port must be between 1 and 65535."
+            )
+            .Validate(
+                o =>
+                    MimeKit.MailboxAddress.TryParse(o.FromAddress, out var address)
+                    && address.Address.Contains('@')
+                    && address.Address == o.FromAddress,
+                "Notifications:Smtp:FromAddress must be a valid email address."
+            )
+            .Validate(
+                o => CredentialsMatch(o.UserName, o.Password),
+                "Notifications:Smtp:UserName and Password must be configured together."
+            )
+            .ValidateOnStart();
         builder.Services.AddSingleton<LocIntel.Integrations.Smtp.SmtpNotificationTransport>();
         builder.Services.AddSingleton<
             INotificationTransport,
@@ -314,95 +271,7 @@ switch (builder.Configuration["Notifications:Transport"] ?? "local")
         );
 }
 
-// Rate limiting (ADR 30): partitioned by principal tier. Guests limit on
-// their session cookie (fallback: IP), users on user id. The per-org quota
-// reading metered entitlements attaches in step 4.
-var guestLimit = builder.Configuration.GetValue("RateLimits:GuestPerMinute", 60);
-var userLimit = builder.Configuration.GetValue("RateLimits:UserPerMinute", 300);
-builder.Services.AddSingleton<OrgRateLimitCache>();
-builder.Services.AddRateLimiter(limiter =>
-{
-    limiter.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    // consumers deserve to know when to come back: fixed one-minute windows,
-    // so the limiter's own retry hint (when present) or the window size
-    limiter.OnRejected = (context, _) =>
-    {
-        var seconds = context.Lease.TryGetMetadata(
-            System.Threading.RateLimiting.MetadataName.RetryAfter,
-            out var retryAfter
-        )
-            ? Math.Max(1, (int)retryAfter.TotalSeconds)
-            : 60;
-        context.HttpContext.Response.Headers.RetryAfter = seconds.ToString();
-        return ValueTask.CompletedTask;
-    };
-    limiter.GlobalLimiter = PartitionedRateLimiter.CreateChained(
-        // ADR 30: org-level quota from the metered entitlement, over the per-principal limiter
-        PartitionedRateLimiter.Create<HttpContext, string>(http =>
-        {
-            // ONE resolver for "who is this request": the same Principal the
-            // endpoints see. This lambda used to re-parse claims and Items
-            // itself, and the two readings drifted - API keys fell into the
-            // per-IP guest bucket and skipped the org quota entirely.
-            var principal = http.RequestServices.GetRequiredService<IPrincipalAccessor>().Current;
-            OrgId? org = principal switch
-            {
-                Principal.User { ActiveOrg: { } active } => active,
-                Principal.Service service => service.Org,
-                Principal.Contact contact => contact.Org,
-                _ => null,
-            };
-            if (org is { } quotaOrg)
-            {
-                var orgGuid = quotaOrg.Value;
-                var orgLimit = http
-                    .RequestServices.GetRequiredService<OrgRateLimitCache>()
-                    .LimitFor(quotaOrg);
-                // the limit is part of the KEY: partition limiters are
-                // created once and cached, so a quota change must roll to a
-                // fresh partition or a hot org keeps its old limit forever
-                // (found by the load baseline)
-                return RateLimitPartition.GetFixedWindowLimiter(
-                    $"org:{orgGuid}:{orgLimit}",
-                    _ => new FixedWindowRateLimiterOptions
-                    {
-                        PermitLimit = orgLimit,
-                        Window = TimeSpan.FromMinutes(1),
-                        QueueLimit = 0,
-                    }
-                );
-            }
-            return RateLimitPartition.GetNoLimiter("org:none");
-        }),
-        PartitionedRateLimiter.Create<HttpContext, string>(http =>
-        {
-            var (key, permits) = http
-                .RequestServices.GetRequiredService<IPrincipalAccessor>()
-                .Current switch
-            {
-                // an API key is a first-class principal (ADR 40): its own
-                // bucket at the USER limit, never the per-IP guest bucket
-                Principal.Service service => ($"key:{service.KeyId}", userLimit),
-                Principal.User user => ($"user:{user.UserId}", userLimit),
-                _ => http.Request.Cookies.TryGetValue(
-                    GuestSessionMiddleware.CookieName,
-                    out var guest
-                )
-                    ? ($"guest:{guest}", guestLimit)
-                    : ($"ip:{http.Connection.RemoteIpAddress}", guestLimit),
-            };
-            return RateLimitPartition.GetFixedWindowLimiter(
-                key,
-                _ => new FixedWindowRateLimiterOptions
-                {
-                    PermitLimit = permits,
-                    Window = TimeSpan.FromMinutes(1),
-                    QueueLimit = 0,
-                }
-            );
-        })
-    );
-});
+builder.AddRequestPolicies();
 
 // Wolverine (ADR 23): mediation + messaging + durable Postgres outbox.
 builder.UseWolverine(opts =>
@@ -416,6 +285,13 @@ builder.UseWolverine(opts =>
     if (role == "migrate")
         opts.Durability.Mode = Wolverine.DurabilityMode.MediatorOnly;
     opts.Policies.AutoApplyTransactions();
+    // The image build runs `codegen write` first (checks.yml, image job), so
+    // Production loads the pre-generated handler code instead of generating
+    // and compiling it on every boot. Auto rather than Static: a fork that
+    // publishes without the codegen step still boots (generating at start,
+    // as in dev) instead of dying with a stale-cache error. Dev stays Dynamic.
+    if (builder.Environment.IsProduction())
+        opts.CodeGeneration.TypeLoadMode = JasperFx.CodeGeneration.TypeLoadMode.Auto;
     opts.Policies.UseDurableLocalQueues();
     opts.Discovery.IncludeAssembly(typeof(TenancyModule).Assembly);
     opts.Discovery.IncludeAssembly(typeof(IdentityModule).Assembly);
@@ -430,7 +306,11 @@ if (role == "migrate")
     builder.Services.AddHostedService<MigrationRunner>(); // migrate, provision app role, exit
 
 var bootstraps = builder.Environment.IsDevelopment() && role == "api";
-builder.Services.AddSingleton(new ReadinessState(ready: !bootstraps));
+builder.Services.AddSingleton(sp => new ReadinessState(
+    ready: !bootstraps,
+    sp.GetRequiredService<IRegionDataSources>(),
+    sp.GetRequiredService<Wolverine.Runtime.IWolverineRuntime>()
+));
 if (bootstraps)
     builder.Services.AddHostedService<DevBootstrap>(); // seed for `aspire run` (migrations: the migrate role)
 
@@ -438,39 +318,9 @@ var app = builder.Build();
 
 if (role == "api")
 {
-    // Behind the documented TLS-terminating proxy the request arrives as
-    // HTTP: without this, cookies lose the Secure flag and every URL built
-    // from Request.Scheme/Host (billing returns, SSO portal returns) comes
-    // out http://. Opt-in because trusting these headers from an UNKNOWN
-    // peer lets clients spoof scheme/host/ip - only enable it when the
-    // immediate proxy strips inbound X-Forwarded-* (reverse proxies do).
-    if (builder.Configuration.GetValue("Proxy:TrustForwardedHeaders", false))
-    {
-        var forwarded = new ForwardedHeadersOptions
-        {
-            ForwardedHeaders =
-                ForwardedHeaders.XForwardedFor
-                | ForwardedHeaders.XForwardedProto
-                | ForwardedHeaders.XForwardedHost,
-        };
-        forwarded.KnownIPNetworks.Clear(); // trust the immediate peer: the proxy
-        forwarded.KnownProxies.Clear();
-        app.UseForwardedHeaders(forwarded);
-    }
-    app.UseMiddleware<UnhandledErrorMiddleware>();
-    app.UseMiddleware<SecurityHeadersMiddleware>();
-    app.UseMiddleware<PublicCacheMiddleware>();
-    app.UseAuthentication();
-    app.UseMiddleware<SessionValidationMiddleware>();
-    app.UseMiddleware<ApiKeyAuthenticationMiddleware>();
-    app.UseMiddleware<CsrfOriginMiddleware>();
-    app.UseMiddleware<GuestSessionMiddleware>();
-    app.UseMiddleware<GuestOrgMiddleware>();
-    app.UseRateLimiter();
-    app.UseMiddleware<SuspensionMiddleware>();
-    app.UseMiddleware<IdempotencyMiddleware>();
-    app.UseMiddleware<AccessLogMiddleware>();
-    app.MapLocalObjectStore();
+    app.UseRequestPolicies();
+    if (storageProvider == "local")
+        app.MapLocalObjectStore(); // the in-process ticket endpoints exist only for the local adapter
 
     // The OpenAPI spec publishes the full API surface. It's on by default so
     // the console's developer page can link it, but a fork that treats its
@@ -538,35 +388,46 @@ if (role == "api")
     app.MapOperatorOverviewEndpoint();
     app.MapOperatorHealthEndpoint();
     app.MapWolverineEndpoints();
-    app.MapGet(
-        "/healthz",
-        (ReadinessState readiness) =>
-            readiness.Ready
-                ? Results.Ok(
-                    new
-                    {
-                        status = "ok",
-                        role,
-                        version = buildVersion,
-                    }
-                )
-                : Results.Json(
-                    new
-                    {
-                        status = "starting",
-                        role,
-                        version = buildVersion,
-                    },
-                    statusCode: StatusCodes.Status503ServiceUnavailable
-                )
-    );
 }
 
-// JasperFx command line only when a command is given (design-debt close):
-// `-- codegen write` really writes the generated handler code, so CI
-// catches "fails at first request" codegen errors at build time. The
-// no-args path stays plain app.Run() - WebApplicationFactory (the whole
-// integration suite) hooks that and NOT the JasperFx runner.
+// Probes for EVERY role (the worker had none, and the guide told operators
+// to wire /healthz to the deployed process). /livez answers as soon as the
+// process serves requests: liveness, restart if it stops. /healthz is
+// readiness: 503 until the role's dependencies are usable (in Development
+// the api's bootstrap flips it after migrations and seed), take the pod out
+// of rotation while it is not.
+app.MapGet(
+        "/livez",
+        () =>
+            Results.Ok(
+                new
+                {
+                    status = "alive",
+                    role,
+                    version = buildVersion,
+                }
+            )
+    )
+    .ExcludeFromDescription();
+app.MapGet(
+        "/healthz",
+        async (ReadinessState readiness, CancellationToken ct) =>
+        {
+            var ready = await readiness.DependenciesReadyAsync(role, ct);
+            return ready
+                ? Results.Ok(new HealthResponse("ok", role, buildVersion))
+                : Results.Json(
+                    new HealthResponse(
+                        readiness.Ready ? "unhealthy" : "starting",
+                        role,
+                        buildVersion
+                    ),
+                    statusCode: StatusCodes.Status503ServiceUnavailable
+                );
+        }
+    )
+    .Produces<HealthResponse>(); // described: it is in the published contract snapshot; /livez is a probe only
+
 // JasperFx command line only when a command is given (design-debt close):
 // `-- codegen write` really writes the generated handler code, so CI
 // catches "fails at first request" codegen errors at build time. Two
@@ -583,3 +444,5 @@ app.Run();
 
 // Exposed for WebApplicationFactory in the integration/isolation suites.
 public partial class Program;
+
+public sealed record HealthResponse(string Status, string Role, string Version);

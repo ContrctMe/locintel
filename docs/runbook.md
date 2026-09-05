@@ -83,3 +83,29 @@ Wire alerts in your collector on: dead-letter count > 0 for 15m; 5xx rate;
 `/api/operator/health` probe failures; webhook delivery failure streaks
 (per-org deliveries are on the Developers page). The template ships the
 signals (OTLP), not the alert rules — thresholds are deployment-specific.
+
+## Browser CI failed
+
+Download the `browser-failure-diagnostics` artifact. Alongside Playwright traces,
+`stack-logs/<run>/` contains API, console, public-app, and PostgreSQL logs from
+before teardown. Correlate failed request paths/statuses and trace IDs before
+rerunning; a successful rerun alone does not explain the original failure.
+CI enables HTTP request-duration logging to distinguish slow server requests
+from proxy/browser delays. Locally, reproduce that logging with:
+
+```bash
+env 'Logging__LogLevel__Microsoft.AspNetCore.Hosting.Diagnostics=Information' \
+  tools/e2e-stack.sh --project=chromium
+```
+
+Every run prints its unique temporary log directory. Failed runs also copy logs
+into the artifact tree; subsequent Playwright runs clear that tree, so preserve
+evidence before another run. Treat traces/logs as sensitive: they can contain
+test session cookies and identifying data, and should not be published openly.
+`bash tests/e2e-stack-artifacts.test.sh` checks the failure path with an invalid
+browser project after booting the real stack. It requires Docker and the normal
+browser dependencies, and succeeds only if the original invocation failed and
+all four diagnostic logs were retained.
+
+Related: [production guide](production.md), [current verification and open risks](software-maturity-review-details.md),
+and [project overview](../README.md).

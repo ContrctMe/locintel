@@ -4,6 +4,7 @@ using LocIntel.Modules.Audit.Data;
 using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Messaging;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Wolverine;
 using Wolverine.Attributes;
@@ -13,10 +14,36 @@ namespace LocIntel.Modules.Audit;
 
 public sealed record SetAuditConfigRequest(bool LogGrants, bool LogReads);
 
+public sealed record AuditRowResponse(
+    Guid Id,
+    string ActorTier,
+    DateTimeOffset OccurredAt,
+    string? ActorLabel = null,
+    Guid? ActorId = null,
+    string? EventName = null,
+    JsonElement? Payload = null,
+    string? SchemaName = null,
+    string? TableName = null,
+    string? RowId = null,
+    string? Operation = null,
+    JsonElement? Diff = null,
+    string? Action = null,
+    string? Outcome = null,
+    string? ScopeSummary = null,
+    string? Method = null,
+    string? Path = null,
+    int? StatusCode = null
+);
+
+public sealed record AuditFloorResponse(bool DomainEvents, bool AuthzDenials, bool ChangeDiffs);
+
+public sealed record AuditConfigResponse(bool LogGrants, bool LogReads, AuditFloorResponse Floor);
+
 public static class AuditEndpoints
 {
     [Transactional(typeof(AuditDbContext))]
     [WolverineGet("/api/audit/{kind}")]
+    [ProducesResponseType(typeof(List<AuditRowResponse>), StatusCodes.Status200OK)]
     public static async Task<IResult> Query(
         string kind,
         AuditDbContext db,
@@ -91,6 +118,7 @@ public static class AuditEndpoints
 
     [Transactional(typeof(AuditDbContext))]
     [WolverineGet("/api/admin/audit-config")]
+    [ProducesResponseType(typeof(AuditConfigResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> GetConfig(
         AuditDbContext db,
         IPrincipalAccessor accessor,
@@ -120,6 +148,7 @@ public static class AuditEndpoints
     /// <summary>Audit config is self-referential (ADR 12): changing it emits a domain audit event.</summary>
     [Transactional(typeof(AuditDbContext))]
     [WolverinePut("/api/admin/audit-config")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public static async Task<IResult> SetConfig(
         SetAuditConfigRequest request,
         AuditDbContext db,

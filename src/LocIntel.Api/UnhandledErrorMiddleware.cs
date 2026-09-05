@@ -31,6 +31,13 @@ public sealed class UnhandledErrorMiddleware(
         {
             await next(context);
         }
+        catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+        {
+            // The caller went away: do not report a server fault or attempt to
+            // send an error body on an aborted response. Preserve started output.
+            if (!context.Response.HasStarted)
+                context.Response.StatusCode = StatusCodes.Status499ClientClosedRequest;
+        }
         catch (Exception exception) when (!context.Response.HasStarted)
         {
             logger.LogError(exception, "unhandled exception (traceId {TraceId})", traceId);

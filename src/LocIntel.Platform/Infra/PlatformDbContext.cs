@@ -6,7 +6,7 @@ namespace LocIntel.Platform.Infra;
 
 /// <summary>
 /// Platform-owned infrastructure tables (not a domain module): currently the
-/// idempotency store (ADR 29). Excluded from change-diff audit - infra churn
+/// idempotency store (ADR 29) and the sweep leases. Excluded from change-diff audit - infra churn
 /// is noise.
 /// </summary>
 public sealed class PlatformDbContext(
@@ -18,6 +18,7 @@ public sealed class PlatformDbContext(
     public override bool AuditsOwnChanges => false;
 
     public DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();
+    public DbSet<SweepRun> SweepRuns => Set<SweepRun>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -35,6 +36,16 @@ public sealed class PlatformDbContext(
             b.Property(r => r.Body).HasColumnName("body");
             b.Property(r => r.CreatedAt).HasColumnName("created_at");
             b.HasIndex(r => r.CreatedAt);
+        });
+        modelBuilder.Entity<SweepRun>(b =>
+        {
+            // platform upkeep, not tenant data: no org column, no RLS
+            b.ToTable("sweep_runs");
+            b.HasKey(r => new { r.Sweep, r.Period });
+            b.Property(r => r.Sweep).HasColumnName("sweep").HasMaxLength(100);
+            b.Property(r => r.Period).HasColumnName("period");
+            b.Property(r => r.ClaimedAt).HasColumnName("claimed_at");
+            b.Property(r => r.ClaimedBy).HasColumnName("claimed_by").HasMaxLength(200);
         });
     }
 }

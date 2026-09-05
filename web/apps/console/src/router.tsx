@@ -1,19 +1,5 @@
-import { createRootRoute, createRoute, createRouter, Outlet } from '@tanstack/react-router';
+import { createRootRoute, createRoute, createRouter, lazyRouteComponent, Outlet } from '@tanstack/react-router';
 import { Shell } from './shell';
-import { AccountPage } from './pages/account';
-import { AuditPage } from './pages/audit';
-import { ChecklistsPage } from './pages/checklists';
-import { DashboardPage } from './pages/dashboard';
-import { DevelopersPage } from './pages/developers';
-import { HierarchyPage } from './pages/hierarchy';
-import { IngestPage } from './pages/ingest';
-import { MembersPage } from './pages/members';
-import { OperatorPage } from './pages/operator';
-import { RolesPage } from './pages/roles';
-import { SettingsPage } from './pages/settings';
-import { SiteDetailPage } from './pages/site-detail';
-import { FilesPage } from './pages/files';
-import { SitesPage } from './pages/sites';
 
 const rootRoute = createRootRoute({
   component: () => (
@@ -24,23 +10,40 @@ const rootRoute = createRootRoute({
 });
 
 const routes = [
-  createRoute({ getParentRoute: () => rootRoute, path: '/', component: DashboardPage }),
-  createRoute({ getParentRoute: () => rootRoute, path: '/sites', component: SitesPage }),
-  createRoute({ getParentRoute: () => rootRoute, path: '/sites/$siteId', component: SiteDetailPage }),
-  createRoute({ getParentRoute: () => rootRoute, path: '/checklists', component: ChecklistsPage }),
-  createRoute({ getParentRoute: () => rootRoute, path: '/files', component: FilesPage }),
-  createRoute({ getParentRoute: () => rootRoute, path: '/hierarchy', component: HierarchyPage }),
-  createRoute({ getParentRoute: () => rootRoute, path: '/ingest', component: IngestPage }),
-  createRoute({ getParentRoute: () => rootRoute, path: '/members', component: MembersPage }),
-  createRoute({ getParentRoute: () => rootRoute, path: '/roles', component: RolesPage }),
-  createRoute({ getParentRoute: () => rootRoute, path: '/audit', component: AuditPage }),
-  createRoute({ getParentRoute: () => rootRoute, path: '/operator', component: OperatorPage }),
-  createRoute({ getParentRoute: () => rootRoute, path: '/settings', component: SettingsPage }),
-  createRoute({ getParentRoute: () => rootRoute, path: '/developers', component: DevelopersPage }),
-  createRoute({ getParentRoute: () => rootRoute, path: '/account', component: AccountPage }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/',
+    component: lazyRouteComponent(() => import('./pages/dashboard'), 'DashboardPage') }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/sites',
+    component: lazyRouteComponent(() => import('./features/sites'), 'SitesPage') }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/sites/$siteId',
+    component: lazyRouteComponent(() => import('./features/sites'), 'SiteDetailPage') }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/checklists',
+    component: lazyRouteComponent(() => import('./features/checklists'), 'ChecklistsPage') }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/files',
+    component: lazyRouteComponent(() => import('./pages/files'), 'FilesPage') }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/hierarchy',
+    component: lazyRouteComponent(() => import('./pages/hierarchy'), 'HierarchyPage') }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/ingest',
+    component: lazyRouteComponent(() => import('./pages/ingest'), 'IngestPage') }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/members',
+    component: lazyRouteComponent(() => import('./pages/members'), 'MembersPage') }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/roles',
+    component: lazyRouteComponent(() => import('./features/roles'), 'RolesPage') }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/audit',
+    component: lazyRouteComponent(() => import('./pages/audit'), 'AuditPage') }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/operator',
+    component: lazyRouteComponent(() => import('./features/operator'), 'OperatorPage') }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/settings',
+    component: lazyRouteComponent(() => import('./pages/settings'), 'SettingsPage') }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/developers',
+    component: lazyRouteComponent(() => import('./pages/developers'), 'DevelopersPage') }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/account',
+    component: lazyRouteComponent(() => import('./pages/account'), 'AccountPage') }),
 ];
 
-export const router = createRouter({ routeTree: rootRoute.addChildren(routes) });
+export const router = createRouter({
+  routeTree: rootRoute.addChildren(routes),
+  defaultPendingComponent: () => <p className="text-sm text-muted-foreground">Loading…</p>,
+});
 
 declare module '@tanstack/react-router' {
   interface Register {

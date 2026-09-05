@@ -120,24 +120,9 @@ public sealed class IdempotencyMiddleware(RequestDelegate next)
     }
 }
 
-/// <summary>Hourly TTL sweep; the expired_cleanup RLS policy authorizes cross-org deletes of stale rows only.</summary>
-public sealed class IdempotencyCleanupService(IServiceProvider services) : BackgroundService
+/// <summary>Hourly TTL sweep, leased per period like every sweep; the work is CleanupIdempotencyHandler.</summary>
+public sealed class IdempotencyCleanupService(IServiceProvider services)
+    : LocIntel.Platform.Messaging.GlobalSweepService<CleanupIdempotency>(services)
 {
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-    {
-        using var timer = new PeriodicTimer(TimeSpan.FromHours(1));
-        try
-        {
-            do
-            {
-                await using var scope = services.CreateAsyncScope();
-                var db = scope.ServiceProvider.GetRequiredService<PlatformDbContext>();
-                var cutoff = DateTimeOffset.UtcNow.AddHours(-24);
-                await db
-                    .IdempotencyRecords.Where(r => r.CreatedAt < cutoff)
-                    .ExecuteDeleteAsync(stoppingToken);
-            } while (await timer.WaitForNextTickAsync(stoppingToken));
-        }
-        catch (OperationCanceledException) { } // shutdown
-    }
+    protected override TimeSpan Interval => TimeSpan.FromHours(1);
 }
