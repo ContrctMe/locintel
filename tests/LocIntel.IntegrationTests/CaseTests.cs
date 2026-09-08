@@ -295,6 +295,66 @@ public class CaseTests(ApiFixture fixture) : IClassFixture<ApiFixture>
             c => c.GetProperty("id").GetGuid() == caseId
         );
 
+        var fileId = await UploadAsync(owner, "revoked-evidence.jpg");
+        var added = await reader.PostAsJsonAsync($"/api/cases/{caseId}/evidence", new { fileId });
+        added.EnsureSuccessStatusCode();
+        var evidenceId = (await added.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id")
+            .GetGuid();
+        var downloadPath = $"/api/cases/{caseId}/evidence/{evidenceId}/download";
+        (await reader.PostAsync(downloadPath, null)).EnsureSuccessStatusCode();
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
+            (await reader.GetAsync($"/api/cases/{caseId}/package")).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
+            (await reader.DeleteAsync($"/api/cases/{caseId}/evidence/{evidenceId}")).StatusCode
+        );
+
+        var memberId = detail
+            .GetProperty("members")
+            .EnumerateArray()
+            .Single(m => m.GetProperty("userId").GetGuid() == readerId)
+            .GetProperty("id")
+            .GetGuid();
+        (
+            await owner.DeleteAsync($"/api/cases/{caseId}/members/{memberId}")
+        ).EnsureSuccessStatusCode();
+        // The already-authenticated session loses access on its next request.
+        foreach (var suffix in new[] { "", "/custody", "/package" })
+            Assert.Equal(
+                HttpStatusCode.NotFound,
+                (await reader.GetAsync($"/api/cases/{caseId}{suffix}")).StatusCode
+            );
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (await reader.PostAsync(downloadPath, null)).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (await reader.PostAsync($"/api/cases/{caseId}/assist/brief", null)).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (
+                await reader.PostAsJsonAsync($"/api/cases/{caseId}/notes", new { body = "Revoked" })
+            ).StatusCode
+        );
+        mine = await reader.GetFromJsonAsync<JsonElement>("/api/cases?mine=true");
+        Assert.DoesNotContain(
+            mine.GetProperty("items").EnumerateArray(),
+            c => c.GetProperty("id").GetGuid() == caseId
+        );
+        var custody = await owner.GetFromJsonAsync<JsonElement>($"/api/cases/{caseId}/custody");
+        Assert.Equal(
+            new[] { "Added", "DownloadAccessIssued" },
+            custody
+                .GetProperty("events")
+                .EnumerateArray()
+                .Select(e => e.GetProperty("action").GetString())
+        );
+
         // other tenants and tiers
         var outsider = await fixture.LoginAsync(ApiFixture.UserB);
         Assert.Equal(
@@ -313,6 +373,249 @@ public class CaseTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         );
         var viewer = await fixture.LoginAsync(ApiFixture.ViewerA);
         Assert.Equal(HttpStatusCode.Forbidden, (await viewer.GetAsync("/api/cases")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Scoped_readers_see_custody_but_cannot_issue_evidence_access_or_work_the_case()
+    {
+        using var owner = await fixture.LoginAsync(ApiFixture.UserA);
+        var siteId = await SiteAsync(owner, await RootAsync(owner), "Scoped case store");
+        var incidentId = await IncidentAsync(owner, siteId, "Scoped case incident");
+        var caseId = await OpenAsync(owner, "Scope-only case", incidentId);
+        var fileId = await UploadAsync(owner, "scope-evidence.jpg");
+        var added = await owner.PostAsJsonAsync($"/api/cases/{caseId}/evidence", new { fileId });
+        added.EnsureSuccessStatusCode();
+        var evidenceId = (await added.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id")
+            .GetGuid();
+        var role = await owner.PostAsJsonAsync(
+            "/api/roles",
+            new
+            {
+                name = "Scoped case reader",
+                grants = new[] { new { domain = "cases", action = "read" } },
+            }
+        );
+        role.EnsureSuccessStatusCode();
+        var roleId = (await role.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id")
+            .GetGuid();
+        var readerId = await fixture.CreateMemberAsync(
+            "scope-case-reader@locintel.local",
+            fixture.OrgA
+        );
+        (
+            await owner.PostAsJsonAsync($"/api/roles/{roleId}/assign", new { userId = readerId })
+        ).EnsureSuccessStatusCode();
+        using var reader = await fixture.LoginAsync("scope-case-reader@locintel.local");
+
+        var detail = await reader.GetFromJsonAsync<JsonElement>($"/api/cases/{caseId}");
+        Assert.False(detail.GetProperty("canWork").GetBoolean());
+        Assert.False(detail.GetProperty("canManage").GetBoolean());
+        Assert.Equal(
+            "scope-evidence.jpg",
+            Assert
+                .Single(detail.GetProperty("evidence").EnumerateArray())
+                .GetProperty("fileName")
+                .GetString()
+        );
+        var visible = await reader.GetFromJsonAsync<JsonElement>("/api/cases");
+        Assert.Contains(
+            visible.GetProperty("items").EnumerateArray(),
+            c => c.GetProperty("id").GetGuid() == caseId
+        );
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
+            (
+                await reader.PostAsync($"/api/cases/{caseId}/evidence/{evidenceId}/download", null)
+            ).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
+            (
+                await reader.PostAsJsonAsync($"/api/cases/{caseId}/evidence", new { fileId })
+            ).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
+            (
+                await reader.PostAsJsonAsync(
+                    $"/api/cases/{caseId}/notes",
+                    new { body = "Not a member" }
+                )
+            ).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
+            (await reader.GetAsync($"/api/cases/{caseId}/package")).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
+            (await reader.PostAsync($"/api/cases/{caseId}/assist/brief", null)).StatusCode
+        );
+        var custody = await reader.GetFromJsonAsync<JsonElement>($"/api/cases/{caseId}/custody");
+        Assert.Equal(
+            "Added",
+            Assert
+                .Single(custody.GetProperty("events").EnumerateArray())
+                .GetProperty("action")
+                .GetString()
+        );
+
+        var linkId = Assert
+            .Single(detail.GetProperty("incidents").EnumerateArray())
+            .GetProperty("id")
+            .GetGuid();
+        (
+            await owner.DeleteAsync($"/api/cases/{caseId}/incidents/{linkId}")
+        ).EnsureSuccessStatusCode();
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (await reader.GetAsync($"/api/cases/{caseId}")).StatusCode
+        );
+        visible = await reader.GetFromJsonAsync<JsonElement>("/api/cases");
+        Assert.DoesNotContain(
+            visible.GetProperty("items").EnumerateArray(),
+            c => c.GetProperty("id").GetGuid() == caseId
+        );
+    }
+
+    [Fact]
+    public async Task Evidence_rejects_foreign_files_and_wrong_case_ids_without_recording_custody()
+    {
+        using var owner = await fixture.LoginAsync(ApiFixture.UserA);
+        using var outsider = await fixture.LoginAsync(ApiFixture.UserB);
+        var caseId = await OpenAsync(owner, "Evidence isolation");
+        var otherCaseId = await OpenAsync(owner, "Another case");
+        var foreignFile = await UploadAsync(outsider, "foreign-evidence.jpg");
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (
+                await owner.PostAsJsonAsync(
+                    $"/api/cases/{caseId}/evidence",
+                    new { fileId = foreignFile }
+                )
+            ).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (
+                await owner.PostAsJsonAsync(
+                    $"/api/cases/{caseId}/evidence",
+                    new { fileId = Guid.NewGuid() }
+                )
+            ).StatusCode
+        );
+
+        // A file awaiting upload may be linked, but must never yield a download URL.
+        var created = await owner.PostAsJsonAsync(
+            "/api/files",
+            new
+            {
+                name = "pending-evidence.jpg",
+                contentType = "image/jpeg",
+                sizeBytes = 7,
+            }
+        );
+        created.EnsureSuccessStatusCode();
+        var fileId = (await created.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("fileId")
+            .GetGuid();
+        var added = await owner.PostAsJsonAsync($"/api/cases/{caseId}/evidence", new { fileId });
+        added.EnsureSuccessStatusCode();
+        var evidenceId = (await added.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id")
+            .GetGuid();
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (
+                await owner.PostAsync($"/api/cases/{caseId}/evidence/{evidenceId}/download", null)
+            ).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (
+                await owner.PostAsync(
+                    $"/api/cases/{otherCaseId}/evidence/{evidenceId}/download",
+                    null
+                )
+            ).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (await owner.DeleteAsync($"/api/cases/{otherCaseId}/evidence/{evidenceId}")).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (await outsider.DeleteAsync($"/api/cases/{caseId}/evidence/{evidenceId}")).StatusCode
+        );
+        // Use a downloadable file as well: a wrong-case rejection must come
+        // from parent authorization, not accidentally from the scan-state guard.
+        var cleanFileId = await UploadAsync(owner, "other-case-clean.jpg");
+        var cleanAdded = await owner.PostAsJsonAsync(
+            $"/api/cases/{otherCaseId}/evidence",
+            new { fileId = cleanFileId }
+        );
+        cleanAdded.EnsureSuccessStatusCode();
+        var cleanEvidenceId = (await cleanAdded.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id")
+            .GetGuid();
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (
+                await owner.PostAsync(
+                    $"/api/cases/{caseId}/evidence/{cleanEvidenceId}/download",
+                    null
+                )
+            ).StatusCode
+        );
+        var custody = await owner.GetFromJsonAsync<JsonElement>($"/api/cases/{caseId}/custody");
+        Assert.Equal(
+            "Added",
+            Assert
+                .Single(custody.GetProperty("events").EnumerateArray())
+                .GetProperty("action")
+                .GetString()
+        );
+        var otherCustody = await owner.GetFromJsonAsync<JsonElement>(
+            $"/api/cases/{otherCaseId}/custody"
+        );
+        Assert.Equal(
+            "Added",
+            Assert
+                .Single(otherCustody.GetProperty("events").EnumerateArray())
+                .GetProperty("action")
+                .GetString()
+        );
+
+        (
+            await owner.DeleteAsync($"/api/cases/{caseId}/evidence/{evidenceId}")
+        ).EnsureSuccessStatusCode();
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (await owner.DeleteAsync($"/api/cases/{caseId}/evidence/{evidenceId}")).StatusCode
+        );
+        var detail = await owner.GetFromJsonAsync<JsonElement>($"/api/cases/{caseId}");
+        Assert.Empty(detail.GetProperty("evidence").EnumerateArray());
+        custody = await owner.GetFromJsonAsync<JsonElement>($"/api/cases/{caseId}/custody");
+        Assert.Equal(
+            new[] { "Added", "Removed" },
+            custody
+                .GetProperty("events")
+                .EnumerateArray()
+                .Select(e => e.GetProperty("action").GetString())
+        );
+    }
+
+    private static async Task<Guid> OpenAsync(
+        HttpClient client,
+        string title,
+        params Guid[] incidentIds
+    )
+    {
+        var opened = await client.PostAsJsonAsync("/api/cases", new { title, incidentIds });
+        opened.EnsureSuccessStatusCode();
+        return (await opened.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
     }
 
     private static async Task<Guid> RootAsync(HttpClient client)
@@ -407,6 +710,22 @@ public class CaseTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         };
         (await client.SendAsync(put)).EnsureSuccessStatusCode();
         (await client.PostAsync($"/api/files/{fileId}/complete", null)).EnsureSuccessStatusCode();
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+            {
+                var files = await client.GetFromJsonAsync<JsonElement>(
+                    $"/api/files?q={Uri.EscapeDataString(name)}"
+                );
+                return files
+                    .GetProperty("items")
+                    .EnumerateArray()
+                    .Any(f =>
+                        f.GetProperty("id").GetGuid() == fileId
+                        && f.GetProperty("status").GetString() == "Clean"
+                    );
+            },
+            "case evidence to finish scanning"
+        );
         return fileId;
     }
 }
