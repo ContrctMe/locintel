@@ -74,21 +74,18 @@ if (process.env.FLEET_BENCH_FIXTURE) {
   if (seedSites) {
     const hierarchy = await (await follow(`${base}/api/hierarchy`)).json();
     const root = hierarchy.nodes.find(n => n.depth === 0);
-    let next = 0;
-    await Promise.all(Array.from({ length: 8 }, async () => {
-      while (next < seedSites) {
-        const i = next++;
-        const created = await fetch(`${base}/api/sites`, {
-          method: 'POST', signal: AbortSignal.timeout(30_000),
-          headers: { authorization: `Bearer ${secret}`, 'content-type': 'application/json' },
-          body: JSON.stringify({ nodeId: root.id, name: `Capacity site ${String(i).padStart(6, '0')}`,
-            timeZone: 'America/Chicago', city: 'Benchmark', latitude: 26 + (i % 97) / 97 * 22,
-            longitude: -124 + (i % 89) / 89 * 57 }),
-        });
-        if (!created.ok) throw new Error(`seed failed: ${created.status} ${await created.text()}`);
-        await created.arrayBuffer();
-      }
-    }));
+    // Site capacity reservations serialize writes within an organization.
+    for (let i = 0; i < seedSites; i++) {
+      const created = await fetch(`${base}/api/sites`, {
+        method: 'POST', signal: AbortSignal.timeout(30_000),
+        headers: { authorization: `Bearer ${secret}`, 'content-type': 'application/json' },
+        body: JSON.stringify({ nodeId: root.id, name: `Capacity site ${String(i).padStart(6, '0')}`,
+          timeZone: 'America/Chicago', city: 'Benchmark', latitude: 26 + (i % 97) / 97 * 22,
+          longitude: -124 + (i % 89) / 89 * 57 }),
+      });
+      if (!created.ok) throw new Error(`seed failed: ${created.status} ${await created.text()}`);
+      await created.arrayBuffer();
+    }
     console.log(`Seeded ${seedSites} sites through the real API`);
   }
   const instances = new Set();
