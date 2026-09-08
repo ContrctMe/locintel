@@ -2,6 +2,9 @@
 
 Status: active, not deployment-ready. Updated 2026-09-05. Owner: project maintainers.
 
+Latest local evidence: [restore and sustained-load rehearsal](restore-load-rehearsal.md)
+(2026-09-08). Hosted acceptance remains outstanding.
+
 ## Agreed scope
 
 Use LocIntel as the production-shaped sample for the Premise fork. First update
