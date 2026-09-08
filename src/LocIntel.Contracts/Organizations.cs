@@ -74,8 +74,21 @@ public sealed record RecordAccessAudit(string Method, string Path, int StatusCod
 /// <summary>Cross-module read contracts for ingest (implemented by Tenancy / Storage; consumed above the ladder).</summary>
 public interface ISiteLookup
 {
-    Task<IReadOnlyList<SiteSnapshot>> ListSitesAsync(CancellationToken ct = default);
+    /// <summary>The live sites behind these external ids - the file's rows, never the whole org.</summary>
+    Task<IReadOnlyList<SiteSnapshot>> ListSitesAsync(
+        IReadOnlyCollection<string> externalIds,
+        CancellationToken ct = default
+    );
+
+    /// <summary>Resolve incident-import references by name or external id, ignoring case.</summary>
+    Task<IReadOnlyList<SiteSnapshot>> ResolveSitesAsync(
+        IReadOnlyCollection<string> references,
+        CancellationToken ct = default
+    );
     Task<IReadOnlyList<NodeSnapshot>> ListNodesAsync(CancellationToken ct = default);
+
+    /// <summary>How many sites the org has (the plan limit's "current", checked once per batch).</summary>
+    Task<long> CountSitesAsync(CancellationToken ct = default);
 }
 
 public sealed record SiteSnapshot(
@@ -112,7 +125,8 @@ public sealed record SiteChangeRequested(
     string ExternalId,
     string Name,
     string TimeZone,
-    Guid? NodeId
+    Guid? NodeId,
+    Guid? CapacityReservationId = null
 );
 
 /// <summary>
@@ -135,7 +149,7 @@ public interface IOrgDataExporter
 }
 
 /// <summary>Assemble the org's export archive (handled by Storage; tenant on the envelope).</summary>
-public sealed record ExportOrgData(Guid RequestedBy);
+public sealed record ExportOrgData(Guid RequestedBy, Guid? AdmissionId = null);
 
 /// <summary>
 /// Org deletion fan-out, one command per owning module so each Wolverine
@@ -155,6 +169,8 @@ public sealed record PurgeOrgIngest;
 public sealed record PurgeOrgWebhooks;
 
 public sealed record PurgeOrgChecklists;
+
+public sealed record PurgeOrgSpatial;
 
 /// <summary>The org is gone: read models drop it, provider directory follows.</summary>
 public sealed record OrganizationDeleted(OrgId OrgId, string? ExternalId);

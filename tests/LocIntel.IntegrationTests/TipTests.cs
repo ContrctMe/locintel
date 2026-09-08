@@ -50,7 +50,7 @@ public class TipTests(ApiFixture fixture) : IClassFixture<ApiFixture>
             .GetGuid();
 
         var guest = fixture.GuestClient();
-        guest.DefaultRequestHeaders.Add("X-Forwarded-Host", "org-a.locintel.test");
+        guest.DefaultRequestHeaders.Host = "org-a.locintel.test";
 
         // too short, then real
         Assert.Equal(
@@ -115,7 +115,7 @@ public class TipTests(ApiFixture fixture) : IClassFixture<ApiFixture>
 
         // an unknown host is nobody's guest: 404, never a hint
         var nowhere = fixture.GuestClient();
-        nowhere.DefaultRequestHeaders.Add("X-Forwarded-Host", "nobody.locintel.test");
+        nowhere.DefaultRequestHeaders.Host = "nobody.locintel.test";
         Assert.Equal(
             HttpStatusCode.NotFound,
             (
@@ -132,7 +132,7 @@ public class TipTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         );
         // and another org's site id is not this org's site
         var elsewhere = fixture.GuestClient();
-        elsewhere.DefaultRequestHeaders.Add("X-Forwarded-Host", "org-b.locintel.test");
+        elsewhere.DefaultRequestHeaders.Host = "org-b.locintel.test";
         Assert.Equal(
             HttpStatusCode.NotFound,
             (

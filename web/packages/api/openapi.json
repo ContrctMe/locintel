@@ -169,31 +169,39 @@
         }
       }
     },
-    "/api/sites": {
-      "post": {
+    "/api/listings/feed": {
+      "get": {
         "tags": [
-          "LocIntel.Modules.Tenancy.Sites.SiteEndpoints"
+          "LocIntel.Modules.Tenancy.Sites.ListingsFeedEndpoint"
         ],
-        "summary": "POST_api_sites",
-        "description": "POST_api_sites",
-        "operationId": "POST_api_sites",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateSiteRequest"
-              }
+        "summary": "GET_api_listings_feed",
+        "description": "GET_api_listings_feed",
+        "operationId": "GET_api_listings_feed",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
             }
           },
-          "required": true
-        },
+          {
+            "name": "after",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SiteResponse"
+                  "$ref": "#/components/schemas/ListingsFeedResponse"
                 }
               }
             }
@@ -207,25 +215,49 @@
             }
           }
         }
-      },
+      }
+    },
+    "/public/org": {
       "get": {
         "tags": [
-          "LocIntel.Modules.Tenancy.Sites.SiteEndpoints"
+          "LocIntel.Modules.Tenancy.Sites.PublicSiteEndpoints"
         ],
-        "summary": "GET_api_sites",
-        "description": "GET_api_sites",
-        "operationId": "GET_api_sites",
-        "parameters": [
-          {
-            "name": "under",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "uuid"
+        "summary": "GET_public_org",
+        "description": "GET_public_org",
+        "operationId": "GET_public_org",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicOrgResponse"
+                }
+              }
             }
           },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/public/sites": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Tenancy.Sites.PublicSiteEndpoints"
+        ],
+        "summary": "GET_public_sites",
+        "description": "GET_public_sites",
+        "operationId": "GET_public_sites",
+        "parameters": [
           {
-            "name": "q",
+            "name": "near",
             "in": "query",
             "schema": {
               "type": "string"
@@ -236,23 +268,15 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           },
           {
-            "name": "offset",
+            "name": "after",
             "in": "query",
             "schema": {
-              "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
-              "format": "int32"
+              "type": "string"
             }
           }
         ],
@@ -262,7 +286,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SiteListResponse"
+                  "$ref": "#/components/schemas/PublicSiteListResponse"
                 }
               }
             }
@@ -278,47 +302,14 @@
         }
       }
     },
-    "/api/sites/open-now": {
+    "/public/sites/{id}": {
       "get": {
         "tags": [
-          "LocIntel.Modules.Tenancy.Sites.SiteEndpoints"
+          "LocIntel.Modules.Tenancy.Sites.PublicSiteEndpoints"
         ],
-        "summary": "GET_api_sites_open_now",
-        "description": "GET_api_sites_open_now",
-        "operationId": "GET_api_sites_open_now",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/SiteResponse"
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": { }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/sites/{id}": {
-      "get": {
-        "tags": [
-          "LocIntel.Modules.Tenancy.Sites.SiteEndpoints"
-        ],
-        "summary": "GET_api_sites_id",
-        "description": "GET_api_sites_id",
-        "operationId": "GET_api_sites_id",
+        "summary": "GET_public_sites_id",
+        "description": "GET_public_sites_id",
+        "operationId": "GET_public_sites_id",
         "parameters": [
           {
             "name": "id",
@@ -336,56 +327,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SiteResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": { }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "LocIntel.Modules.Tenancy.Sites.SiteEndpoints"
-        ],
-        "summary": "POST_api_sites_id",
-        "description": "POST_api_sites_id",
-        "operationId": "POST_api_sites_id",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateSiteRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SiteResponse"
+                  "$ref": "#/components/schemas/PublicSiteDetailResponse"
                 }
               }
             }
@@ -404,7 +346,7 @@
     "/api/sites/{id}/schedules": {
       "post": {
         "tags": [
-          "LocIntel.Modules.Tenancy.Sites.SiteEndpoints"
+          "LocIntel.Modules.Tenancy.Sites.ScheduleEndpoints"
         ],
         "summary": "POST_api_sites_id_schedules",
         "description": "POST_api_sites_id_schedules",
@@ -575,10 +517,7 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           }
@@ -593,149 +532,6 @@
                   "items": {
                     "$ref": "#/components/schemas/SiteWindowResponse"
                   }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": { }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/listings/feed": {
-      "get": {
-        "tags": [
-          "LocIntel.Modules.Tenancy.Sites.ListingsFeedEndpoint"
-        ],
-        "summary": "GET_api_listings_feed",
-        "description": "GET_api_listings_feed",
-        "operationId": "GET_api_listings_feed",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ListingsFeedResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": { }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/public/org": {
-      "get": {
-        "tags": [
-          "LocIntel.Modules.Tenancy.Sites.PublicSiteEndpoints"
-        ],
-        "summary": "GET_public_org",
-        "description": "GET_public_org",
-        "operationId": "GET_public_org",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicOrgResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": { }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/public/sites": {
-      "get": {
-        "tags": [
-          "LocIntel.Modules.Tenancy.Sites.PublicSiteEndpoints"
-        ],
-        "summary": "GET_public_sites",
-        "description": "GET_public_sites",
-        "operationId": "GET_public_sites",
-        "parameters": [
-          {
-            "name": "near",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/PublicSiteSummary"
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": { }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/public/sites/{id}": {
-      "get": {
-        "tags": [
-          "LocIntel.Modules.Tenancy.Sites.PublicSiteEndpoints"
-        ],
-        "summary": "GET_public_sites_id",
-        "description": "GET_public_sites_id",
-        "operationId": "GET_public_sites_id",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublicSiteDetailResponse"
                 }
               }
             }
@@ -871,6 +667,293 @@
         }
       }
     },
+    "/api/sites": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Tenancy.Sites.SiteEndpoints"
+        ],
+        "summary": "POST_api_sites",
+        "description": "POST_api_sites",
+        "operationId": "POST_api_sites",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSiteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Tenancy.Sites.SiteListEndpoints"
+        ],
+        "summary": "GET_api_sites",
+        "description": "GET_api_sites",
+        "operationId": "GET_api_sites",
+        "parameters": [
+          {
+            "name": "under",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bbox",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "zoom",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteListResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sites/{id}": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Tenancy.Sites.SiteEndpoints"
+        ],
+        "summary": "GET_api_sites_id",
+        "description": "GET_api_sites_id",
+        "operationId": "GET_api_sites_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Tenancy.Sites.SiteEndpoints"
+        ],
+        "summary": "POST_api_sites_id",
+        "description": "POST_api_sites_id",
+        "operationId": "POST_api_sites_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSiteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sites/bulk-status": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Tenancy.Sites.SiteEndpoints"
+        ],
+        "summary": "POST_api_sites_bulk_status",
+        "description": "POST_api_sites_bulk_status",
+        "operationId": "POST_api_sites_bulk_status",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkSiteStatusRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkSiteStatusResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sites/open-now": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Tenancy.Sites.SiteListEndpoints"
+        ],
+        "summary": "GET_api_sites_open_now",
+        "description": "GET_api_sites_open_now",
+        "operationId": "GET_api_sites_open_now",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SiteResponse"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/settings": {
       "get": {
         "tags": [
@@ -980,6 +1063,104 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SettingResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/map/basemaps": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Tenancy.Organizations.MapBasemapsEndpoints"
+        ],
+        "summary": "GET_api_map_basemaps",
+        "description": "GET_api_map_basemaps",
+        "operationId": "GET_api_map_basemaps",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasemapListResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "LocIntel.Modules.Tenancy.Organizations.MapBasemapsEndpoints"
+        ],
+        "summary": "PUT_api_map_basemaps",
+        "description": "PUT_api_map_basemaps",
+        "operationId": "PUT_api_map_basemaps",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutBasemapsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasemapSettingsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/map/basemaps/settings": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Tenancy.Organizations.MapBasemapsEndpoints"
+        ],
+        "summary": "GET_api_map_basemaps_settings",
+        "description": "GET_api_map_basemaps_settings",
+        "operationId": "GET_api_map_basemaps_settings",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasemapSettingsResponse"
                 }
               }
             }
@@ -1521,6 +1702,44 @@
           }
         }
       },
+      "put": {
+        "tags": [
+          "LocIntel.Modules.Tenancy.Hierarchy.HierarchyEndpoints"
+        ],
+        "summary": "PUT_api_hierarchy",
+        "description": "PUT_api_hierarchy",
+        "operationId": "PUT_api_hierarchy",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateHierarchyLevelsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HierarchyLevelsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      },
       "get": {
         "tags": [
           "LocIntel.Modules.Tenancy.Hierarchy.HierarchyEndpoints"
@@ -1755,6 +1974,685 @@
         }
       }
     },
+    "/api/reports/quota": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Reporting.ReportEndpoints"
+        ],
+        "summary": "GET_api_reports_quota",
+        "description": "GET_api_reports_quota",
+        "operationId": "GET_api_reports_quota",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports/basemaps": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Reporting.ReportEndpoints"
+        ],
+        "summary": "GET_api_reports_basemaps",
+        "description": "GET_api_reports_basemaps",
+        "operationId": "GET_api_reports_basemaps",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BasemapResponse"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports/types": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Reporting.ReportEndpoints"
+        ],
+        "summary": "GET_api_reports_types",
+        "description": "GET_api_reports_types",
+        "operationId": "GET_api_reports_types",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TypeResponse"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Reporting.ReportEndpoints"
+        ],
+        "summary": "POST_api_reports",
+        "description": "POST_api_reports",
+        "operationId": "POST_api_reports",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptedResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Reporting.ReportEndpoints"
+        ],
+        "summary": "GET_api_reports",
+        "description": "GET_api_reports",
+        "operationId": "GET_api_reports",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/JobResponse"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports/{id}": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Reporting.ReportEndpoints"
+        ],
+        "summary": "GET_api_reports_id",
+        "description": "GET_api_reports_id",
+        "operationId": "GET_api_reports_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports/{id}/cancel": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Reporting.ReportEndpoints"
+        ],
+        "summary": "POST_api_reports_id_cancel",
+        "description": "POST_api_reports_id_cancel",
+        "operationId": "POST_api_reports_id_cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptedResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports/{id}/retry": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Reporting.ReportEndpoints"
+        ],
+        "summary": "POST_api_reports_id_retry",
+        "description": "POST_api_reports_id_retry",
+        "operationId": "POST_api_reports_id_retry",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptedResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports/{id}/artifacts/{artifactId}/download": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Reporting.ReportEndpoints"
+        ],
+        "summary": "GET_api_reports_id_artifacts_artifactId_download",
+        "description": "GET_api_reports_id_artifacts_artifactId_download",
+        "operationId": "GET_api_reports_id_artifacts_artifactId_download",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "artifactId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DownloadResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/overlays": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Spatial.Overlays.OverlayEndpoints"
+        ],
+        "summary": "GET_api_overlays",
+        "description": "GET_api_overlays",
+        "operationId": "GET_api_overlays",
+        "parameters": [
+          {
+            "name": "deleted",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OverlayLayerListResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Spatial.Overlays.OverlayEndpoints"
+        ],
+        "summary": "POST_api_overlays",
+        "description": "POST_api_overlays",
+        "operationId": "POST_api_overlays",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOverlayLayerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OverlayLayerState"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/overlays/{id}": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Spatial.Overlays.OverlayEndpoints"
+        ],
+        "summary": "POST_api_overlays_id",
+        "description": "POST_api_overlays_id",
+        "operationId": "POST_api_overlays_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOverlayLayerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OverlayLayerState"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "LocIntel.Modules.Spatial.Overlays.OverlayEndpoints"
+        ],
+        "summary": "DELETE_api_overlays_id",
+        "description": "DELETE_api_overlays_id",
+        "operationId": "DELETE_api_overlays_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OverlayLayerState"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/overlays/{id}/features": {
+      "put": {
+        "tags": [
+          "LocIntel.Modules.Spatial.Overlays.OverlayEndpoints"
+        ],
+        "summary": "PUT_api_overlays_id_features",
+        "description": "PUT_api_overlays_id_features",
+        "operationId": "PUT_api_overlays_id_features",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OverlayFeaturesUpload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OverlayFeaturesReplaced"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/overlays/{id}/restore": {
+      "post": {
+        "tags": [
+          "LocIntel.Modules.Spatial.Overlays.OverlayEndpoints"
+        ],
+        "summary": "POST_api_overlays_id_restore",
+        "description": "POST_api_overlays_id_restore",
+        "operationId": "POST_api_overlays_id_restore",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OverlayLayerState"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tiles/overlays/{id}/{z}/{x}/{y}": {
+      "get": {
+        "tags": [
+          "LocIntel.Modules.Spatial.Overlays.OverlayTilesEndpoint"
+        ],
+        "summary": "GET_api_tiles_overlays_id_z_x_y",
+        "description": "GET_api_tiles_overlays_id_z_x_y",
+        "operationId": "GET_api_tiles_overlays_id_z_x_y",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "z",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "x",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "y",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.mapbox-vector-tile": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
     "/notifications/bounce": {
       "post": {
         "tags": [
@@ -1900,10 +2798,7 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           },
@@ -1912,10 +2807,7 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           }
@@ -3508,10 +4400,7 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           }
@@ -3911,6 +4800,55 @@
         }
       }
     },
+    "/api/files/{id}/content": {
+      "put": {
+        "tags": [
+          "LocIntel.Modules.Storage.BoundedUploadEndpoint"
+        ],
+        "summary": "PUT_api_files_id_content",
+        "description": "PUT_api_files_id_content",
+        "operationId": "PUT_api_files_id_content",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IResult"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": { }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/files": {
       "post": {
         "tags": [
@@ -3970,10 +4908,7 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           },
@@ -3982,10 +4917,7 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           },
@@ -3994,6 +4926,14 @@
             "in": "query",
             "schema": {
               "type": "boolean"
+            }
+          },
+          {
+            "name": "siteId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -5198,10 +6138,7 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           },
@@ -5210,10 +6147,7 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           }
@@ -5989,10 +6923,7 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           },
@@ -6001,10 +6932,7 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           }
@@ -6679,10 +7607,7 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           },
@@ -6691,10 +7616,7 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           }
@@ -7912,10 +8834,7 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           },
@@ -7924,10 +8843,7 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           }
@@ -8348,10 +9264,7 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           },
@@ -8360,10 +9273,7 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           }
@@ -8854,10 +9764,7 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           },
@@ -8866,10 +9773,7 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           }
@@ -9404,10 +10308,7 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           },
@@ -9416,10 +10317,7 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           }
@@ -9638,10 +10536,7 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           },
@@ -9650,10 +10545,7 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           }
@@ -10120,10 +11012,7 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           },
@@ -10132,10 +11021,7 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           }
@@ -11211,10 +12097,7 @@
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
-              "type": [
-                "integer",
-                "string"
-              ],
+              "type": "integer",
               "format": "int32"
             }
           }
@@ -11317,6 +12200,96 @@
         }
       }
     },
+    "/api/map/layers": {
+      "get": {
+        "tags": [
+          "LocIntel.Api"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataLayerListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tiles/{layer}/{z}/{x}/{y}": {
+      "get": {
+        "tags": [
+          "LocIntel.Api"
+        ],
+        "parameters": [
+          {
+            "name": "layer",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "z",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "x",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "y",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "under",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.mapbox-vector-tile": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
     "/healthz": {
       "get": {
         "tags": [
@@ -11347,6 +12320,22 @@
         "properties": {
           "reason": {
             "type": "string"
+          }
+        }
+      },
+      "AcceptedResponse": {
+        "required": [
+          "id",
+          "state"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "state": {
+            "$ref": "#/components/schemas/ReportJobState"
           }
         }
       },
@@ -11625,27 +12614,20 @@
           },
           "total": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "nextOffset": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
-              "integer",
-              "string"
+              "integer"
             ],
             "format": "int32"
           },
           "unread": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           }
         }
@@ -11685,26 +12667,17 @@
         "properties": {
           "unread": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "activeBulletins": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "unacknowledgedBulletins": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           }
         }
@@ -11847,6 +12820,48 @@
           },
           "prefix": {
             "type": "string"
+          }
+        }
+      },
+      "ArtifactResponse": {
+        "required": [
+          "id",
+          "itemId",
+          "name",
+          "contentType",
+          "bytes",
+          "fileId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "itemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "contentType": {
+            "type": "string"
+          },
+          "bytes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": "integer",
+            "format": "int64"
+          },
+          "fileId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },
@@ -12065,10 +13080,151 @@
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
-              "integer",
-              "string"
+              "integer"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "Basemap": {
+        "required": [
+          "id",
+          "name",
+          "urlTemplate",
+          "attribution",
+          "maxZoom"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "urlTemplate": {
+            "type": "string"
+          },
+          "attribution": {
+            "type": "string"
+          },
+          "maxZoom": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "BasemapInput": {
+        "required": [
+          "id",
+          "name",
+          "urlTemplate",
+          "attribution"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "urlTemplate": {
+            "type": "string"
+          },
+          "attribution": {
+            "type": "string"
+          },
+          "maxZoom": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "key": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "BasemapListResponse": {
+        "required": [
+          "basemaps"
+        ],
+        "type": "object",
+        "properties": {
+          "basemaps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Basemap"
+            }
+          }
+        }
+      },
+      "BasemapResponse": {
+        "required": [
+          "id",
+          "attribution"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "attribution": {
+            "type": "string"
+          }
+        }
+      },
+      "BasemapSetting": {
+        "required": [
+          "id",
+          "name",
+          "urlTemplate",
+          "attribution",
+          "maxZoom",
+          "hasKey"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "urlTemplate": {
+            "type": "string"
+          },
+          "attribution": {
+            "type": "string"
+          },
+          "maxZoom": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasKey": {
+            "type": "boolean"
+          }
+        }
+      },
+      "BasemapSettingsResponse": {
+        "required": [
+          "basemaps"
+        ],
+        "type": "object",
+        "properties": {
+          "basemaps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BasemapSetting"
+            }
           }
         }
       },
@@ -12146,6 +13302,44 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "BulkSiteStatusRequest": {
+        "required": [
+          "ids",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "status": {
+            "$ref": "#/components/schemas/SiteStatus"
+          }
+        }
+      },
+      "BulkSiteStatusResponse": {
+        "required": [
+          "updated",
+          "skipped"
+        ],
+        "type": "object",
+        "properties": {
+          "updated": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": "integer",
+            "format": "int32"
+          },
+          "skipped": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -12227,18 +13421,14 @@
           },
           "total": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "nextOffset": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
-              "integer",
-              "string"
+              "integer"
             ],
             "format": "int32"
           }
@@ -12368,10 +13558,7 @@
           },
           "acknowledgements": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           }
         }
@@ -12576,10 +13763,7 @@
           },
           "custodyEvents": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           }
         }
@@ -12665,10 +13849,7 @@
           },
           "expiresInSeconds": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "fileName": {
@@ -12813,18 +13994,14 @@
           },
           "total": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "nextOffset": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
-              "integer",
-              "string"
+              "integer"
             ],
             "format": "int32"
           }
@@ -13045,18 +14222,12 @@
           },
           "incidentCount": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "openTasks": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "legalHold": {
@@ -13156,18 +14327,12 @@
         "properties": {
           "latitude": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
-            "type": [
-              "number",
-              "string"
-            ],
+            "type": "number",
             "format": "double"
           },
           "longitude": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
-            "type": [
-              "number",
-              "string"
-            ],
+            "type": "number",
             "format": "double"
           },
           "note": {
@@ -13197,10 +14362,7 @@
           },
           "itemIndex": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "done": {
@@ -13219,10 +14381,7 @@
         "properties": {
           "index": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "text": {
@@ -13365,8 +14524,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -13374,8 +14532,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           }
@@ -13440,10 +14597,7 @@
         "properties": {
           "applied": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           }
         }
@@ -13511,8 +14665,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
-              "integer",
-              "string"
+              "integer"
             ],
             "format": "int32"
           }
@@ -13567,8 +14720,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
-              "integer",
-              "string"
+              "integer"
             ],
             "format": "int32"
           }
@@ -13618,8 +14770,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
-              "integer",
-              "string"
+              "integer"
             ],
             "format": "int32"
           }
@@ -13687,11 +14838,15 @@
           },
           "sizeBytes": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": "integer",
+            "format": "int64"
+          },
+          "siteId": {
             "type": [
-              "integer",
+              "null",
               "string"
             ],
-            "format": "int64"
+            "format": "uuid"
           }
         }
       },
@@ -13757,6 +14912,29 @@
           },
           "slug": {
             "type": "string"
+          }
+        }
+      },
+      "CreateOverlayLayerRequest": {
+        "required": [
+          "name",
+          "kind"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "style": { },
+          "nodeId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },
@@ -13857,8 +15035,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -13927,8 +15104,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
-              "integer",
-              "string"
+              "integer"
             ],
             "format": "int32"
           }
@@ -14037,8 +15213,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -14046,8 +15221,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           }
@@ -14257,18 +15431,12 @@
           },
           "expected": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "completed": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "missed": {
@@ -14291,6 +15459,75 @@
           }
         }
       },
+      "DataLayerDescriptor": {
+        "required": [
+          "name",
+          "title",
+          "description",
+          "capability",
+          "minPointZoom",
+          "statuses"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "capability": {
+            "type": "string"
+          },
+          "minPointZoom": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": "integer",
+            "format": "int32"
+          },
+          "statuses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DataLayerStatusResponse"
+            }
+          }
+        }
+      },
+      "DataLayerListResponse": {
+        "required": [
+          "layers"
+        ],
+        "type": "object",
+        "properties": {
+          "layers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DataLayerDescriptor"
+            }
+          }
+        }
+      },
+      "DataLayerStatusResponse": {
+        "required": [
+          "key",
+          "label",
+          "color"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          }
+        }
+      },
       "DeadLetterListResponse": {
         "required": [
           "total",
@@ -14300,10 +15537,7 @@
         "properties": {
           "total": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "items": {
@@ -14366,10 +15600,24 @@
           },
           "expiresInSeconds": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "DownloadResponse": {
+        "required": [
+          "url",
+          "expiresInSeconds"
+        ],
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "expiresInSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": "integer",
             "format": "int32"
           }
         }
@@ -14423,8 +15671,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
-              "integer",
-              "string"
+              "integer"
             ],
             "format": "int64"
           }
@@ -14707,18 +15954,14 @@
           },
           "total": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "nextOffset": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
-              "integer",
-              "string"
+              "integer"
             ],
             "format": "int32"
           }
@@ -14804,10 +16047,7 @@
           },
           "linkCount": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "expiresAt": {
@@ -14888,8 +16128,8 @@
           "total": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
-              "integer",
-              "string"
+              "null",
+              "integer"
             ],
             "format": "int32"
           },
@@ -14897,8 +16137,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
-              "integer",
-              "string"
+              "integer"
             ],
             "format": "int32"
           }
@@ -14913,7 +16152,10 @@
           "deletedAt",
           "legalHold",
           "hasPreview",
-          "createdAt"
+          "createdAt",
+          "siteIds",
+          "origin",
+          "originId"
         ],
         "type": "object",
         "properties": {
@@ -14946,6 +16188,26 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "siteIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "origin": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "originId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },
@@ -15058,6 +16320,20 @@
           "rootNodeId": {
             "type": "string",
             "format": "uuid"
+          }
+        }
+      },
+      "HierarchyLevelsResponse": {
+        "required": [
+          "levels"
+        ],
+        "type": "object",
+        "properties": {
+          "levels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -15216,26 +16492,17 @@
           },
           "total": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "valid": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "invalid": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "createdBy": {
@@ -15274,10 +16541,7 @@
           },
           "created": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           }
         }
@@ -15294,42 +16558,27 @@
         "properties": {
           "create": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "update": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "close": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "unchanged": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "invalid": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           }
         }
@@ -15363,10 +16612,7 @@
         "properties": {
           "rowNumber": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "siteRef": {
@@ -15413,8 +16659,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -15471,10 +16716,7 @@
           },
           "confidence": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
-            "type": [
-              "number",
-              "string"
-            ],
+            "type": "number",
             "format": "double"
           }
         }
@@ -15583,18 +16825,12 @@
           },
           "count": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "loss": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-            "type": [
-              "number",
-              "string"
-            ],
+            "type": "number",
             "format": "double"
           }
         }
@@ -15716,8 +16952,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -15725,8 +16960,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -15835,18 +17069,14 @@
           },
           "total": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "nextOffset": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
-              "integer",
-              "string"
+              "integer"
             ],
             "format": "int32"
           }
@@ -15977,26 +17207,17 @@
           },
           "total": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "open": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "totalLoss": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-            "type": [
-              "number",
-              "string"
-            ],
+            "type": "number",
             "format": "double"
           },
           "byCategory": {
@@ -16091,8 +17312,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -16279,6 +17499,131 @@
           }
         }
       },
+      "ItemResponse": {
+        "required": [
+          "id",
+          "state",
+          "errorCode",
+          "generatedAt",
+          "attempt",
+          "siteIds",
+          "warnings"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "state": {
+            "$ref": "#/components/schemas/ReportItemState"
+          },
+          "errorCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "generatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "attempt": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": "integer",
+            "format": "int32"
+          },
+          "siteIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "JobResponse": {
+        "required": [
+          "id",
+          "reportType",
+          "mode",
+          "selection",
+          "state",
+          "errorCode",
+          "createdAt",
+          "expiresAt",
+          "items",
+          "artifacts",
+          "sites",
+          "canModify"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reportType": {
+            "type": "string"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/ReportMode"
+          },
+          "selection": {
+            "$ref": "#/components/schemas/ReportSelection"
+          },
+          "state": {
+            "$ref": "#/components/schemas/ReportJobState"
+          },
+          "errorCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemResponse"
+            }
+          },
+          "artifacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArtifactResponse"
+            }
+          },
+          "sites": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SiteRef"
+            }
+          },
+          "canModify": {
+            "type": "boolean"
+          }
+        }
+      },
       "JsonElement": { },
       "LinkIncidentRequest": {
         "required": [
@@ -16407,8 +17752,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -16416,8 +17760,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -16439,7 +17782,8 @@
         "required": [
           "generatedAt",
           "organization",
-          "listings"
+          "listings",
+          "next"
         ],
         "type": "object",
         "properties": {
@@ -16455,6 +17799,12 @@
             "items": {
               "$ref": "#/components/schemas/ListingRecord"
             }
+          },
+          "next": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -16490,18 +17840,14 @@
           },
           "total": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "nextOffset": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
-              "integer",
-              "string"
+              "integer"
             ],
             "format": "int32"
           }
@@ -16725,10 +18071,7 @@
           },
           "depth": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "path": {
@@ -16870,10 +18213,7 @@
           },
           "latencyMs": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int64"
           },
           "error": {
@@ -16915,26 +18255,17 @@
           },
           "closuresPending": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "users": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "deadLetters": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           }
         }
@@ -17048,11 +18379,144 @@
           },
           "count": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "OverlayFeaturesReplaced": {
+        "required": [
+          "layerId",
+          "count",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "layerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "count": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": "integer",
+            "format": "int32"
+          },
+          "version": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "OverlayFeaturesUpload": {
+        "required": [
+          "geoJson"
+        ],
+        "type": "object",
+        "properties": {
+          "geoJson": {
+            "$ref": "#/components/schemas/JsonElement"
+          }
+        }
+      },
+      "OverlayLayerListResponse": {
+        "required": [
+          "layers"
+        ],
+        "type": "object",
+        "properties": {
+          "layers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OverlayLayerSummary"
+            }
+          }
+        }
+      },
+      "OverlayLayerState": {
+        "required": [
+          "id",
+          "version",
+          "deletedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "version": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": "integer",
+            "format": "int32"
+          },
+          "deletedAt": {
             "type": [
-              "integer",
+              "null",
               "string"
             ],
+            "format": "date-time"
+          }
+        }
+      },
+      "OverlayLayerSummary": {
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "style",
+          "nodeId",
+          "featureCount",
+          "version",
+          "updatedAt",
+          "deletedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "style": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/JsonElement"
+              }
+            ]
+          },
+          "nodeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "featureCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": "integer",
             "format": "int32"
+          },
+          "version": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": "integer",
+            "format": "int32"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deletedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         }
       },
@@ -17213,18 +18677,12 @@
           },
           "checkpointsTotal": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "checkpointsScanned": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "scans": {
@@ -17252,10 +18710,7 @@
           },
           "monthlyPriceUsd": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-            "type": [
-              "number",
-              "string"
-            ],
+            "type": "number",
             "format": "double"
           },
           "entitlements": {
@@ -17488,6 +18943,27 @@
           }
         }
       },
+      "PublicSiteListResponse": {
+        "required": [
+          "items",
+          "next"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicSiteSummary"
+            }
+          },
+          "next": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "PublicSiteSummary": {
         "required": [
           "id",
@@ -17522,8 +18998,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -17531,8 +19006,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -17546,8 +19020,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           }
@@ -17625,6 +19098,20 @@
           }
         }
       },
+      "PutBasemapsRequest": {
+        "required": [
+          "basemaps"
+        ],
+        "type": "object",
+        "properties": {
+          "basemaps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BasemapInput"
+            }
+          }
+        }
+      },
       "PutSettingRequest": {
         "required": [
           "value"
@@ -17690,10 +19177,7 @@
           },
           "amount": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-            "type": [
-              "number",
-              "string"
-            ],
+            "type": "number",
             "format": "double"
           },
           "currency": {
@@ -17834,8 +19318,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -17843,8 +19326,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -17870,6 +19352,41 @@
             }
           }
         }
+      },
+      "ReportItemState": {
+        "enum": [
+          "Queued",
+          "Running",
+          "Succeeded",
+          "Failed",
+          "Canceled"
+        ]
+      },
+      "ReportJobState": {
+        "enum": [
+          "Queued",
+          "Running",
+          "Completed",
+          "CompletedWithErrors",
+          "Failed",
+          "Canceled",
+          "Expired",
+          "Purging"
+        ]
+      },
+      "ReportMode": {
+        "enum": [
+          "single",
+          "bulk",
+          "aggregate"
+        ]
+      },
+      "ReportSelection": {
+        "enum": [
+          "selected",
+          "accessible",
+          "organization"
+        ]
       },
       "RequestCreated": {
         "required": [
@@ -17980,8 +19497,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -17989,8 +19505,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -18027,8 +19542,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -18080,10 +19594,7 @@
           },
           "escalationCount": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "acceptedAt": {
@@ -18184,8 +19695,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -18252,8 +19762,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -18261,8 +19770,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -18270,8 +19778,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -18303,18 +19810,14 @@
           },
           "total": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "nextOffset": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
-              "integer",
-              "string"
+              "integer"
             ],
             "format": "int32"
           }
@@ -18439,8 +19942,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -18480,10 +19982,7 @@
           },
           "pending": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           }
         }
@@ -18524,10 +20023,7 @@
           },
           "assignedCount": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           }
         }
@@ -18539,8 +20035,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
-              "integer",
-              "string"
+              "integer"
             ],
             "format": "int32"
           }
@@ -18676,10 +20171,7 @@
           },
           "expectedMinutes": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "archived": {
@@ -18711,8 +20203,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -18724,18 +20215,12 @@
           },
           "scanned": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "total": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           }
         }
@@ -18753,8 +20238,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -18762,8 +20246,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -18808,8 +20291,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -19183,18 +20665,14 @@
           },
           "total": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "nextOffset": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
-              "integer",
-              "string"
+              "integer"
             ],
             "format": "int32"
           }
@@ -19449,18 +20927,12 @@
           },
           "activeMembers": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "activeBulletins": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "createdAt": {
@@ -19485,7 +20957,7 @@
           "items",
           "total",
           "openCount",
-          "nextOffset"
+          "next"
         ],
         "type": "object",
         "properties": {
@@ -19497,28 +20969,47 @@
           },
           "total": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "openCount": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
-          "nextOffset": {
+          "next": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "withoutCoordinates": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
-              "integer",
-              "string"
+              "integer"
             ],
             "format": "int32"
+          },
+          "totalIsLowerBound": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      },
+      "SiteRef": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
           }
         }
       },
@@ -19563,10 +21054,7 @@
           },
           "version": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "uint32"
           },
           "addressLine1": {
@@ -19597,8 +21085,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -19606,8 +21093,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -19660,10 +21146,7 @@
           },
           "overdue": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           }
         }
@@ -19808,6 +21291,46 @@
           }
         }
       },
+      "Status": {
+        "required": [
+          "enabled",
+          "limit",
+          "consumed",
+          "reserved",
+          "remaining",
+          "periodMonth"
+        ],
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "limit": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": "integer",
+            "format": "int64"
+          },
+          "consumed": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": "integer",
+            "format": "int64"
+          },
+          "reserved": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": "integer",
+            "format": "int64"
+          },
+          "remaining": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": "integer",
+            "format": "int64"
+          },
+          "periodMonth": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
       "SubmitQuoteRequest": {
         "required": [
           "amount"
@@ -19816,10 +21339,7 @@
         "properties": {
           "amount": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-            "type": [
-              "number",
-              "string"
-            ],
+            "type": "number",
             "format": "double"
           },
           "notes": {
@@ -19834,6 +21354,37 @@
               "string"
             ],
             "format": "date-time"
+          }
+        }
+      },
+      "SubmitRequest": {
+        "required": [
+          "reportType",
+          "mode",
+          "selection",
+          "siteIds",
+          "options"
+        ],
+        "type": "object",
+        "properties": {
+          "reportType": {
+            "type": "string"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/ReportMode"
+          },
+          "selection": {
+            "$ref": "#/components/schemas/ReportSelection"
+          },
+          "siteIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "options": {
+            "$ref": "#/components/schemas/JsonElement"
           }
         }
       },
@@ -19924,6 +21475,31 @@
           }
         }
       },
+      "TypeResponse": {
+        "required": [
+          "id",
+          "name",
+          "version",
+          "aggregate"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": "integer",
+            "format": "int32"
+          },
+          "aggregate": {
+            "type": "boolean"
+          }
+        }
+      },
       "UpdateCaseRequest": {
         "required": [
           "title",
@@ -19977,8 +21553,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
-              "integer",
-              "string"
+              "integer"
             ],
             "format": "int32"
           }
@@ -20027,6 +21602,20 @@
           }
         }
       },
+      "UpdateHierarchyLevelsRequest": {
+        "required": [
+          "levels"
+        ],
+        "type": "object",
+        "properties": {
+          "levels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "UpdateIncidentRequest": {
         "required": [
           "category",
@@ -20072,8 +21661,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -20081,8 +21669,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -20137,6 +21724,18 @@
           "browserAlerts": {
             "type": "boolean"
           }
+        }
+      },
+      "UpdateOverlayLayerRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "style": { }
         }
       },
       "UpdateProfileRequest": {
@@ -20206,8 +21805,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -20259,8 +21857,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
-              "integer",
-              "string"
+              "integer"
             ],
             "format": "int32"
           },
@@ -20327,8 +21924,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -20336,8 +21932,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -20351,8 +21946,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
-              "integer",
-              "string"
+              "integer"
             ],
             "format": "uint32"
           }
@@ -20427,8 +22021,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -20436,8 +22029,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -20445,8 +22037,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -20480,18 +22071,14 @@
           },
           "total": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "nextOffset": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
-              "integer",
-              "string"
+              "integer"
             ],
             "format": "int32"
           }
@@ -20541,8 +22128,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -20550,8 +22136,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -20559,8 +22144,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -20629,18 +22213,12 @@
           },
           "validCredentials": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "expiredCredentials": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "preferred": {
@@ -20666,18 +22244,14 @@
           },
           "attempt": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "statusCode": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
-              "integer",
-              "string"
+              "integer"
             ],
             "format": "int32"
           },
@@ -20709,8 +22283,7 @@
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
-              "integer",
-              "string"
+              "integer"
             ],
             "format": "int32"
           },
@@ -20786,22 +22359,28 @@
       "name": "LocIntel.Modules.Tenancy.Sites.ClosureEndpoints"
     },
     {
-      "name": "LocIntel.Modules.Tenancy.Sites.SiteEndpoints"
-    },
-    {
-      "name": "LocIntel.Modules.Tenancy.Sites.ScheduleEndpoints"
-    },
-    {
       "name": "LocIntel.Modules.Tenancy.Sites.ListingsFeedEndpoint"
     },
     {
       "name": "LocIntel.Modules.Tenancy.Sites.PublicSiteEndpoints"
     },
     {
+      "name": "LocIntel.Modules.Tenancy.Sites.ScheduleEndpoints"
+    },
+    {
       "name": "LocIntel.Modules.Tenancy.Sites.SiteAttributeEndpoints"
     },
     {
+      "name": "LocIntel.Modules.Tenancy.Sites.SiteEndpoints"
+    },
+    {
+      "name": "LocIntel.Modules.Tenancy.Sites.SiteListEndpoints"
+    },
+    {
       "name": "LocIntel.Modules.Tenancy.Organizations.SettingsEndpoints"
+    },
+    {
+      "name": "LocIntel.Modules.Tenancy.Organizations.MapBasemapsEndpoints"
     },
     {
       "name": "LocIntel.Modules.Tenancy.Organizations.LifecycleEndpoints"
@@ -20823,6 +22402,15 @@
     },
     {
       "name": "LocIntel.Modules.Tenancy.Hierarchy.HierarchyEndpoints"
+    },
+    {
+      "name": "LocIntel.Modules.Reporting.ReportEndpoints"
+    },
+    {
+      "name": "LocIntel.Modules.Spatial.Overlays.OverlayEndpoints"
+    },
+    {
+      "name": "LocIntel.Modules.Spatial.Overlays.OverlayTilesEndpoint"
     },
     {
       "name": "LocIntel.Modules.Identity.Users.BounceWebhookEndpoint"
@@ -20877,6 +22465,9 @@
     },
     {
       "name": "LocIntel.Modules.Audit.WebhookManagementEndpoints"
+    },
+    {
+      "name": "LocIntel.Modules.Storage.BoundedUploadEndpoint"
     },
     {
       "name": "LocIntel.Modules.Storage.FileEndpoints"

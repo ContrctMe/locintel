@@ -28,7 +28,10 @@ public sealed record OperatorUserResponse(
 /// </summary>
 public static class OperatorUserLookupEndpoint
 {
-    [Transactional(typeof(IdentityDbContext))]
+    [Transactional(
+        typeof(IdentityDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/operator/users")]
     [ProducesResponseType(typeof(List<OperatorUserResponse>), StatusCodes.Status200OK)]
     public static async Task<IResult> Search(
@@ -44,7 +47,7 @@ public static class OperatorUserLookupEndpoint
             return gate.ToResult();
         var term = q.Trim();
         if (term.Length < 2)
-            return Results.BadRequest(new { error = "search needs at least 2 characters" });
+            return ApiErrors.BadRequest("search needs at least 2 characters");
 
         var users = await db
             .Users.Where(u =>

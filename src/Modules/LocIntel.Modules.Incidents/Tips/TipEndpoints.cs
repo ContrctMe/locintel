@@ -56,20 +56,16 @@ public static class TipEndpoints
             return Results.Ok(new TipReceipt(Receipt(Guid.CreateVersion7())));
         var description = request.Description?.Trim() ?? "";
         if (description.Length < 10)
-            return Results.BadRequest(
-                new { error = "tell us a little more (at least 10 characters)" }
-            );
+            return ApiErrors.BadRequest("tell us a little more (at least 10 characters)");
         if (description.Length > MaxDescription)
-            return Results.BadRequest(
-                new { error = $"tips are limited to {MaxDescription} characters" }
-            );
+            return ApiErrors.BadRequest($"tips are limited to {MaxDescription} characters");
         var site = await sites.FindAsync(request.SiteId, ct);
         if (site is null)
             return Results.NotFound();
         var now = time.GetUtcNow();
         var occurredAt = request.OccurredAt?.ToUniversalTime() ?? now;
         if (occurredAt > now.AddMinutes(5))
-            return Results.BadRequest(new { error = "the time cannot be in the future" });
+            return ApiErrors.BadRequest("the time cannot be in the future");
 
         var incident = new Incident
         {

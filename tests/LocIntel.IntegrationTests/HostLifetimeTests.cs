@@ -33,7 +33,7 @@ public class HostLifetimeTests
                             .Select((host, index) => (host, index))
                             .Where(item => item.host.IsAlive)
                             .Select(item =>
-                                $"host {item.index / 4}, retained {new[] { "provider", "chain", "org limiter", "principal limiter" }[item.index % 4]}"
+                                $"host {item.index / 2}, retained {new[] { "provider", "process limiter" }[item.index % 2]}"
                             )
                     )
                 )
@@ -50,8 +50,7 @@ public class HostLifetimeTests
             using var client = await fixture.LoginAsync(ApiFixture.UserA);
             using var response = await client.GetAsync("/api/roles");
             response.EnsureSuccessStatusCode();
-            // A disposed chain doesn't own its children. Check their collection
-            // independently: a leaked timer can survive even without a host root.
+            // Check the process limiter independently from the disposed host.
             return
             [
                 new(fixture.Factory.Services),
@@ -59,16 +58,6 @@ public class HostLifetimeTests
                     fixture.Factory.Services.GetRequiredService<
                         PartitionedRateLimiter<HttpContext>
                     >()
-                ),
-                new(
-                    fixture.Factory.Services.GetRequiredKeyedService<
-                        PartitionedRateLimiter<HttpContext>
-                    >("org")
-                ),
-                new(
-                    fixture.Factory.Services.GetRequiredKeyedService<
-                        PartitionedRateLimiter<HttpContext>
-                    >("principal")
                 ),
             ];
         }

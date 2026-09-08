@@ -98,7 +98,10 @@ public static class EntityEndpoints
         );
     }
 
-    [Transactional(typeof(EntitiesDbContext))]
+    [Transactional(
+        typeof(EntitiesDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/entities/{id}")]
     [ProducesResponseType(typeof(EntityDetail), StatusCodes.Status200OK)]
     public static async Task<IResult> Get(
@@ -267,7 +270,7 @@ public static class EntityEndpoints
             Validate(request.DisplayName, request.Descriptors, request.ExpiresAt, now) is
             { } invalid
         )
-            return Results.BadRequest(new { error = invalid });
+            return ApiErrors.BadRequest(invalid);
         entity!.DisplayName = request.DisplayName.Trim();
         entity.Aliases = CleanAliases(request.Aliases);
         entity.DescriptorsJson = JsonSerializer.Serialize(CleanDescriptors(request.Descriptors));
@@ -305,8 +308,8 @@ public static class EntityEndpoints
             request.Status == EntityStatus.Confirmed
             && !await db.Links.AnyAsync(l => l.EntityId == id, ct)
         )
-            return Results.Conflict(
-                new { error = "confirming requires at least one linked incident as evidence" }
+            return ApiErrors.Conflict(
+                "confirming requires at least one linked incident as evidence"
             );
         entity!.Status = request.Status;
         entity.UpdatedAt = DateTimeOffset.UtcNow;
@@ -364,7 +367,7 @@ public static class EntityEndpoints
         if (error is not null)
             return error;
         if (entity!.LegalHold)
-            return Results.Conflict(new { error = "entity is under legal hold" });
+            return ApiErrors.Conflict("entity is under legal hold");
         entity.DeletedAt = DateTimeOffset.UtcNow;
         entity.UpdatedAt = entity.DeletedAt.Value;
         await db.SaveChangesAsync(ct);

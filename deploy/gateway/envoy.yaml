@@ -1,0 +1,172 @@
+# HTTP-only local reference. TLS/forwarded-header trust is a deployment choice.
+admin:
+  address:
+    socket_address: {address: 127.0.0.1, port_value: 9901}
+overload_manager:
+  resource_monitors:
+    - name: envoy.resource_monitors.global_downstream_max_connections
+      typed_config:
+        "@type": type.googleapis.com/envoy.extensions.resource_monitors.downstream_connections.v3.DownstreamConnectionsConfig
+        max_active_downstream_connections: 10000
+static_resources:
+  listeners:
+    - name: public
+      address:
+        socket_address: {address: 0.0.0.0, port_value: 8080}
+      filter_chains:
+        - filters:
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: ingress
+                use_remote_address: true
+                xff_num_trusted_hops: 0
+                normalize_path: true
+                merge_slashes: true
+                path_with_escaped_slashes_action: REJECT_REQUEST
+                stream_idle_timeout: 120s
+                route_config:
+                  name: application
+                  virtual_hosts:
+                    - name: application
+                      domains: ["*"]
+                      request_headers_to_remove: [x-locintel-fairness-partition, x-locintel-client-ip]
+                      request_headers_to_add:
+                        - header: {key: x-locintel-gateway-key, value: "__GATEWAY_IDENTITY_KEY__"}
+                          append_action: OVERWRITE_IF_EXISTS_OR_ADD
+                      response_headers_to_remove: [x-locintel-gateway-key, x-locintel-fairness-partition, x-locintel-client-ip]
+                      routes:
+                        - match: {prefix: /_gateway, case_sensitive: false}
+                          direct_response: {status: 404}
+                          typed_per_filter_config:
+                            envoy.filters.http.ext_authz:
+                              "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
+                              disabled: true
+                        - match: {prefix: /}
+                          route:
+                            cluster: api
+                            timeout: 120s
+                            rate_limits:
+                              - stage: 1
+                                actions:
+                                  - generic_key: {descriptor_key: window, descriptor_value: burst}
+                                  - request_headers: {header_name: x-locintel-fairness-partition, descriptor_key: partition}
+                              - stage: 1
+                                actions:
+                                  - generic_key: {descriptor_key: window, descriptor_value: sustained}
+                                  - request_headers: {header_name: x-locintel-fairness-partition, descriptor_key: partition}
+                http_filters:
+                  - name: envoy.filters.http.header_mutation
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.header_mutation.v3.HeaderMutation
+                      mutations:
+                        request_mutations:
+                          - remove: x-locintel-gateway-key
+                          - remove: x-locintel-fairness-partition
+                          - remove: x-locintel-client-ip
+                          - remove: forwarded
+                          - remove: x-forwarded-host
+                          - append:
+                              header: {key: x-forwarded-for, value: "%DOWNSTREAM_REMOTE_ADDRESS_WITHOUT_PORT%"}
+                              append_action: OVERWRITE_IF_EXISTS_OR_ADD
+                          - append:
+                              header: {key: x-forwarded-proto, value: http}
+                              append_action: OVERWRITE_IF_EXISTS_OR_ADD
+                  - name: envoy.filters.http.local_ratelimit
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                      stat_prefix: emergency_admission
+                      token_bucket: {max_tokens: 2000, tokens_per_fill: 2000, fill_interval: 1s}
+                      rate_limits:
+                        - actions: [{remote_address: {}}]
+                      descriptors:
+                        - entries: [{key: remote_address}]
+                          token_bucket: {max_tokens: 1000, tokens_per_fill: 1000, fill_interval: 1s}
+                      max_dynamic_descriptors: 10000
+                      filter_enabled: {default_value: {numerator: 100, denominator: HUNDRED}}
+                      filter_enforced: {default_value: {numerator: 100, denominator: HUNDRED}}
+                      response_headers_to_add:
+                        - header: {key: retry-after, value: "1"}
+                  - name: envoy.filters.http.ext_authz
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+                      failure_mode_allow: false
+                      status_on_error: {code: ServiceUnavailable}
+                      allowed_headers:
+                        patterns: [{exact: cookie}, {exact: authorization}]
+                      http_service:
+                        server_uri: {uri: "http://api:8080", cluster: identity, timeout: 1s}
+                        path_prefix: /_gateway/identity
+                        authorization_request:
+                          headers_to_add:
+                            - {key: x-locintel-gateway-key, value: "__GATEWAY_IDENTITY_KEY__"}
+                            - {key: x-locintel-client-ip, value: "%DOWNSTREAM_REMOTE_ADDRESS_WITHOUT_PORT%"}
+                        authorization_response:
+                          allowed_upstream_headers:
+                            patterns: [{exact: x-locintel-fairness-partition}]
+                          allowed_client_headers:
+                            patterns: [{exact: content-type}, {exact: cache-control}]
+                  - name: envoy.filters.http.ratelimit
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.ratelimit.v3.RateLimit
+                      domain: locintel
+                      stage: 1
+                      timeout: 0.1s
+                      failure_mode_deny: false
+                      rate_limit_service:
+                        transport_api_version: V3
+                        grpc_service: {envoy_grpc: {cluster_name: ratelimit}}
+                  - name: envoy.filters.http.router
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+  clusters:
+    # Identity subrequests must not consume business requests' round-robin turns.
+    - name: identity
+      type: STRICT_DNS
+      connect_timeout: 1s
+      lb_policy: ROUND_ROBIN
+      health_checks:
+        - timeout: 1s
+          interval: 2s
+          unhealthy_threshold: 2
+          healthy_threshold: 1
+          http_health_check: {path: /healthz}
+      load_assignment:
+        cluster_name: identity
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address: {address: api, port_value: 8080}
+    - name: api
+      type: STRICT_DNS
+      connect_timeout: 1s
+      lb_policy: ROUND_ROBIN
+      health_checks:
+        - timeout: 1s
+          interval: 2s
+          unhealthy_threshold: 2
+          healthy_threshold: 1
+          http_health_check: {path: /healthz}
+      load_assignment:
+        cluster_name: api
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address: {address: api, port_value: 8080}
+    - name: ratelimit
+      type: STRICT_DNS
+      connect_timeout: 0.1s
+      typed_extension_protocol_options:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          explicit_http_config:
+            http2_protocol_options: {}
+      load_assignment:
+        cluster_name: ratelimit
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address: {address: ratelimit, port_value: 8081}

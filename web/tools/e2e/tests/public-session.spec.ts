@@ -17,12 +17,14 @@ test('public logout reports connection failure and allows a successful retry', a
   const target = new URL(link);
   const publicBase = new URL(process.env.E2E_PUBLIC ?? 'http://acme-dev.localhost:5174');
   target.host = publicBase.host;
+  target.protocol = publicBase.protocol;
   // The contact is a separate visitor, not the owner's localhost cookie jar.
   await page.context().clearCookies();
   await page.goto(target.toString());
   await expect(page.getByText(email, { exact: true })).toBeVisible();
   const sessionBefore = (await page.context().cookies(publicBase.origin)).find((cookie) => cookie.name === 'locintel_session');
   expect(sessionBefore).toBeDefined();
+  expect(sessionBefore?.secure).toBe(true);
 
   // Fail the browser-to-SSR hop. Upstream HTTP/network failures are unit-tested.
   await page.route('**/*', (route) => route.request().method() === 'POST' ? route.abort('failed') : route.continue());

@@ -1,6 +1,6 @@
 import { toast } from '@locintel/ui';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ApiError, apiProblem } from '@locintel/api';
+import { ApiError, apiProblem, isTransient } from '@locintel/api';
 
 /** The server's error body, when it sent one - with the trace id support can quote (maturity review, hole 1). */
 export function apiError(error: unknown, fallback: string): string {
@@ -26,6 +26,12 @@ export function useApiMutation<TVariables = void, TData = unknown>(options: {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: options.mutationFn,
+    // Admission contention is transient by contract (ADR 55): the server never
+    // waits on a pooled connection, it refuses and names a delay. Absorb one
+    // round of that so two people submitting at once do not both see a toast.
+    retry: (failureCount, error) => failureCount < 1 && isTransient(error),
+    retryDelay: (_, error) =>
+      (error instanceof ApiError ? (error.retryAfterSeconds ?? 1) : 1) * 1000,
     onSuccess: (data, variables) => {
       for (const key of options.invalidate ?? [])
         void queryClient.invalidateQueries({ queryKey: key });

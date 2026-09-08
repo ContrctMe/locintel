@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using LocIntel.Contracts;
 using LocIntel.Modules.Identity.Data;
 using LocIntel.Platform.Kernel;
 using Microsoft.EntityFrameworkCore;
@@ -41,7 +42,7 @@ public sealed class ApiKeyAuthenticationMiddleware(RequestDelegate next)
                 // a presented-but-invalid credential is a hard 401, never a
                 // silent fall-through to the guest tier
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                await context.Response.WriteAsJsonAsync(new { error = "invalid api key" });
+                await context.Response.WriteAsJsonAsync(ApiErrors.Body("invalid api key"));
                 return;
             }
             context.Items[RequestPrincipalAccessor.ServiceKeyItem] = (key.Id, key.OrgId);

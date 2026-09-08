@@ -70,6 +70,8 @@ public static class ModuleCatalog
         new("alerts", "alerts", typeof(LocIntel.Modules.Alerts.Data.AlertsDbContext)),
         new("network", "network", typeof(LocIntel.Modules.Network.Data.NetworkDbContext)),
         new("patrols", "patrols", typeof(LocIntel.Modules.Patrols.Data.PatrolsDbContext)),
+        new("spatial", "spatial", typeof(LocIntel.Modules.Spatial.Data.SpatialDbContext)),
+        new("reporting", "reporting", typeof(LocIntel.Modules.Reporting.Data.ReportingDbContext)),
     ];
 
     /// <summary>

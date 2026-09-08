@@ -34,7 +34,7 @@ x-backend: &backend
 
 services:
   database:
-    image: postgres:17-alpine
+    image: imresamu/postgis:17-3.5-alpine@sha256:2b52785e156e5fe881c0841a8032694bbdf22a46e42a3e26aac6eebb03ab182c
     mem_limit: 512m
     memswap_limit: 512m
     cpus: 1
@@ -44,7 +44,7 @@ services:
       POSTGRES_PASSWORD: profile-owner
     volumes: [database:/var/lib/postgresql/data]
     healthcheck:
-      test: [CMD-SHELL, pg_isready -U postgres -d locintel]
+      test: [CMD-SHELL, pg_isready -h 127.0.0.1 -U postgres -d locintel]
       interval: 5s
       timeout: 5s
       retries: 20

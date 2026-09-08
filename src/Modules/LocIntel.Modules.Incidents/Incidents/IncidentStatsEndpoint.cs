@@ -39,9 +39,9 @@ public static class IncidentStatsEndpoint
         var end = to ?? DateOnly.FromDateTime(time.GetUtcNow().UtcDateTime);
         var start = from ?? end.AddDays(-29);
         if (start > end)
-            return Results.BadRequest(new { error = "from must not be after to" });
+            return ApiErrors.BadRequest("from must not be after to");
         if (end.DayNumber - start.DayNumber > 366)
-            return Results.BadRequest(new { error = "range is limited to one year" });
+            return ApiErrors.BadRequest("range is limited to one year");
 
         var query = db
             .Incidents.InScope(scope)

@@ -26,8 +26,8 @@ internal static class StorageHosting
                         "Storage:S3:BucketName is required."
                     )
                     .Validate(
-                        o => IsHttpUrl(o.ServiceUrl),
-                        "Storage:S3:ServiceUrl must be an absolute HTTP(S) URL."
+                        o => IsProviderUrl(o.ServiceUrl, builder.Environment),
+                        "Storage:S3:ServiceUrl must be an absolute HTTPS URL outside Development/Testing."
                     )
                     .Validate(
                         o => CredentialsMatch(o.AccessKey, o.SecretKey),
@@ -56,18 +56,19 @@ internal static class StorageHosting
                         {
                             try
                             {
-                                _ = new Azure.Storage.Blobs.BlobContainerClient(
+                                var client = new Azure.Storage.Blobs.BlobContainerClient(
                                     o.ConnectionString,
                                     o.ContainerName
                                 );
-                                return true;
+                                return IsDevelopmentOrTesting(builder.Environment)
+                                    || client.Uri.Scheme == "https";
                             }
                             catch (Exception)
                             {
                                 return false;
                             }
                         },
-                        "Storage:Azure configuration is malformed."
+                        "Storage:Azure configuration is malformed or uses a non-HTTPS endpoint outside Development/Testing."
                     )
                     .ValidateOnStart();
                 builder.Services.AddSingleton<
@@ -75,7 +76,7 @@ internal static class StorageHosting
                     LocIntel.Integrations.AzureBlob.AzureBlobObjectStore
                 >();
                 break;
-            case "local" when !builder.Environment.IsProduction():
+            case "local" when IsDevelopmentOrTesting(builder.Environment):
                 builder.Services.AddSingleton<IObjectStore, LocalObjectStore>();
                 break;
             default:
@@ -114,7 +115,7 @@ internal static class StorageHosting
                     LocIntel.Integrations.ClamAV.ClamAvScanner
                 >();
                 break;
-            case "eicar" when !builder.Environment.IsProduction():
+            case "eicar" when IsDevelopmentOrTesting(builder.Environment):
                 builder.Services.AddSingleton<IVirusScanner, EicarScanner>();
                 break;
             default:
@@ -143,8 +144,8 @@ internal static class StorageHosting
                         "Secrets:Kms:KeyId is required."
                     )
                     .Validate(
-                        o => IsHttpUrl(o.ServiceUrl),
-                        "Secrets:Kms:ServiceUrl must be an absolute HTTP(S) URL."
+                        o => IsProviderUrl(o.ServiceUrl, builder.Environment),
+                        "Secrets:Kms:ServiceUrl must be an absolute HTTPS URL outside Development/Testing."
                     )
                     .Validate(
                         o => CredentialsMatch(o.AccessKey, o.SecretKey),
@@ -156,7 +157,7 @@ internal static class StorageHosting
                     LocIntel.Integrations.AmazonS3.KmsKeyWrapper
                 >();
                 break;
-            case "local" when !builder.Environment.IsProduction():
+            case "local" when IsDevelopmentOrTesting(builder.Environment):
                 builder.Services.AddSingleton<IKeyWrapper>(
                     new LocalKeyWrapper(
                         Convert.FromBase64String(

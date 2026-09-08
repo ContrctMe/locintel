@@ -41,7 +41,7 @@ public static class CaseEvidenceEndpoints
         if (file is null || file.Status is "Deleted" or "Erased")
             return Results.NotFound();
         if (await db.Evidence.AnyAsync(e => e.CaseId == id && e.FileId == file.Id, ct))
-            return Results.Conflict(new { error = "file is already evidence on this case" });
+            return ApiErrors.Conflict("file is already evidence on this case");
         var @case = access!.Case;
         var item = new CaseEvidence
         {
@@ -102,7 +102,7 @@ public static class CaseEvidenceEndpoints
             return error;
         var @case = access!.Case;
         if (@case.LegalHold)
-            return Results.Conflict(new { error = "case is under legal hold" });
+            return ApiErrors.Conflict("case is under legal hold");
         var item = await db.Evidence.FirstOrDefaultAsync(
             e => e.Id == evidenceId && e.CaseId == id,
             ct

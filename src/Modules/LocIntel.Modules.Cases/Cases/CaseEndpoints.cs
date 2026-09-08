@@ -126,7 +126,10 @@ public static class CaseEndpoints
         );
     }
 
-    [Transactional(typeof(CasesDbContext))]
+    [Transactional(
+        typeof(CasesDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/cases/{id}")]
     [ProducesResponseType(typeof(CaseDetail), StatusCodes.Status200OK)]
     public static async Task<IResult> Get(
@@ -166,9 +169,7 @@ public static class CaseEndpoints
         if (gate is not GateOutcome.Allowed { Scope: var scope })
             return gate.ToResult();
         if (string.IsNullOrWhiteSpace(request.Title) || request.Title.Trim().Length > 200)
-            return Results.BadRequest(
-                new { error = "a case needs a title of up to 200 characters" }
-            );
+            return ApiErrors.BadRequest("a case needs a title of up to 200 characters");
 
         var @case = new Case
         {
@@ -232,15 +233,13 @@ public static class CaseEndpoints
         if (error is not null)
             return error;
         if (string.IsNullOrWhiteSpace(request.Title) || request.Title.Trim().Length > 200)
-            return Results.BadRequest(
-                new { error = "a case needs a title of up to 200 characters" }
-            );
+            return ApiErrors.BadRequest("a case needs a title of up to 200 characters");
         var @case = access!.Case;
         if (
             request.LeadId is { } lead
             && !await db.Members.AnyAsync(m => m.CaseId == id && m.UserId == lead, ct)
         )
-            return Results.BadRequest(new { error = "the lead must be a member of the case" });
+            return ApiErrors.BadRequest("the lead must be a member of the case");
         @case.Title = request.Title.Trim();
         @case.Summary = request.Summary?.Trim() ?? "";
         @case.Priority = request.Priority;
@@ -274,7 +273,7 @@ public static class CaseEndpoints
             return error;
         var @case = access!.Case;
         if (@case.Status == CaseStatus.Closed)
-            return Results.Conflict(new { error = "already closed" });
+            return ApiErrors.Conflict("already closed");
         @case.Status = CaseStatus.Closed;
         @case.Disposition = request.Disposition;
         @case.ClosedAt = DateTimeOffset.UtcNow;
@@ -308,7 +307,7 @@ public static class CaseEndpoints
             return error;
         var @case = access!.Case;
         if (@case.Status == CaseStatus.Open)
-            return Results.Conflict(new { error = "already open" });
+            return ApiErrors.Conflict("already open");
         @case.Status = CaseStatus.Open;
         @case.Disposition = null;
         @case.ClosedAt = null;
@@ -392,7 +391,7 @@ public static class CaseEndpoints
             return error;
         var @case = access!.Case;
         if (@case.LegalHold)
-            return Results.Conflict(new { error = "case is under legal hold" });
+            return ApiErrors.Conflict("case is under legal hold");
         if (@case.DeletedAt is not null)
             return Results.NotFound();
         @case.DeletedAt = DateTimeOffset.UtcNow;
@@ -437,7 +436,10 @@ public static class CaseEndpoints
         return Results.Ok(Mutated(@case));
     }
 
-    [Transactional(typeof(CasesDbContext))]
+    [Transactional(
+        typeof(CasesDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/cases/{id}/custody")]
     [ProducesResponseType(typeof(CaseCustodyResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> Custody(
@@ -456,7 +458,10 @@ public static class CaseEndpoints
     }
 
     /// <summary>The prosecution package; exporting is itself a custody event on every file.</summary>
-    [Transactional(typeof(CasesDbContext))]
+    [Transactional(
+        typeof(CasesDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/cases/{id}/package")]
     [ProducesResponseType(typeof(CasePackage), StatusCodes.Status200OK)]
     public static async Task<IResult> Package(

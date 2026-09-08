@@ -1,13 +1,17 @@
 using System.Text.Json;
 using LocIntel.Contracts;
 using LocIntel.Modules.Tenancy.Data;
+using LocIntel.Platform.Data;
+using LocIntel.Platform.Entitlements;
 using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Messaging;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Wolverine;
 using Wolverine.Attributes;
+using Wolverine.EntityFrameworkCore;
 using Wolverine.Http;
 
 namespace LocIntel.Modules.Tenancy.Organizations;
@@ -39,7 +43,7 @@ public sealed class TenancyExporter(TenancyDbContext db) : IOrgDataExporter
             .OrganizationSettings.IgnoreQueryFilters()
             .Where(s => s.OrgId == org && s.DeletedAt == null)
             .Select(s => new { s.Key, s.Value })
-            .ToListAsync(ct);
+            .ToBoundedExportListAsync(ct);
         var hierarchies = await db
             .Hierarchies.IgnoreQueryFilters()
             .Where(h => h.OrgId == org)
@@ -49,7 +53,7 @@ public sealed class TenancyExporter(TenancyDbContext db) : IOrgDataExporter
                 h.Levels,
                 h.IsAuthoritative,
             })
-            .ToListAsync(ct);
+            .ToBoundedExportListAsync(ct);
         var nodes = await db
             .HierarchyNodes.IgnoreQueryFilters()
             .Where(n => n.OrgId == org)
@@ -60,7 +64,7 @@ public sealed class TenancyExporter(TenancyDbContext db) : IOrgDataExporter
                 n.Depth,
                 path = n.Path.ToString(),
             })
-            .ToListAsync(ct);
+            .ToBoundedExportListAsync(ct);
         var sites = await db
             .Sites.IgnoreQueryFilters()
             .Where(s => s.OrgId == org)
@@ -91,7 +95,7 @@ public sealed class TenancyExporter(TenancyDbContext db) : IOrgDataExporter
                     })
                     .ToList(),
             })
-            .ToListAsync(ct);
+            .ToBoundedExportListAsync(ct);
         return JsonSerializer.Serialize(
             new
             {
@@ -158,9 +162,11 @@ public static class PurgeOrgSitesHandler
 public static class LifecycleEndpoints
 {
     /// <summary>Self-serve export: any org manager can take the org's data with them.</summary>
+    [Transactional(typeof(TenancyDbContext))]
     [WolverinePost("/api/org/export")]
     [ProducesResponseType(typeof(OrgExportQueuedResponse), StatusCodes.Status202Accepted)]
     public static async Task<IResult> ExportSelf(
+        TenancyDbContext db,
         IPrincipalAccessor accessor,
         IScopeResolver scopes,
         IMessageBus bus,
@@ -171,20 +177,25 @@ public static class LifecycleEndpoints
         if (gate is not GateOutcome.Allowed { Principal: Principal.User principal, Org: var orgId })
             return gate.ToResult();
         var userId = principal.UserId;
-        await bus.PublishForOrgAsync(orgId, new ExportOrgData(userId));
+        if (await ExportAdmission.TryReserveAsync(db, orgId, ct) is not { } admission)
+            return ApiErrors.Status(
+                "an export is already queued or running",
+                StatusCodes.Status429TooManyRequests
+            );
+        await bus.PublishForOrgAsync(orgId, new ExportOrgData(userId, admission));
         return Results.Accepted(value: new OrgExportQueuedResponse("queued", "files"));
     }
 
     /// <summary>Operator export: taken before offboarding so nothing leaves undelivered.</summary>
-    [Transactional(typeof(TenancyDbContext))]
+    // The target scope owns the context, transaction and outbox; no outer transaction.
+    [NonTransactional]
     [WolverinePost("/api/operator/orgs/{orgId}/export")]
     [ProducesResponseType(typeof(OrgExportQueuedResponse), StatusCodes.Status202Accepted)]
     public static async Task<IResult> ExportForOrg(
         Guid orgId,
-        TenancyDbContext db,
+        HttpContext http,
         IPrincipalAccessor accessor,
         IOperatorContext operators,
-        IMessageBus bus,
         CancellationToken ct
     )
     {
@@ -194,10 +205,32 @@ public static class LifecycleEndpoints
         )
             return gate.ToResult();
         var target = new OrgId(orgId);
-        if (!await db.Organizations.AnyAsync(o => o.Id == target, ct))
-            return Results.NotFound();
-        await bus.PublishForOrgAsync(target, new ExportOrgData(operatorId));
-        return Results.Accepted(value: new OrgExportQueuedResponse("queued", "files"));
+        // Admission and its durable message commit together under the target RLS.
+        return await TenantScope.RunAsAsync<IResult>(
+            http.RequestServices,
+            target,
+            async sp =>
+            {
+                var targetDb = sp.GetRequiredService<TenancyDbContext>();
+                if (!await targetDb.Organizations.AnyAsync(o => o.Id == target, ct))
+                    return Results.NotFound();
+                await using var tx = await targetDb.Database.BeginTransactionAsync(ct);
+                if (
+                    await ExportAdmission.TryReserveAsync(targetDb, target, ct) is not { } admission
+                )
+                    return ApiErrors.Status(
+                        "an export is already queued or running",
+                        StatusCodes.Status429TooManyRequests
+                    );
+                var outbox = sp.GetRequiredService<IDbContextOutbox>();
+                outbox.Enroll(targetDb);
+                await outbox.PublishForOrgAsync(target, new ExportOrgData(operatorId, admission));
+                await targetDb.SaveChangesAsync(ct);
+                await tx.CommitAsync(ct);
+                await outbox.FlushOutgoingMessagesAsync();
+                return Results.Accepted(value: new OrgExportQueuedResponse("queued", "files"));
+            }
+        );
     }
 
     /// <summary>
@@ -228,16 +261,14 @@ public static class LifecycleEndpoints
         if (org is null)
             return Results.NotFound();
         if (org.IsPlatform)
-            return Results.BadRequest(new { error = "the platform org cannot be offboarded" });
+            return ApiErrors.BadRequest("the platform org cannot be offboarded");
         if (org.Status == OrganizationStatus.Offboarding)
             return Results.NoContent();
         if (org.Status != OrganizationStatus.Suspended)
-            return Results.Conflict(
-                new
-                {
-                    error = "suspend the org first - offboarding is a two-step",
-                    code = "not_suspended",
-                }
+            return ApiErrors.Status(
+                "suspend the org first - offboarding is a two-step",
+                StatusCodes.Status409Conflict,
+                "not_suspended"
             );
 
         org.Status = OrganizationStatus.Offboarding;

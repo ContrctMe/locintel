@@ -1,21 +1,42 @@
 import { checklistsApi } from './api';
 import { useSites } from '../sites';
-import { Button, Card, CardContent, CardHeader, CardTitle, ConfirmButton, FormDialog,
-  Input, Label, Select } from '@locintel/ui';
+import { Button, Checkbox, ConfirmButton, Field, FieldDescription, FieldLabel, FieldLegend, FieldSet, FormDialog, Input, Item, ItemActions, ItemContent, ItemDescription, ItemTitle, Sortable, SortableItem, SortableItemHandle, Tabs, TabsContent, TabsList, TabsTrigger } from '@locintel/ui';
+import { GripVertical, Plus, X } from 'lucide-react';
+import { SitePicker, type PickedSite } from '../sites/components/site-picker';
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useScope } from '../../app/scope';
+import { Loading, PageHeader, Panel } from '../../components/page';
+import { fmtBusinessDate } from '../../lib/format';
+import { usePreference } from '../../lib/preference';
 import { useApiMutation } from '../../lib/mutation';
 import { can, useMe } from '../../session';
 
-/** The ops core loop (ADR 45): today's lists per site, on the site's clock. */
+
+/**
+ * The ops core loop (ADR 45): today's lists per site, on the site's clock.
+ * Two tabs (flow review, 2026-09): Today is the screen a manager works;
+ * Templates is the admin's, shown only to those who manage them.
+ */
 export function ChecklistsPage() {
   const { data: me } = useMe();
   const manage = can(me, 'checklists:manage');
-  const [siteId, setSiteId] = useState('');
+  // the site this device opened last: a manager's phone opens on their site
+  const [remembered, setPicked] = usePreference<PickedSite | null>('checklists.site', null);
+  const [picked, setPickedState] = useState<PickedSite | null>(remembered);
 
-  const siteQuery = useSites('');
+  // the first site under the Scope node is the default; the picker searches
+  // the rest of that subtree. Narrowing the scope drops a remembered site
+  // outside it (the memory stays for next time)
+  const scope = useScope();
+  useEffect(() => {
+    if (scope.nodeId !== null) setPickedState(null);
+  }, [scope.nodeId]);
+  const siteQuery = useSites('', scope.nodeId);
   const sites = siteQuery.data?.pages.flatMap((page) => page.items);
-  const activeSite = siteId || sites?.[0]?.id || '';
+  const first = sites?.[0];
+  const current = picked ?? (first ? { id: first.id, name: first.name, city: first.city } : null);
+  const activeSite = current?.id ?? '';
   const todayQuery = useQuery({
     queryKey: ['checklists', 'today', activeSite],
     queryFn: ({ signal }) => checklistsApi.today(activeSite, signal),
@@ -28,72 +49,50 @@ export function ChecklistsPage() {
     invalidate: [['checklists', 'today', activeSite]],
   });
 
-  return (
-    <div className="max-w-3xl space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Checklists</h1>
-        {sites && sites.length > 1 && (
-          <Select aria-label="Checklist site" className="w-56" value={activeSite}
-            onChange={(e) => setSiteId(e.target.value)}>
-            {sites.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </Select>
-        )}
-      </div>
-      {siteQuery.isPending && <p role="status">Loading sites…</p>}
-      {siteQuery.isError && <div role="alert">Could not load sites. <Button onClick={() => {
-        if (siteQuery.isFetchNextPageError) void siteQuery.fetchNextPage();
-        else void siteQuery.refetch();
-      }}>Retry sites</Button></div>}
-      {siteQuery.hasNextPage && !siteQuery.isError && <Button disabled={siteQuery.isFetchingNextPage}
-        onClick={() => void siteQuery.fetchNextPage()}>
-        {siteQuery.isFetchingNextPage ? 'Loading more sites…' : 'Load more sites'}
-      </Button>}
+  const todayView = (
+    <>
+      {siteQuery.isPending && <Loading text="Loading sites…" />}
+      {siteQuery.isError && <div role="alert">Could not load sites. <Button onClick={() => void siteQuery.refetch()}>Retry sites</Button></div>}
       {sites?.length === 0 && !siteQuery.isError && <p>No accessible sites yet.</p>}
       {activeSite && todayQuery.isPending && <p role="status">Loading checklists…</p>}
       {todayQuery.isError && <div role="alert">Could not load checklists. <Button
         onClick={() => void todayQuery.refetch()}>Retry checklists</Button></div>}
       {today && (
         <p className="text-sm text-muted-foreground">
-          {today.site} · {today.businessDate} (site-local day)
+          {today.site} · {fmtBusinessDate(today.businessDate)}
+          <span title="The site's own day, not this device's" className="text-xs"> (site time)</span>
         </p>
       )}
       {today?.lists.length === 0 && (
-        <Card>
-          <CardContent className="pt-4 text-sm text-muted-foreground">
+        <Panel bodyClassName="text-sm text-muted-foreground">
             No checklists apply to this site yet.
-            {manage && ' Create a template below.'}
-          </CardContent>
-        </Card>
+            {manage && ' Create a template under Templates.'}
+        </Panel>
       )}
       {today?.lists.map((list) => {
         const done = list.items.filter((i) => i.done).length;
         return (
-          <Card key={list.id}>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between text-base">
-                {list.name}
-                <span className="text-sm font-normal text-muted-foreground">
-                  {done}/{list.items.length}
-                </span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+          <Panel
+            key={list.id}
+            title={list.name}
+            actions={
+              <span className="text-sm tabular-nums text-muted-foreground">
+                {done}/{list.items.length}
+              </span>
+            }
+          >
               <ul className="space-y-2">
                 {list.items.map((item) => (
                   <li key={item.index}>
                     <label className="flex cursor-pointer items-center gap-3 text-sm">
-                      <input
-                        type="checkbox"
-                        className="size-4 accent-primary"
+                      <Checkbox
                         checked={item.done}
                         disabled={check.isPending}
-                        onChange={(e) =>
+                        onCheckedChange={(checked) =>
                           check.mutate({
                             templateId: list.id,
-                            itemIndex: Number(item.index),
-                            done: e.target.checked,
+                            itemIndex: item.index,
+                            done: checked === true,
                           })
                         }
                       />
@@ -104,11 +103,51 @@ export function ChecklistsPage() {
                   </li>
                 ))}
               </ul>
-            </CardContent>
-          </Card>
+          </Panel>
         );
       })}
-      {manage && <TemplatesCard />}
+    </>
+  );
+  const picker =
+    sites && sites.length > 1 ? (
+      <div className="w-full sm:w-72">
+        <SitePicker
+          aria-label="Checklist site"
+          value={current}
+          onChange={(site) => {
+            setPickedState(site);
+            setPicked(site);
+          }}
+          under={scope.nodeId}
+        />
+      </div>
+    ) : undefined;
+
+  if (!manage)
+    return (
+      <div className="max-w-3xl space-y-6">
+        <PageHeader title="Checklists" description="Today's lists at a site, on that site's own clock." actions={picker} />
+        {todayView}
+      </div>
+    );
+  return (
+    <div className="max-w-3xl space-y-6">
+      <PageHeader title="Checklists" description="Today's lists at a site, on that site's own clock." />
+      <Tabs defaultValue="today" className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <TabsList variant="line" aria-label="Checklists">
+            <TabsTrigger value="today">Today</TabsTrigger>
+            <TabsTrigger value="templates">Templates</TabsTrigger>
+          </TabsList>
+          {picker}
+        </div>
+        <TabsContent value="today" className="space-y-6">
+          {todayView}
+        </TabsContent>
+        <TabsContent value="templates">
+          <TemplatesCard />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
@@ -116,7 +155,7 @@ export function ChecklistsPage() {
 function TemplatesCard() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
-  const [items, setItems] = useState('');
+  const [items, setItems] = useState<ChecklistItemDraft[]>([{ id: 'item-1', text: '' }]);
 
   const templatesQuery = useQuery({
     queryKey: ['checklists', 'templates'],
@@ -127,14 +166,14 @@ function TemplatesCard() {
     mutationFn: () =>
       checklistsApi.create({
         name: name.trim(),
-        items: items.split('\n').map((i) => i.trim()).filter(Boolean),
+        items: items.map((i) => i.text.trim()).filter(Boolean),
       }),
     invalidate: [['checklists']],
     success: 'Checklist created',
     onSuccess: () => {
       setOpen(false);
       setName('');
-      setItems('');
+      setItems([{ id: 'item-1', text: '' }]);
     },
   });
   const remove = useApiMutation({
@@ -144,62 +183,111 @@ function TemplatesCard() {
   });
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between text-base">
-          Templates
+    <Panel
+      title="Templates"
+      actions={
           <FormDialog
             open={open}
             onOpenChange={setOpen}
             trigger={<Button size="sm">New checklist</Button>}
             title="New checklist"
-            description="Applies daily at every site. One item per line."
+            description="Applies daily at every site."
           >
             <div className="space-y-3">
-              <div className="space-y-1">
-                <Label htmlFor="cl-name">Name</Label>
+              <Field>
+                <FieldLabel htmlFor="cl-name">Name</FieldLabel>
                 <Input id="cl-name" value={name} placeholder="Opening"
                   onChange={(e) => setName(e.target.value)} />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="cl-items">Items</Label>
-                <textarea
-                  id="cl-items"
-                  className="min-h-28 w-full rounded-md border bg-background px-3 py-2 text-sm"
-                  value={items}
-                  placeholder={'Unlock doors\nCount register'}
-                  onChange={(e) => setItems(e.target.value)}
-                />
-              </div>
+              </Field>
+              <FieldSet>
+                <FieldLegend>Items</FieldLegend>
+                <FieldDescription>In the order people work through them; drag to reorder.</FieldDescription>
+                <ChecklistItemsEditor items={items} onChange={setItems} />
+              </FieldSet>
               <Button className="w-full"
-                disabled={!name.trim() || !items.trim() || create.isPending}
+                disabled={!name.trim() || !items.some((i) => i.text.trim()) || create.isPending}
                 onClick={() => create.mutate()}>
                 Create
               </Button>
             </div>
           </FormDialog>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        {templatesQuery.isPending && <p role="status">Loading templates…</p>}
+      }
+      bodyClassName="space-y-2"
+    >
+        {templatesQuery.isPending && <Loading text="Loading templates…" rows={2} />}
         {templatesQuery.isError && <div role="alert">Could not load templates. <Button
           onClick={() => void templatesQuery.refetch()}>Retry templates</Button></div>}
         {templates?.length === 0 && (
           <p className="text-sm text-muted-foreground">No templates yet.</p>
         )}
         {templates?.map((t) => (
-          <div key={t.id} className="flex items-center justify-between rounded-md border p-2 text-sm">
-            <span>
-              <span className="font-medium">{t.name}</span>
-              <span className="ml-2 text-muted-foreground">{t.items.length} items</span>
-            </span>
-            <ConfirmButton size="sm" variant="ghost" disabled={remove.isPending}
-              onConfirm={() => remove.mutate(t.id)}>
-              Delete
-            </ConfirmButton>
-          </div>
+          <Item key={t.id} variant="outline" size="sm">
+            <ItemContent>
+              <ItemTitle>{t.name}</ItemTitle>
+              <ItemDescription>{t.items.length} items</ItemDescription>
+            </ItemContent>
+            <ItemActions>
+              <ConfirmButton size="sm" variant="ghost" disabled={remove.isPending}
+                onConfirm={() => remove.mutate(t.id)}>
+                Delete
+              </ConfirmButton>
+            </ItemActions>
+          </Item>
         ))}
-      </CardContent>
-    </Card>
+    </Panel>
+  );
+}
+
+
+type ChecklistItemDraft = { id: string; text: string };
+
+/**
+ * The template's items as a list you can reorder: the ReUI Sortable with a
+ * grip per row, an input per row, add and remove. Order is the order people
+ * work through the list, so it is worth a drag handle.
+ */
+export function ChecklistItemsEditor({
+  items,
+  onChange,
+}: {
+  items: ChecklistItemDraft[];
+  onChange: (items: ChecklistItemDraft[]) => void;
+}) {
+  const update = (id: string, text: string) => onChange(items.map((i) => (i.id === id ? { ...i, text } : i)));
+  const remove = (id: string) => onChange(items.length > 1 ? items.filter((i) => i.id !== id) : items);
+  const add = () => onChange([...items, { id: `item-${Date.now()}`, text: '' }]);
+  return (
+    <div className="space-y-2">
+      <Sortable value={items} onValueChange={onChange} getItemValue={(i) => i.id}>
+        <div className="space-y-1.5">
+          {items.map((item, index) => (
+            <SortableItem key={item.id} value={item.id} className="flex items-center gap-1.5">
+              <SortableItemHandle className="text-muted-foreground" aria-label={`Move item ${index + 1}`}>
+                <GripVertical className="size-4" />
+              </SortableItemHandle>
+              <Input
+                aria-label={`Item ${index + 1}`}
+                value={item.text}
+                placeholder={index === 0 ? 'Unlock doors' : 'Next item'}
+                onChange={(e) => update(item.id, e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    add();
+                  }
+                }}
+              />
+              <Button type="button" variant="ghost" size="icon-sm" aria-label={`Remove item ${index + 1}`} onClick={() => remove(item.id)} disabled={items.length === 1}>
+                <X className="size-4" />
+              </Button>
+            </SortableItem>
+          ))}
+        </div>
+      </Sortable>
+      <Button type="button" variant="outline" size="sm" onClick={add}>
+        <Plus className="size-4" aria-hidden />
+        Add item
+      </Button>
+    </div>
   );
 }

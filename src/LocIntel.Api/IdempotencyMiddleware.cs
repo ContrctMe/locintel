@@ -1,4 +1,9 @@
+using System.Security.Claims;
 using System.Security.Cryptography;
+using System.Text;
+using LocIntel.Contracts;
+using LocIntel.Modules.Identity.Auth;
+using LocIntel.Platform.Auth;
 using LocIntel.Platform.Infra;
 using LocIntel.Platform.Kernel;
 using Microsoft.EntityFrameworkCore;
@@ -31,12 +36,23 @@ public sealed class IdempotencyMiddleware(RequestDelegate next)
             return;
         }
         // the key needs a subject: only org-scoped principals are idempotency-tracked
-        if (accessor.Current is not Principal.User { ActiveOrg: { } org })
+        if (accessor.Current is not Principal.User { ActiveOrg: { } org } user)
         {
             await next(context);
             return;
         }
 
+        // A browser session owns its keys. Raw caller keys never identify another
+        // user's result, and pre-fix org-only records cannot be replayed.
+        var session = context.User.FindFirstValue(LocIntelClaims.SessionId);
+        if (session is null)
+        {
+            await next(context);
+            return;
+        }
+        key = Convert.ToHexStringLower(
+            SHA256.HashData(Encoding.UTF8.GetBytes($"v2|{user.UserId}|{session}|{key}"))
+        );
         context.Request.EnableBuffering();
         var hash = await HashRequestAsync(context.Request);
 
@@ -45,11 +61,21 @@ public sealed class IdempotencyMiddleware(RequestDelegate next)
         );
         if (existing is not null)
         {
+            if (existing.CreatedAt <= DateTimeOffset.UtcNow.AddHours(-24))
+            {
+                context.Response.StatusCode = StatusCodes.Status409Conflict;
+                await context.Response.WriteAsJsonAsync(
+                    ApiErrors.Body(
+                        "Idempotency-Key expired; reconcile the operation before using a new key"
+                    )
+                );
+                return;
+            }
             if (existing.RequestHash != hash)
             {
                 context.Response.StatusCode = StatusCodes.Status422UnprocessableEntity;
                 await context.Response.WriteAsJsonAsync(
-                    new { error = "Idempotency-Key was already used with a different request" }
+                    ApiErrors.Body("Idempotency-Key was already used with a different request")
                 );
                 return;
             }
@@ -57,10 +83,21 @@ public sealed class IdempotencyMiddleware(RequestDelegate next)
             {
                 context.Response.StatusCode = StatusCodes.Status409Conflict;
                 await context.Response.WriteAsJsonAsync(
-                    new
-                    {
-                        error = "the original request with this Idempotency-Key is still in flight",
-                    }
+                    ApiErrors.Body(
+                        "the original request with this Idempotency-Key is still in flight"
+                    )
+                );
+                return;
+            }
+            // Replay is an authorization boundary of its own. Only endpoints with
+            // an explicit current-resource check may redisclose their stored body.
+            if (!await IdempotencyReplay.CanReadAsync(context, accessor, existing))
+            {
+                context.Response.StatusCode = StatusCodes.Status409Conflict;
+                await context.Response.WriteAsJsonAsync(
+                    ApiErrors.Body(
+                        "request already completed; its response cannot be replayed, inspect the resource"
+                    )
                 );
                 return;
             }
@@ -85,8 +122,8 @@ public sealed class IdempotencyMiddleware(RequestDelegate next)
 
         // capture the response for replay
         var original = context.Response.Body;
-        using var buffer = new MemoryStream();
-        context.Response.Body = buffer;
+        using var buffer = IdempotencyReplay.Supports(context.Request) ? new MemoryStream() : null;
+        context.Response.Body = buffer ?? original;
         try
         {
             await next(context);
@@ -95,20 +132,29 @@ public sealed class IdempotencyMiddleware(RequestDelegate next)
         {
             context.Response.Body = original;
         }
-        buffer.Position = 0;
-        await buffer.CopyToAsync(original);
+        if (buffer is not null)
+        {
+            buffer.Position = 0;
+            await buffer.CopyToAsync(original, context.RequestAborted);
+        }
 
         var record = await db.IdempotencyRecords.FirstAsync(r => r.OrgId == org && r.Key == key);
         record.StatusCode = context.Response.StatusCode;
         record.ContentType = context.Response.ContentType;
-        record.Body = buffer.Length <= MaxStoredBody ? buffer.ToArray() : null;
+        record.Body =
+            buffer is { Length: <= MaxStoredBody }
+            && context.Response.StatusCode is >= 200 and < 300
+                ? buffer.ToArray()
+                : null;
         await db.SaveChangesAsync();
     }
 
     private static async Task<string> HashRequestAsync(HttpRequest request)
     {
         using var sha = SHA256.Create();
-        var prefix = System.Text.Encoding.UTF8.GetBytes($"{request.Method} {request.Path}\n");
+        var prefix = System.Text.Encoding.UTF8.GetBytes(
+            $"{request.Method} {request.Path}{request.QueryString}\n"
+        );
         sha.TransformBlock(prefix, 0, prefix.Length, null, 0);
         var bodyBuffer = new byte[64 * 1024];
         int read;

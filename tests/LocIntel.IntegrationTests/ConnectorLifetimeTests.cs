@@ -132,10 +132,17 @@ public class ConnectorLifetimeTests(ScanLifetimeFixture fixture)
         var run = scope
             .ServiceProvider.GetRequiredService<IMessageBus>()
             .InvokeForTenantAsync(fixture.OrgA.Value.ToString(), new SyncSiteConnector(id));
+        await run;
         if (action == "failure")
-            await Assert.ThrowsAsync<HttpRequestException>(() => run);
-        else
-            await run;
+            await ApiFixture.WaitUntilAsync(
+                async () =>
+                    (
+                        await fixture.QueryAudit(db =>
+                            db.DomainEvents.Where(e => e.EventName == "connector.sync_failed")
+                        )
+                    ).Any(e => e.Payload.Contains(id.ToString())),
+                "failed connector audit"
+            );
         Assert.Null(await fixture.QueryIngestBatch(name));
         Assert.Null(await fixture.QueryIngestBatch(name + "-changed"));
         Assert.Contains(

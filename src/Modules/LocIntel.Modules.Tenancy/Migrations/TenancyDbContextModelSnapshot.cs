@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using NetTopologySuite.Geometries;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using LocIntel.Modules.Tenancy.Data;
 
@@ -22,6 +23,7 @@ namespace LocIntel.Modules.Tenancy.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "ltree");
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "postgis");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("LocIntel.Modules.Tenancy.Hierarchy.HierarchyNode", b =>
@@ -217,6 +219,10 @@ namespace LocIntel.Modules.Tenancy.Migrations
                         .HasColumnType("jsonb")
                         .HasColumnName("attributes");
 
+                    b.Property<long?>("Cell")
+                        .HasColumnType("bigint")
+                        .HasColumnName("cell");
+
                     b.Property<string>("City")
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)")
@@ -240,6 +246,10 @@ namespace LocIntel.Modules.Tenancy.Migrations
                         .HasColumnType("double precision")
                         .HasColumnName("latitude");
 
+                    b.Property<Point>("Location")
+                        .HasColumnType("geography (point, 4326)")
+                        .HasColumnName("location");
+
                     b.Property<double?>("Longitude")
                         .HasColumnType("double precision")
                         .HasColumnName("longitude");
@@ -262,6 +272,12 @@ namespace LocIntel.Modules.Tenancy.Migrations
                         .IsRequired()
                         .HasColumnType("ltree")
                         .HasColumnName("path");
+
+                    b.Property<string>("PathText")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("path_text")
+                        .UseCollation("C");
 
                     b.Property<string>("PostalCode")
                         .HasMaxLength(20)
@@ -288,15 +304,27 @@ namespace LocIntel.Modules.Tenancy.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Location");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Location"), "gist");
+
                     b.HasIndex("NodeId");
 
                     b.HasIndex("Path");
 
                     NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Path"), "gist");
 
+                    b.HasIndex("OrgId", "Cell");
+
                     b.HasIndex("OrgId", "ExternalId")
                         .IsUnique()
                         .HasFilter("external_id IS NOT NULL");
+
+                    b.HasIndex("OrgId", "PathText");
+
+                    b.HasIndex("OrgId", "Status");
+
+                    b.HasIndex("OrgId", "Name", "Id");
 
                     b.ToTable("sites", "tenancy");
                 });
@@ -434,6 +462,35 @@ namespace LocIntel.Modules.Tenancy.Migrations
                     b.ToTable("site_schedules", "tenancy");
                 });
 
+            modelBuilder.Entity("LocIntel.Modules.Tenancy.Sites.SiteSearchTerm", b =>
+                {
+                    b.Property<Guid>("SiteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("site_id");
+
+                    b.Property<string>("Term")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("term")
+                        .UseCollation("C");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.Property<Guid>("OrgId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("org_id");
+
+                    b.HasKey("SiteId", "Term");
+
+                    b.HasIndex("OrgId", "Term", "Name", "SiteId");
+
+                    b.ToTable("site_search_terms", "tenancy");
+                });
+
             modelBuilder.Entity("LocIntel.Platform.Audit.AuditChangeLog", b =>
                 {
                     b.Property<Guid>("Id")
@@ -498,6 +555,15 @@ namespace LocIntel.Modules.Tenancy.Migrations
                         {
                             t.ExcludeFromMigrations();
                         });
+                });
+
+            modelBuilder.Entity("LocIntel.Modules.Tenancy.Sites.SiteSearchTerm", b =>
+                {
+                    b.HasOne("LocIntel.Modules.Tenancy.Sites.Site", null)
+                        .WithMany()
+                        .HasForeignKey("SiteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

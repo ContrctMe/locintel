@@ -71,6 +71,15 @@ namespace LocIntel.Modules.Storage.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("org_id");
 
+                    b.Property<string>("Origin")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("origin");
+
+                    b.Property<Guid?>("OriginId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("origin_id");
+
                     b.Property<string>("PreviewKey")
                         .HasMaxLength(520)
                         .HasColumnType("character varying(520)")
@@ -80,6 +89,11 @@ namespace LocIntel.Modules.Storage.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("scanned_at");
 
+                    b.PrimitiveCollection<Guid[]>("SiteIds")
+                        .IsRequired()
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("site_ids");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -88,9 +102,24 @@ namespace LocIntel.Modules.Storage.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("SiteIds");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("SiteIds"), "gin");
+
                     b.HasIndex("OrgId", "CreatedAt");
 
                     b.ToTable("files", "storage");
+                });
+
+            modelBuilder.Entity("LocIntel.Modules.Storage.Data.PurgedFileOrganization", b =>
+                {
+                    b.Property<Guid>("OrgId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("org_id");
+
+                    b.HasKey("OrgId");
+
+                    b.ToTable("purged_organizations", "storage");
                 });
 
             modelBuilder.Entity("LocIntel.Platform.Audit.AuditChangeLog", b =>

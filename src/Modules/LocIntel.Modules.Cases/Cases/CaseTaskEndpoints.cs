@@ -1,3 +1,4 @@
+using LocIntel.Contracts;
 using LocIntel.Modules.Cases.Cases.Api;
 using LocIntel.Modules.Cases.Data;
 using LocIntel.Platform.Kernel;
@@ -28,9 +29,7 @@ public static class CaseTaskEndpoints
         if (error is not null)
             return error;
         if (string.IsNullOrWhiteSpace(request.Title) || request.Title.Trim().Length > 200)
-            return Results.BadRequest(
-                new { error = "a task needs a title of up to 200 characters" }
-            );
+            return ApiErrors.BadRequest("a task needs a title of up to 200 characters");
         var task = new CaseTask
         {
             Id = Guid.CreateVersion7(),

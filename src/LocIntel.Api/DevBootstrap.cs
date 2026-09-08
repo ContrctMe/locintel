@@ -102,6 +102,10 @@ public sealed class DevBootstrap(
             }
         );
 
+        // a hierarchy and a handful of sites WITH coordinates, so the console's
+        // map view (ADR 49/50) has something to draw on a fresh clone
+        await SeedSitesAsync(sp, org.Id, ct);
+
         // RLS-protected rows (roles, grants, assignments) are seeded in the
         // org's own tenant scope: the app role holds no bypass (ADR 38)
         await SeedOwnerAsync(
@@ -169,6 +173,141 @@ public sealed class DevBootstrap(
             )
         );
     }
+
+    /// <summary>
+    /// Region › Market hierarchy and six Portland-area sites with real
+    /// coordinates. Idempotent: skipped once the org has a hierarchy. Written
+    /// straight through the DbContext in tenant scope - the dev seed is not a
+    /// request, so the gates do not apply, but RLS still does (ADR 38).
+    /// </summary>
+    private static Task SeedSitesAsync(IServiceProvider sp, OrgId orgId, CancellationToken ct) =>
+        TenantScope.RunAsAsync(
+            sp,
+            orgId,
+            async scoped =>
+            {
+                var db =
+                    scoped.GetRequiredService<LocIntel.Modules.Tenancy.Data.TenancyDbContext>();
+                if (await db.Hierarchies.AnyAsync(ct))
+                    return;
+
+                var hierarchy = LocIntel.Modules.Tenancy.Hierarchy.OrgHierarchy.Create(
+                    orgId,
+                    "Organization",
+                    ["Region", "Market"]
+                );
+                var root = LocIntel.Modules.Tenancy.Hierarchy.HierarchyNode.CreateRoot(
+                    orgId,
+                    hierarchy.Id,
+                    "Acme Dev"
+                );
+                var region = LocIntel.Modules.Tenancy.Hierarchy.HierarchyNode.CreateChild(
+                    root,
+                    "Pacific Northwest"
+                );
+                var portland = LocIntel.Modules.Tenancy.Hierarchy.HierarchyNode.CreateChild(
+                    region,
+                    "Portland Metro"
+                );
+                var seattle = LocIntel.Modules.Tenancy.Hierarchy.HierarchyNode.CreateChild(
+                    region,
+                    "Seattle"
+                );
+                db.Hierarchies.Add(hierarchy);
+                db.HierarchyNodes.AddRange(root, region, portland, seattle);
+
+                // (node, name, address, city, postal, lat, lng) - all America/Los_Angeles
+                (
+                    LocIntel.Modules.Tenancy.Hierarchy.HierarchyNode,
+                    string,
+                    string,
+                    string,
+                    string,
+                    double,
+                    double
+                )[] seeds =
+                [
+                    (
+                        portland,
+                        "Hawthorne",
+                        "3520 SE Hawthorne Blvd",
+                        "Portland",
+                        "97214",
+                        45.5122,
+                        -122.6284
+                    ),
+                    (
+                        portland,
+                        "Pearl District",
+                        "1234 NW Lovejoy St",
+                        "Portland",
+                        "97209",
+                        45.5289,
+                        -122.6844
+                    ),
+                    (
+                        portland,
+                        "Downtown Portland",
+                        "610 SW Alder St",
+                        "Portland",
+                        "97205",
+                        45.5195,
+                        -122.6787
+                    ),
+                    (
+                        portland,
+                        "Lake Oswego",
+                        "410 N State St",
+                        "Lake Oswego",
+                        "97034",
+                        45.4207,
+                        -122.6685
+                    ),
+                    (
+                        seattle,
+                        "Capitol Hill",
+                        "1500 E Olive Way",
+                        "Seattle",
+                        "98122",
+                        47.6191,
+                        -122.3235
+                    ),
+                    (
+                        seattle,
+                        "Ballard",
+                        "5401 Ballard Ave NW",
+                        "Seattle",
+                        "98107",
+                        47.6683,
+                        -122.3841
+                    ),
+                ];
+                foreach (var (node, name, address, city, postal, lat, lng) in seeds)
+                {
+                    var id = SiteId.New();
+                    db.Sites.Add(
+                        new LocIntel.Modules.Tenancy.Sites.Site
+                        {
+                            Id = id,
+                            OrgId = orgId,
+                            NodeId = node.Id,
+                            Name = name,
+                            TimeZone = "America/Los_Angeles",
+                            Path = new Microsoft.EntityFrameworkCore.LTree(
+                                $"{node.Path}.{LocIntel.Modules.Tenancy.Sites.Site.Label(id)}"
+                            ),
+                            AddressLine1 = address,
+                            City = city,
+                            PostalCode = postal,
+                            CountryCode = "US",
+                            Latitude = lat,
+                            Longitude = lng,
+                        }
+                    );
+                }
+                await db.SaveChangesAsync(ct);
+            }
+        );
 
     private static Task SeedOwnerAsync(
         IServiceProvider sp,

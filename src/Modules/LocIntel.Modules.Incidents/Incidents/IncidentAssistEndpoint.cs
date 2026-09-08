@@ -47,9 +47,7 @@ public static class IncidentAssistEndpoint
         if (incident is null)
             return Results.NotFound();
         if (string.IsNullOrWhiteSpace(incident.Narrative) && incident.Title.Length < 10)
-            return Results.BadRequest(
-                new { error = "add a narrative first; there is nothing to classify" }
-            );
+            return ApiErrors.BadRequest("add a narrative first; there is nothing to classify");
 
         var suggestion = await intelligence.SuggestIncidentAsync(
             new IncidentSuggestionInput(

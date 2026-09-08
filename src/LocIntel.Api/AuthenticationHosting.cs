@@ -1,3 +1,4 @@
+using System.Security.Cryptography.X509Certificates;
 using LocIntel.Integrations.WorkOS;
 using LocIntel.Modules.Identity.Auth;
 using LocIntel.Platform.Auth;
@@ -29,13 +30,31 @@ internal static class AuthenticationHosting
                         "Auth:WorkOS:ClientId is required."
                     )
                     .Validate(
-                        o => IsHttpUrl(o.ApiBaseUrl),
+                        o =>
+                            IsHttpUrl(o.ApiBaseUrl)
+                            && (
+                                builder.Environment.IsDevelopment()
+                                || builder.Environment.IsEnvironment("Testing")
+                                || o.ApiBaseUrl is null
+                                || new Uri(o.ApiBaseUrl).Scheme == "https"
+                            ),
                         "Auth:WorkOS:ApiBaseUrl must be an absolute HTTP(S) URL."
+                    )
+                    .Validate(
+                        o =>
+                            builder.Environment.IsDevelopment()
+                            || builder.Environment.IsEnvironment("Testing")
+                            || !string.IsNullOrWhiteSpace(o.WebhookSecret),
+                        "Auth:WorkOS:WebhookSecret is required outside Development/Testing for session revocation."
                     )
                     .ValidateOnStart();
                 builder.Services.AddSingleton<IAuthProvider, WorkOSAuthProvider>();
                 break;
-            case "local" when !builder.Environment.IsProduction():
+            case "local"
+                when (
+                    builder.Environment.IsDevelopment()
+                    || builder.Environment.IsEnvironment("Testing")
+                ):
                 builder.Services.AddSingleton<IAuthProvider, LocalAuthProvider>();
                 break;
             default:
@@ -62,10 +81,41 @@ internal static class AuthenticationHosting
         var dataProtection = builder.Services.AddDataProtection().SetApplicationName("locintel");
         if (builder.Configuration["DataProtection:KeyPath"] is { Length: > 0 } keyPath)
             dataProtection.PersistKeysToFileSystem(new DirectoryInfo(keyPath));
-        else if (builder.Environment.IsProduction() && role != "migrate")
+        else if (
+            !builder.Environment.IsDevelopment()
+            && !builder.Environment.IsEnvironment("Testing")
+            && role != "migrate"
+        )
             throw new InvalidOperationException(
                 "DataProtection:KeyPath is required in Production (a store all replicas share); "
                     + "the default per-process keyring breaks sessions and magic links after scale-out."
+            );
+
+        if (
+            builder.Configuration["DataProtection:CertificatePath"] is
+            { Length: > 0 } certificatePath
+        )
+        {
+            var certificate = X509CertificateLoader.LoadPkcs12FromFile(
+                certificatePath,
+                builder.Configuration["DataProtection:CertificatePassword"],
+                OperatingSystem.IsMacOS()
+                    ? X509KeyStorageFlags.DefaultKeySet
+                    : X509KeyStorageFlags.EphemeralKeySet
+            );
+            if (!certificate.HasPrivateKey)
+                throw new InvalidOperationException(
+                    "Data Protection certificate requires a private key."
+                );
+            dataProtection.ProtectKeysWithCertificate(certificate);
+        }
+        else if (
+            !builder.Environment.IsDevelopment()
+            && !builder.Environment.IsEnvironment("Testing")
+            && role != "migrate"
+        )
+            throw new InvalidOperationException(
+                "DataProtection:CertificatePath is required outside Development/Testing to encrypt the shared keyring."
             );
 
         // Cookie session (ADR 21): HttpOnly, no token ever reachable from JS.
@@ -80,10 +130,12 @@ internal static class AuthenticationHosting
                 // trust its proxy's X-Forwarded-Proto gets broken logins (loud)
                 // instead of session cookies over plain HTTP (silent). Elsewhere
                 // SameAsRequest keeps http://localhost working.
-                options.Cookie.SecurePolicy = builder.Environment.IsProduction()
-                    ? CookieSecurePolicy.Always
-                    : CookieSecurePolicy.SameAsRequest;
-                options.SlidingExpiration = true;
+                options.Cookie.SecurePolicy =
+                    !builder.Environment.IsDevelopment()
+                    && !builder.Environment.IsEnvironment("Testing")
+                        ? CookieSecurePolicy.Always
+                        : CookieSecurePolicy.SameAsRequest;
+                options.SlidingExpiration = false;
                 options.ExpireTimeSpan = TimeSpan.FromHours(12);
                 // API, not a browser app: never redirect to a login page.
                 options.Events.OnRedirectToLogin = ctx =>

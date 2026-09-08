@@ -1,10 +1,10 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { createServerFn } from '@tanstack/react-start';
-import { publicApi, type PublicSite } from '../api';
+import { publicApi, type PublicSiteList } from '../api';
 import { SiteMap } from '../SiteMap';
 
 const fetchSites = createServerFn({ method: 'GET' }).handler(() =>
-  publicApi<PublicSite[]>('/public/sites', []),
+  publicApi<PublicSiteList>('/public/sites', { items: [], next: null }).then((page) => page.items),
 );
 
 /**

@@ -23,7 +23,10 @@ namespace LocIntel.Modules.Network.Shares;
 /// </summary>
 public static class ShareEndpoints
 {
-    [Transactional(typeof(NetworkDbContext))]
+    [Transactional(
+        typeof(NetworkDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/network/shares")]
     [ProducesResponseType(typeof(ShareListResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> List(
@@ -49,7 +52,10 @@ public static class ShareEndpoints
         return Results.Ok(new ShareListResponse(items));
     }
 
-    [Transactional(typeof(NetworkDbContext))]
+    [Transactional(
+        typeof(NetworkDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/network/shares/{id}")]
     [ProducesResponseType(typeof(ShareDetail), StatusCodes.Status200OK)]
     public static async Task<IResult> Get(
@@ -109,9 +115,7 @@ public static class ShareEndpoints
         if (await Upsell(entitlements, actor.Org, ct) is { } upsell)
             return upsell;
         if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Trim().Length > 200)
-            return Results.BadRequest(
-                new { error = "a share needs a name of up to 200 characters" }
-            );
+            return ApiErrors.BadRequest("a share needs a name of up to 200 characters");
         var owner = await orgs.GetAsync(actor.Org, ct);
         var ownerName = owner?.Name ?? "Owner";
         var share = new Share
@@ -187,18 +191,18 @@ public static class ShareEndpoints
         if (error is not null)
             return error;
         if (share!.Status == ShareStatus.Closed)
-            return Results.Conflict(new { error = "the share is closed" });
+            return ApiErrors.Conflict("the share is closed");
         var invitee = await orgs.FindBySlugAsync(request.Slug?.Trim().ToLowerInvariant() ?? "", ct);
         if (invitee is null)
-            return Results.NotFound(new { error = "no organization has that slug" });
+            return ApiErrors.NotFound("no organization has that slug");
         if (invitee.Id == actor.Org)
-            return Results.BadRequest(new { error = "your org already owns this share" });
+            return ApiErrors.BadRequest("your org already owns this share");
         var member = await db.Members.FirstOrDefaultAsync(
             m => m.ShareId == id && m.MemberOrgId == invitee.Id,
             ct
         );
         if (member is { Status: MembershipStatus.Active or MembershipStatus.Invited })
-            return Results.Conflict(new { error = "already invited or a member" });
+            return ApiErrors.Conflict("already invited or a member");
         if (member is null)
             db.Members.Add(
                 new ShareMember
@@ -266,7 +270,7 @@ public static class ShareEndpoints
         if (access is null)
             return Results.NotFound();
         if (access.Status != MembershipStatus.Invited)
-            return Results.Conflict(new { error = "no pending invitation" });
+            return ApiErrors.Conflict("no pending invitation");
         var now = DateTimeOffset.UtcNow;
         access.Status = MembershipStatus.Active;
         access.JoinedAt = now;
@@ -298,9 +302,7 @@ public static class ShareEndpoints
         if (access is null)
             return Results.NotFound();
         if (access.Role == MemberRole.Owner)
-            return Results.Conflict(
-                new { error = "the owner closes a share instead of leaving it" }
-            );
+            return ApiErrors.Conflict("the owner closes a share instead of leaving it");
         access.Status = MembershipStatus.Left;
         // leaving is deletion of what the share gave you (ADR 48)
         await db.BulletinCopies.Where(c => c.ShareId == id).ExecuteDeleteAsync(ct);
@@ -334,7 +336,7 @@ public static class ShareEndpoints
             return error;
         var target = new OrgId(orgId);
         if (target == actor.Org)
-            return Results.BadRequest(new { error = "the owner cannot be removed" });
+            return ApiErrors.BadRequest("the owner cannot be removed");
         var member = await db.Members.FirstOrDefaultAsync(
             m => m.ShareId == id && m.MemberOrgId == target,
             ct

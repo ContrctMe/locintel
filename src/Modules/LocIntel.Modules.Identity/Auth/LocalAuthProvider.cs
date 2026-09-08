@@ -19,7 +19,6 @@ public sealed class LocalAuthProvider
         string,
         List<PendingInvitation>
     > _invitations = new();
-    private int _sequence;
 
     // MUST match the subject ExchangeCodeAsync mints for the same person -
     // they disagreed ($"local_{email}" here vs the bare email at login), so a
@@ -29,7 +28,7 @@ public sealed class LocalAuthProvider
         Task.FromResult(email);
 
     public Task<string> CreateOrganizationAsync(string name, CancellationToken ct = default) =>
-        Task.FromResult($"local_org_{Interlocked.Increment(ref _sequence):D6}");
+        Task.FromResult($"local_org_{Guid.CreateVersion7():N}");
 
     public Task UpdateUserNameAsync(
         string externalUserId,
@@ -71,7 +70,7 @@ public sealed class LocalAuthProvider
         CancellationToken ct = default
     )
     {
-        var id = $"local_invite_{Interlocked.Increment(ref _sequence):D6}";
+        var id = $"local_invite_{Guid.CreateVersion7():N}";
         _invitations
             .GetOrAdd(externalOrgId, _ => [])
             .Add(new PendingInvitation(id, email, "pending", DateTimeOffset.UtcNow.AddDays(7)));

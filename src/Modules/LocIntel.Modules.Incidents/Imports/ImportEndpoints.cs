@@ -50,24 +50,27 @@ public static class ImportEndpoints
         if (file is null)
             return Results.NotFound();
         if (file.Status != "Clean")
-            return Results.Conflict(
-                new { error = $"file is {file.Status}; only Clean files can be staged" }
-            );
+            return ApiErrors.Conflict($"file is {file.Status}; only Clean files can be staged");
         string text;
         await using (var stream = await store.OpenReadAsync(file.Key, ct))
         using (var reader = new StreamReader(stream))
             text = await reader.ReadToEndAsync(ct);
         var records = CsvParser.Parse(text);
         if (records.Count == 0)
-            return Results.BadRequest(new { error = "no data rows found" });
+            return ApiErrors.BadRequest("no data rows found");
         if (records.Count > MaxRows)
-            return Results.BadRequest(
-                new { error = $"imports are limited to {MaxRows} rows per file" }
-            );
+            return ApiErrors.BadRequest($"imports are limited to {MaxRows} rows per file");
 
         // site resolution: external id first, then name, both case-insensitive;
         // then gate 3 - a site outside the importer's scope is an invalid row
-        var snapshots = await siteLookup.ListSitesAsync(ct);
+        var snapshots = await siteLookup.ResolveSitesAsync(
+            records
+                .Select(r => r.GetValueOrDefault("site", "").Trim())
+                .Where(r => r.Length > 0)
+                .Distinct()
+                .ToArray(),
+            ct
+        );
         var byExternal = snapshots
             .Where(s => s.ExternalId is not null)
             .GroupBy(s => s.ExternalId!.ToLowerInvariant())
@@ -201,7 +204,10 @@ public static class ImportEndpoints
         return Results.Ok(View(batch, labels));
     }
 
-    [Transactional(typeof(IncidentsDbContext))]
+    [Transactional(
+        typeof(IncidentsDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/incidents/imports")]
     [ProducesResponseType(typeof(ImportBatchListResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> List(
@@ -227,7 +233,10 @@ public static class ImportEndpoints
         );
     }
 
-    [Transactional(typeof(IncidentsDbContext))]
+    [Transactional(
+        typeof(IncidentsDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/incidents/imports/{id}")]
     [ProducesResponseType(typeof(ImportBatchDetail), StatusCodes.Status200OK)]
     public static async Task<IResult> Get(
@@ -291,7 +300,7 @@ public static class ImportEndpoints
         if (batch is null)
             return Results.NotFound();
         if (batch.Status != ImportStatus.Staged)
-            return Results.Conflict(new { error = $"batch is {batch.Status}" });
+            return ApiErrors.Conflict($"batch is {batch.Status}");
         var rows = await db
             .ImportRows.Where(r => r.BatchId == id && r.Errors.Length == 0)
             .ToListAsync(ct);
@@ -364,7 +373,7 @@ public static class ImportEndpoints
         if (batch is null)
             return Results.NotFound();
         if (batch.Status != ImportStatus.Staged)
-            return Results.Conflict(new { error = $"batch is {batch.Status}" });
+            return ApiErrors.Conflict($"batch is {batch.Status}");
         batch.Status = ImportStatus.Discarded;
         await db.ImportRows.Where(r => r.BatchId == id).ExecuteDeleteAsync(ct);
         await db.SaveChangesAsync(ct);

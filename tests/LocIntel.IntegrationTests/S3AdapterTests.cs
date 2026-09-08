@@ -59,7 +59,10 @@ public class S3AdapterTests(MinioFixture fixture) : IClassFixture<MinioFixture>
         Assert.Null(await fixture.Store.GetLengthAsync(key));
         await fixture.Store.WriteAsync(key, new MemoryStream(), "text/plain");
         Assert.Equal(0L, await fixture.Store.GetLengthAsync(key));
-        await fixture.Store.WriteAsync(key, new MemoryStream("preview"u8.ToArray()), "text/plain");
+        using var content = new MemoryStream("preview"u8.ToArray());
+        await fixture.Store.WriteAsync(key, content, "text/plain");
+        Assert.True(content.CanRead); // reporting reads Length after upload; callers own disposal
+        Assert.Equal(7, content.Length);
         Assert.Equal(7L, await fixture.Store.GetLengthAsync(key));
         await using (var stream = await fixture.Store.OpenReadAsync(key))
         using (var reader = new StreamReader(stream))
@@ -77,13 +80,21 @@ public class S3AdapterTests(MinioFixture fixture) : IClassFixture<MinioFixture>
         // ticket -> client-side PUT straight to storage
         var ticket = await fixture.Store.CreateUploadTicketAsync(key, "text/plain", payload.Length);
         using var http = new HttpClient();
+        using var oversized = new HttpRequestMessage(HttpMethod.Put, ticket.Url)
+        {
+            Content = new ByteArrayContent(new byte[payload.Length + 1]),
+        };
+        oversized.Content.Headers.ContentType = new("text/plain");
+        oversized.Headers.Add("If-None-Match", "*");
+        Assert.False((await http.SendAsync(oversized)).IsSuccessStatusCode);
+        Assert.Null(await fixture.Store.GetLengthAsync(key));
         var put = new HttpRequestMessage(HttpMethod.Put, ticket.Url)
         {
             Content = new ByteArrayContent(payload),
         };
         put.Content.Headers.ContentType = new("text/plain");
         foreach (var (name, value) in ticket.Headers)
-            if (name != "Content-Type")
+            if (name is not ("Content-Type" or "Content-Length"))
                 put.Headers.Add(name, value);
         var uploaded = await http.SendAsync(put);
         Assert.True(uploaded.IsSuccessStatusCode, uploaded.StatusCode.ToString());
@@ -105,7 +116,7 @@ public class S3AdapterTests(MinioFixture fixture) : IClassFixture<MinioFixture>
         };
         overwrite.Content.Headers.ContentType = new("text/plain");
         foreach (var (name, value) in ticket.Headers)
-            if (name != "Content-Type")
+            if (name is not ("Content-Type" or "Content-Length"))
                 overwrite.Headers.Add(name, value);
         Assert.False((await http.SendAsync(overwrite)).IsSuccessStatusCode);
         Assert.Equal("s3 adapter proves the ticket contract", await http.GetStringAsync(url));

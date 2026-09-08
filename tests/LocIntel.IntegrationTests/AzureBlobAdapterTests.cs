@@ -57,20 +57,12 @@ public class AzureBlobAdapterTests(AzuriteFixture fixture) : IClassFixture<Azuri
         var key = "primary/test-org/files/azure-probe";
         var payload = "azure adapter proves the ticket contract"u8.ToArray();
 
-        // ticket -> client-side PUT straight to storage
-        var ticket = await fixture.Store.CreateUploadTicketAsync(key, "text/plain", payload.Length);
+        // SAS cannot constrain body size. Only the bounded API relay may upload.
+        await Assert.ThrowsAsync<NotSupportedException>(() =>
+            fixture.Store.CreateUploadTicketAsync(key, "text/plain", payload.Length).AsTask()
+        );
+        await fixture.Store.WriteAsync(key, new MemoryStream(payload), "text/plain");
         using var http = new HttpClient();
-        var put = new HttpRequestMessage(HttpMethod.Put, ticket.Url)
-        {
-            Content = new ByteArrayContent(payload),
-        };
-        foreach (var (name, value) in ticket.Headers)
-            if (name == "Content-Type")
-                put.Content.Headers.ContentType = new(value);
-            else
-                put.Headers.Add(name, value);
-        var uploaded = await http.SendAsync(put);
-        Assert.True(uploaded.IsSuccessStatusCode, uploaded.StatusCode.ToString());
 
         // server-side read (scan path)
         Assert.Equal(payload.LongLength, await fixture.Store.GetLengthAsync(key));
@@ -80,19 +72,6 @@ public class AzureBlobAdapterTests(AzuriteFixture fixture) : IClassFixture<Azuri
 
         // presigned download (client path)
         var url = await fixture.Store.GetDownloadUrlAsync(key, TimeSpan.FromMinutes(1));
-        Assert.Equal("azure adapter proves the ticket contract", await http.GetStringAsync(url));
-
-        // SAS permissions must prevent replacing bytes after a clean scan.
-        using var overwrite = new HttpRequestMessage(HttpMethod.Put, ticket.Url)
-        {
-            Content = new ByteArrayContent("replacement bytes"u8.ToArray()),
-        };
-        foreach (var (name, value) in ticket.Headers)
-            if (name == "Content-Type")
-                overwrite.Content.Headers.ContentType = new(value);
-            else
-                overwrite.Headers.Add(name, value);
-        Assert.False((await http.SendAsync(overwrite)).IsSuccessStatusCode);
         Assert.Equal("azure adapter proves the ticket contract", await http.GetStringAsync(url));
 
         // erasure path

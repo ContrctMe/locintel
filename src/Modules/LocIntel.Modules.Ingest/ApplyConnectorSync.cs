@@ -8,7 +8,8 @@ public sealed record ApplyConnectorSync(
     Guid ConnectorId,
     Guid BatchId,
     string Fingerprint,
-    SourceRow[] Rows
+    SourceRow[] Rows,
+    Guid? AdmissionId = null
 )
 {
     public static string SnapshotFingerprint(SiteConnector connector) =>

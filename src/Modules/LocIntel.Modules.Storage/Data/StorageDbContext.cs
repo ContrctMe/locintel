@@ -12,6 +12,7 @@ public sealed class StorageDbContext(
     public override string ModuleSchema => "storage";
 
     public DbSet<FileObject> Files => Set<FileObject>();
+    public DbSet<PurgedFileOrganization> PurgedOrganizations => Set<PurgedFileOrganization>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -36,7 +37,17 @@ public sealed class StorageDbContext(
             b.Property(f => f.CreatedBy).HasColumnName("created_by");
             b.Property(f => f.CreatedAt).HasColumnName("created_at");
             b.Property(f => f.ScannedAt).HasColumnName("scanned_at");
+            b.Property(f => f.SiteIds).HasColumnName("site_ids");
+            b.Property(f => f.Origin).HasColumnName("origin").HasMaxLength(80);
+            b.Property(f => f.OriginId).HasColumnName("origin_id");
+            b.HasIndex(f => f.SiteIds).HasMethod("gin");
             b.HasIndex(f => new { f.OrgId, f.CreatedAt });
+        });
+        modelBuilder.Entity<PurgedFileOrganization>(b =>
+        {
+            b.ToTable("purged_organizations");
+            b.HasKey(x => x.OrgId);
+            b.Property(x => x.OrgId).HasColumnName("org_id").ValueGeneratedNever();
         });
     }
 }

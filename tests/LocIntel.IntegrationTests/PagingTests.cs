@@ -41,12 +41,17 @@ public class PagingTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         Assert.Equal(3, page1.GetProperty("total").GetInt32());
         Assert.Equal(2, page1.GetProperty("items").GetArrayLength());
         Assert.Equal("Alpha Depot", page1.GetProperty("items")[0].GetProperty("name").GetString());
-        var next = page1.GetProperty("nextOffset").GetInt32();
-        Assert.Equal(2, next);
+        // keyset (ADR 51): the cursor is opaque, and the page after the last has none
+        var next = page1.GetProperty("next").GetString();
+        Assert.False(string.IsNullOrEmpty(next));
 
-        var page2 = await owner.GetFromJsonAsync<JsonElement>($"/api/sites?limit=2&offset={next}");
+        var page2 = await owner.GetFromJsonAsync<JsonElement>($"/api/sites?limit=2&after={next}");
         Assert.Equal(1, page2.GetProperty("items").GetArrayLength());
-        Assert.Equal(JsonValueKind.Null, page2.GetProperty("nextOffset").ValueKind);
+        Assert.Equal(JsonValueKind.Null, page2.GetProperty("next").ValueKind);
+        Assert.Equal(
+            HttpStatusCode.BadRequest,
+            (await owner.GetAsync("/api/sites?limit=2&after=not-a-cursor")).StatusCode
+        );
 
         // search narrows total AND items, case-insensitively
         var depots = await owner.GetFromJsonAsync<JsonElement>("/api/sites?q=depot");
@@ -70,7 +75,7 @@ public class PagingTests(ApiFixture fixture) : IClassFixture<ApiFixture>
 
         var files = await owner.GetFromJsonAsync<JsonElement>("/api/files?limit=5");
         Assert.Equal(JsonValueKind.Array, files.GetProperty("items").ValueKind);
-        Assert.True(files.GetProperty("total").GetInt32() >= 0);
+        Assert.Equal(JsonValueKind.Null, files.GetProperty("total").ValueKind);
     }
 
     [Fact]

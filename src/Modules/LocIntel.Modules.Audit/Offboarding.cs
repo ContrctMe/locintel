@@ -1,6 +1,7 @@
 using System.Text.Json;
 using LocIntel.Contracts;
 using LocIntel.Modules.Audit.Data;
+using LocIntel.Platform.Data;
 using LocIntel.Platform.Kernel;
 using Microsoft.EntityFrameworkCore;
 
@@ -32,7 +33,7 @@ public sealed class AuditExporter(AuditDbContext db) : IOrgDataExporter
                 payload = e.Payload,
                 e.OccurredAt,
             })
-            .ToListAsync(ct);
+            .ToBoundedExportListAsync(ct);
         return JsonSerializer.Serialize(
             new
             {

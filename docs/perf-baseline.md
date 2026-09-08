@@ -1,5 +1,10 @@
 # Performance baseline and operating envelope
 
+> Historical baseline: “current-tree” below refers to the tree at the time of
+> those runs. Site/feed/public paging and index behavior have since changed.
+> See the [2026-09-07 assessment](performance-and-scalability-assessment.md) for
+> current code boundaries and the remaining capacity-validation work.
+
 **Last updated:** 2026-09-04
 
 These are local observations, not production capacity promises: Apple-Silicon

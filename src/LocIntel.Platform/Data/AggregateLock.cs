@@ -20,6 +20,21 @@ namespace LocIntel.Platform.Data;
 /// </summary>
 public static class AggregateLock
 {
+    /// <summary>Admission paths reject contention instead of occupying the pool with waiters.</summary>
+    public static Task<bool> TryTakeAsync(this DbContext db, Guid aggregateId, CancellationToken ct)
+    {
+        if (db.Database.CurrentTransaction is null)
+            throw new InvalidOperationException(
+                "Aggregate admission requires an open transaction."
+            );
+        var key = aggregateId.ToString("N");
+        return db
+            .Database.SqlQuery<bool>(
+                $"SELECT pg_try_advisory_xact_lock(hashtextextended({key}, 0)) AS \"Value\""
+            )
+            .SingleAsync(ct);
+    }
+
     /// <summary>Lock one aggregate: an owner-side row, or a platform-global projection keyed by id.</summary>
     public static Task TakeAsync(this DbContext db, Guid aggregateId, CancellationToken ct) =>
         TakeAsync(db, aggregateId.ToString("N"), ct);

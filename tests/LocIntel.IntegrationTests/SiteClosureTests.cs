@@ -96,7 +96,7 @@ public class SiteClosureTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         var closures = await client.GetFromJsonAsync<JsonElement>($"/api/sites/{siteId}/closures");
         Assert.Contains(closures.EnumerateArray(), c => c.GetString() == holiday);
         var guest = fixture.GuestClient();
-        guest.DefaultRequestHeaders.Add("X-Forwarded-Host", "org-a.locintel.test");
+        guest.DefaultRequestHeaders.Host = "org-a.locintel.test";
         var publicSite = await guest.GetFromJsonAsync<JsonElement>($"/public/sites/{siteId}");
         Assert.Contains(
             publicSite.GetProperty("closures").EnumerateArray(),

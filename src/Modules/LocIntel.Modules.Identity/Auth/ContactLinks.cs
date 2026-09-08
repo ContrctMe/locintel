@@ -71,12 +71,10 @@ public static class ContactLinks
                         ct
                     )
                 )
-                    return Results.UnprocessableEntity(
-                        new
-                        {
-                            error = "this address has bounced before and is suppressed; "
-                                + "verify it with the contact, then ask the operator to unsuppress it",
-                        }
+                    return ApiErrors.Status(
+                        "this address has bounced before and is suppressed; "
+                            + "verify it with the contact, then ask the operator to unsuppress it",
+                        StatusCodes.Status422UnprocessableEntity
                     );
 
                 // Gate 1, both shapes: boolean feature switch + monthly meter
@@ -149,10 +147,10 @@ public static class ContactLinks
                 }
                 catch (Exception)
                 {
-                    return Results.BadRequest(new { error = "invalid or tampered link" });
+                    return ApiErrors.BadRequest("invalid or tampered link");
                 }
                 if (DateTimeOffset.UtcNow.ToUnixTimeSeconds() > long.Parse(parts[2]))
-                    return Results.BadRequest(new { error = "link expired, request a new one" });
+                    return ApiErrors.BadRequest("link expired, request a new one");
 
                 // the token is only a key: the CONTACT RECORD decides. This
                 // request is anonymous and contacts are RLS-protected, so the
@@ -169,7 +167,7 @@ public static class ContactLinks
                             .FirstOrDefaultAsync(http.RequestAborted)
                 );
                 if (email is null)
-                    return Results.BadRequest(new { error = "this link has been revoked" });
+                    return ApiErrors.BadRequest("this link has been revoked");
 
                 await http.SignInAsync(
                     CookieAuthenticationDefaults.AuthenticationScheme,

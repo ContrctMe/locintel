@@ -1,4 +1,6 @@
 using LocIntel.Modules.Ingest.Data;
+using LocIntel.Platform.Data;
+using LocIntel.Platform.Entitlements;
 using LocIntel.Platform.Kernel;
 using Microsoft.EntityFrameworkCore;
 using Wolverine.Attributes;
@@ -21,11 +23,20 @@ public static class ApplyConnectorSyncHandler
             ?? throw new InvalidOperationException(
                 "Connector completion requires a tenant envelope."
             );
-        var connector = await db
-            .Connectors.FromSqlInterpolated(
-                $"SELECT * FROM ingest.site_connectors WHERE id = {message.ConnectorId} FOR UPDATE"
-            )
-            .FirstOrDefaultAsync(ct);
+        await db.TakeAsync(message.ConnectorId, ct);
+        if (
+            message.AdmissionId is { } admission
+            && !await db
+                .Database.SqlQuery<bool>(
+                    $"SELECT EXISTS(SELECT 1 FROM platform.capacity_reservations WHERE id = {message.ConnectorId} AND org_id = {org.Value} AND code = {ConnectorQueue.Code} AND batch_id = {admission}) AS \"Value\""
+                )
+                .SingleAsync(ct)
+        )
+            return;
+        var connector = await db.Connectors.FirstOrDefaultAsync(
+            c => c.Id == message.ConnectorId,
+            ct
+        );
         if (connector is null || await db.Batches.AnyAsync(b => b.Id == message.BatchId, ct))
             return;
         if (ApplyConnectorSync.SnapshotFingerprint(connector) != message.Fingerprint)
@@ -41,5 +52,7 @@ public static class ApplyConnectorSyncHandler
             message.BatchId
         );
         connector.LastSyncedAt = DateTimeOffset.UtcNow;
+        if (message.AdmissionId is not null)
+            await CapacityReservations.ConsumeAsync(db, org, ConnectorQueue.Code, connector.Id, ct);
     }
 }

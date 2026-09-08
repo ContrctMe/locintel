@@ -11,12 +11,16 @@ namespace LocIntel.Modules.Storage;
 
 public static class FileReadEndpoint
 {
-    [NonTransactional]
+    [Transactional(
+        typeof(StorageDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/files/{id}")]
     [ProducesResponseType(typeof(FileSummary), StatusCodes.Status200OK)]
     public static async Task<IResult> Get(
         Guid id,
         StorageDbContext db,
+        [FromServices] FileAccess access,
         IPrincipalAccessor accessor,
         IScopeResolver scopes,
         CancellationToken ct
@@ -29,19 +33,16 @@ public static class FileReadEndpoint
         // list page, and expose neither bytes nor storage keys before scanning.
         var file = await db
             .Files.Where(f =>
-                f.Id == id && f.Status != FileStatus.Deleted && f.Status != FileStatus.Erased
+                f.Id == id
+                && f.Status != FileStatus.Deleted
+                && f.Status != FileStatus.Erased
+                && f.DeletedAt == null
             )
-            .Select(f => new FileSummary(
-                f.Id,
-                f.Name,
-                f.ContentType,
-                f.Status.ToString(),
-                f.DeletedAt,
-                f.LegalHold,
-                f.PreviewKey != null,
-                f.CreatedAt
-            ))
             .SingleOrDefaultAsync(ct);
-        return file is null ? Results.NotFound() : Results.Ok(file);
+        return
+            file is null
+            || !await access.AllowsAsync(file, accessor.Current, Capabilities.FilesRead, ct)
+            ? Results.NotFound()
+            : Results.Ok(FileEndpoints.View(file));
     }
 }

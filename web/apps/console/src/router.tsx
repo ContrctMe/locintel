@@ -1,3 +1,4 @@
+import { PageSkeleton } from './components/page';
 import { createRootRoute, createRoute, createRouter, lazyRouteComponent, Outlet } from '@tanstack/react-router';
 import { Shell } from './shell';
 
@@ -10,6 +11,9 @@ const rootRoute = createRootRoute({
 });
 
 const routes = [
+  createRoute({ getParentRoute: () => rootRoute, path: '/reports/$runId', component: lazyRouteComponent(() => import('./features/reports'), 'ReportRunPage') }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/reports', component: lazyRouteComponent(() => import('./features/reports'), 'ReportsPage') }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/overlays', component: lazyRouteComponent(() => import('./features/overlays'), 'OverlaysPage') }),
   createRoute({ getParentRoute: () => rootRoute, path: '/', component: lazyRouteComponent(() => import('./pages/dashboard'), 'DashboardPage') }),
   createRoute({ getParentRoute: () => rootRoute, path: '/sites', component: lazyRouteComponent(() => import('./features/sites'), 'SitesPage') }),
   createRoute({ getParentRoute: () => rootRoute, path: '/sites/$siteId', component: lazyRouteComponent(() => import('./features/sites'), 'SiteDetailPage') }),
@@ -42,7 +46,7 @@ const routes = [
   createRoute({ getParentRoute: () => rootRoute, path: '/account', component: lazyRouteComponent(() => import('./pages/account'), 'AccountPage') }),
 ];
 
-export const router = createRouter({ routeTree: rootRoute.addChildren(routes), defaultPendingComponent: () => <p className="text-sm text-muted-foreground">Loading…</p> });
+export const router = createRouter({ routeTree: rootRoute.addChildren(routes), defaultPendingComponent: PageSkeleton });
 
 declare module '@tanstack/react-router' {
   interface Register {

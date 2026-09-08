@@ -1,6 +1,7 @@
-import { Button, Card, CardContent, CardHeader, CardTitle, ConfirmButton, Input } from '@locintel/ui';
+import { Button, ConfirmButton, Input, Item, ItemActions, ItemContent, ItemDescription, ItemTitle } from '@locintel/ui';
 import { useState } from 'react';
 import { fmtDateTime } from '../../../lib/format';
+import { Loading, PageHeader, Panel } from '../../../components/page';
 import { useApiMutation } from '../../../lib/mutation';
 import { StatusBadge } from '../../../shell';
 import { operatorApi } from '../api';
@@ -16,19 +17,17 @@ export function OperatorPage() {
   const selected = orgs?.find((org) => org.id === selectedId);
 
   if (orgsQuery.isPending)
-    return <p className="text-sm text-muted-foreground">Loading operator workspace…</p>;
+    return <Loading text="Loading operator workspace…" />;
   if (orgsQuery.isError)
     return <p className="text-sm text-destructive">Could not load operator workspace.</p>;
 
   return (
     <div className="max-w-4xl space-y-6">
-      <h1 className="text-2xl font-semibold">Operator</h1>
+      <PageHeader title="Operator" description="Platform custody: organizations and their lifecycle, dead letters, dependencies, suppressions." />
       <PlatformOverview />
       <CustomerSearch onPickOrg={setSelectedId} />
       <div className="grid grid-cols-1 gap-6 md:grid-cols-[280px_1fr]">
-        <Card>
-          <CardHeader><CardTitle>Organizations</CardTitle></CardHeader>
-          <CardContent className="space-y-1">
+        <Panel title="Organizations" bodyClassName="space-y-1">
             {orgs?.map((org) => (
               <button
                 key={org.id}
@@ -45,8 +44,7 @@ export function OperatorPage() {
                 <StatusBadge status={org.status} />
               </button>
             ))}
-          </CardContent>
-        </Card>
+          </Panel>
         {selected && !selected.isPlatform && (
           <OrganizationControls
             key={selected.id}
@@ -66,9 +64,7 @@ function Dependencies() {
   const { data } = useOperatorHealth();
   if (!data) return null;
   return (
-    <Card>
-      <CardHeader><CardTitle>Dependencies</CardTitle></CardHeader>
-      <CardContent className="flex flex-wrap gap-2">
+    <Panel title="Dependencies" bodyClassName="flex flex-wrap gap-2">
         {data.checks.map((c) => (
           <span key={c.name}
             title={c.error ?? `${c.latencyMs}ms`}
@@ -79,8 +75,7 @@ function Dependencies() {
             </span>
           </span>
         ))}
-      </CardContent>
-    </Card>
+      </Panel>
   );
 }
 
@@ -93,9 +88,7 @@ function Suppressions() {
     success: 'Unsuppressed - sending to this address resumes',
   });
   return (
-    <Card>
-      <CardHeader><CardTitle>Email suppressions</CardTitle></CardHeader>
-      <CardContent className="space-y-2">
+    <Panel title="Email suppressions" bodyClassName="space-y-2">
         <p className="text-sm text-muted-foreground">
           Addresses that bounced. Verify the address is real before unsuppressing -
           repeated bounces hurt the platform&apos;s sender reputation.
@@ -105,21 +98,22 @@ function Suppressions() {
           <p className="text-sm text-muted-foreground">Nothing suppressed.</p>
         )}
         {rows?.map((s) => (
-          <div key={s.id} className="flex items-center justify-between rounded-md border p-2 text-sm">
-            <span>
-              <span className="font-medium">{s.email}</span>
-              <span className="ml-2 text-muted-foreground">
+          <Item key={s.id} variant="outline" size="sm">
+            <ItemContent>
+              <ItemTitle>{s.email}</ItemTitle>
+              <ItemDescription>
                 {s.reason} · {fmtDateTime(s.createdAt)}
-              </span>
-            </span>
+              </ItemDescription>
+            </ItemContent>
+            <ItemActions>
             <ConfirmButton size="sm" variant="outline" confirmLabel="Verified real address?"
               disabled={unsuppress.isPending} onConfirm={() => unsuppress.mutate(s.id)}>
               Unsuppress
             </ConfirmButton>
-          </div>
+            </ItemActions>
+          </Item>
         ))}
-      </CardContent>
-    </Card>
+      </Panel>
   );
 }
 
@@ -127,20 +121,18 @@ function CustomerSearch({ onPickOrg }: { onPickOrg: (orgId: string) => void }) {
   const [q, setQ] = useState('');
   const { data: hits } = useOperatorUsers(q);
   return (
-    <Card>
-      <CardHeader><CardTitle>Find a customer</CardTitle></CardHeader>
-      <CardContent className="space-y-2">
+    <Panel title="Find a customer" bodyClassName="space-y-2">
         <Input placeholder="Email or name from the ticket…" value={q}
           onChange={(e) => setQ(e.target.value)} />
         {q.trim().length >= 2 && hits?.length === 0 && (
           <p className="text-sm text-muted-foreground">No people match.</p>
         )}
         {hits?.map((u) => (
-          <div key={u.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-2 text-sm">
-            <span>
-              <span className="font-medium">{u.email}</span>
-              {u.name && <span className="ml-2 text-muted-foreground">{u.name}</span>}
-            </span>
+          <Item key={u.id} variant="outline" size="sm" className="flex-wrap">
+            <ItemContent>
+              <ItemTitle>{u.email}</ItemTitle>
+              {u.name && <ItemDescription>{u.name}</ItemDescription>}
+            </ItemContent>
             <span className="flex flex-wrap gap-1">
               {u.orgs.length === 0 && <span className="text-muted-foreground">no orgs</span>}
               {u.orgs.map((o) => (
@@ -152,36 +144,33 @@ function CustomerSearch({ onPickOrg }: { onPickOrg: (orgId: string) => void }) {
                 </Button>
               ))}
             </span>
-          </div>
+          </Item>
         ))}
-      </CardContent>
-    </Card>
+      </Panel>
   );
 }
 
 function PlatformOverview() {
   const { data } = useOperatorOverview();
   if (!data) return null;
-  const active = Number(data.orgsByStatus.find((s) => s.status === 'Active')?.count ?? 0);
-  const suspended = Number(data.orgsByStatus.find((s) => s.status === 'Suspended')?.count ?? 0);
+  const active = data.orgsByStatus.find((s) => s.status === 'Active')?.count ?? 0;
+  const suspended = data.orgsByStatus.find((s) => s.status === 'Suspended')?.count ?? 0;
   const stats: [string, number, boolean][] = [
     ['Active orgs', active, false],
     ['Suspended', suspended, suspended > 0],
-    ['Closures pending', Number(data.closuresPending), Number(data.closuresPending) > 0],
-    ['People', Number(data.users), false],
-    ['Dead letters', Number(data.deadLetters), Number(data.deadLetters) > 0],
+    ['Closures pending', data.closuresPending, data.closuresPending > 0],
+    ['People', data.users, false],
+    ['Dead letters', data.deadLetters, data.deadLetters > 0],
   ];
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
       {stats.map(([label, value, attention]) => (
-        <Card key={label}>
-          <CardContent className="pt-4">
+        <Panel key={label}>
             <div className={`text-2xl font-semibold ${attention ? 'text-warning-foreground' : ''}`}>
               {value}
             </div>
             <div className="text-xs text-muted-foreground">{label}</div>
-          </CardContent>
-        </Card>
+          </Panel>
       ))}
     </div>
   );
@@ -200,13 +189,7 @@ function DeadLetters() {
     success: 'Discarded',
   });
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          Dead letters{data && Number(data.total) > 0 ? ` (${data.total})` : ''}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2">
+    <Panel title={<>Dead letters{data && data.total > 0 ? ` (${data.total})` : ''}</>} bodyClassName="space-y-2">
         {data?.total === 0 && (
           <p className="text-sm text-muted-foreground">
             No failed messages. Background work that fails after retries lands here for
@@ -214,17 +197,17 @@ function DeadLetters() {
           </p>
         )}
         {data?.items.map((d) => (
-          <div key={d.id} className="flex items-start justify-between gap-3 rounded-md border p-2 text-sm">
-            <div className="min-w-0">
-              <div className="font-medium">
+          <Item key={d.id} variant="outline" size="sm" className="items-start">
+            <ItemContent>
+              <ItemTitle>
                 {d.messageType}
-                {d.replayable && <span className="ml-2 text-xs text-muted-foreground">requeued…</span>}
-              </div>
-              <div className="truncate text-xs text-muted-foreground" title={d.exceptionMessage}>
+                {d.replayable && <span className="ml-2 text-xs font-normal text-muted-foreground">requeued…</span>}
+              </ItemTitle>
+              <ItemDescription className="truncate" title={d.exceptionMessage}>
                 {d.exceptionType}: {d.exceptionMessage}
-              </div>
+              </ItemDescription>
               {d.tenantId && <div className="text-xs text-muted-foreground">org {d.tenantId}</div>}
-            </div>
+            </ItemContent>
             <div className="flex shrink-0 gap-1">
               <Button size="sm" variant="outline" disabled={replay.isPending || d.replayable}
                 onClick={() => replay.mutate(d.id)}>
@@ -235,9 +218,8 @@ function DeadLetters() {
                 Discard
               </ConfirmButton>
             </div>
-          </div>
+          </Item>
         ))}
-      </CardContent>
-    </Card>
+      </Panel>
   );
 }

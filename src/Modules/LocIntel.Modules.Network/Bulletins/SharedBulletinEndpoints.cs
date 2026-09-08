@@ -28,7 +28,10 @@ public static class SharedBulletinEndpoints
     public const int DefaultDays = 30;
     public const int MaxDays = 180;
 
-    [Transactional(typeof(NetworkDbContext))]
+    [Transactional(
+        typeof(NetworkDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/network/bulletins")]
     [ProducesResponseType(typeof(SharedBulletinListResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> List(
@@ -121,21 +124,17 @@ public static class SharedBulletinEndpoints
         if (access is null)
             return Results.NotFound();
         if (access.Status != MembershipStatus.Active)
-            return Results.Conflict(new { error = "accept the invitation before publishing" });
+            return ApiErrors.Conflict("accept the invitation before publishing");
         if (access.ShareStatus == ShareStatus.Closed)
-            return Results.Conflict(new { error = "the share is closed" });
+            return ApiErrors.Conflict("the share is closed");
         if (string.IsNullOrWhiteSpace(request.Title) || request.Title.Trim().Length > 200)
-            return Results.BadRequest(
-                new { error = "a bulletin needs a title of up to 200 characters" }
-            );
+            return ApiErrors.BadRequest("a bulletin needs a title of up to 200 characters");
         if (string.IsNullOrWhiteSpace(request.Body))
-            return Results.BadRequest(new { error = "a bulletin needs a body" });
+            return ApiErrors.BadRequest("a bulletin needs a body");
         var now = time.GetUtcNow();
         var expiresAt = request.ExpiresAt ?? now.AddDays(DefaultDays);
         if (expiresAt <= now || expiresAt > now.AddDays(MaxDays))
-            return Results.BadRequest(
-                new { error = $"a bulletin expires between now and {MaxDays} days out" }
-            );
+            return ApiErrors.BadRequest($"a bulletin expires between now and {MaxDays} days out");
 
         EntityInfo? entity = null;
         if (request.EntityId is { } entityId)
@@ -263,7 +262,7 @@ public static class SharedBulletinEndpoints
             return gate.ToResult();
         var now = time.GetUtcNow();
         if (await db.Bulletins.AnyAsync(b => b.Id == id, ct))
-            return Results.Conflict(new { error = "this is your own record" });
+            return ApiErrors.Conflict("this is your own record");
         var copy = await db.BulletinCopies.FirstOrDefaultAsync(
             c => c.BulletinId == id && c.WithdrawnAt == null && c.ExpiresAt > now,
             ct
@@ -271,7 +270,7 @@ public static class SharedBulletinEndpoints
         if (copy is null)
             return Results.NotFound();
         if (copy.DisplayName is null)
-            return Results.Conflict(new { error = "this bulletin carries no record to import" });
+            return ApiErrors.Conflict("this bulletin carries no record to import");
         await bus.PublishForOrgAsync(
             actor.Org,
             new ImportEntityRequested(

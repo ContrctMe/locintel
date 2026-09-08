@@ -1,0 +1,3 @@
+# Preserve the existing migration baseline byte-for-byte (applied migrations are immutable).
+src/Modules/Premise.Modules.Reporting/Migrations/20260907231228_TrackFilePublication.cs
+src/Modules/Premise.Modules.Storage/Migrations/20260907231217_AttachGeneratedFilesToSites.cs

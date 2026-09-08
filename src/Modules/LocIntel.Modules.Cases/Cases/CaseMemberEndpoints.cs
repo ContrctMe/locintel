@@ -35,7 +35,7 @@ public static class CaseMemberEndpoints
         if (!known.ContainsKey(request.UserId))
             return Results.NotFound();
         if (await db.Members.AnyAsync(m => m.CaseId == id && m.UserId == request.UserId, ct))
-            return Results.Conflict(new { error = "already a member" });
+            return ApiErrors.Conflict("already a member");
         var member = new CaseMember
         {
             Id = Guid.CreateVersion7(),

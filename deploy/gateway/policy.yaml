@@ -1,0 +1,26 @@
+# Operational settings, independent of billing. Fixed UTC second/minute windows:
+# up to 200 in one second and 6000 in one minute per authenticated partition.
+# A boundary can admit two adjacent windows' allowances in a short interval.
+# Copy an exact partition override into BOTH window descriptor lists as needed:
+# - key: partition
+#   value: "org:<uuid>"
+#   rate_limit: {unit: second, requests_per_unit: 400}
+# Counts survive rate changes at the same unit/partition. See verification ledger.
+domain: locintel
+descriptors:
+  - key: window
+    value: burst
+    descriptors:
+      - key: partition
+        value: "ip:*"
+        rate_limit: {unit: second, requests_per_unit: 20}
+      - key: partition
+        rate_limit: {unit: second, requests_per_unit: 200}
+  - key: window
+    value: sustained
+    descriptors:
+      - key: partition
+        value: "ip:*"
+        rate_limit: {unit: minute, requests_per_unit: 600}
+      - key: partition
+        rate_limit: {unit: minute, requests_per_unit: 6000}

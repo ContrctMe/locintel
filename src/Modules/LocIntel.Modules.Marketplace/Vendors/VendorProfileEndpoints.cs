@@ -22,7 +22,10 @@ namespace LocIntel.Modules.Marketplace.Vendors;
 /// </summary>
 public static class VendorProfileEndpoints
 {
-    [Transactional(typeof(MarketplaceDbContext))]
+    [Transactional(
+        typeof(MarketplaceDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/vendor/profile")]
     [ProducesResponseType(typeof(VendorProfileView), StatusCodes.Status200OK)]
     public static async Task<IResult> Get(
@@ -59,17 +62,15 @@ public static class VendorProfileEndpoints
         if (gate.Actor is not { } actor)
             return gate.ToResult();
         if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Trim().Length > 200)
-            return Results.BadRequest(
-                new { error = "a vendor needs a name of up to 200 characters" }
-            );
+            return ApiErrors.BadRequest("a vendor needs a name of up to 200 characters");
         if (request.Categories is null || request.Categories.Length == 0)
-            return Results.BadRequest(new { error = "offer at least one category" });
+            return ApiErrors.BadRequest("offer at least one category");
         if ((request.Latitude is null) != (request.Longitude is null))
-            return Results.BadRequest(new { error = "latitude and longitude come as a pair" });
+            return ApiErrors.BadRequest("latitude and longitude come as a pair");
         if (request.Latitude is < -90 or > 90 || request.Longitude is < -180 or > 180)
-            return Results.BadRequest(new { error = "coordinates out of range" });
+            return ApiErrors.BadRequest("coordinates out of range");
         if (request.ServiceRadiusKm is < 0 or > 5000)
-            return Results.BadRequest(new { error = "service radius must be 0-5000 km" });
+            return ApiErrors.BadRequest("service radius must be 0-5000 km");
 
         var profile = await db.Profiles.FirstOrDefaultAsync(p => p.OrgId == actor.Org, ct);
         var created = profile is null;
@@ -156,9 +157,7 @@ public static class VendorProfileEndpoints
         if (gate.Actor is not { } actor)
             return gate.ToResult();
         if (string.IsNullOrWhiteSpace(request.Label) || request.Label.Trim().Length > 200)
-            return Results.BadRequest(
-                new { error = "a credential needs a label of up to 200 characters" }
-            );
+            return ApiErrors.BadRequest("a credential needs a label of up to 200 characters");
         var profile = await db.Profiles.FirstOrDefaultAsync(p => p.OrgId == actor.Org, ct);
         if (profile is null)
             return Results.NotFound();

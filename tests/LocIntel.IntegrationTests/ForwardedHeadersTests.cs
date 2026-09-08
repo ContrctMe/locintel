@@ -1,3 +1,4 @@
+using System.Net;
 using Microsoft.AspNetCore.Hosting;
 
 namespace LocIntel.IntegrationTests;
@@ -8,6 +9,8 @@ public sealed class TrustedProxyFixture : ApiFixture
     {
         base.ConfigureHost(builder);
         builder.UseSetting("Proxy:TrustForwardedHeaders", "true");
+        builder.UseSetting("Proxy:KnownProxies:0", "192.0.2.10");
+        builder.UseSetting("AllowedHosts", "localhost;*.localhost;*.locintel.test");
     }
 }
 
@@ -19,6 +22,31 @@ public sealed class TrustedProxyFixture : ApiFixture
 /// </summary>
 public class ForwardedHeadersTests(TrustedProxyFixture fixture) : IClassFixture<TrustedProxyFixture>
 {
+    [Theory]
+    [InlineData("192.0.2.10", "org-a.localhost", "https", "org-a.localhost")]
+    [InlineData("192.0.2.20", "org-a.localhost", "http", "localhost")]
+    [InlineData("192.0.2.10", "attacker.invalid", "https", "localhost")]
+    public async Task Only_known_peers_and_allowed_hosts_can_change_request_authority(
+        string peer,
+        string forwardedHost,
+        string scheme,
+        string host
+    )
+    {
+        var context = await fixture.Factory.Server.SendAsync(http =>
+        {
+            http.Connection.RemoteIpAddress = IPAddress.Parse(peer);
+            http.Request.Method = "GET";
+            http.Request.Path = "/public/sites";
+            http.Request.Scheme = "http";
+            http.Request.Host = new Microsoft.AspNetCore.Http.HostString("localhost");
+            http.Request.Headers["X-Forwarded-Proto"] = "https";
+            http.Request.Headers["X-Forwarded-Host"] = forwardedHost;
+        });
+        Assert.Equal(scheme, context.Request.Scheme);
+        Assert.Equal(host, context.Request.Host.Host);
+    }
+
     [Fact]
     public async Task Cookies_are_secure_when_the_proxy_says_https()
     {

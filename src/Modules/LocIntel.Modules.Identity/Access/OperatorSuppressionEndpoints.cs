@@ -25,7 +25,10 @@ public sealed record SuppressionResponse(
 /// </summary>
 public static class OperatorSuppressionEndpoints
 {
-    [Transactional(typeof(IdentityDbContext))]
+    [Transactional(
+        typeof(IdentityDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/operator/suppressions")]
     [ProducesResponseType(typeof(List<SuppressionResponse>), StatusCodes.Status200OK)]
     public static async Task<IResult> List(

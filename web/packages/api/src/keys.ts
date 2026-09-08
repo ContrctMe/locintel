@@ -9,6 +9,7 @@ export const CAPABILITIES = [
   'files:read',
   'files:manage',
   'ingest:manage',
+  'reports:generate',
   'checklists:manage',
   'checklists:complete',
   'incidents:read',
@@ -29,6 +30,8 @@ export const CAPABILITIES = [
   'patrols:read',
   'patrols:perform',
   'patrols:manage',
+  'overlays:read',
+  'overlays:manage',
   'audit:read',
   'audit:manage',
   'entitlements:manage',
@@ -41,7 +44,6 @@ export type Capability = (typeof CAPABILITIES)[number];
 
 export const ENTITLEMENTS = {
   'ai.assist': { shape: 'Boolean', policy: 'Block', defaultValue: 'true' },
-  'api.requests_per_minute': { shape: 'Limit', policy: 'Block', defaultValue: '600' },
   'audit.read_logging': { shape: 'Boolean', policy: 'Block', defaultValue: 'true' },
   'audit.retention_days': { shape: 'Tiered', policy: 'WarnOnly', defaultValue: '90' },
   'contact_links.enabled': { shape: 'Boolean', policy: 'Block', defaultValue: 'true' },
@@ -49,6 +51,8 @@ export const ENTITLEMENTS = {
   'hierarchy.depth': { shape: 'Limit', policy: 'Block', defaultValue: '4' },
   'marketplace.enabled': { shape: 'Boolean', policy: 'Block', defaultValue: 'true' },
   'network.enabled': { shape: 'Boolean', policy: 'Block', defaultValue: 'true' },
+  'reports.enabled': { shape: 'Boolean', policy: 'Block', defaultValue: 'true' },
+  'reports.monthly': { shape: 'Limit', policy: 'Block', defaultValue: '1000' },
   'sites.max': { shape: 'Limit', policy: 'Block', defaultValue: '100' },
   'sso.enabled': { shape: 'Boolean', policy: 'Block', defaultValue: 'false' },
 } as const;

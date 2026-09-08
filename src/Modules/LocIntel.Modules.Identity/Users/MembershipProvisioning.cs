@@ -30,7 +30,8 @@ public static class MembershipBootstrap
 {
     /// <summary>
     /// Creates the membership and assigns roles: a recorded invited role wins;
-    /// otherwise the org's FIRST member becomes Owner (*:*).
+    /// otherwise the org's FIRST member seeds the preset roles and becomes
+    /// Owner (*:*).
     /// </summary>
     public static async Task<Membership> EnsureMembershipAsync(
         IdentityDbContext db,
@@ -67,9 +68,7 @@ public static class MembershipBootstrap
         }
         else if (!await db.Roles.AnyAsync(r => r.OrgId == orgId, ct))
         {
-            var owner = Role.Create(orgId, "Owner");
-            db.Roles.Add(owner);
-            db.RoleGrants.Add(RoleGrant.Wildcard(owner));
+            var owner = RolePresets.Seed(orgId, r => db.Roles.Add(r), g => db.RoleGrants.Add(g));
             db.MembershipRoles.Add(
                 new MembershipRole
                 {

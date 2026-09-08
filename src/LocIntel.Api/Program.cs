@@ -14,6 +14,8 @@ using LocIntel.Modules.Ingest;
 using LocIntel.Modules.Marketplace;
 using LocIntel.Modules.Network;
 using LocIntel.Modules.Patrols;
+using LocIntel.Modules.Reporting;
+using LocIntel.Modules.Spatial;
 using LocIntel.Modules.Storage;
 using LocIntel.Modules.Tenancy;
 using LocIntel.Platform.Audit;
@@ -29,6 +31,7 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Wolverine;
+using Wolverine.ErrorHandling;
 using Wolverine.Http;
 using Wolverine.Postgresql;
 using static LocIntel.Api.ProviderOptionsValidation;
@@ -69,16 +72,20 @@ var buildVersion =
 // region sources, Wolverine, middleware - sees the same identity.
 if (role != "migrate" && builder.Configuration["Database:AppUser"] is { Length: > 0 } appUser)
 {
-    var ownerCs =
-        builder.Configuration.GetConnectionString("locintel")
-        ?? throw new InvalidOperationException("Missing connection string 'locintel'.");
-    builder.Configuration["ConnectionStrings:locintel"] = new Npgsql.NpgsqlConnectionStringBuilder(
-        ownerCs
-    )
+    // both strings: the app's, and the message store's when it has its own
+    // (ADR 53: behind a transaction-mode pooler Wolverine's advisory locks
+    // and node agents need a direct connection)
+    foreach (var name in new[] { "locintel", "locintel-messaging" })
     {
-        Username = appUser,
-        Password = builder.Configuration["Database:AppPassword"],
-    }.ConnectionString;
+        if (builder.Configuration.GetConnectionString(name) is not { } ownerCs)
+            continue;
+        builder.Configuration[$"ConnectionStrings:{name}"] =
+            new Npgsql.NpgsqlConnectionStringBuilder(ownerCs)
+            {
+                Username = appUser,
+                Password = builder.Configuration["Database:AppPassword"],
+            }.ConnectionString;
+    }
 }
 
 // Independent EF, messaging, and direct-connection pools share one server budget.
@@ -109,20 +116,28 @@ using (ExecutionContext.IsFlowSuppressed() ? default : ExecutionContext.Suppress
 builder
     .Services.AddOpenTelemetry()
     .ConfigureResource(r =>
-        r.AddService(serviceName: $"locintel-{role}", serviceInstanceId: Environment.MachineName)
+        r.AddService(
+            serviceName: $"locintel-{role}",
+            serviceInstanceId: $"{Environment.MachineName}:{Environment.ProcessId}"
+        )
     )
     .WithTracing(tracing =>
         tracing
             .AddAspNetCoreInstrumentation()
             .AddHttpClientInstrumentation()
-            .AddSource("Wolverine")
+            .AddSource("Wolverine", "Npgsql")
             .AddOtlpExporter()
     )
     .WithMetrics(metrics =>
         metrics
             .AddAspNetCoreInstrumentation()
             .AddHttpClientInstrumentation()
-            .AddMeter("Wolverine:*")
+            .AddMeter(
+                "Wolverine:*",
+                "Npgsql",
+                "System.Runtime",
+                "Microsoft.AspNetCore.RateLimiting"
+            )
             .AddOtlpExporter()
     );
 builder.Logging.AddOpenTelemetry(logging =>
@@ -141,6 +156,7 @@ builder.Services.AddSingleton<IPrincipalAccessor, RequestPrincipalAccessor>();
 builder.Services.AddScoped<TenantContext>(); // envelope-tenant holder (ADR 24)
 builder.Services.AddScoped<ITenantContext, PrincipalTenantContext>();
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddMemoryCache(); // low-zoom tiles (ADR 51), keyed by org and scope
 
 // Gates 2+3: roles compile to grants; scope evaluated per request (ADR 6),
 // decorated with authz-decision audit (ADR 12: denials always).
@@ -165,6 +181,8 @@ builder.Services.AddMarketplaceModule(builder.Configuration, runBackgroundWork: 
 builder.Services.AddAlertsModule();
 builder.Services.AddNetworkModule();
 builder.Services.AddPatrolsModule();
+builder.Services.AddReportingModule(runBackgroundWork: role == "worker");
+builder.Services.AddSpatialModule();
 
 // Platform infra context (idempotency, ADR 29; sweep leases)
 builder.Services.AddScoped<ISweepLease, SweepLease>(); // by TYPE: Wolverine codegen refuses factories
@@ -191,8 +209,8 @@ switch (builder.Configuration["Billing:Provider"] ?? "local")
                 "Billing:Stripe:WebhookSecret is required."
             )
             .Validate(
-                o => IsHttpUrl(o.ApiBase),
-                "Billing:Stripe:ApiBase must be an absolute HTTP(S) URL."
+                o => IsProviderUrl(o.ApiBase, builder.Environment),
+                "Billing:Stripe:ApiBase must be an absolute HTTPS URL outside Development/Testing."
             )
             .Validate(
                 o =>
@@ -208,7 +226,7 @@ switch (builder.Configuration["Billing:Provider"] ?? "local")
             LocIntel.Integrations.Stripe.StripeBillingProvider
         >();
         break;
-    case "local" when !builder.Environment.IsProduction():
+    case "local" when IsDevelopmentOrTesting(builder.Environment):
         builder.Services.AddSingleton<LocIntel.Platform.Billing.IBillingProvider>(
             new LocIntel.Modules.Entitlements.LocalBillingProvider(
                 builder.Configuration["Billing:WebhookSecret"] ?? "dev-billing-secret"
@@ -222,7 +240,10 @@ switch (builder.Configuration["Billing:Provider"] ?? "local")
 }
 
 builder.Services.AddWolverineHttp();
-builder.Services.AddOpenApi(); // ADR 16: the spec is the contract; TS client + keys generate from it
+
+// ADR 16: the spec is the contract; TS client + keys generate from it - and
+// numbers are numbers in it, not "number or string" (OpenApiNumberTransformer)
+builder.Services.AddOpenApi(options => options.AddSchemaTransformer<OpenApiNumberTransformer>());
 
 // Notifications (ADR 32): email is on the auth critical path (magic links),
 // so Production must configure a real transport - the built-in SMTP adapter
@@ -268,11 +289,7 @@ switch (builder.Configuration["Notifications:Sms"] ?? "off")
     case "off":
         builder.Services.AddSingleton<ISmsTransport, NoSmsTransport>();
         break;
-    case "local":
-        if (builder.Environment.IsProduction())
-            throw new InvalidOperationException(
-                "Notifications:Sms 'local' is dev/test only; use 'off' or 'twilio' in Production."
-            );
+    case "local" when IsDevelopmentOrTesting(builder.Environment):
         builder.Services.AddSingleton<LocalSmsCatcher>();
         builder.Services.AddSingleton<ISmsTransport>(sp =>
             sp.GetRequiredService<LocalSmsCatcher>()
@@ -309,6 +326,10 @@ switch (builder.Configuration["Notifications:Transport"] ?? "local")
                 o => CredentialsMatch(o.UserName, o.Password),
                 "Notifications:Smtp:UserName and Password must be configured together."
             )
+            .Validate(
+                o => IsDevelopmentOrTesting(builder.Environment) || o.UseStartTls,
+                "Notifications:Smtp:UseStartTls must be true outside Development/Testing."
+            )
             .ValidateOnStart();
         builder.Services.AddSingleton<LocIntel.Integrations.Smtp.SmtpNotificationTransport>();
         builder.Services.AddSingleton<
@@ -316,7 +337,7 @@ switch (builder.Configuration["Notifications:Transport"] ?? "local")
             LocIntel.Modules.Identity.Users.SuppressingNotificationTransport<LocIntel.Integrations.Smtp.SmtpNotificationTransport>
         >();
         break;
-    case "local" when !builder.Environment.IsProduction():
+    case "local" when IsDevelopmentOrTesting(builder.Environment):
         builder.Services.AddSingleton<LocalMailCatcher>();
         builder.Services.AddSingleton<
             INotificationTransport,
@@ -334,10 +355,15 @@ builder.AddRequestPolicies();
 // Wolverine (ADR 23): mediation + messaging + durable Postgres outbox.
 builder.UseWolverine(opts =>
 {
+    // the message store's own connection string when one is configured: a
+    // transaction-mode pooler cannot carry Wolverine's session advisory
+    // locks and node agents, so those go straight to Postgres (ADR 53)
     var cs =
-        builder.Configuration.GetConnectionString("locintel")
+        builder.Configuration.GetConnectionString("locintel-messaging")
+        ?? builder.Configuration.GetConnectionString("locintel")
         ?? throw new InvalidOperationException("Missing connection string 'locintel'.");
-    opts.PersistMessagesWithPostgresql(cs, "wolverine");
+    opts.UsePostgresqlPersistenceAndTransport(cs, "wolverine", transportSchema: "wolverine")
+        .AutoProvision();
     // the migrate role owns DDL, not messaging: never let it provision or
     // touch the envelope schema as the OWNER (the app role must own it)
     if (role == "migrate")
@@ -357,7 +383,26 @@ builder.UseWolverine(opts =>
             : JasperFx.CodeGeneration.TypeLoadMode.Dynamic
     );
     opts.Policies.UseDurableLocalQueues();
+    opts.PublishMessage<LocIntel.Modules.Reporting.GenerateReport>().ToPostgresqlQueue("reports");
+    opts.PublishMessage<LocIntel.Contracts.ExportOrgData>().ToPostgresqlQueue("exports");
+    opts.PublishMessage<LocIntel.Contracts.ExportAuditTrail>().ToPostgresqlQueue("exports");
+    // Integration hosts combine roles; deployed APIs only publish report work.
+    if (role == "worker" || builder.Environment.IsEnvironment("Testing"))
+    {
+        opts.ListenToPostgresqlQueue("reports").MaximumParallelMessages(1);
+        opts.ListenToPostgresqlQueue("exports").MaximumParallelMessages(1);
+    }
+    opts.OnException<LocIntel.Platform.Entitlements.CapacityBusyException>()
+        .RetryWithCooldown(
+            TimeSpan.FromMilliseconds(20),
+            TimeSpan.FromMilliseconds(50),
+            TimeSpan.FromMilliseconds(100)
+        )
+        .Then.ScheduleRetryIndefinitely(TimeSpan.FromSeconds(1))
+        .WithFullJitter();
     opts.Discovery.IncludeAssembly(typeof(TenancyModule).Assembly);
+    opts.Discovery.IncludeAssembly(typeof(ReportingModule).Assembly);
+    opts.Discovery.IncludeAssembly(typeof(SpatialModule).Assembly);
     opts.Discovery.IncludeAssembly(typeof(IdentityModule).Assembly);
     opts.Discovery.IncludeAssembly(typeof(EntitlementsModule).Assembly);
     opts.Discovery.IncludeAssembly(typeof(AuditModule).Assembly);
@@ -400,7 +445,7 @@ if (role == "api")
     // in-process, so codegen is unaffected either way.
     if (builder.Configuration.GetValue("Api:ExposeOpenApi", true))
         app.MapOpenApi();
-    if (!app.Environment.IsProduction())
+    if (IsDevelopmentOrTesting(app.Environment))
         app.MapGet(
                 "/dev/boom",
                 new Func<IResult>(() =>
@@ -467,6 +512,7 @@ if (role == "api")
     app.MapOperatorDeadLetterEndpoints();
     app.MapOperatorOverviewEndpoint();
     app.MapOperatorHealthEndpoint();
+    app.MapDataLayerEndpoints();
     app.MapWolverineEndpoints();
 }
 

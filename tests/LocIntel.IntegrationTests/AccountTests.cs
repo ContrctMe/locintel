@@ -136,7 +136,10 @@ public class AccountTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         Assert.Equal("last_manager", body.GetProperty("code").GetString());
         Assert.Contains(
             "Solo Co",
-            body.GetProperty("organizations").EnumerateArray().Select(o => o.GetString())
+            body.GetProperty("detail")
+                .GetProperty("organizations")
+                .EnumerateArray()
+                .Select(o => o.GetString())
         );
 
         // a member who manages nothing alone deletes cleanly

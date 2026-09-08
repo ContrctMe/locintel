@@ -12,9 +12,54 @@ One image, three roles, selected by the `ROLE` environment variable (ADR 34):
 
 | Role | What it does | Runs |
 |---|---|---|
-| `migrate` | Applies all eight modules' EF migrations with **owner** credentials, provisions the unprivileged `app_user` role, reassigns schema ownership, exits | Once per deploy, before the others |
-| `api` | HTTP surface (Wolverine endpoints, auth, webhooks) | 1+ replicas |
+| `migrate` | Applies all configured modules' EF migrations with **owner** credentials, provisions the unprivileged `app_user` role, reassigns schema ownership, exits | Once per deploy, before the others |
+| `api` | HTTP surface (Wolverine endpoints, auth, webhooks) | 1+ replicas — sessions, idempotency and business capacity reservations live in Postgres; gateway request fairness is operational policy (ADR 54). Local concurrency, the brief fairness-identity cache and cluster-tile caches are per replica by design |
 | `worker` | Outbox delivery, scheduled retries, occurrence materialization, retention purge, idempotency cleanup | 1+ replicas — every recurring sweep is leased per period in `platform.sweep_runs` (first replica to claim `(sweep, period)` runs it, the rest skip), so replicas never duplicate a sweep |
+
+A connection pooler in front of Postgres runs in **transaction mode**
+(ADR 53): the tenant variable is transaction state (`SET LOCAL`, set when
+a transaction starts and carried in the batch of any read outside one), so
+a server connection that moves between clients between transactions
+carries nothing from the last one. Two settings make it work: point
+`ConnectionStrings:locintel-messaging` at Postgres directly, because
+Wolverine's node agents and leader election hold session-level advisory
+locks that a transaction pool cannot carry (the app-role rewrite applies to
+it too), and give the pooler `max_prepared_statements` (PgBouncer 1.21+).
+The api and worker connect through the pooler; the migrate role connects
+directly. `docs/scaling.md` has the measurements; `LOCINTEL_PGBOUNCER=1
+aspire run` and `tools/replica-stack.sh N --pgbouncer` run the same
+container locally. Session mode still works and is no longer the
+recommendation.
+
+Two and four replicas of each role are proven by the fleet suite:
+`tools/replica-stack.sh 2` boots the topology above on one host (a
+round-robin proxy in front) and runs `tests/LocIntel.FleetTests` - one
+session answered by every replica, an idempotency key honoured across
+replicas, one sweep claim
+per period across workers, and a replica killed while its local queue
+still holds a committed batch, whose messages the survivors finish.
+`tools/replica-stack.sh 4 --bench` runs the load baseline through the proxy;
+`docs/scaling.md` holds the table. Every piece of per-process state is
+either shared through Postgres or listed in the table above as per replica
+on purpose; add a new one to one of those two places. Request fairness now has
+its own [gateway reference and acceptance suite](gateway-fairness.md), including
+two gateway replicas sharing one tenant allowance. The standalone fleet proxy
+does not implement gateway fairness.
+
+Deploy traffic admission before cutting over from the SQL limiter. The native
+gateway reference uses Envoy plus its standard limiter service and ephemeral
+Redis; forks may substitute a gateway that passes the documented identity,
+fairness and failure contract. API/identity listeners stay private, clients
+cannot supply trusted classification headers, and the application still validates
+credentials and gates each business request. The provided Compose file uses local
+development adapters and HTTP; supply production TLS, adapters and protected
+secrets before deploying it. Read the migration section before dropping the
+retired counter table, since old binaries still reference it.
+
+The local gateway Compose network defaults to `172.31.249.0/24`. Set
+`GATEWAY_SUBNET` to a nonconflicting private CIDR when necessary; the same value
+configures Docker's network and the application's trusted immediate proxies.
+Every container joined to that network belongs to the local proxy trust boundary.
 
 Ordering matters: `api`/`worker` should start (or restart) after `migrate`
 exits successfully — the Aspire graph does this with `WaitForCompletion`;
@@ -86,9 +131,12 @@ Two Postgres identities:
 
 - The **owner** (whatever your platform provisions) is handed **only to the
   migrate role** via `ConnectionStrings:locintel`.
-- `api` and `worker` receive the same connection string **plus**
-  `Database:AppUser` / `Database:AppPassword`; at boot they rewrite the
-  connection string to those credentials and never hold owner access.
+- `api` and `worker` receive connection strings containing **only application-role
+  credentials**, plus matching `Database:AppUser` / `Database:AppPassword` when
+  used. Store those separately from the migration/admin Secret, including the
+  optional messaging connection. A configuration rewrite cannot erase owner
+  credentials from a process environment or mounted file; never pass them to a
+  serving role. AppHost and the DigitalOcean manifests use this same separation.
 
 This is what makes row-level security real: `app_user` is subject to RLS,
 the owner is not. **If api or worker ever connects as the owner, RLS is
@@ -101,6 +149,31 @@ enforces this; your CI should too via the round-trip tests).
 
 ## Configuration reference
 
+### Handler and transaction conventions
+
+- A query endpoint with an explicit Wolverine transaction uses
+  `[Transactional(typeof(OwnerDbContext), Mode = TransactionMiddlewareMode.Lightweight)]`.
+  This avoids holding an eager transaction/connection across calls to other
+  modules. `TransactionalAttributeTests` checks every annotated Wolverine GET.
+  Lightweight is not a read-only guarantee; review side effects separately.
+- A write endpoint or durable handler names its owning DbContext and uses the
+  normal eager transaction when read/lock/write must be atomic. Its state changes
+  and outgoing durable messages belong to that same transaction. Calling another
+  module's interface does not enlist that module's DbContext automatically.
+- Acquire admission locks before reading mutable quantities. Use the existing
+  platform capacity helper for accepted site imports; never add a separate
+  process-local business counter. See [ADR 55](decisions/0055-business-capacity-reservations.md).
+- Keep organization identity explicit: HTTP work obtains it from the validated
+  principal; queued work obtains it from the message envelope. Queries still
+  apply scope, and database operations still use the unprivileged runtime role.
+- Build from current generated handlers using the sequence below. After changing
+  handler signatures, clear stale disposable `Internal/Generated` sources before
+  rebuilding/regenerating; never treat them as hand-maintained application code.
+
+The migration role retries transient Npgsql failures such as startup
+unavailability. Syntax, credential and privilege failures stop immediately.
+The deployment operator fixes the cause before intentionally rerunning migration.
+
 Everything the image reads. Section syntax (`A:B`) maps to env vars as
 `A__B` (double underscore).
 
@@ -110,10 +183,12 @@ Everything the image reads. Section syntax (`A:B`) maps to env vars as
 |---|---|---|
 | `ROLE` | yes | `migrate` \| `api` \| `worker` (default `api`) |
 | `Build:Version` | recommended | Stamp it in CI (e.g. the git SHA or tag); surfaces in `/healthz` and the console footer so "what version are you running?" is answerable |
-| `ConnectionStrings:locintel` | yes | Owner credentials; rewritten for api/worker. Omitted `Maximum Pool Size` defaults to 20 per pool (or an explicitly larger `Minimum Pool Size`); explicit maximums are preserved |
+| `ConnectionStrings:locintel` | yes | Application-role credentials for api/worker; owner credentials only for migrate. Omitted `Maximum Pool Size` defaults to 20 per pool (or an explicitly larger `Minimum Pool Size`); explicit maximums are preserved |
 | `Database:AppUser` / `Database:AppPassword` | api/worker | The RLS-subject identity |
 | `Public:HostTemplate` | yes | e.g. `https://{slug}.yourproduct.com` — contact links are minted from this |
-| `Proxy:TrustForwardedHeaders` | yes, behind a proxy | Honors `X-Forwarded-Proto/Host/For` from the immediate peer. **Required in the documented topology**: without it, TLS terminates at the proxy, the app sees HTTP, session cookies lose the `Secure` flag and scheme-built URLs (billing returns, SSO portal returns) come out `http://`. Only enable when the proxy strips inbound `X-Forwarded-*` from clients (reverse proxies do). Production also hard-floors cookies to `Secure` regardless — a forgotten flag breaks logins loudly instead of leaking cookies silently |
+| `AllowedHosts` | outside Development/Testing, or when trusting a proxy | Semicolon-separated application hosts, e.g. `console.example.com;*.example.com`. Bare `*` is refused. Include the explicit internal probe host used by your orchestrator; the DigitalOcean renderer adds `health.locintel.internal`. |
+| `Proxy:KnownProxies:{n}` / `Proxy:KnownNetworks:{n}` | when trusting a proxy | The actual immediate proxy IPs or bounded CIDRs. Never use `0.0.0.0/0` or `::/0`; a whole private network should be trusted only if its workloads are in the same trust boundary. |
+| `Proxy:TrustForwardedHeaders` | behind a proxy | Accepts forwarded scheme/host/IP only from explicitly configured `Proxy:KnownProxies` IPs or `Proxy:KnownNetworks` CIDRs. Trusts one immediate hop; the proxy must strip client-supplied forwarding headers. A missing peer list or unrestricted CIDR refuses startup. |
 
 Pool limits apply **per pool, per process**, not per database or deployment.
 EF's regional data source, durable messaging, and direct Npgsql connections can
@@ -130,11 +205,15 @@ pool waits as well as server occupancy before increasing it.
 | `Auth:Provider` | `workos` in production (`local` refuses to boot there) |
 | `Auth:WorkOS:ApiKey`, `Auth:WorkOS:ClientId` | From the WorkOS dashboard |
 | `Auth:WorkOS:ApiBaseUrl` | Leave unset for real WorkOS (emulator is dev-only) |
-| `Auth:WorkOS:WebhookSecret` | Required for directory sync; unset = webhook deliveries rejected (fail-closed) |
+| `Auth:WorkOS:WebhookSecret` | Required outside Development/Testing for signed security and directory events; invalid or unsigned deliveries are rejected |
 
-Register the WorkOS webhook endpoint (dsync events) at
-`https://api.yourproduct.com/auth/directory/webhook`, and the AuthKit
-redirect URI at `https://console.yourproduct.com/auth/callback`.
+Register the WorkOS webhook endpoint at
+`https://api.yourproduct.com/auth/directory/webhook` for `session.revoked`,
+`password_reset.succeeded`, and `user.deleted`. These events revoke that
+provider user's local sessions created before the event. Add `dsync.user.created`,
+`dsync.user.updated`, and `dsync.user.deleted` when using directory sync.
+Register the AuthKit redirect URI at
+`https://console.yourproduct.com/auth/callback` and test signed revocation delivery.
 
 The console observes `X-LocIntel-Session-Context` on `/me` and sends that
 fingerprint as a request precondition. Preserve this header through proxies.
@@ -192,16 +271,41 @@ contact links land in spam and that reads as "login is broken."
 
 | Key | Notes |
 |---|---|
-| `Storage:Provider` | `s3` (`Storage:S3:BucketName`, optional `ServiceUrl`/`AccessKey`/`SecretKey`/`ForcePathStyle` for MinIO/R2) or `azure` (`Storage:Azure:ConnectionString`, `ContainerName`); both smoke-tested against MinIO/Azurite. `local` (`Storage:LocalRoot`) is **dev/test only — refuses to boot in Production**: tickets live in process memory and bytes on local disk |
+| `Storage:Provider` | `s3` (`Storage:S3:BucketName`, optional `ServiceUrl`/`AccessKey`/`SecretKey`/`ForcePathStyle` for MinIO/R2) or `azure` (`Storage:Azure:ConnectionString`, `ContainerName`); both smoke-tested against MinIO/Azurite. `local` (`Storage:LocalRoot`) is **dev/test only — refuses to boot in Production**: tickets are signed with the shared local key and bytes live on local disk |
 | `Scanner:Provider` | `clamav` (`Scanner:ClamAv:Host`, `Port` default 3310, `TimeoutSeconds` default 60; clamd with TCPSocket enabled) or a fork adapter behind `IVirusScanner`. `eicar` is **dev/test only — refuses to boot in Production**: it reads 128 KiB and knows one signature. A scanner that cannot answer keeps the object quarantined; it never reads as clean |
 | `Secrets:Provider` | `kms` (`Secrets:Kms:KeyId`, optional `ServiceUrl`/`AccessKey`/`SecretKey`; ADR 31, LocalStack-tested) or a fork adapter. `local` (`Secrets:LocalMasterKey`, the default when that key is set) is **dev/test only — refuses to boot in Production** |
-| `RateLimits:GuestPerMinute` / `RateLimits:UserPerMinute` | Defaults 60 / 300; per-org API quota comes from the entitlement |
+| `Traffic:MaxConcurrentRequests` | Per-process admission, standalone default 32; Docker gateway reference 128, configurable with `TRAFFIC_MAX_CONCURRENT_REQUESTS`. Valid 1–4096; no queue; overload returns 503 with `Retry-After: 1`. Includes private identity checks; excludes probes. Size against measured latency and resource budgets |
+| `Gateway:IdentityKey` | Enables the private fairness-identity lookup; at least 32 bytes. Reference deployment generates a random key shared with the gateway; protect it like other service credentials |
+| `Gateway:Required` | Default false for standalone use; the reference sets true and rejects non-probe requests without the gateway key. Network isolation is still required |
+| `Gateway:IdentityCacheSeconds` / `Gateway:IdentityCacheEntries` | Defaults 15 seconds / 10,000 entries per API; bounded fairness classification only, never cached authorization |
 | `Impersonation:TtlSeconds` | Support-session length (default 3600) |
 | `Api:ExposeOpenApi` | Serve `/openapi/v1.json` (default true; the console developer page links it). Set false to hide the API surface |
 | `Webhooks:RetryBaseSeconds` | Outbound webhook backoff base (default suits production; tests shrink it) |
 | `Audit:PolicyCacheTtlSeconds` | Per-org audit-policy cache |
 
+### Protect shared authentication keys
+
+`DataProtection:CertificatePath` is required outside Development/Testing (except
+for the migration role). It loads a PFX certificate with its private key and
+encrypts persisted Data Protection XML using the framework's certificate
+protector. `DataProtection:CertificatePassword` supplies its password. Mount the
+same protected certificate and shared `DataProtection:KeyPath` for every replica.
+The DigitalOcean compatibility manifests require this configuration. Linux uses
+an ephemeral imported private key; macOS uses its supported default key storage.
+A local integration test verifies encrypted XML, fresh-host decryption and failure
+without the certificate. This is separate from business-secret KMS wrapping.
+Certificate rotation retaining old decryptors still needs implementation before
+rotating an existing deployment; never discard a certificate needed by live keys.
+
 ### Boot guards
+
+Only the explicit `Development` and `Testing` environments permit local auth,
+storage, key wrapping, billing, mail/SMS catchers and the EICAR-only scanner.
+Staging and custom environment names use the same secure provider policy as
+Production. WorkOS, Stripe, S3 and KMS endpoint overrides must use HTTPS; Azure's
+parsed blob endpoint must use HTTPS and development-storage connection strings
+are rejected. SMTP requires STARTTLS. Leave provider endpoint overrides unset
+when using the vendor's normal HTTPS endpoint.
 
 Scanner evidence: `ClamAvScannerTests` runs the production adapter against a real
 `clamav/clamav:1.5.4-debian` daemon with bundled signatures. It covers clean and
@@ -214,27 +318,45 @@ WorkOS emulator, billing uses stripe-mock, and SMTP uses Mailpit. Live cloud IAM
 vendor account configuration, actual billing lifecycle, and email delivery remain
 deployment-specific validation, not outcomes established by these local tests.
 
-Upload safety: S3 tickets sign `If-None-Match: *` and Azure tickets grant only
-Create, so clients cannot overwrite existing scanned objects. Fork storage
-adapters must enforce the same create-only guarantee. `IObjectStore.GetLengthAsync`
-replaces `ExistsAsync`: return actual stored length, null for absence, and let
-other provider failures propagate. Completion rejects empty or oversized objects
-before publishing a scan. The declared size remains capped at 100 MiB.
+Upload safety: S3 tickets sign `If-None-Match: *` and the declared Content-Length,
+so the provider enforces create-only writes of that size. Azure SAS cannot enforce
+a byte ceiling; Azure uploads therefore use an authenticated, creator-bound API
+relay with a 15-minute expiry. The relay admits one active upload per process,
+uses a two-minute deadline, stages and checks actual bytes before writing the
+cloud object, and refuses replay. Fork storage adapters must declare
+whether their direct tickets enforce the same byte and create-only guarantees.
+`IObjectStore.GetLengthAsync` returns actual stored length, null for absence, and
+propagates other provider failures. Completion rejects empty or oversized objects
+before publishing a scan. Each declared upload remains capped at 100 MiB.
 
-The cloud ticket does **not** cap bytes received by the storage service; size is
-checked at completion. Rejected or abandoned uploads remain unavailable but can
-consume storage. Monitor incomplete uploads and storage spend; deployments needing
-a hard ingress quota need provider policy or a bounded upload gateway. Do not
-claim that the application admission limit prevents storage-cost abuse.
+An organization may have at most 20 unfinished/quarantined uploads with at most
+500 MiB in total declared size. An hourly sweep erases unfinished/quarantined
+objects older than an hour after locking and rechecking their state; legal holds
+are preserved. Deleting an unfinished S3 upload keeps it quarantined, hidden and
+charged against this budget until its signed ticket expires; existing bytes stay
+in place so the create-only ticket cannot recreate them. These controls do not reconcile a provider write interrupted before
+its database transaction commits. Configure provider lifecycle/reconciliation and
+monitor incomplete uploads and storage spend. The Azure relay uses temporary disk;
+size gateway limits and pod scratch capacity for the upload relay and reports.
 
-Configure storage CORS for the actual console origins, PUT/GET, Content-Type,
-and provider ticket headers (`If-None-Match` for S3; `x-ms-blob-type` for Azure).
-All ticket headers must reach storage. For an existing deployment, previously
-issued overwrite-capable URLs are not retroactively revoked: stop issuing old
-tickets and allow their 15-minute TTL to expire before trusting the new invariant,
-or revoke their signing credentials. Review previously uploaded content if such
-URLs were exposed. Validate these controls against the selected live provider;
-local evidence uses MinIO and Azurite, not AWS/Azure/R2 accounts.
+Organization and audit exports share one queued/running admission slot per tenant.
+The export worker processes one message at a time per process; each materialized
+query is limited to 100,000 rows and 4 MiB of serialized data, and an organization
+archive is limited to 32 MiB uncompressed. Organization exports exceeding a limit
+fail without publishing an archive; audit exports identify truncation in their
+manifest. Purged organizations cannot publish delayed exports. Raise these
+budgets only with measured memory, scratch-space and storage capacity.
+
+Configure S3 CORS for the actual console origins, PUT/GET, Content-Type and
+`If-None-Match`. Preserve the browser's signed Content-Length; intermediaries must
+not rewrite upload bodies. Azure uploads go through the same-origin API and do not
+require browser SAS upload headers. Download origins still need their applicable
+CORS policy. Previously issued unbounded/overwrite-capable URLs are not
+retroactively revoked: stop issuing old tickets and allow their 15-minute TTL to
+expire before trusting the new invariant, or revoke their signing credentials.
+Review previously uploaded content if such URLs were exposed. Validate these
+controls against the selected live provider; local evidence uses MinIO and Azurite,
+not AWS/Azure/R2 accounts.
 
 The image **refuses to start in Production** with any dev-only adapter
 still selected: local auth, local storage, the EICAR scanner, the local key
@@ -253,11 +375,12 @@ The two frontends deploy differently (`pnpm build` in `web/`):
   web-standard `fetch` handler) plus client assets — it is NOT a static
   drop. It must run as a process on a Node or serverless/edge host, with
   `LOCINTEL_API` pointing at the API's internal URL (SSR fetches run
-  server-to-server) and reachable from the org subdomains. The API stamps
-  `Cache-Control` on `/public/*` (60s) and on `sitemap.xml`/`robots.txt`
-  (longer) so a CDN in front of the API or the public app absorbs crawler
-  and embed traffic; put the public app behind a CDN to cache the rendered
-  HTML too.
+  server-to-server) and reachable from the org subdomains. `/public/*` API
+  responses and the sitemap use `private, no-store`; rendered HTML is also
+  `no-store`, since it contains the visitor's identity and a CSP nonce. Do not
+  override these headers with shared CDN caching. Static assets and `robots.txt`
+  may retain their explicit public cache policy. Shared caching of tenant data
+  requires a separately designed public-only authority and cache key.
 
 The session cookie is HttpOnly on a shared origin (ADR 21), so the console
 and API must share a host through your reverse proxy. Route these path
@@ -304,6 +427,25 @@ users. The expanded script's current verification status is tracked in the
 boot guards' negative control - a production-valid configuration must not
 be refused. `-p:Version` becomes `Build:Version`'s fallback in `/healthz`.
 
+### Artifact and local runtime servicing
+
+CI scans the immutable local image ID with a checksum-pinned Trivy release, produces a
+CycloneDX SBOM, and fails on HIGH/CRITICAL OS or library advisories. The
+`image-security` artifact includes scanner/runtime versions, local image ID,
+registry digests (empty before pushing), SBOM and vulnerability results. The
+scan reads Docker locally and downloads advisory databases; it does not submit
+a dependency snapshot or image to an external scanner. Run the same check with
+`tools/scan-image.sh <image> <output-directory>` when Trivy is installed. Publish
+and promote only the scanned image, recording its eventual registry digest.
+An unavailable scanner/database or unresolved finding fails the check; update
+the affected component and rebuild rather than disabling the gate.
+
+Keep developer SDK/shared runtimes on the current supported .NET servicing
+release too: package versions and a current container do not update the host
+used by `dotnet run` or fleet tests. Record `dotnet --info` during local security
+validation. A workstation/runtime installation and actual CI run remain
+operator actions; repository edits alone do not apply those updates.
+
 ### Wolverine codegen
 
 Wolverine generates handler plumbing at startup; in dev that happens on
@@ -337,8 +479,12 @@ integration test asserts coverage), the three-gate authz model, HttpOnly
 `Secure` cookies (Production floor), same-site-only redirects,
 constant-time secret comparison, CSPRNG tokens, envelope-encrypted webhook
 secrets, an SSRF floor that rejects private/reserved resolved addresses,
-per-tenant + per-key rate limits, security headers, and correlation IDs
+local overload admission, security headers, and correlation IDs
 that never leak exception detail to clients.
+
+The gateway reference enforces operational tenant/IP fairness; a standalone API
+does not provide fleet-wide request-rate limits. Adopt the reference or verify
+your replacement against its acceptance contract.
 
 Your responsibility: TLS termination and HSTS at the proxy; the frontends'
 CSPs; a KMS for `Secrets:*` and the data-protection keyring; DNS-rebinding

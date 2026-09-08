@@ -1,9 +1,29 @@
 {
   "$schema": "https://ui.shadcn.com/schema.json",
-  "style": "new-york",
-  "tailwind": { "css": "src/tokens.css", "baseColor": "neutral", "cssVariables": true },
-  "aliases": { "components": "@/components", "utils": "@/lib/utils", "ui": "@/components" },
+  "style": "base-nova",
+  "tailwind": {
+    "config": "",
+    "css": "src/tokens.css",
+    "baseColor": "neutral",
+    "cssVariables": true,
+    "prefix": ""
+  },
+  "aliases": {
+    "components": "@/components",
+    "utils": "@/lib/utils",
+    "ui": "@/components",
+    "lib": "@/lib",
+    "hooks": "@/hooks"
+  },
   "registries": {
-    "@reui": "https://reui.io/r/{name}.json"
-  }
+    "@reui": {
+      "url": "https://reui.io/r/{style}/{name}.json",
+      "headers": {
+        "Authorization": "Bearer ${REUI_LICENSE_KEY}"
+      }
+    }
+  },
+  "rsc": false,
+  "tsx": true,
+  "iconLibrary": "lucide"
 }

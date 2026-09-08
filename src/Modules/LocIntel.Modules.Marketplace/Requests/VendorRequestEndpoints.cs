@@ -23,7 +23,10 @@ namespace LocIntel.Modules.Marketplace.Requests;
 /// </summary>
 public static class VendorRequestEndpoints
 {
-    [Transactional(typeof(MarketplaceDbContext))]
+    [Transactional(
+        typeof(MarketplaceDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/vendor/requests")]
     [ProducesResponseType(typeof(RequestListResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> List(
@@ -57,7 +60,10 @@ public static class VendorRequestEndpoints
         );
     }
 
-    [Transactional(typeof(MarketplaceDbContext))]
+    [Transactional(
+        typeof(MarketplaceDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/vendor/requests/{id}")]
     [ProducesResponseType(typeof(RequestDetail), StatusCodes.Status200OK)]
     public static async Task<IResult> Get(
@@ -100,17 +106,13 @@ public static class VendorRequestEndpoints
         if (error is not null)
             return error;
         if (a!.Status != RequestStatus.Submitted)
-            return Results.Conflict(new { error = "only submitted requests can be accepted" });
+            return ApiErrors.Conflict("only submitted requests can be accepted");
         if (a.Mode == RequestMode.Broadcast)
-            return Results.Conflict(
-                new { error = "quote on a broadcast request; the buyer awards it" }
-            );
+            return ApiErrors.Conflict("quote on a broadcast request; the buyer awards it");
         // expired credentials block new assignments (blueprint: trust and safety)
         var now = time.GetUtcNow();
         if (await db.Credentials.AnyAsync(c => c.ExpiresAt <= now, ct))
-            return Results.Conflict(
-                new { error = "renew expired credentials before accepting new work" }
-            );
+            return ApiErrors.Conflict("renew expired credentials before accepting new work");
         a.Status = RequestStatus.Accepted;
         a.AcceptedAt = now;
         return await Respond(
@@ -146,9 +148,9 @@ public static class VendorRequestEndpoints
         if (error is not null)
             return error;
         if (a!.Status != RequestStatus.Submitted)
-            return Results.Conflict(new { error = "only submitted requests can be declined" });
+            return ApiErrors.Conflict("only submitted requests can be declined");
         if (string.IsNullOrWhiteSpace(request.Reason))
-            return Results.BadRequest(new { error = "declining needs a reason" });
+            return ApiErrors.BadRequest("declining needs a reason");
         var reason = request.Reason.Trim();
         var now = time.GetUtcNow();
         if (a.Mode == RequestMode.Broadcast)
@@ -209,9 +211,7 @@ public static class VendorRequestEndpoints
         if (error is not null)
             return error;
         if (a!.Status != RequestStatus.Accepted || !a.IsAssigned)
-            return Results.Conflict(
-                new { error = "only accepted requests assigned to you can be started" }
-            );
+            return ApiErrors.Conflict("only accepted requests assigned to you can be started");
         var now = time.GetUtcNow();
         a.Status = RequestStatus.InProgress;
         a.StartedAt = now;
@@ -248,7 +248,7 @@ public static class VendorRequestEndpoints
         if (error is not null)
             return error;
         if (a!.Status != RequestStatus.InProgress || !a.IsAssigned)
-            return Results.Conflict(new { error = "only your work in progress can be completed" });
+            return ApiErrors.Conflict("only your work in progress can be completed");
         var now = time.GetUtcNow();
         var summary = string.IsNullOrWhiteSpace(request.Summary) ? null : request.Summary.Trim();
         a.Status = RequestStatus.Completed;
@@ -286,7 +286,7 @@ public static class VendorRequestEndpoints
         if (error is not null)
             return error;
         if (string.IsNullOrWhiteSpace(request.Body))
-            return Results.BadRequest(new { error = "a message needs a body" });
+            return ApiErrors.BadRequest("a message needs a body");
         return await Append(
             a!,
             actor!.Value,
@@ -345,9 +345,7 @@ public static class VendorRequestEndpoints
         if (error is not null)
             return error;
         if (a!.Status is not (RequestStatus.Accepted or RequestStatus.InProgress))
-            return Results.Conflict(
-                new { error = "deliveries happen on accepted or in-progress requests" }
-            );
+            return ApiErrors.Conflict("deliveries happen on accepted or in-progress requests");
         return await Append(
             a,
             actor!.Value,
@@ -381,14 +379,14 @@ public static class VendorRequestEndpoints
         if (error is not null)
             return error;
         if (a!.Mode != RequestMode.Broadcast || a.Status != RequestStatus.Submitted)
-            return Results.Conflict(new { error = "quotes are for open broadcast requests" });
+            return ApiErrors.Conflict("quotes are for open broadcast requests");
         if (request.Amount < 0)
-            return Results.BadRequest(new { error = "amount cannot be negative" });
+            return ApiErrors.BadRequest("amount cannot be negative");
         var now = time.GetUtcNow();
         if (request.ValidUntil is { } until && until <= now)
-            return Results.BadRequest(new { error = "validity must be in the future" });
+            return ApiErrors.BadRequest("validity must be in the future");
         if (await db.Credentials.AnyAsync(c => c.ExpiresAt <= now, ct))
-            return Results.Conflict(new { error = "renew expired credentials before quoting" });
+            return ApiErrors.Conflict("renew expired credentials before quoting");
         var quote = await db.Quotes.FirstOrDefaultAsync(q => q.RequestId == a.RequestId, ct);
         if (quote is null)
         {
@@ -405,7 +403,7 @@ public static class VendorRequestEndpoints
             db.Quotes.Add(quote);
         }
         else if (quote.Status is not (QuoteStatus.Submitted or QuoteStatus.Withdrawn))
-            return Results.Conflict(new { error = $"your quote is {quote.Status}" });
+            return ApiErrors.Conflict($"your quote is {quote.Status}");
         quote.Amount = request.Amount;
         quote.Notes = string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim();
         quote.ValidUntil = request.ValidUntil;
@@ -452,11 +450,9 @@ public static class VendorRequestEndpoints
         if (error is not null)
             return error;
         if (a!.Status is not (RequestStatus.Accepted or RequestStatus.InProgress))
-            return Results.Conflict(
-                new { error = "check-ins happen on accepted or in-progress requests" }
-            );
+            return ApiErrors.Conflict("check-ins happen on accepted or in-progress requests");
         if (request.Latitude is < -90 or > 90 || request.Longitude is < -180 or > 180)
-            return Results.BadRequest(new { error = "coordinates out of range" });
+            return ApiErrors.BadRequest("coordinates out of range");
         double? distance =
             a.SiteLatitude is { } lat && a.SiteLongitude is { } lng
                 ? Geo.DistanceMeters(lat, lng, request.Latitude, request.Longitude)

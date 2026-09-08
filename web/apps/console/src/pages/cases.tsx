@@ -140,7 +140,7 @@ export function CasesPage() {
   );
 }
 
-export function OpenCaseDialog({ incidentId, trigger }: { incidentId?: string; trigger?: React.ReactNode }) {
+export function OpenCaseDialog({ incidentId, trigger }: { incidentId?: string; trigger?: React.ReactElement }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [summary, setSummary] = useState('');

@@ -67,6 +67,8 @@ public class LifecycleTests(ApiFixture fixture) : IClassFixture<ApiFixture>
                 "marketplace.json",
                 "network.json",
                 "patrols.json",
+                "reporting.json",
+                "spatial.json",
                 "storage.json",
                 "tenancy.json",
             ],
@@ -133,14 +135,7 @@ public class LifecycleTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         (
             await founder.PostAsJsonAsync("/auth/switch-org", new { orgId })
         ).EnsureSuccessStatusCode();
-        var hierarchy = await founder.PostAsJsonAsync(
-            "/api/hierarchy",
-            new { name = "Doomed", levels = new[] { "Region" } }
-        );
-        hierarchy.EnsureSuccessStatusCode();
-        var rootId = (await hierarchy.Content.ReadFromJsonAsync<JsonElement>())
-            .GetProperty("rootNodeId")
-            .GetGuid();
+        var rootId = await ApiFixture.WaitForRootAsync(founder);
         var site = await founder.PostAsJsonAsync(
             "/api/sites",
             new
@@ -154,12 +149,14 @@ public class LifecycleTests(ApiFixture fixture) : IClassFixture<ApiFixture>
 
         // the guest surface is live before the end
         var guest = fixture.GuestClient();
-        guest.DefaultRequestHeaders.Add("X-Forwarded-Host", "doomed.locintel.test");
+        guest.DefaultRequestHeaders.Host = "doomed.locintel.test";
         JsonElement publicSites = default;
         await ApiFixture.WaitUntilAsync(
             async () =>
                 (
-                    publicSites = await guest.GetFromJsonAsync<JsonElement>("/public/sites")
+                    publicSites = (
+                        await guest.GetFromJsonAsync<JsonElement>("/public/sites")
+                    ).GetProperty("items")
                 ).GetArrayLength() > 0,
             "the site to become publicly visible"
         );
@@ -209,6 +206,6 @@ public class LifecycleTests(ApiFixture fixture) : IClassFixture<ApiFixture>
 
         // and the guest surface answers empty - the host resolves to nothing now
         var publicAfter = await guest.GetFromJsonAsync<JsonElement>("/public/sites");
-        Assert.Equal(0, publicAfter.GetArrayLength());
+        Assert.Equal(0, publicAfter.GetProperty("items").GetArrayLength());
     }
 }

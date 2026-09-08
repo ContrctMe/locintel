@@ -98,11 +98,12 @@ public static class OperatorEntitlementEndpoints
                         var newLimit = long.Parse(request.Value);
                         var current = await probe.CurrentUsageAsync(target, ct);
                         if (current > newLimit)
-                            return Results.Conflict(
+                            return ApiErrors.Status(
+                                "downgrade blocked until conformant",
+                                StatusCodes.Status409Conflict,
+                                code,
                                 new
                                 {
-                                    error = "downgrade blocked until conformant",
-                                    code,
                                     currentUsage = current,
                                     requestedLimit = newLimit,
                                     over = current - newLimit,
@@ -172,7 +173,7 @@ public static class OperatorEntitlementEndpoints
         if (!EntitlementCatalog.Definitions.ContainsKey(code))
             return Results.NotFound();
         if (request.ExpiresAt <= DateTimeOffset.UtcNow)
-            return Results.BadRequest(new { error = "exceptions must expire in the future" });
+            return ApiErrors.BadRequest("exceptions must expire in the future");
 
         var target = new OrgId(orgId);
         return await TenantScope.RunAsAsync(

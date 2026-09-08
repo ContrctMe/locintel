@@ -26,7 +26,9 @@ public sealed class SingleRegionDataSources : IRegionDataSources, IAsyncDisposab
             ?? throw new InvalidOperationException(
                 "Missing connection string 'locintel'. Set ConnectionStrings__locintel."
             );
-        _dataSource = new NpgsqlDataSourceBuilder(cs).Build();
+        // spatial types are NetTopologySuite end to end (ADR 50): the ADO
+        // mapping lives on the data source, the EF mapping in ModulePersistence
+        _dataSource = new NpgsqlDataSourceBuilder(cs).UseNetTopologySuite().Build();
     }
 
     public NpgsqlDataSource For(RegionId region) => _dataSource;

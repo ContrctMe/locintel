@@ -324,7 +324,7 @@ public static class IncidentEndpoints
             ) is
             { } invalid
         )
-            return Results.BadRequest(new { error = invalid });
+            return ApiErrors.BadRequest(invalid);
 
         incident!.Category = request.Category;
         incident.Severity = request.Severity;
@@ -384,9 +384,9 @@ public static class IncidentEndpoints
         if (error is not null)
             return error;
         if (string.IsNullOrWhiteSpace(request.Reason))
-            return Results.BadRequest(new { error = "closing an incident needs a reason" });
+            return ApiErrors.BadRequest("closing an incident needs a reason");
         if (incident!.Status == IncidentStatus.Closed)
-            return Results.Conflict(new { error = "already closed" });
+            return ApiErrors.Conflict("already closed");
         incident.Status = IncidentStatus.Closed;
         incident.ClosedAt = DateTimeOffset.UtcNow;
         incident.ClosedBy = actor!.Value.Id;
@@ -425,7 +425,7 @@ public static class IncidentEndpoints
         if (error is not null)
             return error;
         if (incident!.Status == IncidentStatus.Open)
-            return Results.Conflict(new { error = "already open" });
+            return ApiErrors.Conflict("already open");
         incident.Status = IncidentStatus.Open;
         incident.ClosedAt = null;
         incident.ClosedBy = null;
@@ -501,7 +501,7 @@ public static class IncidentEndpoints
         if (error is not null)
             return error;
         if (incident!.LegalHold)
-            return Results.Conflict(new { error = "incident is under legal hold" });
+            return ApiErrors.Conflict("incident is under legal hold");
         incident.DeletedAt = DateTimeOffset.UtcNow;
         incident.UpdatedAt = incident.DeletedAt.Value;
         await db.SaveChangesAsync(ct);

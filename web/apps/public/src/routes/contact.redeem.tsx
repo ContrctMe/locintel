@@ -1,45 +1,10 @@
 import { createFileRoute, Link, redirect } from '@tanstack/react-router';
 import { createServerFn } from '@tanstack/react-start';
-import { getRequestHeader, setCookie } from '@tanstack/react-start/server';
+import { publicRedeem } from '../api';
 
-/**
- * The contact-link landing: relays the token to the API and the API's
- * session cookie back onto THIS host (the browser only ever talks to the
- * public app), then sends the now-identified contact to the locator.
- */
 const redeem = createServerFn({ method: 'GET' })
-  .validator((token: string) => token)
-  .handler(async ({ data: token }) => {
-    const apiBase = process.env.LOCINTEL_API ?? 'http://localhost:5293';
-    const host = getRequestHeader('host');
-    try {
-      const response = await fetch(
-        `${apiBase}/contact/redeem?token=${encodeURIComponent(token)}`,
-        {
-          signal: AbortSignal.timeout(30_000),
-          headers: host ? { 'X-Forwarded-Host': host } : {},
-          redirect: 'manual',
-        },
-      );
-      if (response.status !== 302) {
-        const body = (await response.json().catch(() => null)) as { error?: string } | null;
-        return { ok: false as const, error: body?.error ?? 'this link is not valid' };
-      }
-      for (const raw of response.headers.getSetCookie()) {
-        const pair = raw.split(';')[0] ?? '';
-        const eq = pair.indexOf('=');
-        if (eq <= 0) continue;
-        setCookie(pair.slice(0, eq), pair.slice(eq + 1), {
-          path: '/',
-          httpOnly: true,
-          sameSite: 'lax',
-        });
-      }
-      return { ok: true as const };
-    } catch {
-      return { ok: false as const, error: 'we could not verify this link right now - try again shortly' };
-    }
-  });
+  .validator((token: unknown) => token)
+  .handler(({ data }) => publicRedeem(data));
 
 export const Route = createFileRoute('/contact/redeem')({
   validateSearch: (search: Record<string, unknown>) => ({

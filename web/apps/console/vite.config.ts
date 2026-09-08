@@ -1,6 +1,7 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
+import { consoleSecurityHeaders } from './src/app/security-headers.ts';
 
 // dev proxy: the console and API share an origin so the HttpOnly session
 // cookie (ADR 21) just works. Point LOCINTEL_API at the running API.
@@ -15,11 +16,21 @@ const proxy = Object.fromEntries(
 );
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), {
+    name: 'console-security-policy',
+    apply: 'build',
+    transformIndexHtml: () => [{
+      tag: 'meta',
+      attrs: { 'http-equiv': 'Content-Security-Policy',
+        content: consoleSecurityHeaders()['Content-Security-Policy'].replace("; frame-ancestors 'none'", '') },
+      injectTo: 'head-prepend',
+    }],
+  }],
   server: {
     port: Number(process.env.PORT ?? 5173), // Aspire assigns via PORT
     strictPort: true,
     proxy,
+    headers: consoleSecurityHeaders(true),
   },
-  preview: { strictPort: true, proxy },
+  preview: { strictPort: true, proxy, headers: consoleSecurityHeaders() },
 });

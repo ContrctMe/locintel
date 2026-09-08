@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using System.Net;
 using System.Threading.RateLimiting;
 using LocIntel.Modules.Identity.Auth;
 using LocIntel.Platform.Auth;
@@ -7,7 +8,6 @@ using LocIntel.Platform.Kernel;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
-using Npgsql;
 
 namespace LocIntel.Api;
 
@@ -15,153 +15,21 @@ internal static class HttpPolicyHosting
 {
     public static void AddRequestPolicies(this WebApplicationBuilder builder)
     {
-        var pool = new NpgsqlConnectionStringBuilder(
-            builder.Configuration.GetConnectionString("locintel")
+        var trustForwarded = builder.Configuration.GetValue("Proxy:TrustForwardedHeaders", false);
+        var allowedHosts = (builder.Configuration["AllowedHosts"] ?? "").Split(
+            ';',
+            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
         );
-        if (pool.MaxPoolSize < 2)
+        if (
+            (
+                !ProviderOptionsValidation.IsDevelopmentOrTesting(builder.Environment)
+                || trustForwarded
+            ) && (allowedHosts.Length == 0 || allowedHosts.Contains("*"))
+        )
             throw new InvalidOperationException(
-                "Maximum Pool Size must be at least 2: transactional requests also query authorization."
+                "AllowedHosts must list the application hosts; '*' is not allowed outside Development/Testing or when trusting a proxy."
             );
-        // An eager transaction holds one connection while gates query another
-        // context. Admit work BEFORE any connection opens, leaving half the
-        // pool available for those queries and background work.
-        builder.Services.AddSingleton<ConcurrencyLimiter>(_ =>
-            new(
-                new ConcurrencyLimiterOptions
-                {
-                    PermitLimit = pool.MaxPoolSize / 2,
-                    QueueLimit = pool.MaxPoolSize * 2,
-                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                }
-            )
-        );
-        // Rate limiting (ADR 30): partitioned by principal tier. Guests limit on
-        // their session cookie (fallback: IP), users on user id. The per-org quota
-        // reading metered entitlements attaches in step 4.
-        var guestLimit = builder.Configuration.GetValue("RateLimits:GuestPerMinute", 60);
-        var userLimit = builder.Configuration.GetValue("RateLimits:UserPerMinute", 300);
-        builder.Services.AddSingleton<OrgRateLimitCache>();
-        builder.Services.AddRateLimiter(limiter =>
-        {
-            limiter.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-            // consumers deserve to know when to come back: fixed one-minute windows,
-            // so the limiter's own retry hint (when present) or the window size
-            limiter.OnRejected = (context, _) =>
-            {
-                context
-                    .HttpContext.RequestServices.GetRequiredService<ILoggerFactory>()
-                    .CreateLogger("Microsoft.AspNetCore.RateLimiting.RateLimitingMiddleware")
-                    .LogDebug(
-                        new EventId(1, "RequestRejectedLimitsExceeded"),
-                        "Rate limits exceeded, rejecting this request."
-                    );
-                var seconds = context.Lease.TryGetMetadata(
-                    System.Threading.RateLimiting.MetadataName.RetryAfter,
-                    out var retryAfter
-                )
-                    ? Math.Max(1, (int)retryAfter.TotalSeconds)
-                    : 60;
-                context.HttpContext.Response.Headers.RetryAfter = seconds.ToString();
-                return ValueTask.CompletedTask;
-            };
-        });
-        // A chained limiter does NOT dispose its children. DI owns all three.
-        builder.Services.AddKeyedSingleton<PartitionedRateLimiter<HttpContext>>(
-            "org",
-            (_, _) =>
-                // ADR 30: org-level quota from the metered entitlement, over the per-principal limiter
-                PartitionedRateLimiter.Create<HttpContext, string>(http =>
-                {
-                    // ONE resolver for "who is this request": the same Principal the
-                    // endpoints see. This lambda used to re-parse claims and Items
-                    // itself, and the two readings drifted - API keys fell into the
-                    // per-IP guest bucket and skipped the org quota entirely.
-                    var principal = http
-                        .RequestServices.GetRequiredService<IPrincipalAccessor>()
-                        .Current;
-                    OrgId? org = principal switch
-                    {
-                        Principal.User { ActiveOrg: { } active } => active,
-                        Principal.Service service => service.Org,
-                        Principal.Contact contact => contact.Org,
-                        _ => null,
-                    };
-                    if (org is { } quotaOrg)
-                    {
-                        var orgGuid = quotaOrg.Value;
-                        var orgLimit = http
-                            .RequestServices.GetRequiredService<OrgRateLimitCache>()
-                            .LimitFor(quotaOrg);
-                        // the limit is part of the KEY: partition limiters are
-                        // created once and cached, so a quota change must roll to a
-                        // fresh partition or a hot org keeps its old limit forever
-                        // (found by the load baseline)
-                        return RateLimitPartition.GetFixedWindowLimiter(
-                            $"org:{orgGuid}:{orgLimit}",
-                            _ => new FixedWindowRateLimiterOptions
-                            {
-                                PermitLimit = orgLimit,
-                                Window = TimeSpan.FromMinutes(1),
-                                QueueLimit = 0,
-                            }
-                        );
-                    }
-                    return RateLimitPartition.GetNoLimiter("org:none");
-                })
-        );
-        builder.Services.AddKeyedSingleton<PartitionedRateLimiter<HttpContext>>(
-            "principal",
-            (_, _) =>
-                PartitionedRateLimiter.Create<HttpContext, string>(http =>
-                {
-                    var (key, permits) = http
-                        .RequestServices.GetRequiredService<IPrincipalAccessor>()
-                        .Current switch
-                    {
-                        // an API key is a first-class principal (ADR 40): its own
-                        // bucket at the USER limit, never the per-IP guest bucket
-                        Principal.Service service => ($"key:{service.KeyId}", userLimit),
-                        Principal.User user => ($"user:{user.UserId}", userLimit),
-                        _ => http.Request.Cookies.TryGetValue(
-                            GuestSessionMiddleware.CookieName,
-                            out var guest
-                        )
-                            ? ($"guest:{guest}", guestLimit)
-                            : ($"ip:{http.Connection.RemoteIpAddress}", guestLimit),
-                    };
-                    return RateLimitPartition.GetFixedWindowLimiter(
-                        key,
-                        _ => new FixedWindowRateLimiterOptions
-                        {
-                            PermitLimit = permits,
-                            Window = TimeSpan.FromMinutes(1),
-                            QueueLimit = 0,
-                        }
-                    );
-                })
-        );
-        builder.Services.AddSingleton<PartitionedRateLimiter<HttpContext>>(sp =>
-            PartitionedRateLimiter.CreateChained(
-                sp.GetRequiredKeyedService<PartitionedRateLimiter<HttpContext>>("org"),
-                sp.GetRequiredKeyedService<PartitionedRateLimiter<HttpContext>>("principal")
-            )
-        );
-        builder
-            .Services.AddOptions<RateLimiterOptions>()
-            .Configure<PartitionedRateLimiter<HttpContext>>(
-                (options, global) => options.GlobalLimiter = global
-            );
-    }
-
-    public static void UseRequestPolicies(this WebApplication app)
-    {
-        // Behind the documented TLS-terminating proxy the request arrives as
-        // HTTP: without this, cookies lose the Secure flag and every URL built
-        // from Request.Scheme/Host (billing returns, SSO portal returns) comes
-        // out http://. Opt-in because trusting these headers from an UNKNOWN
-        // peer lets clients spoof scheme/host/ip - only enable it when the
-        // immediate proxy strips inbound X-Forwarded-* (reverse proxies do).
-        if (app.Configuration.GetValue("Proxy:TrustForwardedHeaders", false))
+        if (trustForwarded)
         {
             var forwarded = new ForwardedHeadersOptions
             {
@@ -169,44 +37,116 @@ internal static class HttpPolicyHosting
                     ForwardedHeaders.XForwardedFor
                     | ForwardedHeaders.XForwardedProto
                     | ForwardedHeaders.XForwardedHost,
+                ForwardLimit = 1,
             };
-            forwarded.KnownIPNetworks.Clear(); // trust the immediate peer: the proxy
+            forwarded.KnownIPNetworks.Clear();
             forwarded.KnownProxies.Clear();
-            app.UseForwardedHeaders(forwarded);
+            foreach (
+                var value in builder.Configuration.GetSection("Proxy:KnownProxies").Get<string[]>()
+                    ?? []
+            )
+            {
+                if (
+                    !IPAddress.TryParse(value, out var address)
+                    || address.Equals(IPAddress.Any)
+                    || address.Equals(IPAddress.IPv6Any)
+                )
+                    throw new InvalidOperationException(
+                        "Proxy:KnownProxies must contain explicit IP addresses."
+                    );
+                forwarded.KnownProxies.Add(address);
+            }
+            foreach (
+                var value in builder.Configuration.GetSection("Proxy:KnownNetworks").Get<string[]>()
+                    ?? []
+            )
+            {
+                if (
+                    !System.Net.IPNetwork.TryParse(value, out var network)
+                    || network.PrefixLength == 0
+                )
+                    throw new InvalidOperationException(
+                        "Proxy:KnownNetworks must contain explicit non-wildcard CIDRs."
+                    );
+                forwarded.KnownIPNetworks.Add(network);
+            }
+            if (forwarded.KnownProxies.Count == 0 && forwarded.KnownIPNetworks.Count == 0)
+                throw new InvalidOperationException(
+                    "Proxy:KnownProxies or Proxy:KnownNetworks is required when trusting forwarded headers."
+                );
+            foreach (var host in allowedHosts)
+                forwarded.AllowedHosts.Add(host);
+            builder.Services.AddSingleton(forwarded);
         }
+        if (builder.Configuration["Gateway:IdentityKey"] is not null)
+            builder.Services.AddSingleton<GatewayIdentityCache>();
+        else if (builder.Configuration.GetValue("Gateway:Required", false))
+            throw new InvalidOperationException(
+                "Gateway:IdentityKey is required when Gateway:Required is true."
+            );
+        // Operational fairness belongs to the gateway (ADR 54). This limiter
+        // protects this process from in-flight work, including cold identity
+        // lookups. No queue: callers receive an explicit overload response.
+        var concurrency = builder.Configuration.GetValue("Traffic:MaxConcurrentRequests", 32);
+        if (concurrency is < 1 or > 4096)
+            throw new InvalidOperationException(
+                "Traffic:MaxConcurrentRequests must be between 1 and 4096."
+            );
+        builder.Services.AddRateLimiter(options =>
+        {
+            options.RejectionStatusCode = StatusCodes.Status503ServiceUnavailable;
+            options.OnRejected = (context, _) =>
+            {
+                context.HttpContext.Response.Headers.RetryAfter = "1";
+                return ValueTask.CompletedTask;
+            };
+        });
+        // DI owns the limiter; the framework middleware retains an unused endpoint limiter.
+        builder.Services.AddSingleton<PartitionedRateLimiter<HttpContext>>(_ =>
+            PartitionedRateLimiter.Create<HttpContext, string>(_ =>
+                RateLimitPartition.GetConcurrencyLimiter(
+                    "process",
+                    _ => new ConcurrencyLimiterOptions { PermitLimit = concurrency, QueueLimit = 0 }
+                )
+            )
+        );
+        builder
+            .Services.AddOptions<RateLimiterOptions>()
+            .Configure<PartitionedRateLimiter<HttpContext>>(
+                (options, limiter) => options.GlobalLimiter = limiter
+            );
+    }
+
+    public static void UseRequestPolicies(this WebApplication app)
+    {
+        if (app.Configuration.GetValue("Proxy:TrustForwardedHeaders", false))
+            app.UseForwardedHeaders(app.Services.GetRequiredService<ForwardedHeadersOptions>());
         app.UseMiddleware<UnhandledErrorMiddleware>();
         app.UseMiddleware<SecurityHeadersMiddleware>();
+        if (app.Configuration.GetValue("Gateway:Required", false))
+            app.Use(
+                async (context, next) =>
+                {
+                    if (
+                        context.Request.Path != "/livez"
+                        && context.Request.Path != "/healthz"
+                        && !context
+                            .RequestServices.GetRequiredService<GatewayIdentityCache>()
+                            .IsTrusted(context)
+                    )
+                    {
+                        context.Response.StatusCode = StatusCodes.Status404NotFound;
+                        return;
+                    }
+                    // Classification never becomes application authority.
+                    context.Request.Headers.Remove(GatewayIdentityCache.PartitionHeader);
+                    await next(context);
+                }
+            );
         app.UseWhen(
             context => context.Request.Path != "/livez" && context.Request.Path != "/healthz",
-            api =>
+            limited =>
             {
-                var admission = app.Services.GetRequiredService<ConcurrencyLimiter>();
-                api.Use(
-                    async (http, next) =>
-                    {
-                        using var lease = await admission.AcquireAsync(1, http.RequestAborted);
-                        if (!lease.IsAcquired)
-                        {
-                            http.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
-                            http.Response.Headers.RetryAfter = "1";
-                            return;
-                        }
-                        await next(http);
-                    }
-                );
-                api.UseMiddleware<PublicCacheMiddleware>();
-                api.UseAuthentication();
-                api.UseMiddleware<SessionValidationMiddleware>();
-                api.UseMiddleware<ApiKeyAuthenticationMiddleware>();
-                api.UseMiddleware<CsrfOriginMiddleware>();
-                api.UseMiddleware<GuestSessionMiddleware>();
-                api.UseMiddleware<GuestOrgMiddleware>();
-                api.UseMiddleware<SessionContextMiddleware>();
-                // Global quotas only: the framework middleware also creates an
-                // unused endpoint limiter that never gets disposed (aspnetcore
-                // #66434). Keep the native limiter, but let DI own its lifetime.
-                // Preserve the framework's global-policy instruments. There are
-                // no endpoint policies or queues in this application.
                 var limiter = app.Services.GetRequiredService<
                     PartitionedRateLimiter<HttpContext>
                 >();
@@ -233,7 +173,7 @@ internal static class HttpPolicyHosting
                     "aspnetcore.rate_limiting.request.time_in_queue",
                     "s"
                 );
-                api.Use(
+                limited.Use(
                     async (http, next) =>
                     {
                         // Every configured partition has QueueLimit = 0.
@@ -275,6 +215,67 @@ internal static class HttpPolicyHosting
                         }
                     }
                 );
+            }
+        );
+        if (app.Configuration["Gateway:IdentityKey"] is not null)
+        {
+            // Force configuration validation at boot, before serving traffic.
+            _ = app.Services.GetRequiredService<GatewayIdentityCache>();
+            app.Map(
+                GatewayIdentityCache.Path,
+                identity =>
+                {
+                    identity.UseMiddleware<GatewayIdentityCache>();
+                    identity.UseAuthentication();
+                    identity.UseMiddleware<SessionValidationMiddleware>();
+                    identity.UseMiddleware<ApiKeyAuthenticationMiddleware>();
+                    identity.Run(context =>
+                    {
+                        var principal = context
+                            .RequestServices.GetRequiredService<IPrincipalAccessor>()
+                            .Current;
+                        var partition = principal switch
+                        {
+                            Principal.User { ActiveOrg: { } org } => $"org:{org.Value:D}",
+                            Principal.Contact contact => $"org:{contact.Org.Value:D}",
+                            Principal.Service service => $"org:{service.Org.Value:D}",
+                            Principal.User user => $"user:{user.UserId:D}",
+                            _ => null,
+                        };
+                        if (partition is null)
+                        {
+                            if (
+                                !System.Net.IPAddress.TryParse(
+                                    context
+                                        .Request.Headers[GatewayIdentityCache.ClientIpHeader]
+                                        .ToString(),
+                                    out var ip
+                                )
+                            )
+                            {
+                                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                                return Task.CompletedTask;
+                            }
+                            partition = $"ip:{ip}";
+                        }
+                        context.Response.Headers[GatewayIdentityCache.PartitionHeader] = partition;
+                        return Task.CompletedTask;
+                    });
+                }
+            );
+        }
+        app.UseWhen(
+            context => context.Request.Path != "/livez" && context.Request.Path != "/healthz",
+            api =>
+            {
+                api.UseMiddleware<PublicCacheMiddleware>();
+                api.UseAuthentication();
+                api.UseMiddleware<SessionValidationMiddleware>();
+                api.UseMiddleware<ApiKeyAuthenticationMiddleware>();
+                api.UseMiddleware<CsrfOriginMiddleware>();
+                api.UseMiddleware<GuestSessionMiddleware>();
+                api.UseMiddleware<GuestOrgMiddleware>();
+                api.UseMiddleware<SessionContextMiddleware>();
                 api.UseMiddleware<SuspensionMiddleware>();
                 api.UseMiddleware<IdempotencyMiddleware>();
                 api.UseMiddleware<AccessLogMiddleware>();

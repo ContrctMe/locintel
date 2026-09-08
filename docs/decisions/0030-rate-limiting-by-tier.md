@@ -1,11 +1,14 @@
 ---
 title: "Rate limiting"
-status: accepted
+status: superseded
 pinned: false
 date: 2026-08-29
 ---
 
 # 0030. Rate limiting
+
+Superseded by [ADR 54: gateway operational fairness](0054-gateway-operational-fairness.md).
+The text below records the historical decision.
 
 ## Decision
 

@@ -25,6 +25,9 @@ public sealed class FileObject : IOrgScoped
 
     /// <summary>UTC instant (ADR 26): when it entered the trash; null unless Status is Deleted.</summary>
     public DateTimeOffset? DeletedAt { get; set; }
+    public Guid[] SiteIds { get; init; } = [];
+    public string? Origin { get; init; }
+    public Guid? OriginId { get; init; }
 }
 
 public enum FileStatus

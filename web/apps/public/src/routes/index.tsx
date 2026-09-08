@@ -1,12 +1,17 @@
 import { createFileRoute, Link, useNavigate, useRouter } from '@tanstack/react-router';
 import { createServerFn } from '@tanstack/react-start';
-import { useState } from 'react';
-import { publicLocator, publicSignOut } from '../api';
+import { useEffect, useState } from 'react';
+import { publicLocator, publicLocatorPage, publicSignOut, type PublicSite } from '../api';
 import { SiteMap } from '../SiteMap';
 
 const fetchLocator = createServerFn({ method: 'GET' })
   .validator((near?: string) => near)
   .handler(({ data: near }) => publicLocator(near));
+
+// the next alphabetical page (nearest-first pages have no next: the point of "near" is the closest ones)
+const fetchMore = createServerFn({ method: 'GET' })
+  .validator((after: string) => after)
+  .handler(({ data: after }) => publicLocatorPage(after));
 
 const signOut = createServerFn({ method: 'POST' }).handler(publicSignOut);
 
@@ -19,12 +24,17 @@ export const Route = createFileRoute('/')({
 });
 
 function Locator() {
-  const { sites, me } = Route.useLoaderData();
+  const { sites: firstPage, next: firstNext, me } = Route.useLoaderData();
   const { near } = Route.useSearch();
   const navigate = useNavigate();
   const router = useRouter();
   const [signingOut, setSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState<string>();
+  // pages after the first are appended in place; a new search starts over
+  const [more, setMore] = useState<{ items: PublicSite[]; next: string | null }>({ items: [], next: firstNext });
+  const [loadingMore, setLoadingMore] = useState(false);
+  useEffect(() => setMore({ items: [], next: firstNext }), [firstPage, firstNext]);
+  const sites = firstPage === undefined ? undefined : [...firstPage, ...more.items];
 
   if (sites === undefined) {
     return (
@@ -127,6 +137,25 @@ function Locator() {
           </li>
         ))}
       </ul>
+      {more.next && (
+        <button
+          type="button"
+          disabled={loadingMore}
+          className="w-full rounded-lg border bg-card px-4 py-3 text-sm hover:bg-accent disabled:opacity-60"
+          onClick={async () => {
+            if (!more.next) return;
+            setLoadingMore(true);
+            try {
+              const page = await fetchMore({ data: more.next });
+              setMore((current) => ({ items: [...current.items, ...page.items], next: page.next }));
+            } finally {
+              setLoadingMore(false);
+            }
+          }}
+        >
+          {loadingMore ? 'Loading…' : 'Show more locations'}
+        </button>
+      )}
     </main>
   );
 }

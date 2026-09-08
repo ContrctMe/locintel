@@ -1,3 +1,4 @@
+using LocIntel.Contracts;
 using LocIntel.Modules.Incidents.Data;
 using LocIntel.Modules.Incidents.Incidents.Api;
 using LocIntel.Platform.Kernel;
@@ -35,7 +36,7 @@ public static class IncidentNoteEndpoints
         if (error is not null)
             return error;
         if (string.IsNullOrWhiteSpace(request.Body))
-            return Results.BadRequest(new { error = "a note needs a body" });
+            return ApiErrors.BadRequest("a note needs a body");
         var note = new IncidentNote
         {
             Id = Guid.CreateVersion7(),

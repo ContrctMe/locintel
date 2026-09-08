@@ -1,8 +1,9 @@
 import { ENTITLEMENTS, type EntitlementCode, type components } from '@locintel/api';
-import { Button, Card, CardContent, CardHeader, CardTitle, ConfirmButton, Input } from '@locintel/ui';
+import { Button, ConfirmButton, Input } from '@locintel/ui';
 import { useState } from 'react';
 import { useSessionTransition } from '../../../app/session-boundary';
 import { entitlementLabel } from '../../../lib/format';
+import { Panel } from '../../../components/page';
 import { useApiMutation } from '../../../lib/mutation';
 import { operatorApi } from '../api';
 import { useOperatorEntitlements } from '../hooks';
@@ -34,11 +35,9 @@ export function OrganizationControls({ org, onOffboard }: {
   });
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            {org.name}
-            <span className="flex items-center gap-2">
+      <Panel
+        title={org.name}
+        actions={<>
             {org.status === 'Active' && (
               <Button
                 variant="outline"
@@ -66,16 +65,11 @@ export function OrganizationControls({ org, onOffboard }: {
                 Reactivate
               </Button>
             )}
-            </span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+        </>}
+      >
           <OrgEntitlements orgId={org.id} />
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader><CardTitle>Lifecycle</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
+      </Panel>
+      <Panel title="Lifecycle" bodyClassName="space-y-3">
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
@@ -107,8 +101,7 @@ export function OrganizationControls({ org, onOffboard }: {
                 : 'Suspend the org first - offboarding is a deliberate two-step.'}
             </span>
           </div>
-        </CardContent>
-      </Card>
+      </Panel>
     </div>
   );
 }

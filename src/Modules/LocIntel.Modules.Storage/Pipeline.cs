@@ -1,4 +1,5 @@
 using LocIntel.Modules.Storage.Data;
+using LocIntel.Platform.Data;
 using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Storage;
 using Microsoft.EntityFrameworkCore;

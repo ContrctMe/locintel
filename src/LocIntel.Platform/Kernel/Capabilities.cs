@@ -17,6 +17,7 @@ public static class Capabilities
     public const string FilesRead = "files:read";
     public const string FilesManage = "files:manage";
     public const string IngestManage = "ingest:manage";
+    public const string ReportsGenerate = "reports:generate";
     public const string ChecklistsManage = "checklists:manage";
     public const string ChecklistsComplete = "checklists:complete";
 
@@ -63,6 +64,10 @@ public static class Capabilities
     public const string PatrolsRead = "patrols:read";
     public const string PatrolsPerform = "patrols:perform";
     public const string PatrolsManage = "patrols:manage";
+
+    /// <summary>Org-drawn overlays (ADR 50 §3): see the layers a scope covers; edit them.</summary>
+    public const string OverlaysRead = "overlays:read";
+    public const string OverlaysManage = "overlays:manage";
     public const string AuditRead = "audit:read";
     public const string AuditManage = "audit:manage";
     public const string EntitlementsManage = "entitlements:manage";
@@ -83,6 +88,7 @@ public static class Capabilities
         FilesRead,
         FilesManage,
         IngestManage,
+        ReportsGenerate,
         ChecklistsManage,
         ChecklistsComplete,
         IncidentsRead,
@@ -103,6 +109,8 @@ public static class Capabilities
         PatrolsRead,
         PatrolsPerform,
         PatrolsManage,
+        OverlaysRead,
+        OverlaysManage,
         AuditRead,
         AuditManage,
         EntitlementsManage,

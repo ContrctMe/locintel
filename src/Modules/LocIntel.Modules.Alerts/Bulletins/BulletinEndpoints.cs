@@ -25,7 +25,10 @@ public static class BulletinEndpoints
     public const int DefaultDays = 14;
     public const int MaxDays = 90;
 
-    [Transactional(typeof(AlertsDbContext))]
+    [Transactional(
+        typeof(AlertsDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/bulletins")]
     [ProducesResponseType(typeof(BulletinListResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> List(
@@ -71,7 +74,10 @@ public static class BulletinEndpoints
         );
     }
 
-    [Transactional(typeof(AlertsDbContext))]
+    [Transactional(
+        typeof(AlertsDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/bulletins/{id}")]
     [ProducesResponseType(typeof(BulletinDetail), StatusCodes.Status200OK)]
     public static async Task<IResult> Get(
@@ -139,17 +145,13 @@ public static class BulletinEndpoints
         if (gate is not GateOutcome.Allowed { Scope: var scope })
             return gate.ToResult();
         if (string.IsNullOrWhiteSpace(request.Title) || request.Title.Trim().Length > 200)
-            return Results.BadRequest(
-                new { error = "a bulletin needs a title of up to 200 characters" }
-            );
+            return ApiErrors.BadRequest("a bulletin needs a title of up to 200 characters");
         if (string.IsNullOrWhiteSpace(request.Body))
-            return Results.BadRequest(new { error = "a bulletin needs a body" });
+            return ApiErrors.BadRequest("a bulletin needs a body");
         var now = time.GetUtcNow();
         var expiresAt = request.ExpiresAt ?? now.AddDays(DefaultDays);
         if (expiresAt <= now || expiresAt > now.AddDays(MaxDays))
-            return Results.BadRequest(
-                new { error = $"a bulletin expires between now and {MaxDays} days out" }
-            );
+            return ApiErrors.BadRequest($"a bulletin expires between now and {MaxDays} days out");
         LTree? scopePath = null;
         if (!string.IsNullOrWhiteSpace(request.ScopePath))
         {
@@ -162,9 +164,7 @@ public static class BulletinEndpoints
                 scopePath = new LTree(path);
         }
         else if (scope is NodeScope.Subtrees)
-            return Results.BadRequest(
-                new { error = "your scope is a subtree: target it explicitly" }
-            );
+            return ApiErrors.BadRequest("your scope is a subtree: target it explicitly");
 
         var bulletin = new Bulletin
         {
@@ -248,7 +248,7 @@ public static class BulletinEndpoints
         if (bulletin is null)
             return Results.NotFound();
         if (bulletin.Status == BulletinStatus.Withdrawn)
-            return Results.Conflict(new { error = "already withdrawn" });
+            return ApiErrors.Conflict("already withdrawn");
         bulletin.Status = BulletinStatus.Withdrawn;
         bulletin.WithdrawnAt = DateTimeOffset.UtcNow;
         bulletin.WithdrawnBy = actor.Id;

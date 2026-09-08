@@ -111,7 +111,7 @@ export function MarketplacePage() {
 }
 
 export function NewRequestDialog({ siteId: presetSite, incidentId, caseId, trigger }: {
-  siteId?: string; incidentId?: string; caseId?: string; trigger?: React.ReactNode;
+  siteId?: string; incidentId?: string; caseId?: string; trigger?: React.ReactElement;
 }) {
   const [open, setOpen] = useState(false);
   const [category, setCategory] = useState<string>('GuardService');

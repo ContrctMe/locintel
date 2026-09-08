@@ -17,7 +17,10 @@ namespace LocIntel.Modules.Patrols.Routes;
 /// <summary>Routes and their schedules (patrols:manage, within the site's scope); anyone with patrols:read lists them.</summary>
 public static class RouteEndpoints
 {
-    [Transactional(typeof(PatrolsDbContext))]
+    [Transactional(
+        typeof(PatrolsDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/patrols/routes")]
     [ProducesResponseType(typeof(RouteListResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> List(
@@ -113,7 +116,7 @@ public static class RouteEndpoints
         if (error is not null)
             return error;
         if (Validate(request.Name, request.Checkpoints, request.ExpectedMinutes) is { } invalid)
-            return Results.BadRequest(new { error = invalid });
+            return ApiErrors.BadRequest(invalid);
         route!.Name = request.Name.Trim();
         route.CheckpointsJson = JsonSerializer.Serialize(Clean(request.Checkpoints));
         route.ExpectedMinutes = request.ExpectedMinutes ?? route.ExpectedMinutes;
@@ -148,7 +151,7 @@ public static class RouteEndpoints
             string.IsNullOrWhiteSpace(request.RRule)
             || !request.RRule.Contains("FREQ=", StringComparison.OrdinalIgnoreCase)
         )
-            return Results.BadRequest(new { error = "a schedule needs an RRULE with FREQ" });
+            return ApiErrors.BadRequest("a schedule needs an RRULE with FREQ");
         var schedule = new PatrolSchedule
         {
             Id = Guid.CreateVersion7(),

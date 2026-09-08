@@ -55,13 +55,13 @@ public class FleetPagingTests(ApiFixture fixture) : IClassFixture<ApiFixture>
             await db.SaveChangesAsync();
         }
         var actual = new HashSet<Guid>();
-        int? offset = 0;
+        string? after = "";
         var pages = 0;
-        while (offset is { } start)
+        while (after is { } cursor)
         {
             Assert.True(++pages <= 5, "Pagination must terminate after five pages");
             var page = await owner.GetFromJsonAsync<JsonElement>(
-                $"/api/sites?limit=50&offset={start}"
+                cursor.Length == 0 ? "/api/sites?limit=50" : $"/api/sites?limit=50&after={cursor}"
             );
             Assert.Equal(201, page.GetProperty("total").GetInt32());
             foreach (var site in page.GetProperty("items").EnumerateArray())
@@ -69,8 +69,8 @@ public class FleetPagingTests(ApiFixture fixture) : IClassFixture<ApiFixture>
                     actual.Add(site.GetProperty("id").GetGuid()),
                     "Duplicate site across pages"
                 );
-            var next = page.GetProperty("nextOffset");
-            offset = next.ValueKind == JsonValueKind.Null ? null : next.GetInt32();
+            var next = page.GetProperty("next");
+            after = next.ValueKind == JsonValueKind.Null ? null : next.GetString();
         }
         Assert.True(expected.SetEquals(actual));
         var other = await fixture.LoginAsync(ApiFixture.UserB);

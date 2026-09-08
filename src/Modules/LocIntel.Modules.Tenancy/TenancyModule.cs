@@ -36,7 +36,12 @@ public static class TenancyModule
             sp.GetRequiredService<IOrganizationLookup>()
         );
         services.AddScoped<ISiteLookup, SiteLookup>();
+        services.AddScoped<ISiteSource, SiteSource>();
         services.AddScoped<ISiteDirectory, Sites.SiteDirectory>();
+        services.AddScoped<IHierarchyDirectory, Hierarchy.HierarchyDirectory>();
+        // data layers (ADR 50 §3): registered queries the composition root serves as tiles
+        services.AddScoped<LocIntel.Platform.Spatial.IDataLayer, Sites.SitesDataLayer>();
+        services.AddScoped<LocIntel.Platform.Spatial.IDataLayer, Sites.OpenNowDataLayer>();
         services.AddScoped<IEntitlementUsageProbe, MaxSitesProbe>();
         services.AddScoped<IEntitlementUsageProbe, HierarchyDepthProbe>();
         services.AddScoped<IOrgDataExporter, Organizations.TenancyExporter>();

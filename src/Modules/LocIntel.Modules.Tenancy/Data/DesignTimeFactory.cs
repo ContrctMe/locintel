@@ -12,7 +12,12 @@ public sealed class DesignTimeFactory : IDesignTimeDbContextFactory<TenancyDbCon
         var options = new DbContextOptionsBuilder<TenancyDbContext>()
             .UseNpgsql(
                 "Host=localhost;Database=design_time_only",
-                npgsql => npgsql.MigrationsHistoryTable("__ef_migrations_history", "tenancy")
+                npgsql =>
+                    LocIntel.Platform.Data.ModulePersistence.Configure(
+                        npgsql,
+                        "tenancy",
+                        typeof(TenancyDbContext)
+                    )
             )
             .Options;
         return new TenancyDbContext(options, new TenantContext());

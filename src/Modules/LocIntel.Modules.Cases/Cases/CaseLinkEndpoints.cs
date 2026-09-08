@@ -38,7 +38,7 @@ public static class CaseLinkEndpoints
         if (incident is null || !scope.Covers(incident.Path))
             return Results.NotFound();
         if (await db.Incidents.AnyAsync(i => i.CaseId == id && i.IncidentId == incident.Id, ct))
-            return Results.Conflict(new { error = "incident is already on the case" });
+            return ApiErrors.Conflict("incident is already on the case");
         var link = CaseEndpoints.NewLink(access!.Case, incident, access.Actor);
         db.Incidents.Add(link);
         access.Case.UpdatedAt = DateTimeOffset.UtcNow;
@@ -108,7 +108,7 @@ public static class CaseLinkEndpoints
         if (!visible.ContainsKey(request.EntityId))
             return Results.NotFound();
         if (await db.Entities.AnyAsync(e => e.CaseId == id && e.EntityId == request.EntityId, ct))
-            return Results.Conflict(new { error = "entity is already on the case" });
+            return ApiErrors.Conflict("entity is already on the case");
         var link = new CaseEntity
         {
             Id = Guid.CreateVersion7(),

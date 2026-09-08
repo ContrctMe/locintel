@@ -9,7 +9,7 @@ public sealed class StoredFileLookup(StorageDbContext db) : IStoredFileLookup
 {
     public async Task<StoredFileInfo?> GetAsync(Guid fileId, CancellationToken ct = default)
     {
-        var file = await db.Files.FirstOrDefaultAsync(f => f.Id == fileId, ct);
+        var file = await db.Files.FirstOrDefaultAsync(f => f.Id == fileId && f.Origin == null, ct);
         return file is null
             ? null
             : new StoredFileInfo(

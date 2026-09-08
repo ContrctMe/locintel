@@ -2,10 +2,13 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using LocIntel.Modules.Audit.Data;
+using LocIntel.Platform.Entitlements;
+using LocIntel.Platform.Http;
 using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Secrets;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using Wolverine;
 using Wolverine.Attributes;
 
@@ -18,7 +21,8 @@ public sealed record DeliverWebhook(
     string EventName,
     string PayloadJson,
     DateTimeOffset EventAt,
-    int Attempt
+    int Attempt,
+    Guid? AdmissionId = null
 );
 
 /// <summary>
@@ -42,6 +46,7 @@ public static class DeliverWebhookHandler
         IKeyWrapper kms,
         IHttpClientFactory httpFactory,
         IConfiguration configuration,
+        IHostEnvironment environment,
         IMessageBus bus,
         CancellationToken ct
     )
@@ -55,7 +60,17 @@ public static class DeliverWebhookHandler
             ct
         );
         if (endpoint is null)
-            return; // deleted or paused between event and delivery: drop quietly
+        {
+            if (message.AdmissionId is { } abandoned)
+                await CapacityReservations.ConsumeAsync(
+                    db,
+                    org,
+                    WebhookDispatch.Code,
+                    abandoned,
+                    ct
+                );
+            return;
+        } // deleted or paused between event and delivery: drop quietly
 
         var body = JsonSerializer.Serialize(
             new
@@ -87,6 +102,13 @@ public static class DeliverWebhookHandler
         var ok = false;
         try
         {
+            if (
+                !PublicHttp.IsAllowedUrl(
+                    endpoint.Url,
+                    environment.IsDevelopment() || environment.IsEnvironment("Testing")
+                )
+            )
+                throw new HttpRequestException("Webhook destination is prohibited.");
             using var http = httpFactory.CreateClient("webhook-delivery");
             using var request = new HttpRequestMessage(HttpMethod.Post, endpoint.Url)
             {
@@ -94,9 +116,17 @@ public static class DeliverWebhookHandler
             };
             request.Headers.Add("X-LocIntel-Signature", signatureHeader);
             request.Headers.Add("X-LocIntel-Event", message.EventName);
-            using var response = await http.SendAsync(request, ct);
+            using var response = await http.SendAsync(
+                request,
+                HttpCompletionOption.ResponseHeadersRead,
+                ct
+            );
             statusCode = (int)response.StatusCode;
             ok = response.IsSuccessStatusCode;
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            // A destination timeout is a failed attempt, not a worker shutdown.
         }
         catch (HttpRequestException)
         {
@@ -117,6 +147,8 @@ public static class DeliverWebhookHandler
         );
         await db.SaveChangesAsync(ct);
 
+        if ((ok || message.Attempt >= MaxAttempts) && message.AdmissionId is { } admission)
+            await CapacityReservations.ConsumeAsync(db, org, WebhookDispatch.Code, admission, ct);
         if (!ok && message.Attempt < MaxAttempts)
         {
             var baseSeconds = configuration.GetValue("Webhooks:RetryBaseSeconds", 30);

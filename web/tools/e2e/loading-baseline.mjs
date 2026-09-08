@@ -19,7 +19,7 @@ try {
   ]) {
     const samples = [];
     for (let i = 0; i < 5; i++) {
-      const context = await browser.newContext({ storageState, baseURL });
+      const context = await browser.newContext({ storageState, baseURL, ignoreHTTPSErrors: true });
       try {
         const page = await context.newPage();
         const errors = [];

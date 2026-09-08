@@ -109,11 +109,9 @@ public class CaseTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         issued.EnsureSuccessStatusCode();
         var download = await issued.Content.ReadFromJsonAsync<JsonElement>();
         using var replayed = await owner.SendAsync(Issue());
-        replayed.EnsureSuccessStatusCode();
-        Assert.Equal(
-            download.GetProperty("url").GetString(),
-            (await replayed.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("url").GetString()
-        );
+        // Signed evidence URLs are not stored for replay. A duplicate is suppressed
+        // without issuing a second access event or redisclosing a bearer URL.
+        Assert.Equal(HttpStatusCode.Conflict, replayed.StatusCode);
         var custodyAfter = await owner.GetFromJsonAsync<JsonElement>(
             $"/api/cases/{caseId}/custody"
         );

@@ -28,7 +28,10 @@ namespace LocIntel.Modules.Marketplace.Requests;
 /// </summary>
 public static class RequesterEndpoints
 {
-    [Transactional(typeof(MarketplaceDbContext))]
+    [Transactional(
+        typeof(MarketplaceDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/marketplace/requests")]
     [ProducesResponseType(typeof(RequestListResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> List(
@@ -62,7 +65,10 @@ public static class RequesterEndpoints
         return Results.Ok(await RequestViews.ListAsync(query, db, limit, offset, ct));
     }
 
-    [Transactional(typeof(MarketplaceDbContext))]
+    [Transactional(
+        typeof(MarketplaceDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/marketplace/requests/{id}")]
     [ProducesResponseType(typeof(RequestDetail), StatusCodes.Status200OK)]
     public static async Task<IResult> Get(
@@ -112,18 +118,16 @@ public static class RequesterEndpoints
             return Results.NotFound();
         OrgId? vendorOrg = request.VendorOrgId is { } chosen ? new OrgId(chosen) : null;
         if (vendorOrg == actor.Org)
-            return Results.BadRequest(new { error = "an org cannot hire itself" });
+            return ApiErrors.BadRequest("an org cannot hire itself");
         if (vendorOrg is { } direct)
         {
             var vendor = await db.Directory.FirstOrDefaultAsync(p => p.OrgId == direct, ct);
             if (vendor is null)
                 return Results.NotFound();
             if (!vendor.Offers(request.Category))
-                return Results.BadRequest(
-                    new { error = "that vendor does not offer this category" }
-                );
+                return ApiErrors.BadRequest("that vendor does not offer this category");
             if (await db.Preferred.AnyAsync(p => p.VendorOrgId == direct && p.Blocked, ct))
-                return Results.BadRequest(new { error = "that vendor is blocked by your org" });
+                return ApiErrors.BadRequest("that vendor is blocked by your org");
         }
         else if (
             (
@@ -138,9 +142,7 @@ public static class RequesterEndpoints
                 )
             ).Count == 0
         )
-            return Results.Conflict(
-                new { error = "no published vendor serves this category at that site" }
-            );
+            return ApiErrors.Conflict("no published vendor serves this category at that site");
         if (
             Validate(
                 request.Title,
@@ -153,7 +155,7 @@ public static class RequesterEndpoints
             ) is
             { } invalid
         )
-            return Results.BadRequest(new { error = invalid });
+            return ApiErrors.BadRequest(invalid);
         var requester = await orgs.GetAsync(actor.Org, ct);
 
         var row = new ServiceRequest
@@ -218,7 +220,7 @@ public static class RequesterEndpoints
         if (error is not null)
             return error;
         if (row!.Status != RequestStatus.Draft)
-            return Results.Conflict(new { error = "only drafts can be edited" });
+            return ApiErrors.Conflict("only drafts can be edited");
         if (
             Validate(
                 request.Title,
@@ -231,7 +233,7 @@ public static class RequesterEndpoints
             ) is
             { } invalid
         )
-            return Results.BadRequest(new { error = invalid });
+            return ApiErrors.BadRequest(invalid);
         row.Urgency = request.Urgency;
         row.Title = request.Title.Trim();
         row.Details = request.Details?.Trim() ?? "";
@@ -267,13 +269,13 @@ public static class RequesterEndpoints
         if (await Upsell(entitlements, actor!.Value.Org, ct) is { } upsell)
             return upsell;
         if (row!.Status != RequestStatus.Draft)
-            return Results.Conflict(new { error = "only drafts can be submitted" });
+            return ApiErrors.Conflict("only drafts can be submitted");
         var now = DateTimeOffset.UtcNow;
         List<OrgId> recipients;
         if (row.Mode == RequestMode.Direct)
         {
             if (!await db.Directory.AnyAsync(p => p.OrgId == row.VendorOrgId, ct))
-                return Results.Conflict(new { error = "the vendor is no longer published" });
+                return ApiErrors.Conflict("the vendor is no longer published");
             recipients = [row.VendorOrgId!.Value];
         }
         else
@@ -294,9 +296,7 @@ public static class RequesterEndpoints
                 .Take(options.Value.InitialRecipients)
                 .ToList();
             if (recipients.Count == 0)
-                return Results.Conflict(
-                    new { error = "no published vendor serves this category at that site" }
-                );
+                return ApiErrors.Conflict("no published vendor serves this category at that site");
             foreach (var vendorOrg in recipients)
                 db.Recipients.Add(
                     new RequestRecipient
@@ -379,11 +379,11 @@ public static class RequesterEndpoints
             row!.Status
             is not (RequestStatus.Draft or RequestStatus.Submitted or RequestStatus.Accepted)
         )
-            return Results.Conflict(
-                new { error = "only draft, submitted, or accepted requests can be cancelled" }
+            return ApiErrors.Conflict(
+                "only draft, submitted, or accepted requests can be cancelled"
             );
         if (string.IsNullOrWhiteSpace(request.Reason))
-            return Results.BadRequest(new { error = "cancelling needs a reason" });
+            return ApiErrors.BadRequest("cancelling needs a reason");
         var now = DateTimeOffset.UtcNow;
         row.Status = RequestStatus.Cancelled;
         row.CancelledAt = now;
@@ -419,9 +419,7 @@ public static class RequesterEndpoints
         if (error is not null)
             return error;
         if (row!.Status is not (RequestStatus.Completed or RequestStatus.Disputed))
-            return Results.Conflict(
-                new { error = "only completed or disputed work can be verified" }
-            );
+            return ApiErrors.Conflict("only completed or disputed work can be verified");
         var now = DateTimeOffset.UtcNow;
         row.Status = RequestStatus.Verified;
         row.VerifiedAt = now;
@@ -457,9 +455,9 @@ public static class RequesterEndpoints
         if (error is not null)
             return error;
         if (row!.Status != RequestStatus.Completed)
-            return Results.Conflict(new { error = "only completed work can be disputed" });
+            return ApiErrors.Conflict("only completed work can be disputed");
         if (string.IsNullOrWhiteSpace(request.Reason))
-            return Results.BadRequest(new { error = "a dispute needs a reason" });
+            return ApiErrors.BadRequest("a dispute needs a reason");
         var now = DateTimeOffset.UtcNow;
         row.Status = RequestStatus.Disputed;
         row.DisputeReason = request.Reason.Trim();
@@ -495,7 +493,7 @@ public static class RequesterEndpoints
         if (error is not null)
             return error;
         if (string.IsNullOrWhiteSpace(request.Body))
-            return Results.BadRequest(new { error = "a message needs a body" });
+            return ApiErrors.BadRequest("a message needs a body");
         var evt = RequestViews.Event(
             row!.OrgId,
             row.Id,
@@ -535,9 +533,7 @@ public static class RequesterEndpoints
         if (error is not null)
             return error;
         if (row!.Mode != RequestMode.Broadcast || row.Status != RequestStatus.Submitted)
-            return Results.Conflict(
-                new { error = "only an open broadcast request can be awarded" }
-            );
+            return ApiErrors.Conflict("only an open broadcast request can be awarded");
         var quotes = await db.ReceivedQuotes.Where(q => q.RequestId == id).ToListAsync(ct);
         var winner = quotes.FirstOrDefault(q =>
             q.QuoteId == quoteId && q.Status == QuoteStatus.Submitted
@@ -545,7 +541,7 @@ public static class RequesterEndpoints
         if (winner is null)
             return Results.NotFound();
         if (winner.ValidUntil is { } until && until < DateTimeOffset.UtcNow)
-            return Results.Conflict(new { error = "that quote has expired" });
+            return ApiErrors.Conflict("that quote has expired");
         var now = DateTimeOffset.UtcNow;
         winner.Status = QuoteStatus.Accepted;
         winner.UpdatedAt = now;

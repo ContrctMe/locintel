@@ -1,3 +1,4 @@
+using LocIntel.Contracts;
 using LocIntel.Modules.Cases.Cases.Api;
 using LocIntel.Modules.Cases.Data;
 using LocIntel.Platform.Kernel;
@@ -28,7 +29,7 @@ public static class CaseNoteEndpoints
         if (error is not null)
             return error;
         if (string.IsNullOrWhiteSpace(request.Body))
-            return Results.BadRequest(new { error = "a note needs a body" });
+            return ApiErrors.BadRequest("a note needs a body");
         var note = new CaseNote
         {
             Id = Guid.CreateVersion7(),

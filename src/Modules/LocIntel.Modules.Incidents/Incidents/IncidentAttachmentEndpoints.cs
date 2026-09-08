@@ -44,7 +44,7 @@ public static class IncidentAttachmentEndpoints
         if (file is null || file.Status is "Deleted" or "Erased")
             return Results.NotFound();
         if (await db.Attachments.AnyAsync(a => a.IncidentId == id && a.FileId == file.Id, ct))
-            return Results.Conflict(new { error = "file is already attached" });
+            return ApiErrors.Conflict("file is already attached");
         var attachment = new IncidentAttachment
         {
             Id = Guid.CreateVersion7(),
@@ -82,7 +82,7 @@ public static class IncidentAttachmentEndpoints
         if (error is not null)
             return error;
         if (incident!.LegalHold)
-            return Results.Conflict(new { error = "incident is under legal hold" });
+            return ApiErrors.Conflict("incident is under legal hold");
         var attachment = await db.Attachments.FirstOrDefaultAsync(
             a => a.Id == attachmentId && a.IncidentId == id,
             ct

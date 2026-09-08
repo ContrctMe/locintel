@@ -1,12 +1,12 @@
 import { type components } from '@locintel/api';
-import { Button, Card, CardContent, CardHeader, CardTitle, ConfirmButton, FormDialog,
-  Input, Label, Select, Table, TableBody, TableCell, TableHead, TableHeader,
-  TableRow } from '@locintel/ui';
-import { useState } from 'react';
+import { Badge, Button, ConfirmButton, Field, FieldLabel, FormDialog, Input, Select, type ColumnDef, type DataGridFeatures } from '@locintel/ui';
+import { useMemo, useState } from 'react';
 import { fmtDate } from '../../../lib/format';
+import { Grid, Loading, PageHeader } from '../../../components/page';
 import { useApiMutation } from '../../../lib/mutation';
 import { rolesApi } from '../api';
 import { useGrantExceptions, useRoleHierarchy, useRoleMembers, useRoles } from '../hooks';
+import { capabilityLabel } from '../labels';
 import { GRANTABLE, grantKey, parseGrant } from '../schema';
 import { RoleEditor } from './role-editor';
 
@@ -42,20 +42,71 @@ export function RolesPage() {
     errorFallback: 'Delete failed',
   });
 
+  const roleColumns = useMemo<ColumnDef<DataGridFeatures, Role>[]>(
+    () => [
+      { id: 'name', accessorKey: 'name', header: 'Role', cell: ({ row }) => <span className="font-medium">{row.original.name}</span> },
+      {
+        id: 'grants',
+        header: 'Grants',
+        cell: ({ row }) => (
+          <div className="flex max-w-md flex-wrap gap-1">
+            {row.original.grants.map((g) => (
+              <Badge key={grantKey(g)} variant="secondary" size="sm" title={grantKey(g)}>
+                {capabilityLabel(grantKey(g))}
+              </Badge>
+            ))}
+          </div>
+        ),
+      },
+      {
+        id: 'held',
+        accessorKey: 'assignedCount',
+        header: 'Held by',
+        cell: ({ row }) => <span className="text-muted-foreground">{row.original.assignedCount}</span>,
+        meta: { headerClassName: 'w-24' },
+      },
+      {
+        id: 'actions',
+        header: () => <span className="sr-only">Actions</span>,
+        cell: ({ row }) => (
+          <div className="space-x-1 text-right">
+            <Button variant="ghost" size="sm" onClick={() => openEdit(row.original)}>
+              Edit
+            </Button>
+            <ConfirmButton
+              size="sm"
+              confirmLabel="Delete this role?"
+              description="Members holding it lose those grants at once."
+              disabled={remove.isPending}
+              onConfirm={() => remove.mutate(row.original.id)}
+            >
+              Delete
+            </ConfirmButton>
+          </div>
+        ),
+        meta: { headerClassName: 'w-40' },
+      },
+    ],
+    // openEdit and remove are stable for the page's life
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
   if (rolesQuery.isPending || membersQuery.isPending || hierarchyQuery.isPending)
-    return <p className="text-sm text-muted-foreground">Loading roles…</p>;
+    return <Loading text="Loading roles…" />;
   if (rolesQuery.isError || membersQuery.isError)
     return <p className="text-sm text-destructive">Could not load roles.</p>;
 
   return (
     <div className="max-w-4xl space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Roles</h1>
-        <div className="flex gap-2">
+      <PageHeader
+        title="Roles"
+        description="What a role grants, who holds it and where, and the exceptions."
+        actions={<>
           <AssignDialog roles={roles ?? []} members={members ?? []}
             nodes={(hierarchy?.nodes ?? []).map((node) => ({
               ...node,
-              depth: Number(node.depth),
+              depth: node.depth,
             }))} />
           <FormDialog
             open={editorOpen}
@@ -70,60 +121,19 @@ export function RolesPage() {
               onSaved={() => setEditorOpen(false)}
             />
           </FormDialog>
-        </div>
-      </div>
+        </>}
+      />
 
-      <Card>
-        <CardContent className="pt-4">
-          {roles && roles.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Grants</TableHead>
-                  <TableHead>Held by</TableHead>
-                  <TableHead className="w-40"><span className="sr-only">Actions</span></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {roles.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="font-medium">{r.name}</TableCell>
-                    <TableCell>
-                      <div className="flex max-w-md flex-wrap gap-1">
-                        {r.grants.map((g) => (
-                          <span key={grantKey(g)}
-                            className="rounded bg-accent px-1.5 py-0.5 font-mono text-xs">
-                            {grantKey(g)}
-                          </span>
-                        ))}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{r.assignedCount}</TableCell>
-                    <TableCell className="space-x-1 text-right">
-                      <Button variant="ghost" size="sm" onClick={() => openEdit(r)}>
-                        Edit
-                      </Button>
-                      <ConfirmButton size="sm" disabled={remove.isPending}
-                        onConfirm={() => remove.mutate(r.id)}>
-                        Delete
-                      </ConfirmButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              No roles yet. Create one with &quot;New role&quot;.
-            </p>
-          )}
-        </CardContent>
-      </Card>
+      <Grid
+        columns={roleColumns}
+        rows={roles ?? []}
+        getRowId={(r) => r.id}
+        emptyMessage='No roles yet. Create one with "New role".'
+      />
 
       <ExceptionsCard members={members ?? []} nodes={(hierarchy?.nodes ?? []).map((node) => ({
         ...node,
-        depth: Number(node.depth),
+        depth: node.depth,
       }))} />
     </div>
   );
@@ -157,26 +167,26 @@ function AssignDialog({ roles, members, nodes }: { roles: Role[]; members: Membe
       description="Over the entire org, or scoped to one hierarchy subtree."
     >
       <div className="space-y-3">
-        <div className="space-y-1">
-          <Label htmlFor="assign-role">Role</Label>
+        <Field>
+          <FieldLabel htmlFor="assign-role">Role</FieldLabel>
           <Select id="assign-role" value={roleId} onChange={(e) => setRoleId(e.target.value)}>
             <option value="">Choose…</option>
             {roles.map((r) => (
               <option key={r.id} value={r.id}>{r.name}</option>
             ))}
           </Select>
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="assign-member">Member</Label>
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="assign-member">Member</FieldLabel>
           <Select id="assign-member" value={userId} onChange={(e) => setUserId(e.target.value)}>
             <option value="">Choose…</option>
             {members.map((m) => (
               <option key={m.userId} value={m.userId}>{m.email}</option>
             ))}
           </Select>
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="assign-scope">Scope</Label>
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="assign-scope">Scope</FieldLabel>
           <Select id="assign-scope" value={scopePath}
             onChange={(e) => setScopePath(e.target.value)}>
             <option value="">Entire org</option>
@@ -186,7 +196,7 @@ function AssignDialog({ roles, members, nodes }: { roles: Role[]; members: Membe
               </option>
             ))}
           </Select>
-        </div>
+        </Field>
         <Button className="w-full" disabled={!roleId || !userId || assign.isPending}
           onClick={() => assign.mutate()}>
           Assign
@@ -232,13 +242,54 @@ function ExceptionsCard({ members, nodes }: { members: Member[]; nodes: Node[] }
     invalidate: [['grant-exceptions']],
     success: 'Exception revoked',
   });
+  type ExceptionRow = NonNullable<typeof exceptions>[number];
+  const exceptionColumns = useMemo<ColumnDef<DataGridFeatures, ExceptionRow>[]>(
+    () => [
+      { id: 'email', accessorKey: 'email', header: 'Member' },
+      {
+        id: 'grant',
+        header: 'Grant',
+        cell: ({ row }) => (
+          <span className="font-mono text-xs">
+            {row.original.domain}:{row.original.action}
+            {row.original.scopePath && <span className="text-muted-foreground"> (scoped)</span>}
+          </span>
+        ),
+      },
+      {
+        id: 'reason',
+        accessorKey: 'reason',
+        header: 'Reason',
+        cell: ({ row }) => <span className="block max-w-48 truncate text-muted-foreground">{row.original.reason}</span>,
+      },
+      {
+        id: 'expires',
+        accessorKey: 'expiresAt',
+        header: 'Expires',
+        cell: ({ row }) => <span className="text-muted-foreground">{fmtDate(row.original.expiresAt)}</span>,
+      },
+      {
+        id: 'actions',
+        header: () => <span className="sr-only">Actions</span>,
+        cell: ({ row }) => (
+          <div className="text-right">
+            <ConfirmButton size="sm" confirmLabel="Revoke this exception?" disabled={revoke.isPending} onConfirm={() => revoke.mutate(row.original.id)}>
+              Revoke
+            </ConfirmButton>
+          </div>
+        ),
+        meta: { headerClassName: 'w-24' },
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          Grant exceptions
-          <FormDialog
+    <Grid
+      title="Grant exceptions"
+      actions={
+<FormDialog
             open={open}
             onOpenChange={setOpen}
             trigger={<Button variant="outline" size="sm">Grant exception</Button>}
@@ -246,8 +297,8 @@ function ExceptionsCard({ members, nodes }: { members: Member[]; nodes: Node[] }
             description="Additive and time-boxed - it expires on its own, and the reason is part of the record."
           >
             <div className="space-y-3">
-              <div className="space-y-1">
-                <Label htmlFor="exc-member">Member</Label>
+              <Field>
+                <FieldLabel htmlFor="exc-member">Member</FieldLabel>
                 <Select id="exc-member" value={userId}
                   onChange={(e) => setUserId(e.target.value)}>
                   <option value="">Choose…</option>
@@ -255,19 +306,19 @@ function ExceptionsCard({ members, nodes }: { members: Member[]; nodes: Node[] }
                     <option key={m.userId} value={m.userId}>{m.email}</option>
                   ))}
                 </Select>
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="exc-cap">Capability</Label>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="exc-cap">Capability</FieldLabel>
                 <Select id="exc-cap" value={capability}
                   onChange={(e) => setCapability(e.target.value)}>
                   <option value="">Choose…</option>
                   {GRANTABLE.map((c) => (
-                    <option key={c} value={c}>{c}</option>
+                    <option key={c} value={c}>{capabilityLabel(c)}</option>
                   ))}
                 </Select>
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="exc-scope">Scope</Label>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="exc-scope">Scope</FieldLabel>
                 <Select id="exc-scope" value={scopePath}
                   onChange={(e) => setScopePath(e.target.value)}>
                   <option value="">Entire org</option>
@@ -277,18 +328,18 @@ function ExceptionsCard({ members, nodes }: { members: Member[]; nodes: Node[] }
                     </option>
                   ))}
                 </Select>
-              </div>
+              </Field>
               <div className="grid grid-cols-[1fr_6rem] gap-2">
-                <div className="space-y-1">
-                  <Label htmlFor="exc-reason">Reason</Label>
+                <Field>
+                  <FieldLabel htmlFor="exc-reason">Reason</FieldLabel>
                   <Input id="exc-reason" value={reason}
                     onChange={(e) => setReason(e.target.value)} />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="exc-days">Days</Label>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="exc-days">Days</FieldLabel>
                   <Input id="exc-days" type="number" min="1" value={days}
                     onChange={(e) => setDays(e.target.value)} />
-                </div>
+                </Field>
               </div>
               <Button className="w-full"
                 disabled={!userId || !capability || !reason.trim() || !Number(days) || grant.isPending}
@@ -297,46 +348,12 @@ function ExceptionsCard({ members, nodes }: { members: Member[]; nodes: Node[] }
               </Button>
             </div>
           </FormDialog>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {exceptions && exceptions.length > 0 ? (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Member</TableHead>
-                <TableHead>Grant</TableHead>
-                <TableHead>Reason</TableHead>
-                <TableHead>Expires</TableHead>
-                <TableHead className="w-24"><span className="sr-only">Actions</span></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {exceptions.map((x) => (
-                <TableRow key={x.id}>
-                  <TableCell>{x.email}</TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {x.domain}:{x.action}
-                    {x.scopePath && <span className="text-muted-foreground"> (scoped)</span>}
-                  </TableCell>
-                  <TableCell className="max-w-48 truncate text-muted-foreground">
-                    {x.reason}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{fmtDate(x.expiresAt)}</TableCell>
-                  <TableCell className="text-right">
-                    <ConfirmButton size="sm" disabled={revoke.isPending}
-                      onConfirm={() => revoke.mutate(x.id)}>
-                      Revoke
-                    </ConfirmButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        ) : (
-          <p className="text-sm text-muted-foreground">No active exceptions.</p>
-        )}
-      </CardContent>
-    </Card>
+      }
+      columns={exceptionColumns}
+      rows={exceptions ?? []}
+      getRowId={(x) => x.id}
+      isLoading={exceptions === undefined}
+      emptyMessage="No active exceptions."
+    />
   );
 }

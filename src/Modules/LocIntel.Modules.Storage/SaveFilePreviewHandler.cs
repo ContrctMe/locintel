@@ -1,4 +1,5 @@
 using LocIntel.Modules.Storage.Data;
+using LocIntel.Platform.Data;
 using LocIntel.Platform.Storage;
 using Microsoft.EntityFrameworkCore;
 using Wolverine.Attributes;
@@ -17,11 +18,8 @@ public static class SaveFilePreviewHandler
     {
         if (message.Content.Length > 4096)
             throw new ArgumentOutOfRangeException(nameof(message.Content));
-        var file = await db
-            .Files.FromSqlInterpolated(
-                $"SELECT * FROM storage.files WHERE id = {message.FileId} FOR UPDATE"
-            )
-            .FirstOrDefaultAsync(ct);
+        await db.TakeAsync(message.FileId, ct);
+        var file = await db.Files.FirstOrDefaultAsync(f => f.Id == message.FileId, ct);
         if (
             file is null
             || file.Status != FileStatus.Clean

@@ -432,11 +432,11 @@ public class HierarchyAndTimeTests(ApiFixture fixture) : IClassFixture<ApiFixtur
         );
         var withSites = await client.DeleteAsync($"/api/hierarchy/nodes/{childId}");
         Assert.Equal(HttpStatusCode.Conflict, withSites.StatusCode);
-        Assert.Equal(
-            1,
+        Assert.Contains(
+            "1 site(s)",
             (await withSites.Content.ReadFromJsonAsync<JsonElement>())
-                .GetProperty("sites")
-                .GetInt32()
+                .GetProperty("error")
+                .GetString()
         );
 
         // an empty leaf deletes; the tree no longer knows it

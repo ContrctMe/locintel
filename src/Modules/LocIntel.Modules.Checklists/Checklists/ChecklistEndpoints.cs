@@ -49,7 +49,10 @@ public sealed record ChecklistTemplateCreatedResponse(Guid Id);
 /// </summary>
 public static class ChecklistEndpoints
 {
-    [Transactional(typeof(ChecklistsDbContext))]
+    [Transactional(
+        typeof(ChecklistsDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/checklists/templates")]
     [ProducesResponseType(typeof(List<ChecklistTemplateSummary>), StatusCodes.Status200OK)]
     public static async Task<IResult> ListTemplates(
@@ -93,9 +96,7 @@ public static class ChecklistEndpoints
         var userId = principal.UserId;
         var items = request.Items.Select(i => i.Trim()).Where(i => i.Length > 0).ToArray();
         if (string.IsNullOrWhiteSpace(request.Name) || items.Length == 0)
-            return Results.BadRequest(
-                new { error = "a checklist needs a name and at least one item" }
-            );
+            return ApiErrors.BadRequest("a checklist needs a name and at least one item");
 
         var template = new ChecklistTemplate
         {
@@ -142,7 +143,10 @@ public static class ChecklistEndpoints
     }
 
     /// <summary>Today's lists for one site, on that site's clock.</summary>
-    [Transactional(typeof(ChecklistsDbContext))]
+    [Transactional(
+        typeof(ChecklistsDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/checklists/today")]
     [ProducesResponseType(typeof(ChecklistTodayResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> Today(

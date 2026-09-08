@@ -33,7 +33,7 @@ public static class ModulePersistence
                 var regions = sp.GetRequiredService<IRegionDataSources>();
                 var builder = options.UseNpgsql(
                     regions.For(RegionId.Default),
-                    npgsql => npgsql.MigrationsHistoryTable("__ef_migrations_history", schema)
+                    npgsql => Configure(npgsql, schema, typeof(TContext))
                 );
                 if (audited)
                     builder.AddInterceptors(
@@ -46,5 +46,24 @@ public static class ModulePersistence
             }
         );
         return services;
+    }
+
+    /// <summary>
+    /// The provider options every module context gets, wherever it is built
+    /// (host, fixtures, round-trip test): its own migration history table,
+    /// and the NetTopologySuite plugin only for a <see cref="SpatialModuleAttribute"/>
+    /// context (ADR 50) - the plugin adds the postgis extension to any model it
+    /// touches, so enabling it globally would leave every other module with
+    /// pending model changes.
+    /// </summary>
+    public static void Configure(
+        Npgsql.EntityFrameworkCore.PostgreSQL.Infrastructure.NpgsqlDbContextOptionsBuilder npgsql,
+        string schema,
+        Type contextType
+    )
+    {
+        npgsql.MigrationsHistoryTable("__ef_migrations_history", schema);
+        if (contextType.IsDefined(typeof(SpatialModuleAttribute), inherit: false))
+            npgsql.UseNetTopologySuite();
     }
 }

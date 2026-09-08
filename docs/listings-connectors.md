@@ -10,8 +10,10 @@ reverse-engineer site truth. Two primitives:
 ## 1. The canonical feed (pull)
 
 `GET /api/listings/feed` with an API key (`Authorization: Bearer locintel_…`,
-ADR 40) whose role grants `sites:read`. Returns every site in the key's
-scope as a full listing record:
+ADR 40) whose role grants `sites:read`. Returns the sites in the key's scope
+as full listing records, a page at a time: `limit` (default 500, max 2,000)
+and `after`, the `next` cursor of the previous page; walk until `next` is
+null (ADR 51):
 
 ```json
 {

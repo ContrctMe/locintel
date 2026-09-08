@@ -1,5 +1,6 @@
 using LocIntel.Contracts;
 using LocIntel.Modules.Storage.Data;
+using LocIntel.Platform.Data;
 using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Storage;
 using Microsoft.EntityFrameworkCore;
@@ -26,11 +27,8 @@ public static class ApplyFileScanHandler
 
         // Lock only the final read/change/outbox unit, never object storage or AV I/O.
         // RLS and the context's tenant filter still apply to this query.
-        var file = await db
-            .Files.FromSqlInterpolated(
-                $"SELECT * FROM storage.files WHERE id = {message.FileId} FOR UPDATE"
-            )
-            .FirstOrDefaultAsync(ct);
+        await db.TakeAsync(message.FileId, ct);
+        var file = await db.Files.FirstOrDefaultAsync(f => f.Id == message.FileId, ct);
         if (file is null || file.Status != FileStatus.Uploaded || file.Key != message.Key)
             return;
 

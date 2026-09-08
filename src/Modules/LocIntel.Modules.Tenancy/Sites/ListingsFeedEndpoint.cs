@@ -1,4 +1,6 @@
+using LocIntel.Contracts;
 using LocIntel.Modules.Tenancy.Data;
+using LocIntel.Platform.Data;
 using LocIntel.Platform.Kernel;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -34,10 +36,16 @@ public sealed record ListingRecord(
     System.Text.Json.JsonElement Attributes
 );
 
+/// <summary>
+/// One page of the feed. <c>Next</c> is the cursor for the page after this
+/// one (null on the last), passed back as <c>after</c>; a connector walks
+/// pages until it is null.
+/// </summary>
 public sealed record ListingsFeedResponse(
     DateTimeOffset GeneratedAt,
     string Organization,
-    IReadOnlyList<ListingRecord> Listings
+    IReadOnlyList<ListingRecord> Listings,
+    string? Next
 );
 
 /// <summary>
@@ -47,11 +55,16 @@ public sealed record ListingsFeedResponse(
 /// expand recurrence themselves. Built for connector consumption: poll this
 /// with an API key holding sites:read (ADR 40), subscribe to site.* webhooks
 /// to know when. Scope filters as everywhere else - a subtree-scoped key
-/// exports its subtree.
+/// exports its subtree. Paged by keyset on (name, id) - <c>limit</c> up to
+/// 2000, default 500 - so an org of any size streams out in bounded pages
+/// and never sits in the API's memory at once (ADR 51).
 /// </summary>
 public static class ListingsFeedEndpoint
 {
-    [Transactional(typeof(TenancyDbContext))]
+    [Transactional(
+        typeof(TenancyDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/listings/feed")]
     [ProducesResponseType(typeof(ListingsFeedResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> Feed(
@@ -59,9 +72,19 @@ public static class ListingsFeedEndpoint
         IPrincipalAccessor accessor,
         IScopeResolver scopes,
         IConfiguration configuration,
+        int? limit,
+        string? after,
         CancellationToken ct
     )
     {
+        SiteCursor? cursor = null;
+        if (after is not null)
+        {
+            if (!SiteCursor.TryParse(after, out var parsed))
+                return ApiErrors.BadRequest("after is not a cursor this feed issued");
+            cursor = parsed;
+        }
+        var take = Math.Clamp(limit ?? 500, 1, 2000);
         var scope = await scopes.ScopeForAsync(accessor.Current, Capabilities.SitesRead, ct);
         OrgId orgId;
         switch (scope)
@@ -81,9 +104,20 @@ public static class ListingsFeedEndpoint
         var template = configuration["Public:HostTemplate"] ?? "http://{slug}.localhost:5174";
         var publicBase = template.Replace("{slug}", org.Slug);
 
-        var sites = (await db.Sites.OrderBy(s => s.Name).ToListAsync(ct))
-            .Where(s => scope.Covers(s.Path.ToString()))
-            .ToList();
+        // scope in SQL (the same predicate every list uses), one page at a time
+        var page = db.Sites.InScope(scope);
+        if (cursor is { Name: var afterName, Id: var afterId })
+            page = page.Where(s =>
+                s.Name.CompareTo(afterName) >= 0
+                && (s.Name.CompareTo(afterName) > 0 || s.Id.CompareTo(afterId) > 0)
+            );
+        var sites = await page.OrderBy(s => s.Name)
+            .ThenBy(s => s.Id)
+            .Take(take + 1)
+            .ToListAsync(ct);
+        var more = sites.Count > take;
+        if (more)
+            sites.RemoveAt(take);
         var siteIds = sites.Select(s => s.Id).ToList();
         var schedules = await db
             .SiteSchedules.Where(sc => siteIds.Contains(sc.SiteId))
@@ -119,6 +153,13 @@ public static class ListingsFeedEndpoint
                 )
             ))
             .ToList();
-        return Results.Ok(new ListingsFeedResponse(DateTimeOffset.UtcNow, org.Name, listings));
+        return Results.Ok(
+            new ListingsFeedResponse(
+                DateTimeOffset.UtcNow,
+                org.Name,
+                listings,
+                more ? SiteCursor.Encode(sites[^1]) : null
+            )
+        );
     }
 }

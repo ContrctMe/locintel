@@ -45,11 +45,9 @@ public static class EntityGrantEndpoints
             return error;
         var now = time.GetUtcNow();
         if (string.IsNullOrWhiteSpace(request.Reason))
-            return Results.BadRequest(new { error = "a grant needs a reason" });
+            return ApiErrors.BadRequest("a grant needs a reason");
         if (request.ExpiresAt <= now || request.ExpiresAt > now.AddDays(MaxDays))
-            return Results.BadRequest(
-                new { error = $"a grant expires between now and {MaxDays} days out" }
-            );
+            return ApiErrors.BadRequest($"a grant expires between now and {MaxDays} days out");
         var known = await actors.LabelsAsync([request.UserId], ct);
         if (!known.ContainsKey(request.UserId))
             return Results.NotFound();

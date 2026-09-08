@@ -19,8 +19,9 @@ public interface IEntitlements
     ValueTask<long> LimitAsync(OrgId org, string code, CancellationToken ct = default);
 
     /// <summary>
-    /// Limit shape enforcement at the creation point: current count + increment
-    /// against the ceiling, applying the entitlement's declared policy.
+    /// Evaluate current count + increment against the configured ceiling.
+    /// This does not reserve capacity: strict callers serialize and reserve
+    /// in the same transaction as their write/durable intent (ADR 55).
     /// </summary>
     ValueTask<EntitlementDecision> CheckLimitAsync(
         OrgId org,

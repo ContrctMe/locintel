@@ -23,7 +23,10 @@ namespace LocIntel.Modules.Patrols.Patrols;
 /// </summary>
 public static class PatrolEndpoints
 {
-    [Transactional(typeof(PatrolsDbContext))]
+    [Transactional(
+        typeof(PatrolsDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/patrols/today")]
     [ProducesResponseType(typeof(PatrolDayResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> Today(
@@ -49,7 +52,10 @@ public static class PatrolEndpoints
         return Results.Ok(new PatrolDayResponse(day, site.Name, expected, patrols));
     }
 
-    [Transactional(typeof(PatrolsDbContext))]
+    [Transactional(
+        typeof(PatrolsDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/patrols/report")]
     [ProducesResponseType(typeof(DailyActivityReport), StatusCodes.Status200OK)]
     public static async Task<IResult> Report(
@@ -100,7 +106,10 @@ public static class PatrolEndpoints
         );
     }
 
-    [Transactional(typeof(PatrolsDbContext))]
+    [Transactional(
+        typeof(PatrolsDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/patrols/{id}")]
     [ProducesResponseType(typeof(PatrolView), StatusCodes.Status200OK)]
     public static async Task<IResult> Get(
@@ -203,14 +212,14 @@ public static class PatrolEndpoints
         if (error is not null)
             return error;
         if (patrol!.Status != PatrolStatus.InProgress)
-            return Results.Conflict(new { error = "the patrol has ended" });
+            return ApiErrors.Conflict("the patrol has ended");
         var code = request.Code?.Trim().ToUpperInvariant() ?? "";
         var checkpoints = RouteEndpoints.Checkpoints(route!);
         var checkpoint = checkpoints.FirstOrDefault(c => c.Code == code);
         if (checkpoint is null)
             return Results.NotFound();
         if (request.Latitude is < -90 or > 90 || request.Longitude is < -180 or > 180)
-            return Results.BadRequest(new { error = "coordinates out of range" });
+            return ApiErrors.BadRequest("coordinates out of range");
         double? distance =
             checkpoint.Latitude is { } clat
             && checkpoint.Longitude is { } clng
@@ -264,7 +273,7 @@ public static class PatrolEndpoints
         if (error is not null)
             return error;
         if (patrol!.Status != PatrolStatus.InProgress)
-            return Results.Conflict(new { error = "the patrol has ended" });
+            return ApiErrors.Conflict("the patrol has ended");
         patrol.Status = PatrolStatus.Completed;
         patrol.EndedAt = DateTimeOffset.UtcNow;
         patrol.Summary = string.IsNullOrWhiteSpace(request.Summary) ? null : request.Summary.Trim();
@@ -295,7 +304,7 @@ public static class PatrolEndpoints
         if (error is not null)
             return error;
         if (patrol!.Status != PatrolStatus.InProgress)
-            return Results.Conflict(new { error = "the patrol has ended" });
+            return ApiErrors.Conflict("the patrol has ended");
         patrol.Status = PatrolStatus.Abandoned;
         patrol.EndedAt = DateTimeOffset.UtcNow;
         patrol.Summary = string.IsNullOrWhiteSpace(request.Reason)

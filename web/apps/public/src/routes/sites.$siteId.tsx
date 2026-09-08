@@ -1,11 +1,11 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { createServerFn } from '@tanstack/react-start';
-import { publicApi, type PublicSiteDetail } from '../api';
+import { publicSite } from '../api';
 import { isTodayInZone, spanLabel } from '../lib/hours';
 
 const fetchSite = createServerFn({ method: 'GET' })
-  .validator((siteId: string) => siteId)
-  .handler(({ data }) => publicApi<PublicSiteDetail | null>(`/public/sites/${data}`, null));
+  .validator((siteId: unknown) => siteId)
+  .handler(({ data }) => publicSite(data));
 
 export const Route = createFileRoute('/sites/$siteId')({
   loader: ({ params }) => fetchSite({ data: params.siteId }),

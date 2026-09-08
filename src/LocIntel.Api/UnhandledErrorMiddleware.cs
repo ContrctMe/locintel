@@ -15,6 +15,9 @@ public sealed class UnhandledErrorMiddleware(
     ILogger<UnhandledErrorMiddleware> logger
 )
 {
+    /// <summary>Which process answered: host and pid, so a fleet's replicas tell apart in a header.</summary>
+    public static readonly string Instance = $"{Environment.MachineName}:{Environment.ProcessId}";
+
     public async Task InvokeAsync(HttpContext context)
     {
         var traceId = Activity.Current?.TraceId.ToString() ?? context.TraceIdentifier;
@@ -23,6 +26,7 @@ public sealed class UnhandledErrorMiddleware(
             {
                 var (http, id) = ((HttpContext, string))state;
                 http.Response.Headers["X-Trace-Id"] = id;
+                http.Response.Headers["X-LocIntel-Instance"] = Instance;
                 return Task.CompletedTask;
             },
             (context, traceId)

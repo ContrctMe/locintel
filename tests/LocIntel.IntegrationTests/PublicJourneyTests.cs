@@ -14,7 +14,7 @@ public class PublicJourneyTests(ApiFixture fixture) : IClassFixture<ApiFixture>
     {
         var client = fixture.GuestClient();
         // what the SSR/public app forwards from the browser's address bar
-        client.DefaultRequestHeaders.Add("X-Forwarded-Host", $"{slug}.locintel.test");
+        client.DefaultRequestHeaders.Host = $"{slug}.locintel.test";
         return client;
     }
 
@@ -58,9 +58,9 @@ public class PublicJourneyTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         var (openId, closedId) = await SeedSites();
         var guest = GuestFor("org-a");
 
-        var sites = await guest.GetFromJsonAsync<JsonElement>("/public/sites");
-        // SeedSites runs per test, so a name can appear more than once by
-        // the time this test runs (xUnit's in-class order is a name hash)
+        var sites = (await guest.GetFromJsonAsync<JsonElement>("/public/sites")).GetProperty(
+            "items"
+        );
         var names = sites
             .EnumerateArray()
             .GroupBy(s => s.GetProperty("name").GetString()!)
@@ -85,7 +85,9 @@ public class PublicJourneyTests(ApiFixture fixture) : IClassFixture<ApiFixture>
 
         // org B's guest surface never shows org A's sites, by id or list
         var otherGuest = GuestFor("org-b");
-        var otherSites = await otherGuest.GetFromJsonAsync<JsonElement>("/public/sites");
+        var otherSites = (
+            await otherGuest.GetFromJsonAsync<JsonElement>("/public/sites")
+        ).GetProperty("items");
         Assert.DoesNotContain(
             otherSites.EnumerateArray(),
             s => s.GetProperty("name").GetString() == "Public Open Store"
@@ -98,7 +100,7 @@ public class PublicJourneyTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         // unknown host: empty, never an error (fail closed, gracefully)
         var lost = GuestFor("nobody-here");
         var nothing = await lost.GetFromJsonAsync<JsonElement>("/public/sites");
-        Assert.Equal(0, nothing.GetArrayLength());
+        Assert.Equal(0, nothing.GetProperty("items").GetArrayLength());
     }
 
     [Fact]

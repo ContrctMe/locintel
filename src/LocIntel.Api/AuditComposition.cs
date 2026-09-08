@@ -108,7 +108,7 @@ public sealed class AccessLogMiddleware(RequestDelegate next)
 }
 
 /// <summary>
-/// Refresh-behind policy cache (same shape as OrgRateLimitCache): audit
+/// Refresh-behind policy cache: audit
 /// decisions sit on hot paths and cannot await a per-request policy query.
 /// Floor until first resolution; five-minute TTL bounds staleness.
 /// </summary>

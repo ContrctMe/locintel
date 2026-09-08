@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using LocIntel.Contracts;
 using LocIntel.Modules.Identity.Auth;
 
 namespace LocIntel.Api;
@@ -41,11 +42,10 @@ public sealed class SessionContextMiddleware(RequestDelegate next)
         {
             context.Response.StatusCode = StatusCodes.Status409Conflict;
             await context.Response.WriteAsJsonAsync(
-                new
-                {
-                    error = "Your session changed in another tab. Reload before continuing.",
-                    code = "session_context_changed",
-                },
+                ApiErrors.Body(
+                    "Your session changed in another tab. Reload before continuing.",
+                    "session_context_changed"
+                ),
                 context.RequestAborted
             );
             return;

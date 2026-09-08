@@ -48,138 +48,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/sites": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * GET_api_sites
-         * @description GET_api_sites
-         */
-        get: operations["GET_api_sites"];
-        put?: never;
-        /**
-         * POST_api_sites
-         * @description POST_api_sites
-         */
-        post: operations["POST_api_sites"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/sites/open-now": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * GET_api_sites_open_now
-         * @description GET_api_sites_open_now
-         */
-        get: operations["GET_api_sites_open_now"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/sites/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * GET_api_sites_id
-         * @description GET_api_sites_id
-         */
-        get: operations["GET_api_sites_id"];
-        put?: never;
-        /**
-         * POST_api_sites_id
-         * @description POST_api_sites_id
-         */
-        post: operations["POST_api_sites_id"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/sites/{id}/schedules": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * GET_api_sites_id_schedules
-         * @description GET_api_sites_id_schedules
-         */
-        get: operations["GET_api_sites_id_schedules"];
-        put?: never;
-        /**
-         * POST_api_sites_id_schedules
-         * @description POST_api_sites_id_schedules
-         */
-        post: operations["POST_api_sites_id_schedules"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/sites/{id}/schedules/{scheduleId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * DELETE_api_sites_id_schedules_scheduleId
-         * @description DELETE_api_sites_id_schedules_scheduleId
-         */
-        delete: operations["DELETE_api_sites_id_schedules_scheduleId"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/sites/{id}/windows": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * GET_api_sites_id_windows
-         * @description GET_api_sites_id_windows
-         */
-        get: operations["GET_api_sites_id_windows"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/listings/feed": {
         parameters: {
             query?: never;
@@ -260,6 +128,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/sites/{id}/schedules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_sites_id_schedules
+         * @description GET_api_sites_id_schedules
+         */
+        get: operations["GET_api_sites_id_schedules"];
+        put?: never;
+        /**
+         * POST_api_sites_id_schedules
+         * @description POST_api_sites_id_schedules
+         */
+        post: operations["POST_api_sites_id_schedules"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sites/{id}/schedules/{scheduleId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * DELETE_api_sites_id_schedules_scheduleId
+         * @description DELETE_api_sites_id_schedules_scheduleId
+         */
+        delete: operations["DELETE_api_sites_id_schedules_scheduleId"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sites/{id}/windows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_sites_id_windows
+         * @description GET_api_sites_id_windows
+         */
+        get: operations["GET_api_sites_id_windows"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/sites/attributes": {
         parameters: {
             query?: never;
@@ -299,6 +231,94 @@ export interface paths {
          * @description DELETE_api_sites_attributes_id
          */
         delete: operations["DELETE_api_sites_attributes_id"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_sites
+         * @description GET_api_sites
+         */
+        get: operations["GET_api_sites"];
+        put?: never;
+        /**
+         * POST_api_sites
+         * @description POST_api_sites
+         */
+        post: operations["POST_api_sites"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sites/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_sites_id
+         * @description GET_api_sites_id
+         */
+        get: operations["GET_api_sites_id"];
+        put?: never;
+        /**
+         * POST_api_sites_id
+         * @description POST_api_sites_id
+         */
+        post: operations["POST_api_sites_id"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sites/bulk-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_sites_bulk_status
+         * @description POST_api_sites_bulk_status
+         */
+        post: operations["POST_api_sites_bulk_status"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sites/open-now": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_sites_open_now
+         * @description GET_api_sites_open_now
+         */
+        get: operations["GET_api_sites_open_now"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -357,6 +377,50 @@ export interface paths {
          * @description PUT_api_settings_key
          */
         put: operations["PUT_api_settings_key"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/map/basemaps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_map_basemaps
+         * @description GET_api_map_basemaps
+         */
+        get: operations["GET_api_map_basemaps"];
+        /**
+         * PUT_api_map_basemaps
+         * @description PUT_api_map_basemaps
+         */
+        put: operations["PUT_api_map_basemaps"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/map/basemaps/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_map_basemaps_settings
+         * @description GET_api_map_basemaps_settings
+         */
+        get: operations["GET_api_map_basemaps_settings"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -616,7 +680,11 @@ export interface paths {
          * @description GET_api_hierarchy
          */
         get: operations["GET_api_hierarchy"];
-        put?: never;
+        /**
+         * PUT_api_hierarchy
+         * @description PUT_api_hierarchy
+         */
+        put: operations["PUT_api_hierarchy"];
         /**
          * POST_api_hierarchy
          * @description POST_api_hierarchy
@@ -686,6 +754,278 @@ export interface paths {
          * @description POST_api_hierarchy_nodes_id_move
          */
         post: operations["POST_api_hierarchy_nodes_id_move"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/quota": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_reports_quota
+         * @description GET_api_reports_quota
+         */
+        get: operations["GET_api_reports_quota"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/basemaps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_reports_basemaps
+         * @description GET_api_reports_basemaps
+         */
+        get: operations["GET_api_reports_basemaps"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_reports_types
+         * @description GET_api_reports_types
+         */
+        get: operations["GET_api_reports_types"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_reports
+         * @description GET_api_reports
+         */
+        get: operations["GET_api_reports"];
+        put?: never;
+        /**
+         * POST_api_reports
+         * @description POST_api_reports
+         */
+        post: operations["POST_api_reports"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_reports_id
+         * @description GET_api_reports_id
+         */
+        get: operations["GET_api_reports_id"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_reports_id_cancel
+         * @description POST_api_reports_id_cancel
+         */
+        post: operations["POST_api_reports_id_cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/{id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_reports_id_retry
+         * @description POST_api_reports_id_retry
+         */
+        post: operations["POST_api_reports_id_retry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/{id}/artifacts/{artifactId}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_reports_id_artifacts_artifactId_download
+         * @description GET_api_reports_id_artifacts_artifactId_download
+         */
+        get: operations["GET_api_reports_id_artifacts_artifactId_download"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/overlays": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_overlays
+         * @description GET_api_overlays
+         */
+        get: operations["GET_api_overlays"];
+        put?: never;
+        /**
+         * POST_api_overlays
+         * @description POST_api_overlays
+         */
+        post: operations["POST_api_overlays"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/overlays/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_overlays_id
+         * @description POST_api_overlays_id
+         */
+        post: operations["POST_api_overlays_id"];
+        /**
+         * DELETE_api_overlays_id
+         * @description DELETE_api_overlays_id
+         */
+        delete: operations["DELETE_api_overlays_id"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/overlays/{id}/features": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * PUT_api_overlays_id_features
+         * @description PUT_api_overlays_id_features
+         */
+        put: operations["PUT_api_overlays_id_features"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/overlays/{id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST_api_overlays_id_restore
+         * @description POST_api_overlays_id_restore
+         */
+        post: operations["POST_api_overlays_id_restore"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tiles/overlays/{id}/{z}/{x}/{y}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET_api_tiles_overlays_id_z_x_y
+         * @description GET_api_tiles_overlays_id_z_x_y
+         */
+        get: operations["GET_api_tiles_overlays_id_z_x_y"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1558,6 +1898,26 @@ export interface paths {
          * @description POST_api_webhooks_id_ping
          */
         post: operations["POST_api_webhooks_id_ping"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/files/{id}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * PUT_api_files_id_content
+         * @description PUT_api_files_id_content
+         */
+        put: operations["PUT_api_files_id_content"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4734,7 +5094,7 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    limit?: number | string;
+                    limit?: number;
                 };
                 header?: never;
                 path?: never;
@@ -4901,6 +5261,90 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/map/layers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DataLayerListResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tiles/{layer}/{z}/{x}/{y}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    under?: string;
+                };
+                header?: never;
+                path: {
+                    layer: string;
+                    z: number;
+                    x: number;
+                    y: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/vnd.mapbox-vector-tile": string;
+                    };
+                };
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/healthz": {
         parameters: {
             query?: never;
@@ -4942,6 +5386,11 @@ export interface components {
     schemas: {
         AbandonPatrolRequest: {
             reason: string;
+        };
+        AcceptedResponse: {
+            /** Format: uuid */
+            id: string;
+            state: components["schemas"]["ReportJobState"];
         };
         AcknowledgeBulletinRequest: {
             /** Format: uuid */
@@ -5019,11 +5468,11 @@ export interface components {
         AlertListResponse: {
             items: components["schemas"]["AlertView"][];
             /** Format: int32 */
-            total: number | string;
+            total: number;
             /** Format: int32 */
-            nextOffset: null | number | string;
+            nextOffset: null | number;
             /** Format: int32 */
-            unread: number | string;
+            unread: number;
         };
         AlertMarkedRead: {
             /** Format: uuid */
@@ -5035,11 +5484,11 @@ export interface components {
         AlertSeverity: "Low" | "Medium" | "High" | "Critical";
         AlertSummary: {
             /** Format: int32 */
-            unread: number | string;
+            unread: number;
             /** Format: int32 */
-            activeBulletins: number | string;
+            activeBulletins: number;
             /** Format: int32 */
-            unacknowledgedBulletins: number | string;
+            unacknowledgedBulletins: number;
         };
         AlertView: {
             /** Format: uuid */
@@ -5079,6 +5528,18 @@ export interface components {
             id: string;
             secret: string;
             prefix: string;
+        };
+        ArtifactResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            itemId: null | string;
+            name: string;
+            contentType: string;
+            /** Format: int64 */
+            bytes: number;
+            /** Format: uuid */
+            fileId: null | string;
         };
         AssignRoleRequest: {
             /** Format: uuid */
@@ -5134,7 +5595,43 @@ export interface components {
             method?: null | string;
             path?: null | string;
             /** Format: int32 */
-            statusCode?: null | number | string;
+            statusCode?: null | number;
+        };
+        Basemap: {
+            id: string;
+            name: string;
+            urlTemplate: string;
+            attribution: string;
+            /** Format: int32 */
+            maxZoom: number;
+        };
+        BasemapInput: {
+            id: string;
+            name: string;
+            urlTemplate: string;
+            attribution: string;
+            /** Format: int32 */
+            maxZoom?: null | number;
+            key?: null | string;
+        };
+        BasemapListResponse: {
+            basemaps: components["schemas"]["Basemap"][];
+        };
+        BasemapResponse: {
+            id: string;
+            attribution: string;
+        };
+        BasemapSetting: {
+            id: string;
+            name: string;
+            urlTemplate: string;
+            attribution: string;
+            /** Format: int32 */
+            maxZoom: number;
+            hasKey: boolean;
+        };
+        BasemapSettingsResponse: {
+            basemaps: components["schemas"]["BasemapSetting"][];
         };
         BillingLinkResponse: {
             url: string;
@@ -5152,6 +5649,16 @@ export interface components {
         BounceReport: {
             email: string;
             reason: null | string;
+        };
+        BulkSiteStatusRequest: {
+            ids: string[];
+            status: components["schemas"]["SiteStatus"];
+        };
+        BulkSiteStatusResponse: {
+            /** Format: int32 */
+            updated: number;
+            /** Format: int32 */
+            skipped: number;
         };
         BulletinAcknowledged: {
             /** Format: uuid */
@@ -5174,9 +5681,9 @@ export interface components {
         BulletinListResponse: {
             items: components["schemas"]["BulletinView"][];
             /** Format: int32 */
-            total: number | string;
+            total: number;
             /** Format: int32 */
-            nextOffset: null | number | string;
+            nextOffset: null | number;
         };
         BulletinMutated: {
             /** Format: uuid */
@@ -5212,7 +5719,7 @@ export interface components {
             active: boolean;
             acknowledged: boolean;
             /** Format: int32 */
-            acknowledgements: number | string;
+            acknowledgements: number;
         };
         CaseBriefResponse: {
             provider: string;
@@ -5261,7 +5768,7 @@ export interface components {
             notes: components["schemas"]["CaseNoteView"][];
             evidence: components["schemas"]["CaseEvidenceView"][];
             /** Format: int32 */
-            custodyEvents: number | string;
+            custodyEvents: number;
         };
         /** @enum {unknown} */
         CaseDisposition: "Unfounded" | "Resolved" | "ReferredToPolice" | "Prosecuted" | "Other" | null;
@@ -5281,7 +5788,7 @@ export interface components {
         CaseEvidenceDownload: {
             url: string;
             /** Format: int32 */
-            expiresInSeconds: number | string;
+            expiresInSeconds: number;
             fileName: string;
             contentType: string;
         };
@@ -5318,9 +5825,9 @@ export interface components {
         CaseListResponse: {
             items: components["schemas"]["CaseSummary"][];
             /** Format: int32 */
-            total: number | string;
+            total: number;
             /** Format: int32 */
-            nextOffset: null | number | string;
+            nextOffset: null | number;
         };
         /** @enum {unknown} */
         CaseMemberRole: "Lead" | "Investigator" | "Reviewer";
@@ -5382,9 +5889,9 @@ export interface components {
             leadId: null | string;
             lead: null | string;
             /** Format: int32 */
-            incidentCount: number | string;
+            incidentCount: number;
             /** Format: int32 */
-            openTasks: number | string;
+            openTasks: number;
             legalHold: boolean;
             /** Format: date-time */
             updatedAt: string;
@@ -5413,9 +5920,9 @@ export interface components {
         };
         CheckInRequest: {
             /** Format: double */
-            latitude: number | string;
+            latitude: number;
             /** Format: double */
-            longitude: number | string;
+            longitude: number;
             note?: null | string;
         };
         CheckItemRequest: {
@@ -5424,12 +5931,12 @@ export interface components {
             /** Format: uuid */
             siteId: string;
             /** Format: int32 */
-            itemIndex: number | string;
+            itemIndex: number;
             done: boolean;
         };
         ChecklistItemState: {
             /** Format: int32 */
-            index: number | string;
+            index: number;
             text: string;
             done: boolean;
             /** Format: date-time */
@@ -5468,9 +5975,9 @@ export interface components {
             code: string;
             label: string;
             /** Format: double */
-            latitude?: null | number | string;
+            latitude?: null | number;
             /** Format: double */
-            longitude?: null | number | string;
+            longitude?: null | number;
         };
         CloseCaseRequest: {
             disposition: components["schemas"]["CaseDisposition"];
@@ -5487,7 +5994,7 @@ export interface components {
         };
         CommitBatchResponse: {
             /** Format: int32 */
-            applied: number | string;
+            applied: number;
         };
         CompleteRequest: {
             summary?: null | string;
@@ -5507,7 +6014,7 @@ export interface components {
             /** Format: date-time */
             lastSyncedAt: null | string;
             /** Format: int32 */
-            syncIntervalHours: null | number | string;
+            syncIntervalHours: null | number;
         };
         ContactResponse: {
             /** Format: uuid */
@@ -5523,7 +6030,7 @@ export interface components {
             roleId: string;
             scopePath?: null | string;
             /** Format: int32 */
-            expiresInDays?: null | number | string;
+            expiresInDays?: null | number;
         };
         CreateAttributeDefinitionRequest: {
             key: string;
@@ -5537,7 +6044,7 @@ export interface components {
             url: string;
             apiKey: string;
             /** Format: int32 */
-            syncIntervalHours?: null | number | string;
+            syncIntervalHours?: null | number;
         };
         CreateEntityRequest: {
             kind: components["schemas"]["EntityKind"];
@@ -5554,7 +6061,9 @@ export interface components {
             name: string;
             contentType: string;
             /** Format: int64 */
-            sizeBytes: number | string;
+            sizeBytes: number;
+            /** Format: uuid */
+            siteId?: null | string;
         };
         CreateFileResponse: {
             /** Format: uuid */
@@ -5573,6 +6082,13 @@ export interface components {
         CreateOrgRequest: {
             name: string;
             slug: string;
+        };
+        CreateOverlayLayerRequest: {
+            name: string;
+            kind: string;
+            style?: unknown;
+            /** Format: uuid */
+            nodeId?: null | string;
         };
         CreatePatrolScheduleRequest: {
             rRule: string;
@@ -5600,7 +6116,7 @@ export interface components {
             endsAt?: null | string;
             rrule?: null | string;
             /** Format: double */
-            budgetAmount?: null | number | string;
+            budgetAmount?: null | number;
             currency?: null | string;
             /** Format: uuid */
             incidentId?: null | string;
@@ -5617,7 +6133,7 @@ export interface components {
             name: string;
             checkpoints: components["schemas"]["Checkpoint"][];
             /** Format: int32 */
-            expectedMinutes?: null | number | string;
+            expectedMinutes?: null | number;
         };
         CreateScheduleRequest: {
             name: string;
@@ -5644,9 +6160,9 @@ export interface components {
             postalCode?: null | string;
             countryCode?: null | string;
             /** Format: double */
-            latitude?: null | number | string;
+            latitude?: null | number;
             /** Format: double */
-            longitude?: null | number | string;
+            longitude?: null | number;
         };
         CreateTemplateRequest: {
             name: string;
@@ -5701,16 +6217,33 @@ export interface components {
             siteId: string;
             site: string;
             /** Format: int32 */
-            expected: number | string;
+            expected: number;
             /** Format: int32 */
-            completed: number | string;
+            completed: number;
             missed: components["schemas"]["ExpectedPatrol"][];
             patrols: components["schemas"]["PatrolView"][];
             incidents: components["schemas"]["IncidentLine"][];
         };
+        DataLayerDescriptor: {
+            name: string;
+            title: string;
+            description: string;
+            capability: string;
+            /** Format: int32 */
+            minPointZoom: number;
+            statuses: components["schemas"]["DataLayerStatusResponse"][];
+        };
+        DataLayerListResponse: {
+            layers: components["schemas"]["DataLayerDescriptor"][];
+        };
+        DataLayerStatusResponse: {
+            key: string;
+            label: string;
+            color: string;
+        };
         DeadLetterListResponse: {
             /** Format: int32 */
-            total: number | string;
+            total: number;
             items: components["schemas"]["DeadLetterResponse"][];
         };
         DeadLetterResponse: {
@@ -5727,7 +6260,12 @@ export interface components {
         DownloadFileResponse: {
             url: string;
             /** Format: int32 */
-            expiresInSeconds: number | string;
+            expiresInSeconds: number;
+        };
+        DownloadResponse: {
+            url: string;
+            /** Format: int32 */
+            expiresInSeconds: number;
         };
         EndPatrolRequest: {
             summary?: null | string;
@@ -5742,7 +6280,7 @@ export interface components {
             shape: string;
             policy: string;
             /** Format: int64 */
-            usage: null | number | string;
+            usage: null | number;
         };
         EntityChildRemoved: {
             /** Format: uuid */
@@ -5823,9 +6361,9 @@ export interface components {
         EntityListResponse: {
             items: components["schemas"]["EntitySummary"][];
             /** Format: int32 */
-            total: number | string;
+            total: number;
             /** Format: int32 */
-            nextOffset: null | number | string;
+            nextOffset: null | number;
         };
         EntityMutated: {
             /** Format: uuid */
@@ -5849,7 +6387,7 @@ export interface components {
             displayName: string;
             aliases: string[];
             /** Format: int32 */
-            linkCount: number | string;
+            linkCount: number;
             /** Format: date-time */
             expiresAt: string;
             legalHold: boolean;
@@ -5871,9 +6409,9 @@ export interface components {
         FileListResponse: {
             items: components["schemas"]["FileSummary"][];
             /** Format: int32 */
-            total: number | string;
+            total: null | number;
             /** Format: int32 */
-            nextOffset: null | number | string;
+            nextOffset: null | number;
         };
         FileSummary: {
             /** Format: uuid */
@@ -5887,6 +6425,10 @@ export interface components {
             hasPreview: boolean;
             /** Format: date-time */
             createdAt: string;
+            siteIds: string[];
+            origin: null | string;
+            /** Format: uuid */
+            originId: null | string;
         };
         GrantEntityAccessRequest: {
             /** Format: uuid */
@@ -5920,6 +6462,9 @@ export interface components {
             id: string;
             /** Format: uuid */
             rootNodeId: string;
+        };
+        HierarchyLevelsResponse: {
+            levels: string[];
         };
         HierarchyResponse: {
             /** Format: uuid */
@@ -5962,11 +6507,11 @@ export interface components {
             fileName: string;
             status: components["schemas"]["ImportStatus"];
             /** Format: int32 */
-            total: number | string;
+            total: number;
             /** Format: int32 */
-            valid: number | string;
+            valid: number;
             /** Format: int32 */
-            invalid: number | string;
+            invalid: number;
             /** Format: uuid */
             createdBy: string;
             creator: null | string;
@@ -5979,19 +6524,19 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** Format: int32 */
-            created: number | string;
+            created: number;
         };
         ImportCounts: {
             /** Format: int32 */
-            create: number | string;
+            create: number;
             /** Format: int32 */
-            update: number | string;
+            update: number;
             /** Format: int32 */
-            close: number | string;
+            close: number;
             /** Format: int32 */
-            unchanged: number | string;
+            unchanged: number;
             /** Format: int32 */
-            invalid: number | string;
+            invalid: number;
         };
         ImportQueued: {
             /** Format: uuid */
@@ -5999,7 +6544,7 @@ export interface components {
         };
         ImportRowView: {
             /** Format: int32 */
-            rowNumber: number | string;
+            rowNumber: number;
             siteRef: string;
             /** Format: uuid */
             siteId: null | string;
@@ -6009,7 +6554,7 @@ export interface components {
             occurredAt: null | string;
             title: string;
             /** Format: double */
-            lossAmount: null | number | string;
+            lossAmount: null | number;
             errors: string[];
             /** Format: uuid */
             incidentId: null | string;
@@ -6023,7 +6568,7 @@ export interface components {
             tags: string[];
             summary: string;
             /** Format: double */
-            confidence: number | string;
+            confidence: number;
         };
         IncidentAttachmentCreated: {
             /** Format: uuid */
@@ -6050,9 +6595,9 @@ export interface components {
         IncidentCount: {
             key: string;
             /** Format: int32 */
-            count: number | string;
+            count: number;
             /** Format: double */
-            loss: number | string;
+            loss: number;
         };
         IncidentCreated: {
             /** Format: uuid */
@@ -6084,9 +6629,9 @@ export interface components {
             reporter: null | string;
             reporterContact: null | string;
             /** Format: double */
-            lossAmount: null | number | string;
+            lossAmount: null | number;
             /** Format: double */
-            recoveredAmount: null | number | string;
+            recoveredAmount: null | number;
             currency: string;
             policeReportNumber: null | string;
             tags: string[];
@@ -6114,9 +6659,9 @@ export interface components {
         IncidentListResponse: {
             items: components["schemas"]["IncidentSummary"][];
             /** Format: int32 */
-            total: number | string;
+            total: number;
             /** Format: int32 */
-            nextOffset: null | number | string;
+            nextOffset: null | number;
         };
         IncidentMutated: {
             /** Format: uuid */
@@ -6154,11 +6699,11 @@ export interface components {
             /** Format: date */
             to: string;
             /** Format: int32 */
-            total: number | string;
+            total: number;
             /** Format: int32 */
-            open: number | string;
+            open: number;
             /** Format: double */
-            totalLoss: number | string;
+            totalLoss: number;
             byCategory: components["schemas"]["IncidentCount"][];
             bySeverity: components["schemas"]["IncidentCount"][];
             bySite: components["schemas"]["IncidentCount"][];
@@ -6182,7 +6727,7 @@ export interface components {
             /** Format: date */
             businessDate: string;
             /** Format: double */
-            lossAmount: null | number | string;
+            lossAmount: null | number;
             legalHold: boolean;
             /** Format: date-time */
             deletedAt: null | string;
@@ -6233,6 +6778,35 @@ export interface components {
         IssueContactLinkRequest: {
             email: string;
         };
+        ItemResponse: {
+            /** Format: uuid */
+            id: string;
+            state: components["schemas"]["ReportItemState"];
+            errorCode: null | string;
+            /** Format: date-time */
+            generatedAt: null | string;
+            /** Format: int32 */
+            attempt: number;
+            siteIds: string[];
+            warnings: string[];
+        };
+        JobResponse: {
+            /** Format: uuid */
+            id: string;
+            reportType: string;
+            mode: components["schemas"]["ReportMode"];
+            selection: components["schemas"]["ReportSelection"];
+            state: components["schemas"]["ReportJobState"];
+            errorCode: null | string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            expiresAt: null | string;
+            items: components["schemas"]["ItemResponse"][];
+            artifacts: components["schemas"]["ArtifactResponse"][];
+            sites: components["schemas"]["SiteRef"][];
+            canModify: boolean;
+        };
         JsonElement: unknown;
         LinkIncidentRequest: {
             /** Format: uuid */
@@ -6262,9 +6836,9 @@ export interface components {
             postalCode: null | string;
             countryCode: null | string;
             /** Format: double */
-            latitude: null | number | string;
+            latitude: null | number;
             /** Format: double */
-            longitude: null | number | string;
+            longitude: null | number;
             publicUrl: string;
             hours: components["schemas"]["ListingHours"][];
             attributes: components["schemas"]["JsonElement"];
@@ -6274,6 +6848,7 @@ export interface components {
             generatedAt: string;
             organization: string;
             listings: components["schemas"]["ListingRecord"][];
+            next: null | string;
         };
         MemberInvited: {
             /** Format: uuid */
@@ -6283,9 +6858,9 @@ export interface components {
         MemberListResponse: {
             items: components["schemas"]["MemberSummary"][];
             /** Format: int32 */
-            total: number | string;
+            total: number;
             /** Format: int32 */
-            nextOffset: null | number | string;
+            nextOffset: null | number;
         };
         MemberRemoved: {
             /** Format: uuid */
@@ -6344,7 +6919,7 @@ export interface components {
             parentId: null | string;
             name: string;
             /** Format: int32 */
-            depth: number | string;
+            depth: number;
             path: string;
         };
         NotificationPreferenceView: {
@@ -6381,7 +6956,7 @@ export interface components {
             name: string;
             ok: boolean;
             /** Format: int64 */
-            latencyMs: number | string;
+            latencyMs: number;
             error: null | string;
         };
         OperatorHealthResponse: {
@@ -6390,11 +6965,11 @@ export interface components {
         OperatorOverviewResponse: {
             orgsByStatus: components["schemas"]["OrgStatusCountResponse"][];
             /** Format: int32 */
-            closuresPending: number | string;
+            closuresPending: number;
             /** Format: int32 */
-            users: number | string;
+            users: number;
             /** Format: int32 */
-            deadLetters: number | string;
+            deadLetters: number;
         };
         OperatorSetEntitlementRequest: {
             value: string;
@@ -6426,7 +7001,46 @@ export interface components {
         OrgStatusCountResponse: {
             status: string;
             /** Format: int32 */
-            count: number | string;
+            count: number;
+        };
+        OverlayFeaturesReplaced: {
+            /** Format: uuid */
+            layerId: string;
+            /** Format: int32 */
+            count: number;
+            /** Format: int32 */
+            version: number;
+        };
+        OverlayFeaturesUpload: {
+            geoJson: components["schemas"]["JsonElement"];
+        };
+        OverlayLayerListResponse: {
+            layers: components["schemas"]["OverlayLayerSummary"][];
+        };
+        OverlayLayerState: {
+            /** Format: uuid */
+            id: string;
+            /** Format: int32 */
+            version: number;
+            /** Format: date-time */
+            deletedAt: null | string;
+        };
+        OverlayLayerSummary: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            kind: string;
+            style: null | components["schemas"]["JsonElement"];
+            /** Format: uuid */
+            nodeId: string;
+            /** Format: int32 */
+            featureCount: number;
+            /** Format: int32 */
+            version: number;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            deletedAt: null | string;
         };
         PatrolDayResponse: {
             /** Format: date */
@@ -6472,16 +7086,16 @@ export interface components {
             endedAt: null | string;
             summary: null | string;
             /** Format: int32 */
-            checkpointsTotal: number | string;
+            checkpointsTotal: number;
             /** Format: int32 */
-            checkpointsScanned: number | string;
+            checkpointsScanned: number;
             scans: components["schemas"]["ScanView"][];
         };
         PlanSummary: {
             id: string;
             name: string;
             /** Format: double */
-            monthlyPriceUsd: number | string;
+            monthlyPriceUsd: number;
             entitlements: {
                 [key: string]: string;
             };
@@ -6542,6 +7156,10 @@ export interface components {
             closures: string[];
             attributes: components["schemas"]["PublicSiteAttribute"][];
         };
+        PublicSiteListResponse: {
+            items: components["schemas"]["PublicSiteSummary"][];
+            next: null | string;
+        };
         PublicSiteSummary: {
             /** Format: uuid */
             id: string;
@@ -6549,13 +7167,13 @@ export interface components {
             city: null | string;
             timeZone: string;
             /** Format: double */
-            lat: null | number | string;
+            lat: null | number;
             /** Format: double */
-            lng: null | number | string;
+            lng: null | number;
             status: string;
             openNow: boolean;
             /** Format: double */
-            distanceKm: null | number | string;
+            distanceKm: null | number;
         };
         PublicUrlResponse: {
             url: string;
@@ -6575,6 +7193,9 @@ export interface components {
         PublishVendorProfileRequest: {
             published: boolean;
         };
+        PutBasemapsRequest: {
+            basemaps: components["schemas"]["BasemapInput"][];
+        };
         PutSettingRequest: {
             value: string;
         };
@@ -6592,7 +7213,7 @@ export interface components {
             vendorOrgId: string;
             vendorName: null | string;
             /** Format: double */
-            amount: number | string;
+            amount: number;
             currency: string;
             notes: null | string;
             /** Format: date-time */
@@ -6631,13 +7252,21 @@ export interface components {
             narrative?: null | string;
             locationDetail?: null | string;
             /** Format: double */
-            lossAmount?: null | number | string;
+            lossAmount?: null | number;
             /** Format: double */
-            recoveredAmount?: null | number | string;
+            recoveredAmount?: null | number;
             currency?: null | string;
             policeReportNumber?: null | string;
             tags?: null | string[];
         };
+        /** @enum {unknown} */
+        ReportItemState: "Queued" | "Running" | "Succeeded" | "Failed" | "Canceled";
+        /** @enum {unknown} */
+        ReportJobState: "Queued" | "Running" | "Completed" | "CompletedWithErrors" | "Failed" | "Canceled" | "Expired" | "Purging";
+        /** @enum {unknown} */
+        ReportMode: "single" | "bulk" | "aggregate";
+        /** @enum {unknown} */
+        ReportSelection: "selected" | "accessible" | "organization";
         RequestCreated: {
             /** Format: uuid */
             id: string;
@@ -6659,9 +7288,9 @@ export interface components {
             siteName: string;
             siteTimeZone: string;
             /** Format: double */
-            siteLatitude: null | number | string;
+            siteLatitude: null | number;
             /** Format: double */
-            siteLongitude: null | number | string;
+            siteLongitude: null | number;
             title: string;
             details: string;
             spec: {
@@ -6673,7 +7302,7 @@ export interface components {
             endsAt: null | string;
             rrule: null | string;
             /** Format: double */
-            budgetAmount: null | number | string;
+            budgetAmount: null | number;
             currency: string;
             /** Format: uuid */
             incidentId: null | string;
@@ -6690,7 +7319,7 @@ export interface components {
             /** Format: date-time */
             escalatedAt: null | string;
             /** Format: int32 */
-            escalationCount: number | string;
+            escalationCount: number;
             /** Format: date-time */
             acceptedAt: null | string;
             declineReason: null | string;
@@ -6714,7 +7343,7 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** Format: double */
-            distanceFromSiteMeters: null | number | string;
+            distanceFromSiteMeters: null | number;
             withinGeofence: null | boolean;
         };
         /** @enum {unknown} */
@@ -6729,11 +7358,11 @@ export interface components {
             kind: components["schemas"]["RequestEventKind"];
             body: null | string;
             /** Format: double */
-            latitude: null | number | string;
+            latitude: null | number;
             /** Format: double */
-            longitude: null | number | string;
+            longitude: null | number;
             /** Format: double */
-            distanceFromSiteMeters: null | number | string;
+            distanceFromSiteMeters: null | number;
             withinGeofence: null | boolean;
             /** Format: date-time */
             at: string;
@@ -6741,9 +7370,9 @@ export interface components {
         RequestListResponse: {
             items: components["schemas"]["RequestSummary"][];
             /** Format: int32 */
-            total: number | string;
+            total: number;
             /** Format: int32 */
-            nextOffset: null | number | string;
+            nextOffset: null | number;
         };
         /** @enum {unknown} */
         RequestMode: "Direct" | "Broadcast";
@@ -6776,7 +7405,7 @@ export interface components {
             /** Format: date-time */
             endsAt: null | string;
             /** Format: double */
-            budgetAmount: null | number | string;
+            budgetAmount: null | number;
             currency: string;
             /** Format: date-time */
             updatedAt: string;
@@ -6789,7 +7418,7 @@ export interface components {
             /** Format: date-time */
             queuedAt: string;
             /** Format: int32 */
-            pending: number | string;
+            pending: number;
         };
         RoleCreatedResponse: {
             /** Format: uuid */
@@ -6801,11 +7430,11 @@ export interface components {
             name: string;
             grants: components["schemas"]["GrantSpec"][];
             /** Format: int32 */
-            assignedCount: number | string;
+            assignedCount: number;
         };
         RotateApiKeyRequest: {
             /** Format: int32 */
-            overlapHours?: null | number | string;
+            overlapHours?: null | number;
         };
         RotatedApiKeyResponse: {
             /** Format: uuid */
@@ -6844,7 +7473,7 @@ export interface components {
             name: string;
             checkpoints: components["schemas"]["Checkpoint"][];
             /** Format: int32 */
-            expectedMinutes: number | string;
+            expectedMinutes: number;
             archived: boolean;
             schedules: components["schemas"]["ScheduleView"][];
         };
@@ -6852,19 +7481,19 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** Format: double */
-            distanceMeters: null | number | string;
+            distanceMeters: null | number;
             withinGeofence: null | boolean;
             /** Format: int32 */
-            scanned: number | string;
+            scanned: number;
             /** Format: int32 */
-            total: number | string;
+            total: number;
         };
         ScanRequest: {
             code: string;
             /** Format: double */
-            latitude?: null | number | string;
+            latitude?: null | number;
             /** Format: double */
-            longitude?: null | number | string;
+            longitude?: null | number;
             note?: null | string;
         };
         ScanView: {
@@ -6875,7 +7504,7 @@ export interface components {
             /** Format: date-time */
             scannedAt: string;
             /** Format: double */
-            distanceMeters: null | number | string;
+            distanceMeters: null | number;
             withinGeofence: null | boolean;
             note: null | string;
         };
@@ -6978,9 +7607,9 @@ export interface components {
         SharedBulletinListResponse: {
             items: components["schemas"]["SharedBulletinView"][];
             /** Format: int32 */
-            total: number | string;
+            total: number;
             /** Format: int32 */
-            nextOffset: null | number | string;
+            nextOffset: null | number;
         };
         SharedBulletinMutated: {
             /** Format: uuid */
@@ -7050,9 +7679,9 @@ export interface components {
             membership: components["schemas"]["MembershipStatus"];
             status: components["schemas"]["ShareStatus"];
             /** Format: int32 */
-            activeMembers: number | string;
+            activeMembers: number;
             /** Format: int32 */
-            activeBulletins: number | string;
+            activeBulletins: number;
             /** Format: date-time */
             createdAt: string;
         };
@@ -7062,11 +7691,19 @@ export interface components {
         SiteListResponse: {
             items: components["schemas"]["SiteResponse"][];
             /** Format: int32 */
-            total: number | string;
+            total: number;
             /** Format: int32 */
-            openCount: number | string;
+            openCount: number;
+            next: null | string;
             /** Format: int32 */
-            nextOffset: null | number | string;
+            withoutCoordinates?: null | number;
+            /** @default false */
+            totalIsLowerBound: boolean;
+        };
+        SiteRef: {
+            /** Format: uuid */
+            id: string;
+            name: string;
         };
         SiteResponse: {
             /** Format: uuid */
@@ -7078,15 +7715,15 @@ export interface components {
             status: string;
             path: string;
             /** Format: uint32 */
-            version: number | string;
+            version: number;
             addressLine1: null | string;
             city: null | string;
             postalCode: null | string;
             countryCode: null | string;
             /** Format: double */
-            latitude: null | number | string;
+            latitude: null | number;
             /** Format: double */
-            longitude: null | number | string;
+            longitude: null | number;
             attributes: components["schemas"]["JsonElement"];
         };
         /** @enum {unknown} */
@@ -7103,7 +7740,7 @@ export interface components {
             /** Format: date-time */
             queuedAt: string;
             /** Format: int32 */
-            overdue: number | string;
+            overdue: number;
         };
         SsoPortalLinkResponse: {
             url: string;
@@ -7143,12 +7780,32 @@ export interface components {
             /** Format: time */
             scheduledStartLocal?: null | string;
         };
+        Status: {
+            enabled: boolean;
+            /** Format: int64 */
+            limit: number;
+            /** Format: int64 */
+            consumed: number;
+            /** Format: int64 */
+            reserved: number;
+            /** Format: int64 */
+            remaining: number;
+            /** Format: date */
+            periodMonth: string;
+        };
         SubmitQuoteRequest: {
             /** Format: double */
-            amount: number | string;
+            amount: number;
             notes?: null | string;
             /** Format: date-time */
             validUntil?: null | string;
+        };
+        SubmitRequest: {
+            reportType: string;
+            mode: components["schemas"]["ReportMode"];
+            selection: components["schemas"]["ReportSelection"];
+            siteIds: string[];
+            options: components["schemas"]["JsonElement"];
         };
         SubmitTipRequest: {
             /** Format: uuid */
@@ -7175,6 +7832,13 @@ export interface components {
         TipReceipt: {
             receipt: string;
         };
+        TypeResponse: {
+            id: string;
+            name: string;
+            /** Format: int32 */
+            version: number;
+            aggregate: boolean;
+        };
         UpdateCaseRequest: {
             title: string;
             summary: null | string;
@@ -7187,7 +7851,7 @@ export interface components {
             url: string;
             apiKey?: null | string;
             /** Format: int32 */
-            syncIntervalHours?: null | number | string;
+            syncIntervalHours?: null | number;
         };
         UpdateEntityRequest: {
             displayName: string;
@@ -7199,6 +7863,9 @@ export interface components {
             /** Format: date-time */
             expiresAt: string;
         };
+        UpdateHierarchyLevelsRequest: {
+            levels: string[];
+        };
         UpdateIncidentRequest: {
             category: components["schemas"]["IncidentCategory"];
             severity: components["schemas"]["IncidentSeverity"];
@@ -7208,9 +7875,9 @@ export interface components {
             narrative: null | string;
             locationDetail: null | string;
             /** Format: double */
-            lossAmount: null | number | string;
+            lossAmount: null | number;
             /** Format: double */
-            recoveredAmount: null | number | string;
+            recoveredAmount: null | number;
             currency: null | string;
             policeReportNumber: null | string;
             tags: null | string[];
@@ -7221,6 +7888,10 @@ export interface components {
             smsMarketplace: boolean;
             smsNetwork: boolean;
             browserAlerts: boolean;
+        };
+        UpdateOverlayLayerRequest: {
+            name?: null | string;
+            style?: unknown;
         };
         UpdateProfileRequest: {
             name: string;
@@ -7238,7 +7909,7 @@ export interface components {
             endsAt: null | string;
             rrule: null | string;
             /** Format: double */
-            budgetAmount: null | number | string;
+            budgetAmount: null | number;
             currency: null | string;
         };
         UpdateRoleRequest: {
@@ -7249,7 +7920,7 @@ export interface components {
             name: string;
             checkpoints: components["schemas"]["Checkpoint"][];
             /** Format: int32 */
-            expectedMinutes: null | number | string;
+            expectedMinutes: null | number;
             archived: boolean;
         };
         UpdateSiteRequest: {
@@ -7261,12 +7932,12 @@ export interface components {
             postalCode?: null | string;
             countryCode?: null | string;
             /** Format: double */
-            latitude?: null | number | string;
+            latitude?: null | number;
             /** Format: double */
-            longitude?: null | number | string;
+            longitude?: null | number;
             attributes?: null | Record<string, never>;
             /** Format: uint32 */
-            version?: null | number | string;
+            version?: null | number;
         };
         UploadTicket: {
             url: string;
@@ -7283,20 +7954,20 @@ export interface components {
             categories: components["schemas"]["ServiceCategory"][];
             serviceAreas: null | string[];
             /** Format: double */
-            latitude: null | number | string;
+            latitude: null | number;
             /** Format: double */
-            longitude: null | number | string;
+            longitude: null | number;
             /** Format: double */
-            serviceRadiusKm: null | number | string;
+            serviceRadiusKm: null | number;
             contactEmail: null | string;
             contactPhone: null | string;
         };
         VendorListResponse: {
             items: components["schemas"]["VendorSummary"][];
             /** Format: int32 */
-            total: number | string;
+            total: number;
             /** Format: int32 */
-            nextOffset: null | number | string;
+            nextOffset: null | number;
         };
         VendorProfileView: {
             /** Format: uuid */
@@ -7306,11 +7977,11 @@ export interface components {
             categories: string[];
             serviceAreas: string[];
             /** Format: double */
-            latitude: null | number | string;
+            latitude: null | number;
             /** Format: double */
-            longitude: null | number | string;
+            longitude: null | number;
             /** Format: double */
-            serviceRadiusKm: null | number | string;
+            serviceRadiusKm: null | number;
             contactEmail: null | string;
             contactPhone: null | string;
             published: boolean;
@@ -7326,18 +7997,18 @@ export interface components {
             categories: string[];
             serviceAreas: string[];
             /** Format: int32 */
-            validCredentials: number | string;
+            validCredentials: number;
             /** Format: int32 */
-            expiredCredentials: number | string;
+            expiredCredentials: number;
             preferred: boolean;
             blocked: boolean;
         };
         WebhookDeliveryResponse: {
             eventName: string;
             /** Format: int32 */
-            attempt: number | string;
+            attempt: number;
             /** Format: int32 */
-            statusCode: null | number | string;
+            statusCode: null | number;
             ok: boolean;
             /** Format: date-time */
             occurredAt: string;
@@ -7346,7 +8017,7 @@ export interface components {
             eventName: string;
             ok: boolean;
             /** Format: int32 */
-            statusCode: null | number | string;
+            statusCode: null | number;
             /** Format: date-time */
             occurredAt: string;
         };
@@ -7490,13 +8161,11 @@ export interface operations {
             };
         };
     };
-    GET_api_sites: {
+    GET_api_listings_feed: {
         parameters: {
             query?: {
-                under?: string;
-                q?: string;
-                limit?: number | string;
-                offset?: number | string;
+                limit?: number;
+                after?: string;
             };
             header?: never;
             path?: never;
@@ -7510,7 +8179,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SiteListResponse"];
+                    "application/json": components["schemas"]["ListingsFeedResponse"];
                 };
             };
             /** @description Not Found */
@@ -7524,40 +8193,7 @@ export interface operations {
             };
         };
     };
-    POST_api_sites: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateSiteRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SiteResponse"];
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    GET_api_sites_open_now: {
+    GET_public_org: {
         parameters: {
             query?: never;
             header?: never;
@@ -7572,7 +8208,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SiteResponse"][];
+                    "application/json": components["schemas"]["PublicOrgResponse"];
                 };
             };
             /** @description Not Found */
@@ -7586,7 +8222,40 @@ export interface operations {
             };
         };
     };
-    GET_api_sites_id: {
+    GET_public_sites: {
+        parameters: {
+            query?: {
+                near?: string;
+                limit?: number;
+                after?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicSiteListResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_public_sites_id: {
         parameters: {
             query?: never;
             header?: never;
@@ -7603,42 +8272,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SiteResponse"];
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    POST_api_sites_id: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateSiteRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SiteResponse"];
+                    "application/json": components["schemas"]["PublicSiteDetailResponse"];
                 };
             };
             /** @description Not Found */
@@ -7762,7 +8396,7 @@ export interface operations {
     GET_api_sites_id_windows: {
         parameters: {
             query?: {
-                days?: number | string;
+                days?: number;
             };
             header?: never;
             path: {
@@ -7779,126 +8413,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SiteWindowResponse"][];
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    GET_api_listings_feed: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ListingsFeedResponse"];
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    GET_public_org: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PublicOrgResponse"];
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    GET_public_sites: {
-        parameters: {
-            query?: {
-                near?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PublicSiteSummary"][];
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    GET_public_sites_id: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PublicSiteDetailResponse"];
                 };
             };
             /** @description Not Found */
@@ -8014,6 +8528,204 @@ export interface operations {
             };
         };
     };
+    GET_api_sites: {
+        parameters: {
+            query?: {
+                under?: string;
+                q?: string;
+                status?: string;
+                bbox?: string;
+                zoom?: number;
+                limit?: number;
+                after?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteListResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_sites: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSiteRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_sites_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_sites_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSiteRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_sites_bulk_status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkSiteStatusRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkSiteStatusResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_sites_open_now: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteResponse"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     GET_api_settings: {
         parameters: {
             query?: never;
@@ -8096,6 +8808,97 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SettingResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_map_basemaps: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BasemapListResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    PUT_api_map_basemaps: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PutBasemapsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BasemapSettingsResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_map_basemaps_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BasemapSettingsResponse"];
                 };
             };
             /** @description Not Found */
@@ -8565,6 +9368,39 @@ export interface operations {
             };
         };
     };
+    PUT_api_hierarchy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateHierarchyLevelsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HierarchyLevelsResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     POST_api_hierarchy: {
         parameters: {
             query?: never;
@@ -8759,6 +9595,519 @@ export interface operations {
             };
         };
     };
+    GET_api_reports_quota: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_reports_basemaps: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BasemapResponse"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_reports_types: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TypeResponse"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_reports: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobResponse"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_reports: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcceptedResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_reports_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_reports_id_cancel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcceptedResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_reports_id_retry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcceptedResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_reports_id_artifacts_artifactId_download: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                artifactId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DownloadResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_overlays: {
+        parameters: {
+            query?: {
+                deleted?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OverlayLayerListResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_overlays: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateOverlayLayerRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OverlayLayerState"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_overlays_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateOverlayLayerRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OverlayLayerState"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    DELETE_api_overlays_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OverlayLayerState"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    PUT_api_overlays_id_features: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OverlayFeaturesUpload"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OverlayFeaturesReplaced"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    POST_api_overlays_id_restore: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OverlayLayerState"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_tiles_overlays_id_z_x_y: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                z: number;
+                x: number;
+                y: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.mapbox-vector-tile": string;
+                };
+            };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     POST_notifications_bounce: {
         parameters: {
             query?: never;
@@ -8881,8 +10230,8 @@ export interface operations {
         parameters: {
             query?: {
                 q?: string;
-                limit?: number | string;
-                offset?: number | string;
+                limit?: number;
+                offset?: number;
             };
             header?: never;
             path?: never;
@@ -10176,7 +11525,7 @@ export interface operations {
     GET_api_audit_kind: {
         parameters: {
             query?: {
-                limit?: number | string;
+                limit?: number;
             };
             header?: never;
             path: {
@@ -10519,13 +11868,54 @@ export interface operations {
             };
         };
     };
+    PUT_api_files_id_content: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IResult"];
+                };
+            };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     GET_api_files: {
         parameters: {
             query?: {
                 q?: string;
-                limit?: number | string;
-                offset?: number | string;
+                limit?: number;
+                offset?: number;
                 trash?: boolean;
+                siteId?: string;
             };
             header?: never;
             path?: never;
@@ -11479,8 +12869,8 @@ export interface operations {
                 to?: string;
                 q?: string;
                 trash?: boolean;
-                limit?: number | string;
-                offset?: number | string;
+                limit?: number;
+                offset?: number;
             };
             header?: never;
             path?: never;
@@ -12033,8 +13423,8 @@ export interface operations {
                 incidentId?: string;
                 q?: string;
                 trash?: boolean;
-                limit?: number | string;
-                offset?: number | string;
+                limit?: number;
+                offset?: number;
             };
             header?: never;
             path?: never;
@@ -12497,8 +13887,8 @@ export interface operations {
                 mine?: boolean;
                 q?: string;
                 trash?: boolean;
-                limit?: number | string;
-                offset?: number | string;
+                limit?: number;
+                offset?: number;
             };
             header?: never;
             path?: never;
@@ -13327,8 +14717,8 @@ export interface operations {
                 area?: string;
                 q?: string;
                 preferredOnly?: boolean;
-                limit?: number | string;
-                offset?: number | string;
+                limit?: number;
+                offset?: number;
             };
             header?: never;
             path?: never;
@@ -13647,8 +15037,8 @@ export interface operations {
                 siteId?: string;
                 incidentId?: string;
                 caseId?: string;
-                limit?: number | string;
-                offset?: number | string;
+                limit?: number;
+                offset?: number;
             };
             header?: never;
             path?: never;
@@ -14007,8 +15397,8 @@ export interface operations {
         parameters: {
             query?: {
                 status?: components["schemas"]["RequestStatus"];
-                limit?: number | string;
-                offset?: number | string;
+                limit?: number;
+                offset?: number;
             };
             header?: never;
             path?: never;
@@ -14379,8 +15769,8 @@ export interface operations {
             query?: {
                 includeInactive?: boolean;
                 kind?: components["schemas"]["BulletinKind"];
-                limit?: number | string;
-                offset?: number | string;
+                limit?: number;
+                offset?: number;
             };
             header?: never;
             path?: never;
@@ -14542,8 +15932,8 @@ export interface operations {
         parameters: {
             query?: {
                 unreadOnly?: boolean;
-                limit?: number | string;
-                offset?: number | string;
+                limit?: number;
+                offset?: number;
             };
             header?: never;
             path?: never;
@@ -14890,8 +16280,8 @@ export interface operations {
                 shareId?: string;
                 includeInactive?: boolean;
                 q?: string;
-                limit?: number | string;
-                offset?: number | string;
+                limit?: number;
+                offset?: number;
             };
             header?: never;
             path?: never;

@@ -10,7 +10,7 @@ public class TenantFilterBindingTests(ApiFixture fixture) : IClassFixture<ApiFix
     public void Cached_model_binds_the_current_tenant_without_relying_on_RLS()
     {
         var options = new DbContextOptionsBuilder<TenancyDbContext>()
-            .UseNpgsql(fixture.AppConnectionString)
+            .UseNpgsql(fixture.AppConnectionString, options => options.UseNetTopologySuite())
             .Options;
         var tenantA = new TenantContext();
         tenantA.Set(fixture.OrgA, RegionId.Default);

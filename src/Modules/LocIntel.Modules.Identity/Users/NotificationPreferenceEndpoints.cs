@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using LocIntel.Contracts;
 using LocIntel.Modules.Identity.Data;
 using LocIntel.Platform.Kernel;
 using Microsoft.AspNetCore.Http;
@@ -31,7 +32,10 @@ public static class NotificationPreferenceEndpoints
 {
     private static readonly Regex E164 = new(@"^\+[1-9]\d{6,14}$", RegexOptions.Compiled);
 
-    [Transactional(typeof(IdentityDbContext))]
+    [Transactional(
+        typeof(IdentityDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/me/notifications")]
     [ProducesResponseType(typeof(NotificationPreferenceView), StatusCodes.Status200OK)]
     public static async Task<IResult> Get(
@@ -65,9 +69,9 @@ public static class NotificationPreferenceEndpoints
             return Results.Unauthorized();
         var phone = string.IsNullOrWhiteSpace(request.Phone) ? null : request.Phone.Trim();
         if (phone is not null && !E164.IsMatch(phone))
-            return Results.BadRequest(new { error = "phone must be E.164, like +14155551234" });
+            return ApiErrors.BadRequest("phone must be E.164, like +14155551234");
         if (phone is null && (request.SmsAlerts || request.SmsMarketplace || request.SmsNetwork))
-            return Results.BadRequest(new { error = "add a phone number to receive SMS" });
+            return ApiErrors.BadRequest("add a phone number to receive SMS");
         var pref = await db.NotificationPreferences.FirstOrDefaultAsync(
             p => p.UserId == userId,
             ct

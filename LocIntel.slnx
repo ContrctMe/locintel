@@ -28,15 +28,20 @@
     <Project Path="src/Modules/LocIntel.Modules.Marketplace/LocIntel.Modules.Marketplace.csproj" />
     <Project Path="src/Modules/LocIntel.Modules.Network/LocIntel.Modules.Network.csproj" />
     <Project Path="src/Modules/LocIntel.Modules.Patrols/LocIntel.Modules.Patrols.csproj" />
+    <Project Path="src/Modules/LocIntel.Modules.Reporting/LocIntel.Modules.Reporting.csproj" />
+    <Project Path="src/Modules/LocIntel.Modules.Spatial/LocIntel.Modules.Spatial.csproj" />
     <Project Path="src/Modules/LocIntel.Modules.Storage/LocIntel.Modules.Storage.csproj" />
     <Project Path="src/Modules/LocIntel.Modules.Tenancy/LocIntel.Modules.Tenancy.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/LocIntel.ArchitectureTests/LocIntel.ArchitectureTests.csproj" />
+    <Project Path="tests/LocIntel.FleetTests/LocIntel.FleetTests.csproj" />
     <Project Path="tests/LocIntel.IntegrationTests/LocIntel.IntegrationTests.csproj" />
+    <Project Path="tests/LocIntel.Modules.Reporting.UnitTests/LocIntel.Modules.Reporting.UnitTests.csproj" />
     <Project Path="tests/LocIntel.Platform.UnitTests/LocIntel.Platform.UnitTests.csproj" />
   </Folder>
   <Folder Name="/tools/">
     <Project Path="tools/LocIntel.Tools.CodegenKeys/LocIntel.Tools.CodegenKeys.csproj" />
+    <Project Path="tools/LocIntel.Tools.ReportingProof/LocIntel.Tools.ReportingProof.csproj" />
   </Folder>
 </Solution>

@@ -43,7 +43,7 @@ public static class RoleManagementEndpoints
         if (role is null)
             return Results.NotFound();
         if (request.Grants.Length == 0)
-            return Results.BadRequest(new { error = "a role needs at least one grant" });
+            return ApiErrors.BadRequest("a role needs at least one grant");
 
         // PRE-check (the transaction commits on any normal result): would this
         // edit leave the org without anyone able to manage roles?
@@ -57,8 +57,8 @@ public static class RoleManagementEndpoints
             excludeRoleId: id
         );
         if (!newGrantsManage && managersElsewhere.Count == 0)
-            return Results.Conflict(
-                new { error = "this edit would leave the org without anyone able to manage roles" }
+            return ApiErrors.Conflict(
+                "this edit would leave the org without anyone able to manage roles"
             );
 
         role.Name = request.Name;
@@ -96,9 +96,9 @@ public static class RoleManagementEndpoints
         if (role is null)
             return Results.NotFound();
         if (await db.MembershipRoles.AnyAsync(m => m.RoleId == id, ct))
-            return Results.Conflict(new { error = "unassign this role from all members first" });
+            return ApiErrors.Conflict("unassign this role from all members first");
         if (await db.InvitedRoles.AnyAsync(i => i.RoleId == id, ct))
-            return Results.Conflict(new { error = "a pending invitation references this role" });
+            return ApiErrors.Conflict("a pending invitation references this role");
 
         await db.RoleGrants.Where(g => g.RoleId == id).ExecuteDeleteAsync(ct);
         db.Roles.Remove(role);
@@ -141,14 +141,17 @@ public static class RoleManagementEndpoints
             excludeAssignmentId: assignment.Id
         );
         if (remaining.Count == 0)
-            return Results.Conflict(new { error = "cannot unassign the org's last role manager" });
+            return ApiErrors.Conflict("cannot unassign the org's last role manager");
 
         db.MembershipRoles.Remove(assignment);
         await db.SaveChangesAsync(ct);
         return Results.NoContent();
     }
 
-    [Transactional(typeof(IdentityDbContext))]
+    [Transactional(
+        typeof(IdentityDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/grant-exceptions")]
     [ProducesResponseType(typeof(List<GrantExceptionResponse>), StatusCodes.Status200OK)]
     public static async Task<IResult> ListExceptions(

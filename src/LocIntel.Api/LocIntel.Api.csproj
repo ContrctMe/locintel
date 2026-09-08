@@ -49,5 +49,7 @@
     <ProjectReference Include="..\Modules\LocIntel.Modules.Patrols\LocIntel.Modules.Patrols.csproj" />
     <ProjectReference Include="..\Integrations\LocIntel.Integrations.Anthropic\LocIntel.Integrations.Anthropic.csproj" />
     <ProjectReference Include="..\Integrations\LocIntel.Integrations.Twilio\LocIntel.Integrations.Twilio.csproj" />
+    <ProjectReference Include="..\Modules\LocIntel.Modules.Spatial\LocIntel.Modules.Spatial.csproj" />
+    <ProjectReference Include="..\Modules\LocIntel.Modules.Reporting\LocIntel.Modules.Reporting.csproj" />
   </ItemGroup>
 </Project>

@@ -15,7 +15,10 @@ namespace LocIntel.Modules.Marketplace.Vendors;
 /// <summary>The buyer's view of the catalog - the platform-global vendor directory (ADR 48) - and their own preferred/blocked list.</summary>
 public static class VendorDirectoryEndpoints
 {
-    [Transactional(typeof(MarketplaceDbContext))]
+    [Transactional(
+        typeof(MarketplaceDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/marketplace/vendors")]
     [ProducesResponseType(typeof(VendorListResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> List(
@@ -95,7 +98,10 @@ public static class VendorDirectoryEndpoints
         );
     }
 
-    [Transactional(typeof(MarketplaceDbContext))]
+    [Transactional(
+        typeof(MarketplaceDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/marketplace/vendors/{orgId}")]
     [ProducesResponseType(typeof(VendorProfileView), StatusCodes.Status200OK)]
     public static async Task<IResult> Get(
@@ -145,7 +151,10 @@ public static class VendorDirectoryEndpoints
         );
     }
 
-    [Transactional(typeof(MarketplaceDbContext))]
+    [Transactional(
+        typeof(MarketplaceDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/marketplace/preferred")]
     [ProducesResponseType(typeof(List<PreferredVendorView>), StatusCodes.Status200OK)]
     public static async Task<IResult> Preferred(

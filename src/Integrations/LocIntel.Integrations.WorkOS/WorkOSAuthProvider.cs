@@ -108,7 +108,7 @@ public sealed class WorkOSAuthProvider
         try
         {
             var created = await _client.UserManagement.CreateAsync(
-                new UserManagementCreateOptions { Email = email, EmailVerified = true },
+                new UserManagementCreateOptions { Email = email, EmailVerified = false },
                 cancellationToken: ct
             );
             return created.Id;
@@ -174,6 +174,15 @@ public sealed class WorkOSAuthProvider
         using var doc = System.Text.Json.JsonDocument.Parse(body);
         var root = doc.RootElement;
         var eventType = root.GetProperty("event").GetString();
+        // Conservatively end all local sessions for this provider user. No provider
+        // token is persisted; delayed/retried events cannot end a later login.
+        if (eventType is "session.revoked" or "password_reset.succeeded" or "user.deleted")
+        {
+            var securityData = root.GetProperty("data");
+            var subject = GetString(securityData, eventType == "user.deleted" ? "id" : "user_id");
+            var occurredAt = root.GetProperty("created_at").GetDateTimeOffset();
+            return Task.FromResult(new DirectoryWebhook(true, null, subject, occurredAt));
+        }
         if (eventType is not ("dsync.user.created" or "dsync.user.updated" or "dsync.user.deleted"))
             return Task.FromResult(new DirectoryWebhook(Verified: true, Event: null));
 

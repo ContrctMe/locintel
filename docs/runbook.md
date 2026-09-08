@@ -43,6 +43,22 @@ immutable — write a new one), redeploy. Never edit an applied migration;
 never run api/worker with owner credentials to "get past" a permissions
 error (that silently disables RLS — ADR 38).
 
+## PostGIS is not installed (ADR 50)
+
+Symptom: the `migrate` role fails on the Tenancy migration with `permission
+denied to create extension "postgis"` or `extension "postgis" is not
+available`. `postgis.control` is not marked `trusted`, so unlike `ltree` the
+database owner cannot create it unless it is a superuser or the provider's
+owner role is allowed to (RDS, Cloud SQL, Neon and Supabase permit it).
+
+1. Confirm the server image or managed instance ships PostGIS 3.5+.
+2. Once, as a role allowed to: `CREATE EXTENSION IF NOT EXISTS postgis;` in
+   the application database.
+3. Re-run migrate; it is idempotent and picks up where it failed.
+
+Local and CI never hit this: the pinned multi-arch image
+(`imresamu/postgis:17-3.5-alpine`) runs migrate as the superuser owner.
+
 ## Email: bounced address, angry user
 
 The 422 on contact-link issuance tells the tenant to contact support.
@@ -106,6 +122,43 @@ test session cookies and identifying data, and should not be published openly.
 browser project after booting the real stack. It requires Docker and the normal
 browser dependencies, and succeeds only if the original invocation failed and
 all four diagnostic logs were retained.
+
+## Local intermittent-failure investigation
+
+Repeat the affected flows without relaxing assertions or enabling retries:
+
+```bash
+env Logging__LogLevel__Default=Warning \
+  'Logging__LogLevel__Microsoft.AspNetCore.Hosting.Diagnostics=Information' \
+  tools/e2e-stack.sh --project=webkit \
+  --grep 'tenant switch clears|in-flight tenant mutation' --repeat-each=25
+```
+
+Repeat with `--project=firefox`. Add `--trace on` when timing evidence from
+successful iterations is needed. Compare native request timings with API
+request-finished durations; an assertion's total duration includes deliberate
+interception and UI work and is not server latency. If a slow request recurs,
+retain the trace and contemporaneous API/database state before rerunning.
+
+For test-host shutdown investigation, use a fresh process per replay and a
+full dump, not the normal shard runner's mini dump:
+
+```bash
+Logging__LogLevel__Default=Warning LOCINTEL_TEST_SHUFFLE=90511 \
+  dotnet test tests/LocIntel.IntegrationTests --no-restore \
+  --blame-hang-timeout 5m --blame-hang-dump-type full \
+  --results-directory tests/LocIntel.IntegrationTests/TestResults/shutdown-probe \
+  --logger 'trx;LogFileName=replay.trx'
+```
+
+Use a new results directory and seed for each replay. For an exact historical
+class-set replay, derive the filter from that run's TRX; shard assignments change
+as classes are added. All tests passing followed by a hung process is a failed
+run. A full dump may expose the managed async wait that the historical mini dump
+could not resolve; collection itself must be verified if a hang recurs. Dumps
+contain heap data and potentially credentials: keep them local, access-controlled,
+and out of Git or public artifacts. Do not infer a dependency defect merely from
+the last warning, or call an intermittent defect fixed after a green replay.
 
 Related: [production guide](production.md), [current verification and open risks](software-maturity-review-details.md),
 and [project overview](../README.md).

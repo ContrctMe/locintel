@@ -1,3 +1,4 @@
+using LocIntel.Contracts;
 using LocIntel.Modules.Identity.Data;
 using LocIntel.Platform.Kernel;
 using Microsoft.EntityFrameworkCore;
@@ -35,8 +36,8 @@ public sealed class SuspensionMiddleware(RequestDelegate next)
                 context.Response.StatusCode = StatusCodes.Status403Forbidden;
                 await context.Response.WriteAsJsonAsync(
                     status == "Suspended"
-                        ? new { error = "organization suspended", code = "org_suspended" }
-                        : new { error = "organization offboarded", code = "org_offboarded" }
+                        ? ApiErrors.Body("organization suspended", "org_suspended")
+                        : ApiErrors.Body("organization offboarded", "org_offboarded")
                 );
                 return;
             }

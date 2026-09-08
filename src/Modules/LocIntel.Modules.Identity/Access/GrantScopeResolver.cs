@@ -60,6 +60,10 @@ public sealed class GrantScopeResolver(IdentityDbContext db) : IScopeResolver
         if (_memo.TryGetValue((userId, org, action), out var cached))
             return cached;
 
+        // Exceptions are supplementary grants, never an alternative to membership.
+        if (!await db.Memberships.AnyAsync(m => m.UserId == userId && m.OrgId == org, ct))
+            return NodeScope.Nothing;
+
         var (domain, verb) = Split(action);
 
         var roleScopes = await (
@@ -93,6 +97,7 @@ public sealed class GrantScopeResolver(IdentityDbContext db) : IScopeResolver
             paths.Count == 0 ? NodeScope.Nothing
             : paths.Contains(null) ? new NodeScope.EntireOrg(org)
             : new NodeScope.Subtrees(org, [.. paths.Cast<string>().Distinct()]);
+        scope = AdministrativeScope(action, scope);
         _memo[(userId, org, action)] = scope;
         return scope;
     }
@@ -134,9 +139,25 @@ public sealed class GrantScopeResolver(IdentityDbContext db) : IScopeResolver
                     ? new NodeScope.Subtrees(service.Org, [path])
                     : new NodeScope.EntireOrg(service.Org);
         }
+        scope = AdministrativeScope(action, scope);
         _memo[(service.KeyId, service.Org, action)] = scope;
         return scope;
     }
+
+    // These operations have no hierarchy-bound resource to filter. A subtree
+    // grant must never silently become authority over the whole organization.
+    private static NodeScope AdministrativeScope(string action, NodeScope scope) =>
+        action
+            is Capabilities.RolesManage
+                or Capabilities.OrgManage
+                or Capabilities.AuditRead
+                or Capabilities.AuditManage
+                or Capabilities.EntitlementsManage
+                or Capabilities.IngestManage
+                or Capabilities.PlatformOperate
+        && scope is not NodeScope.EntireOrg
+            ? NodeScope.Nothing
+            : scope;
 
     private static (string domain, string action) Split(string action)
     {

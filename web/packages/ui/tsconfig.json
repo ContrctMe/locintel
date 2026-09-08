@@ -1,7 +1,21 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "paths": { "@/*": ["./src/*"] }
+    "paths": { "@/*": ["./src/*"] },
+    // This package is mostly vendored shadcn and ReUI registry code, written
+    // against the registry's own tsconfig: indexed access is trusted and
+    // `process.env.NODE_ENV` is assumed. App code stays on the strict base.
+    "noUncheckedIndexedAccess": false,
+    "types": ["node"],
+    // Emit declarations: the apps consume the package's TYPES from here
+    // (package.json "types"), so their strict programs never re-check this
+    // package's sources - and the runtime still resolves straight to src.
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "outDir": "dist/types",
+    "rootDir": "src"
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
 }

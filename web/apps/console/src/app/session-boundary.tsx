@@ -1,11 +1,15 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { api, ApiError, resetSessionContext, SESSION_CONTEXT_CHANGED, SESSION_CONTEXT_OBSERVED } from '@locintel/api';
+import { clearPrivateCache } from './persisted';
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 
 type Transition = (change: () => Promise<unknown>) => Promise<void>;
 const TransitionContext = createContext<Transition | null>(null);
 const newClient = () => new QueryClient({
-  defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
+  // Navigating between pages should not refetch what was read seconds ago
+  // (the user budget is 300/min and the suite runs one identity near it);
+  // queries that must be live say so with their own staleTime.
+  defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false, staleTime: 30_000 } },
 });
 
 /** Existing writes finish with the old cookie before a session change is sent. */
@@ -49,6 +53,7 @@ export function SessionBoundary({ children }: { children: ReactNode }) {
       // Even an unsuccessful response may have changed the cookie. Resolve /me
       // afresh instead of restoring cached tenant data under an uncertain session.
       client.clear();
+      clearPrivateCache();
       const uncertain = writes.map((mutation) => mutation.state.error)
         .find((cause) => cause instanceof ApiError && cause.outcomeUnknown);
       setError([transitionError, uncertain?.message].filter(Boolean).join(' ') || undefined);
@@ -62,6 +67,7 @@ export function SessionBoundary({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    clearPrivateCache();
     const probe = new AbortController();
     const updates = new BroadcastChannel('locintel-session');
     channel.current = updates;

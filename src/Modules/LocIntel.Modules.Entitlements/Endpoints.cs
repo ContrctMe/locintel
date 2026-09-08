@@ -17,7 +17,10 @@ public sealed record AddExceptionRequest(string Value, string Reason, DateTimeOf
 public static class EntitlementEndpoints
 {
     /// <summary>Effective entitlements for the active org - part of the UI bootstrap.</summary>
-    [Transactional(typeof(EntitlementsDbContext))]
+    [Transactional(
+        typeof(EntitlementsDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/entitlements")]
     [ProducesResponseType(typeof(Dictionary<string, EntitlementSummary>), StatusCodes.Status200OK)]
     public static async Task<IResult> List(

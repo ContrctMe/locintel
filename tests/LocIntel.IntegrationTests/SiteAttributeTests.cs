@@ -122,7 +122,7 @@ public class SiteAttributeTests(ApiFixture fixture) : IClassFixture<ApiFixture>
 
         // the public page sees ONLY the public attribute, with its label
         var guest = fixture.GuestClient();
-        guest.DefaultRequestHeaders.Add("X-Forwarded-Host", "org-a.localhost");
+        guest.DefaultRequestHeaders.Host = "org-a.localhost";
         var publicSite = await guest.GetFromJsonAsync<JsonElement>($"/public/sites/{siteId}");
         var publicAttribute = publicSite.GetProperty("attributes").EnumerateArray().Single();
         Assert.Equal("drive_thru", publicAttribute.GetProperty("key").GetString());

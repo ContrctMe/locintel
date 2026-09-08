@@ -48,7 +48,7 @@ public static class EntityLinkEndpoints
         if (incident is null || !scope.Covers(incident.Path))
             return Results.NotFound();
         if (await db.Links.AnyAsync(l => l.EntityId == id && l.IncidentId == incident.Id, ct))
-            return Results.Conflict(new { error = "already linked to that incident" });
+            return ApiErrors.Conflict("already linked to that incident");
         var link = new EntityIncidentLink
         {
             Id = Guid.CreateVersion7(),
