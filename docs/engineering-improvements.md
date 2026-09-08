@@ -6,6 +6,8 @@ this change. Upstream commits are `e74e2c5` (shared imports/lookups/pickers),
 `0262df5` (fork maintenance and test concurrency), `00d1562` (picker retry), and
 `5b07779` (idempotent full-SHA sync). Upstream publication is pending explicit
 authorization; these commits are retained in the local template feature branch.
+Normalized snapshot `480777f` records source
+`5b0777993e62d2c09706f5ad8a790bdaea5c2ee2`; its final merge required no code changes.
 
 ## Ownership and behavior
 
