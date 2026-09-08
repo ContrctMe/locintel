@@ -707,7 +707,11 @@ public static class RequesterEndpoints
                 return (null, null, false, read.ToResult());
             actor = manager;
         }
-        var visible = RequestViews.InScope(db.Requests, manage ? manageScope : read.Scope!);
+        // Transition validation and its writes must observe the same locked row.
+        var requests = requireManage
+            ? db.Requests.FromSql($"SELECT * FROM marketplace.requests WHERE id = {id} FOR UPDATE")
+            : db.Requests;
+        var visible = RequestViews.InScope(requests, manage ? manageScope : read.Scope!);
         var row = await visible.FirstOrDefaultAsync(r => r.Id == id && r.OrgId == actor.Org, ct);
         if (row is null)
             return (null, null, false, Results.NotFound());

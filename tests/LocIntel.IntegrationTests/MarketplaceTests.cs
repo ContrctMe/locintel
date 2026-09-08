@@ -157,9 +157,7 @@ public class MarketplaceTests(ApiFixture fixture) : IClassFixture<ApiFixture>
             HttpStatusCode.NotFound,
             (await vendor.GetAsync($"/api/vendor/requests/{requestId}")).StatusCode
         );
-        (
-            await buyer.PostAsync($"/api/marketplace/requests/{requestId}/submit", null)
-        ).EnsureSuccessStatusCode();
+        await TransitionOnceAsync(buyer, $"/api/marketplace/requests/{requestId}/submit");
 
         // now it does - as the vendor's OWN row, materialized through the outbox;
         // the vendor sees the requester's name and the site snapshot
@@ -185,9 +183,26 @@ public class MarketplaceTests(ApiFixture fixture) : IClassFixture<ApiFixture>
             (await buyer.PostAsync($"/api/vendor/requests/{requestId}/accept", null)).StatusCode
         );
 
-        (
-            await vendor.PostAsync($"/api/vendor/requests/{requestId}/accept", null)
-        ).EnsureSuccessStatusCode();
+        Assert.Equal(
+            HttpStatusCode.Conflict,
+            (await vendor.PostAsync($"/api/vendor/requests/{requestId}/start", null)).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.Conflict,
+            (
+                await vendor.PostAsJsonAsync(
+                    $"/api/vendor/requests/{requestId}/complete",
+                    new { summary = "Too early" }
+                )
+            ).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.Conflict,
+            (
+                await buyer.PostAsync($"/api/marketplace/requests/{requestId}/verify", null)
+            ).StatusCode
+        );
+        await TransitionOnceAsync(vendor, $"/api/vendor/requests/{requestId}/accept");
         var checkIn = await vendor.PostAsJsonAsync(
             $"/api/vendor/requests/{requestId}/check-in",
             new
@@ -201,9 +216,7 @@ public class MarketplaceTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         var position = await checkIn.Content.ReadFromJsonAsync<JsonElement>();
         Assert.True(position.GetProperty("withinGeofence").GetBoolean());
         Assert.True(position.GetProperty("distanceFromSiteMeters").GetDouble() < 100);
-        (
-            await vendor.PostAsync($"/api/vendor/requests/{requestId}/start", null)
-        ).EnsureSuccessStatusCode();
+        await TransitionOnceAsync(vendor, $"/api/vendor/requests/{requestId}/start");
         var far = await vendor.PostAsJsonAsync(
             $"/api/vendor/requests/{requestId}/check-out",
             new { latitude = 34.20, longitude = -118.50 }
@@ -219,12 +232,11 @@ public class MarketplaceTests(ApiFixture fixture) : IClassFixture<ApiFixture>
                 new { body = "Relief arrives at 06:00." }
             )
         ).EnsureSuccessStatusCode();
-        (
-            await vendor.PostAsJsonAsync(
-                $"/api/vendor/requests/{requestId}/complete",
-                new { summary = "Quiet night." }
-            )
-        ).EnsureSuccessStatusCode();
+        await TransitionOnceAsync(
+            vendor,
+            $"/api/vendor/requests/{requestId}/complete",
+            new { summary = "Quiet night." }
+        );
 
         // the buyer sees the whole timeline with sides (its own copies, one per
         // entry the vendor made), and verifies
@@ -264,9 +276,25 @@ public class MarketplaceTests(ApiFixture fixture) : IClassFixture<ApiFixture>
             .Single(e => e.GetProperty("kind").GetString() == "Message");
         Assert.Equal("vendor", vendorMessage.GetProperty("side").GetString());
         Assert.Equal(JsonValueKind.Null, vendorMessage.GetProperty("actor").ValueKind); // never the other org's people
-        (
-            await buyer.PostAsync($"/api/marketplace/requests/{requestId}/verify", null)
-        ).EnsureSuccessStatusCode();
+        Assert.Equal(
+            HttpStatusCode.Conflict,
+            (
+                await buyer.PostAsJsonAsync(
+                    $"/api/marketplace/requests/{requestId}/cancel",
+                    new { reason = "Already completed" }
+                )
+            ).StatusCode
+        );
+        await TransitionOnceAsync(buyer, $"/api/marketplace/requests/{requestId}/verify");
+        Assert.Equal(
+            HttpStatusCode.Conflict,
+            (
+                await buyer.PostAsJsonAsync(
+                    $"/api/marketplace/requests/{requestId}/dispute",
+                    new { reason = "Already verified" }
+                )
+            ).StatusCode
+        );
         var list = await buyer.GetFromJsonAsync<JsonElement>(
             $"/api/marketplace/requests?siteId={siteId}&status=Verified"
         );
@@ -467,6 +495,31 @@ public class MarketplaceTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         (
             await buyer.DeleteAsync($"/api/marketplace/preferred/{row.GetProperty("id").GetGuid()}")
         ).EnsureSuccessStatusCode();
+    }
+
+    private static async Task TransitionOnceAsync(
+        HttpClient client,
+        string path,
+        object? body = null
+    )
+    {
+        var attempts = await Task.WhenAll(
+            Enumerable
+                .Range(0, 8)
+                .Select(_ =>
+                    body is null ? client.PostAsync(path, null) : client.PostAsJsonAsync(path, body)
+                )
+        );
+        var accepted = Assert.Single(
+            attempts,
+            response => response.StatusCode == HttpStatusCode.OK
+        );
+        Assert.All(
+            attempts.Where(response => response != accepted),
+            response => Assert.Equal(HttpStatusCode.Conflict, response.StatusCode)
+        );
+        foreach (var response in attempts)
+            response.Dispose();
     }
 
     private static async Task<Guid> SiteAsync(
