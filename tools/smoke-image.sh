@@ -57,10 +57,10 @@ common=(
   -e "AllowedHosts=localhost;127.0.0.1;*.example.test"
   -e Proxy__KnownProxies__0=127.0.0.1
   -e Storage__Provider=s3 -e Storage__S3__BucketName=unused
-  -e Storage__S3__ServiceUrl=http://127.0.0.1:1 -e Storage__S3__AccessKey=unused -e Storage__S3__SecretKey=unused
+  -e Storage__S3__ServiceUrl=https://127.0.0.1:1 -e Storage__S3__AccessKey=unused -e Storage__S3__SecretKey=unused
   -e Scanner__Provider=clamav -e Scanner__ClamAv__Host=unused
   -e Secrets__Provider=kms -e Secrets__Kms__KeyId=unused
-  -e Secrets__Kms__ServiceUrl=http://127.0.0.1:1 -e Secrets__Kms__AccessKey=unused -e Secrets__Kms__SecretKey=unused
+  -e Secrets__Kms__ServiceUrl=https://127.0.0.1:1 -e Secrets__Kms__AccessKey=unused -e Secrets__Kms__SecretKey=unused
   -e Billing__Provider=stripe -e Billing__Stripe__ApiKey=sk_unused -e Billing__Stripe__WebhookSecret=whsec_unused
   -e Billing__Stripe__PriceIds__growth=price_unused -e Billing__Stripe__PriceIds__scale=price_unused
   -e Notifications__Transport=smtp -e Notifications__Smtp__Host=unused -e Notifications__Smtp__FromAddress=noreply@example.test
