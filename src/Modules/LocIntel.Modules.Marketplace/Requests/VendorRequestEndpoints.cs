@@ -569,13 +569,17 @@ public static class VendorRequestEndpoints
         var gate = await ActorGate.RequireAsync(accessor, scopes, Capabilities.VendorFulfill, ct);
         if (gate.Actor is not { } actor)
             return (null, null, gate.ToResult());
-        var row = await db.Assignments.FirstOrDefaultAsync(
-            a =>
-                a.RequestId == id
-                && a.Participation != RecipientStatus.Declined
-                && a.Participation != RecipientStatus.NotSelected,
-            ct
-        );
+        var row = await db
+            .Assignments.FromSql(
+                $"SELECT * FROM marketplace.vendor_assignments WHERE request_id = {id} FOR UPDATE"
+            )
+            .FirstOrDefaultAsync(
+                a =>
+                    a.RequestId == id
+                    && a.Participation != RecipientStatus.Declined
+                    && a.Participation != RecipientStatus.NotSelected,
+                ct
+            );
         return row is null ? (null, null, Results.NotFound()) : (row, actor, null);
     }
 }
