@@ -1,3 +1,4 @@
+import { FilePicker } from '../features/files';
 import { enumValue } from '../lib/enum-value';
 import { issueEvidenceDownload } from '../features/cases';
 import { api, type components } from '@locintel/api';
@@ -421,11 +422,6 @@ function EvidenceDialog({ caseId }: { caseId: string }) {
   const [open, setOpen] = useState(false);
   const [fileId, setFileId] = useState('');
   const [label, setLabel] = useState('');
-  const { data: files } = useQuery({
-    queryKey: ['files', 'picker'],
-    queryFn: async ({ signal }) => (await api.get('/api/files', { signal, query: { limit: 200 } })).items,
-    enabled: open,
-  });
   const add = useApiMutation({
     mutationFn: () => api.post("/api/cases/{id}/evidence", { fileId, label: label.trim() || null }, { path: { id: caseId } }),
     invalidate: [['cases']], success: 'Evidence added', onSuccess: () => { setOpen(false); setFileId(''); setLabel(''); },
@@ -435,10 +431,7 @@ function EvidenceDialog({ caseId }: { caseId: string }) {
       description="Upload on the Files page first; adding here starts the custody chain."
       trigger={<Button size="sm" variant="outline">Add evidence</Button>}>
       <div className="space-y-3">
-        <Select value={fileId} onChange={(e) => setFileId(e.target.value)}>
-          <option value="">Choose…</option>
-          {files?.map((f) => <option key={f.id} value={f.id}>{f.name} ({f.status})</option>)}
-        </Select>
+        <FilePicker aria-label="Evidence file" value={fileId} onChange={setFileId} />
         <Input value={label} placeholder="Label" onChange={(e) => setLabel(e.target.value)} />
         <Button className="w-full" disabled={!fileId || add.isPending} onClick={() => add.mutate()}>Add</Button>
       </div>

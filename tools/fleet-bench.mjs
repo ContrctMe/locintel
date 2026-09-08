@@ -41,7 +41,7 @@ async function follow(url, init = {}) {
 }
 
 // The fixture operator lifts only the domain site limit when seeding data.
-const opMe = await follow(`${base}/auth/login?hint=operator%40premise.local&returnUrl=%2Fme`);
+const opMe = await follow(`${base}/auth/login?hint=operator%40locintel.local&returnUrl=%2Fme`);
 if (!opMe.ok) throw new Error(`operator sign-in failed: ${opMe.status}`);
 const orgs = await (await follow(`${base}/api/operator/orgs`)).json();
 const acme = orgs.find((o) => o.slug === 'acme-dev') ?? orgs.find((o) => !o.isPlatform);
@@ -103,7 +103,7 @@ if (process.env.FLEET_BENCH_FIXTURE) {
         headers: { authorization: `Bearer ${secret}` }, signal: AbortSignal.timeout(30_000),
       });
       if (!response.ok) throw new Error(`fixture probe failed: ${response.status}`);
-      instances.add(response.headers.get('x-premise-instance'));
+      instances.add(response.headers.get('x-locintel-instance'));
       siteId = (await response.json()).items[0]?.id;
     }
     if (siteId && !instances.has(null) && instances.size === Number(replicas)) break;

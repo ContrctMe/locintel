@@ -75,10 +75,7 @@ public class BackgroundSweepTests(ApiFixture fixture, ITestOutputHelper output)
                     .Append(i)
                     .Append(",Etc/UTC,,open\n");
             var timer = Stopwatch.StartNew();
-            var rows = LocIntel
-                .Platform.Text.CsvParser.Parse(csv.ToString())
-                .Select(SourceRows.FromRecord)
-                .ToList();
+            var rows = CsvParser.Parse(csv.ToString()).Select(CsvParser.ToSourceRow).ToList();
             timer.Stop();
             Assert.Equal(10_000, rows.Count);
             output.WriteLine(

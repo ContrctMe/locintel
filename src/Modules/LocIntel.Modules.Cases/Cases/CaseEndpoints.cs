@@ -680,10 +680,11 @@ public static class CaseEndpoints
                     : new CaseEntityView(link.Id, null, null, null, null, null, true, link.AddedAt)
             )
             .ToList();
+        var storedFiles = await files.GetManyAsync(evidence.Select(e => e.FileId).ToArray(), ct);
         var evidenceViews = new List<CaseEvidenceView>(evidence.Count);
         foreach (var item in evidence)
         {
-            var file = await files.GetAsync(item.FileId, ct);
+            var file = storedFiles.GetValueOrDefault(item.FileId);
             evidenceViews.Add(
                 new CaseEvidenceView(
                     item.Id,

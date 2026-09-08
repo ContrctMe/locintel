@@ -35,14 +35,15 @@ clean_before = not subprocess.run(["git", "status", "--porcelain"], cwd=root,
                                   capture_output=True, text=True).stdout.strip()
 SKIP_DIRS = {".git", "node_modules", "bin", "obj", "dist", ".tanstack", ".aspire"}
 TEXT_SUFFIXES = {".cs", ".csproj", ".slnx", ".json", ".yaml", ".yml", ".md", ".ts",
-                 ".tsx", ".css", ".html", ".py", ".sh"}
+                 ".tsx", ".css", ".html", ".py", ".sh", ".mjs", ".js", ".runsettings",
+                 ".tf", ".hcl", ".example", ".webmanifest", ".props", ".targets", ".sql"}
 
 def eligible(path: pathlib.Path) -> bool:
     return not any(part in SKIP_DIRS for part in path.parts)
 
 # 1. contents
 for path in root.rglob("*"):
-    if path.is_file() and eligible(path) and path.suffix in TEXT_SUFFIXES:
+    if path.is_file() and eligible(path) and (path.suffix in TEXT_SUFFIXES or path.name in {".gitignore", ".csharpierignore"}):
         text = path.read_text(errors="ignore")
         # all three case variants: UPPER first-class, because env vars like
         # LOCINTEL_API survived a LocIntel/locintel-only rename and broke the

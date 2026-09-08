@@ -3,6 +3,7 @@ using LocIntel.Contracts;
 using LocIntel.Modules.Incidents.Data;
 using LocIntel.Modules.Incidents.Imports.Api;
 using LocIntel.Modules.Incidents.Incidents;
+using LocIntel.Platform.Http;
 using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Storage;
 using LocIntel.Platform.Text;
@@ -25,7 +26,7 @@ public static class ImportEndpoints
 {
     public const int MaxRows = 5000;
 
-    [Transactional(typeof(IncidentsDbContext))]
+    [NonTransactional]
     [WolverinePost("/api/incidents/imports")]
     [ProducesResponseType(typeof(ImportBatchView), StatusCodes.Status200OK)]
     public static async Task<IResult> Stage(
@@ -51,22 +52,31 @@ public static class ImportEndpoints
             return Results.NotFound();
         if (file.Status != "Clean")
             return ApiErrors.Conflict($"file is {file.Status}; only Clean files can be staged");
-        string text;
-        await using (var stream = await store.OpenReadAsync(file.Key, ct))
-        using (var reader = new StreamReader(stream))
-            text = await reader.ReadToEndAsync(ct);
-        var records = CsvParser.Parse(text);
+        List<Dictionary<string, string>> records;
+        try
+        {
+            await using var stream = await store.OpenReadAsync(file.Key, ct);
+            using var reader = new StreamReader(
+                new MemoryStream(await BoundedRead.ReadAsync(stream, 4 * 1024 * 1024, ct))
+            );
+            records = CsvParser.Parse(
+                await reader.ReadToEndAsync(ct),
+                new(4 * 1024 * 1024, MaxRows, 16, 20_000)
+            );
+        }
+        catch (InvalidDataException error)
+        {
+            return ApiErrors.BadRequest(error.Message);
+        }
         if (records.Count == 0)
             return ApiErrors.BadRequest("no data rows found");
-        if (records.Count > MaxRows)
-            return ApiErrors.BadRequest($"imports are limited to {MaxRows} rows per file");
 
         // site resolution: external id first, then name, both case-insensitive;
         // then gate 3 - a site outside the importer's scope is an invalid row
         var snapshots = await siteLookup.ResolveSitesAsync(
             records
                 .Select(r => r.GetValueOrDefault("site", "").Trim())
-                .Where(r => r.Length > 0)
+                .Where(r => r.Length is > 0 and <= 200)
                 .Distinct()
                 .ToArray(),
             ct
@@ -96,6 +106,8 @@ public static class ImportEndpoints
             Guid? siteId = null;
             if (siteRef.Length == 0)
                 errors.Add("site is required");
+            else if (siteRef.Length > 200)
+                errors.Add("site is limited to 200 characters");
             else if (byExternal.TryGetValue(siteRef.ToLowerInvariant(), out var s1))
                 siteId = s1.Id.Value;
             else if (byName.TryGetValue(siteRef.ToLowerInvariant(), out var s2))
@@ -113,22 +125,24 @@ public static class ImportEndpoints
                 if (!ok)
                     errors.Add("site is outside your scope");
             }
-            IncidentCategory? category = Enum.TryParse<IncidentCategory>(
-                record.GetValueOrDefault("category", "").Replace(" ", ""),
-                true,
-                out var c
-            )
-                ? c
-                : null;
+            IncidentCategory? category =
+                Enum.TryParse<IncidentCategory>(
+                    record.GetValueOrDefault("category", "").Replace(" ", ""),
+                    true,
+                    out var c
+                ) && Enum.IsDefined(c)
+                    ? c
+                    : null;
             if (category is null)
                 errors.Add("unknown category");
-            IncidentSeverity? severity = Enum.TryParse<IncidentSeverity>(
-                record.GetValueOrDefault("severity", "Medium").Trim(),
-                true,
-                out var sv
-            )
-                ? sv
-                : null;
+            IncidentSeverity? severity =
+                Enum.TryParse<IncidentSeverity>(
+                    record.GetValueOrDefault("severity", "Medium").Trim(),
+                    true,
+                    out var sv
+                ) && Enum.IsDefined(sv)
+                    ? sv
+                    : null;
             if (severity is null)
                 errors.Add("unknown severity");
             DateTimeOffset? occurredAt = DateTimeOffset.TryParse(
@@ -156,13 +170,15 @@ public static class ImportEndpoints
                         NumberStyles.Number,
                         CultureInfo.InvariantCulture,
                         out var l
-                    )
-                    && l >= 0
+                    ) && l is >= 0 and <= 999999999999.99m
                 )
                     loss = l;
                 else
-                    errors.Add("loss_amount is not a non-negative number");
+                    errors.Add("loss_amount must be between 0 and 999999999999.99");
             }
+            var policeReport = Clean(record.GetValueOrDefault("police_report", ""));
+            if (policeReport?.Length > 100)
+                errors.Add("police_report is limited to 100 characters");
             db.ImportRows.Add(
                 new IncidentImportRow
                 {
@@ -170,7 +186,7 @@ public static class ImportEndpoints
                     OrgId = actor.Org,
                     BatchId = batch.Id,
                     RowNumber = rowNumber,
-                    SiteRef = siteRef,
+                    SiteRef = siteRef.Length > 200 ? siteRef[..200] : siteRef,
                     SiteId = siteId,
                     Category = category,
                     Severity = severity,
@@ -178,7 +194,8 @@ public static class ImportEndpoints
                     Title = title.Length > 200 ? title[..200] : title,
                     Narrative = record.GetValueOrDefault("narrative", "").Trim(),
                     LossAmount = loss,
-                    PoliceReportNumber = Clean(record.GetValueOrDefault("police_report", "")),
+                    PoliceReportNumber =
+                        policeReport?.Length > 100 ? policeReport[..100] : policeReport,
                     Tags = record
                         .GetValueOrDefault("tags", "")
                         .Split(

@@ -22,7 +22,7 @@ Work branch: `codex/container-staging`, based on LocIntel `23af13b`.
 Upstream source: Premise `e1b15528a181a1d9def9145be5e4ba6b5783ca63`, the verified
 remediation branch commit, not an assertion that those changes are on upstream main.
 The normal sync script advanced `template-renamed` to `248a1eb`; preserve that
-snapshot ancestry for later updates. The merge is not yet committed.
+snapshot ancestry for later updates. That merge was subsequently committed; `main` was synchronized at `110429e` on 2026-09-08.
 
 Resolutions retain all seven product modules and their routes, optional providers,
 and the actor-aware gates that product writes actually use. The combined backend
@@ -207,3 +207,60 @@ browser findings have not been accepted as staging risks or declared fixed.
 - [Production configuration and boot guards](production.md)
 - [Operations runbook](runbook.md)
 - [Inherited platform maturity review](software-maturity-review-details.md)
+
+
+## Historical local diagnostics
+
+The following notes were consolidated from README on 2026-09-08. Their test
+counts and in-progress labels describe earlier work, not current branch status.
+See [Engineering improvements](engineering-improvements.md) for the current
+code baseline and validation.
+
+Local container preparation is active; no hosted deployment is approved or running
+as part of this work. See [container staging preparation](docs/container-staging.md)
+for verified checks, remaining acceptance criteria, and the budget baseline
+(owner: project maintainers; updated 2026-09-05).
+Shared-budget browser rate limiting remains a verification blocker. The corrected
+all-in-one integration suite previously passed under a 4 GiB cap (302 passed, one skip,
+no OOM), although memory headroom remains tight.
+See [bounded-memory findings](docs/memory-diagnostics.md) for the reproduced
+fixture retention and its verified fix. The full local stack passed 778 measured
+requests, real scanning/reload, and session/file persistence after recreation.
+Those first measurements used Dynamic handler compilation. A controlled follow-up
+with pre-generated handlers passed at a **512 MiB API cap**, peaking near **254 MiB
+process RSS**, versus 1,722 MiB with Dynamic loading. The local profile now selects
+Static loading; AV remains separate. Longer-soak sizing and restore remain open.
+The [concurrency/soak follow-up](docs/concurrency-soak.md) exposed starvation
+at the default 20-connection pool. A diagnostic pool-64, 30-minute soak passed
+11,940 workload requests at a 241 MiB API peak. Bounded HTTP admission now passes
+the small-pool regression, focused checks and default-pool ramp through 40 clients
+(480/480, 237 ms p95). The admission-only two-hour soak completed 44,760 workload
+requests without errors or OOM events; API peak was 306 MiB. One health probe timed
+out, and file-backed memory kept growing despite stable late anonymous memory.
+Overlapping regression work confounds its tail latency; sizing remains provisional.
+The [transaction-lifetime review](docs/transaction-lifetimes.md) distinguishes
+necessary atomic writes from unnecessary read transactions. Seventeen reviewed reads
+now opt out of eager transactions. Scans, preview reads and connector fetches release
+connections before external work; conditional completion preserves atomic writes.
+Preview publication retains an erasure-coordination lock. Incident creation uses
+a single deferred commit; signup and evidence issuance are POST-only. Targeted
+integration, Static-handler and the new flows in all three browser engines pass.
+The broader sharded rerun recorded 326 passes, one readiness failure and one skip;
+one shard hung after test completion. Collectibility passed on subsequent reruns.
+Three diagnostic replays of the failing shard passed and exited cleanly; the original
+readiness/hang cause remains unconfirmed, with better failure capture now available.
+The new-image two-hour comparison completed: 47,560 soak requests and all 3,819
+health probes passed, with no OOMs and 186 ms p95. API cgroup memory peaked at
+317 MiB within 512 MiB, but continued file-backed growth prevents claiming a
+stable footprint. Sampled pool usage peaked at 10/20. Follow-up traced the dominant
+growth to page cache from the local upload adapter: every upload added exactly
+its page-rounded size. A no-collector control released and reloaded only the new
+files' cache with byte checks intact. Automatic reclaim then released 75.8 MiB
+under the unchanged 512 MiB cap without OOM or failed health checks. A local S3
+control sent 97.4 MiB directly to MinIO with zero API inactive-cache growth;
+MinIO itself ended near 497 MiB. Keep the API cap: representative warm/mixed
+production-storage sizing, causal lifetime comparisons and replica/hosted
+acceptance remain outstanding.
+The mixed-workload S3 follow-up is now in progress, using the unchanged API cap
+and a separately capped MinIO service; its final sizing result is pending.
+Details and evidence are tracked in the review.

@@ -21,6 +21,16 @@ export const sitesApi = {
     signal?: AbortSignal,
     status?: string,
   ) => api.get('/api/sites', { query: { limit, after, q, under, bbox, zoom, status }, signal }),
+  byIds: async (ids: string[], signal?: AbortSignal) => {
+    const unique = [...new Set(ids)].sort();
+    const items: components['schemas']['SiteResponse'][] = [];
+    // Bounded requests keep URLs small and avoid one HTTP request per site.
+    for (let start = 0; start < unique.length; start += 50) {
+      const page = await api.get('/api/sites', { query: { ids: unique.slice(start, start + 50).join(','), limit: 50 }, signal });
+      items.push(...page.items);
+    }
+    return items;
+  },
   hierarchy: (signal?: AbortSignal) => api.get('/api/hierarchy', { signal }),
   /** The org's raster basemaps (ADR 50 §3), provider keys already in the URLs. */
   basemaps: (signal?: AbortSignal) => api.get('/api/map/basemaps', { signal }),

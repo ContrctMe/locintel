@@ -1,3 +1,5 @@
+import { CATEGORIES, URGENCIES, REQUEST_STATUSES, categoryLabel, RequestStatusBadge } from '../features/marketplace';
+import { SitePicker, type PickedSite } from '../features/sites';
 import { enumValue } from '../lib/enum-value';
 import { api } from '@locintel/api';
 import { Button, Card, CardContent, FormDialog, Input, Label, Select, Table, TableBody,
@@ -20,21 +22,6 @@ export type VendorSummary = {
   validCredentials: number; expiredCredentials: number; preferred: boolean; blocked: boolean;
 };
 
-
-export const CATEGORIES = ['GuardService', 'MobilePatrol', 'AlarmResponse', 'Investigation', 'CctvInstall',
-  'AccessControl', 'BoardUp', 'Restoration', 'LegalSupport', 'EquipmentSupply', 'KeyHolding', 'Other'] as const;
-export const URGENCIES = ['Emergency', 'Scheduled', 'Standing'] as const;
-export const REQUEST_STATUSES = ['Draft', 'Submitted', 'Accepted', 'Declined', 'InProgress', 'Completed', 'Verified', 'Disputed', 'Cancelled'] as const;
-export const categoryLabel = (c: string | null) => (c ?? 'Unspecified').replace(/([a-z])([A-Z])/g, '$1 $2').replace('Cctv', 'CCTV');
-
-export function RequestStatusBadge({ status }: { status: string }) {
-  const tone =
-    status === 'Verified' || status === 'Completed' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
-      : status === 'Declined' || status === 'Cancelled' || status === 'Disputed' ? 'bg-destructive/15 text-destructive'
-        : status === 'Draft' ? 'bg-muted text-muted-foreground'
-          : 'bg-primary/10 text-primary';
-  return <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${tone}`}>{status.replace(/([a-z])([A-Z])/g, '$1 $2')}</span>;
-}
 
 /** The buyer's marketplace (blueprint): requests to vendors, direct-to-preferred in v1. */
 export function MarketplacePage() {
@@ -116,7 +103,8 @@ export function NewRequestDialog({ siteId: presetSite, incidentId, caseId, trigg
   const [open, setOpen] = useState(false);
   const [category, setCategory] = useState<string>('GuardService');
   const [vendorOrgId, setVendorOrgId] = useState('');
-  const [siteId, setSiteId] = useState(presetSite ?? '');
+  const [pickedSite, setPickedSite] = useState<PickedSite | null>(null);
+  const siteId = presetSite ?? pickedSite?.id ?? '';
   const [urgency, setUrgency] = useState<string>('Scheduled');
   const [title, setTitle] = useState('');
   const [details, setDetails] = useState('');
@@ -129,11 +117,6 @@ export function NewRequestDialog({ siteId: presetSite, incidentId, caseId, trigg
     queryKey: ['marketplace', 'vendors', 'picker', category],
     queryFn: async ({ signal }) => (await api.get('/api/marketplace/vendors', { signal, query: { category: enumValue(CATEGORIES, category), limit: 100 } })).items,
     enabled: open,
-  });
-  const { data: sites } = useQuery({
-    queryKey: ['sites', 'picker'],
-    queryFn: async ({ signal }) => (await api.get('/api/sites', { signal, query: { limit: 200 } })).items,
-    enabled: open && !presetSite,
   });
   const usable = vendors?.filter((v) => !v.blocked).sort((a, b) => Number(b.preferred) - Number(a.preferred));
   const create = useApiMutation({
@@ -180,10 +163,7 @@ export function NewRequestDialog({ siteId: presetSite, incidentId, caseId, trigg
         {!presetSite && (
           <div className="space-y-1">
             <Label htmlFor="rq-site">Site</Label>
-            <Select id="rq-site" value={siteId} onChange={(e) => setSiteId(e.target.value)}>
-              <option value="">Choose…</option>
-              {sites?.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </Select>
+            <SitePicker id="rq-site" value={pickedSite} onChange={setPickedSite} />
           </div>
         )}
         <div className="grid grid-cols-2 gap-3">

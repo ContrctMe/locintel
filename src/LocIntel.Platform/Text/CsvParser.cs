@@ -1,18 +1,18 @@
 namespace LocIntel.Platform.Text;
 
-/// <summary>
-/// Minimal RFC-4180-ish CSV: quoted fields, embedded commas/quotes, CRLF or
-/// LF. Header row required; header names are lower-cased and trimmed. Shared
-/// by every module that stages uploads (site ingest, incident import).
-/// </summary>
+/// <summary>Bounded CSV parsing shared by upload consumers. Headers are trimmed, lowercase and unique.</summary>
 public static class CsvParser
 {
-    public static List<Dictionary<string, string>> Parse(string text)
+    public static List<Dictionary<string, string>> Parse(string text, CsvLimits limits)
     {
-        var lines = SplitRecords(text);
+        if (System.Text.Encoding.UTF8.GetByteCount(text) > limits.MaxBytes)
+            throw new InvalidDataException("CSV exceeds byte limit.");
+        var lines = SplitRecords(text, limits);
         if (lines.Count == 0)
             return [];
-        var headers = lines[0];
+        var headers = lines[0].Select(h => h.Trim().ToLowerInvariant()).ToList();
+        if (headers.Any(string.IsNullOrEmpty) || headers.Distinct().Count() != headers.Count)
+            throw new InvalidDataException("CSV headers must be nonempty and distinct.");
         return lines
             .Skip(1)
             .Where(fields => fields.Count > 1 || fields[0].Length > 0)
@@ -24,7 +24,7 @@ public static class CsvParser
             .ToList();
     }
 
-    private static List<List<string>> SplitRecords(string text)
+    private static List<List<string>> SplitRecords(string text, CsvLimits limits)
     {
         List<List<string>> records = [];
         List<string> fields = [];
@@ -32,6 +32,12 @@ public static class CsvParser
         var quoted = false;
         for (var i = 0; i < text.Length; i++)
         {
+            if (
+                current.Length > limits.MaxFieldChars
+                || fields.Count >= limits.MaxColumns
+                || records.Count > limits.MaxRows
+            )
+                throw new InvalidDataException("CSV exceeds row, column or field limits.");
             var c = text[i];
             if (quoted)
             {
@@ -69,6 +75,15 @@ public static class CsvParser
             fields.Add(current.ToString());
             records.Add(fields);
         }
+        if (
+            current.Length > limits.MaxFieldChars
+            || fields.Count > limits.MaxColumns
+            || records.Count > limits.MaxRows + 1
+            || quoted
+        )
+            throw new InvalidDataException(
+                "CSV exceeds its limits or has an unclosed quoted field."
+            );
         return records;
     }
 }

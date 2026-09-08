@@ -14,8 +14,8 @@ provider "digitalocean" {}
 variable "campaign" {
   type = string
   validation {
-    condition     = can(regex("^premise-compat-[a-z0-9-]{1,24}$", var.campaign))
-    error_message = "Use a unique premise-compat- campaign name."
+    condition     = can(regex("^locintel-compat-[a-z0-9-]{1,24}$", var.campaign))
+    error_message = "Use a unique locintel-compat- campaign name."
   }
 }
 variable "region" {
@@ -34,7 +34,7 @@ variable "expires_at" {
 
 resource "digitalocean_project" "campaign" {
   name        = var.campaign
-  description = "Disposable Premise compatibility deployment; expires ${var.expires_at}"
+  description = "Disposable LocIntel compatibility deployment; expires ${var.expires_at}"
   purpose     = "Operational / Developer tooling"
   environment = "Development"
 }
@@ -58,7 +58,7 @@ resource "digitalocean_kubernetes_cluster" "compat" {
     size       = "c-4"
     node_count = 2
     auto_scale = false
-    labels     = { "premise-pool" = "compat" }
+    labels     = { "locintel-pool" = "compat" }
     tags       = [digitalocean_tag.campaign.name]
   }
 }
@@ -73,9 +73,9 @@ resource "digitalocean_database_cluster" "postgres" {
   storage_size_mib     = 30720
   tags                 = [digitalocean_tag.campaign.name]
 }
-resource "digitalocean_database_db" "premise" {
+resource "digitalocean_database_db" "locintel" {
   cluster_id = digitalocean_database_cluster.postgres.id
-  name       = "premise"
+  name       = "locintel"
 }
 resource "digitalocean_database_firewall" "postgres" {
   cluster_id = digitalocean_database_cluster.postgres.id

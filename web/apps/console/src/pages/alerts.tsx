@@ -1,3 +1,4 @@
+import { SitePicker, type PickedSite } from '../features/sites';
 import { enumValue } from '../lib/enum-value';
 import { api } from '@locintel/api';
 import { Button, Card, CardContent, CardHeader, CardTitle, FormDialog, Input, Label, Select, Textarea } from '@locintel/ui';
@@ -8,7 +9,7 @@ import { fmtDate, fmtDateTime } from '../lib/format';
 import { useApiMutation } from '../lib/mutation';
 
 import { can, useMe } from '../session';
-import { SeverityBadge } from './incidents';
+import { SeverityBadge } from '../features/incidents';
 
 
 
@@ -26,17 +27,14 @@ export function AlertsPage() {
     queryKey: ['alerts', 'bulletins', showInactive],
     queryFn: ({ signal }) => api.get('/api/bulletins', { signal, query: { limit: 100, includeInactive: showInactive } }),
   });
-  const { data: sites } = useQuery({
-    queryKey: ['sites', 'picker'],
-    queryFn: async ({ signal }) => (await api.get('/api/sites', { signal, query: { limit: 200 } })).items,
-  });
   const markRead = useApiMutation({ mutationFn: (id: string) => api.post("/api/alerts/{id}/read", undefined, { path: { id } }), invalidate: [['alerts']] });
   const acknowledge = useApiMutation({
     mutationFn: (input: { id: string; siteId: string | null }) => api.post("/api/bulletins/{id}/acknowledge", { siteId: input.siteId }, { path: { id: input.id } }),
     invalidate: [['alerts']], success: 'Acknowledged',
   });
   const withdraw = useApiMutation({ mutationFn: (id: string) => api.post("/api/bulletins/{id}/withdraw", undefined, { path: { id } }), invalidate: [['alerts']], success: 'Withdrawn' });
-  const [ackSite, setAckSite] = useState('');
+  const [pickedSite, setPickedSite] = useState<PickedSite | null>(null);
+  const ackSite = pickedSite?.id ?? '';
 
   return (
     <div className="max-w-5xl space-y-6">
@@ -56,12 +54,7 @@ export function AlertsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {sites && sites.length > 1 && (
-              <Select className="w-full" value={ackSite} onChange={(e) => setAckSite(e.target.value)}>
-                <option value="">Acknowledge as… (no site)</option>
-                {sites.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </Select>
-            )}
+            <SitePicker aria-label="Acknowledgement site" placeholder="Acknowledge personally (no site)" value={pickedSite} onChange={setPickedSite} />
             {bulletins?.items.length === 0 && <p className="text-sm text-muted-foreground">Nothing posted.</p>}
             {bulletins?.items.map((b) => (
               <div key={b.id} className={`rounded-md border p-3 text-sm ${b.active ? '' : 'opacity-60'}`}>

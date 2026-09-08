@@ -1,3 +1,6 @@
+import { CATEGORIES, SEVERITIES, categoryLabel, SeverityBadge } from '../features/incidents';
+import { SitePicker, type PickedSite, useSiteMetadata } from '../features/sites';
+import { FilePicker } from '../features/files';
 import { enumValue } from '../lib/enum-value';
 import { api } from '@locintel/api';
 import { Button, Card, CardContent, FormDialog, Input, Label, Select, Table, TableBody,
@@ -11,46 +14,16 @@ import { useApiMutation } from '../lib/mutation';
 import { can, useMe } from '../session';
 import { StatusBadge } from '../shell';
 
-type Site = { id: string; name: string; timeZone: string };
-export type IncidentSummary = {
-  id: string; siteId: string; category: string; severity: string; status: string;
-  title: string; occurredAt: string; businessDate: string; lossAmount: number | null;
-  legalHold: boolean; deletedAt: string | null;
-};
-
-export const CATEGORIES = [
-  'Theft', 'OrganizedRetailCrime', 'InternalTheft', 'Fraud', 'Robbery', 'Burglary',
-  'Assault', 'Threat', 'Vandalism', 'Trespass', 'Disturbance', 'Safety', 'Other',
-] as const;
-export const SEVERITIES = ['Low', 'Medium', 'High', 'Critical'] as const;
-
-export const categoryLabel = (c: string) =>
-  c === 'OrganizedRetailCrime' ? 'Organized retail crime'
-    : c === 'InternalTheft' ? 'Internal theft'
-      : c.replace(/([a-z])([A-Z])/g, '$1 $2');
-
-export function SeverityBadge({ severity }: { severity: string }) {
-  const tone =
-    severity === 'Critical' ? 'bg-destructive text-destructive-foreground'
-      : severity === 'High' ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300'
-        : severity === 'Medium' ? 'bg-primary/10 text-primary'
-          : 'bg-muted text-muted-foreground';
-  return <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${tone}`}>{severity}</span>;
-}
-
 /** The fact table (blueprint module 1): what happened, where, on the site's business date. */
 export function IncidentsPage() {
   const { data: me } = useMe();
-  const [siteId, setSiteId] = useState('');
+  const [pickedSite, setPickedSite] = useState<PickedSite | null>(null);
+  const siteId = pickedSite?.id ?? '';
   const [status, setStatus] = useState('');
   const [category, setCategory] = useState('');
   const [q, setQ] = useState('');
   const [trash, setTrash] = useState(false);
 
-  const { data: sites } = useQuery({
-    queryKey: ['sites', 'picker'],
-    queryFn: async ({ signal }) => (await api.get('/api/sites', { signal, query: { limit: 200 } })).items,
-  });
   const params = new URLSearchParams({ limit: '50' });
   if (siteId) params.set('siteId', siteId);
   if (status) params.set('status', status);
@@ -67,6 +40,7 @@ export function IncidentsPage() {
   });
   const items = incidents.data?.pages.flatMap((p) => p.items);
   const total = incidents.data?.pages[0]?.total;
+  const { data: sites } = useSiteMetadata(items?.map((item) => item.siteId) ?? []);
   const siteName = (id: string) => sites?.find((s) => s.id === id)?.name ?? '—';
 
   return (
@@ -75,16 +49,13 @@ export function IncidentsPage() {
         <h1 className="text-2xl font-semibold">Incidents</h1>
         <div className="flex gap-2">
           {can(me, 'incidents:manage') && <ImportDialog />}
-          {can(me, 'incidents:report') && sites && <ReportDialog sites={sites} />}
+          {can(me, 'incidents:report') && <ReportDialog />}
         </div>
       </div>
       <div className="flex flex-wrap gap-2">
         <Input className="w-56" placeholder="Search title or narrative" value={q}
           onChange={(e) => setQ(e.target.value)} />
-        <Select className="w-44" value={siteId} onChange={(e) => setSiteId(e.target.value)}>
-          <option value="">All sites</option>
-          {sites?.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </Select>
+        <SitePicker aria-label="Filter by site" placeholder="All sites" value={pickedSite} onChange={setPickedSite} />
         <Select className="w-32" value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="">Any status</option>
           <option value="Open">Open</option>
@@ -166,9 +137,10 @@ export function IncidentsPage() {
   );
 }
 
-function ReportDialog({ sites }: { sites: Site[] }) {
+function ReportDialog() {
   const [open, setOpen] = useState(false);
-  const [siteId, setSiteId] = useState(sites[0]?.id ?? '');
+  const [pickedSite, setPickedSite] = useState<PickedSite | null>(null);
+  const siteId = pickedSite?.id ?? '';
   const [category, setCategory] = useState<string>('Theft');
   const [severity, setSeverity] = useState<string>('Medium');
   const [title, setTitle] = useState('');
@@ -207,9 +179,7 @@ function ReportDialog({ sites }: { sites: Site[] }) {
       <div className="space-y-3">
         <div className="space-y-1">
           <Label htmlFor="inc-site">Site</Label>
-          <Select id="inc-site" value={siteId} onChange={(e) => setSiteId(e.target.value)}>
-            {sites.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </Select>
+          <SitePicker id="inc-site" value={pickedSite} onChange={setPickedSite} />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
@@ -270,11 +240,6 @@ function ImportDialog() {
   const [open, setOpen] = useState(false);
   const [fileId, setFileId] = useState('');
   const [batchId, setBatchId] = useState('');
-  const { data: files } = useQuery({
-    queryKey: ['files', 'picker'],
-    queryFn: async ({ signal }) => (await api.get('/api/files', { signal, query: { limit: 200 } })).items,
-    enabled: open,
-  });
   const { data: detail } = useQuery({
     queryKey: ['incidents', 'import', batchId],
     queryFn: ({ signal }) => api.get("/api/incidents/imports/{id}", { signal, path: { id: batchId } }),
@@ -305,10 +270,7 @@ function ImportDialog() {
           <>
             <div className="space-y-1">
               <Label htmlFor="imp-file">File (upload on the Files page first)</Label>
-              <Select id="imp-file" value={fileId} onChange={(e) => setFileId(e.target.value)}>
-                <option value="">Choose…</option>
-                {files?.filter((f) => f.status === 'Clean').map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
-              </Select>
+              <FilePicker id="imp-file" value={fileId} onChange={setFileId} cleanOnly />
             </div>
             <Button className="w-full" disabled={!fileId || stage.isPending} onClick={() => stage.mutate()}>Stage and preview</Button>
           </>

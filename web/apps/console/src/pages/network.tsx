@@ -9,7 +9,7 @@ import { useApiMutation } from '../lib/mutation';
 
 import { can, useMe } from '../session';
 
-import { SeverityBadge } from './incidents';
+import { SeverityBadge } from '../features/incidents';
 
 
 

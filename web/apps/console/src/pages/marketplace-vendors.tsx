@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { useApiMutation } from '../lib/mutation';
 
 import { can, useMe } from '../session';
-import { CATEGORIES, categoryLabel } from './marketplace';
+import { CATEGORIES, categoryLabel } from '../features/marketplace';
 
 /** The catalog: every published vendor org, with credential health and your org's preferred/blocked marks. */
 export function MarketplaceVendorsPage() {

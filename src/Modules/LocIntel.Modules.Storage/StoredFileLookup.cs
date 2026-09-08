@@ -20,4 +20,29 @@ public sealed class StoredFileLookup(StorageDbContext db) : IStoredFileLookup
                 file.Name
             );
     }
+
+    public async Task<IReadOnlyDictionary<Guid, StoredFileInfo>> GetManyAsync(
+        IReadOnlyCollection<Guid> fileIds,
+        CancellationToken ct = default
+    )
+    {
+        var result = new Dictionary<Guid, StoredFileInfo>();
+        foreach (var ids in fileIds.Distinct().Chunk(1000))
+        {
+            var files = await db
+                .Files.AsNoTracking()
+                .Where(f => ids.Contains(f.Id) && f.Origin == null)
+                .Select(f => new StoredFileInfo(
+                    f.Id,
+                    f.Key,
+                    f.Status.ToString(),
+                    f.ContentType,
+                    f.Name
+                ))
+                .ToListAsync(ct);
+            foreach (var file in files)
+                result.Add(file.Id, file);
+        }
+        return result;
+    }
 }

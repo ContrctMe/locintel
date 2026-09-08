@@ -69,3 +69,13 @@ export const useSiteAttributes = () =>
 
 export const useSiteClosures = (id: string) =>
   useQuery({ queryKey: ['closures', id], queryFn: ({ signal }) => sitesApi.closures(id, signal) });
+
+/** Metadata only for the records a product view actually displays. */
+export function useSiteMetadata(ids: string[]) {
+  const unique = [...new Set(ids)].sort();
+  return useQuery({
+    queryKey: ['sites', 'metadata', unique],
+    queryFn: ({ signal }) => sitesApi.byIds(unique, signal),
+    enabled: unique.length > 0,
+  });
+}

@@ -1,5 +1,6 @@
+import { SitePicker, type PickedSite, useSites } from '../features/sites';
 import { api, type components } from '@locintel/api';
-import { Button, Card, CardContent, CardHeader, CardTitle, ConfirmButton, FormDialog, Input, Label, Select, Textarea } from '@locintel/ui';
+import { Button, Card, CardContent, CardHeader, CardTitle, ConfirmButton, FormDialog, Input, Label, Textarea } from '@locintel/ui';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
@@ -8,7 +9,7 @@ import { useApiMutation } from '../lib/mutation';
 
 import { weeklySchedule, type DayCode } from '../lib/schedule';
 import { can, useMe } from '../session';
-import { SeverityBadge } from './incidents';
+import { SeverityBadge } from '../features/incidents';
 
 
 type Checkpoint = { code: string; label: string; latitude: number | null; longitude: number | null };
@@ -29,10 +30,12 @@ export function PatrolsPage() {
   const { data: me } = useMe();
   const manage = can(me, 'patrols:manage');
   const perform = can(me, 'patrols:perform');
-  const [siteId, setSiteId] = useState('');
+  const [pickedSite, setPickedSite] = useState<PickedSite | null>(null);
   const [reportDate, setReportDate] = useState('');
-  const { data: sites } = useQuery({ queryKey: ['sites', 'picker'], queryFn: async ({ signal }) => (await api.get('/api/sites', { signal, query: { limit: 200 } })).items });
-  const activeSite = siteId || sites?.[0]?.id || '';
+  const siteQuery = useSites('');
+  const sites = siteQuery.data?.pages.flatMap((page) => page.items);
+  const currentSite = pickedSite ?? sites?.[0] ?? null;
+  const activeSite = currentSite?.id ?? '';
   const { data: day } = useQuery({ queryKey: ['patrols', 'today', activeSite], queryFn: ({ signal }) => api.get('/api/patrols/today', { signal, query: { siteId: activeSite } }), enabled: !!activeSite, refetchInterval: 30_000 });
   const { data: routes } = useQuery({ queryKey: ['patrols', 'routes', activeSite], queryFn: ({ signal }) => api.get('/api/patrols/routes', { signal, query: { siteId: activeSite } }), enabled: !!activeSite });
   const date = reportDate || day?.businessDate || '';
@@ -63,14 +66,13 @@ export function PatrolsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">Patrols</h1>
         <div className="flex gap-2">
-          {sites && sites.length > 1 && (
-            <Select className="w-56" value={activeSite} onChange={(e) => setSiteId(e.target.value)}>
-              {sites.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </Select>
-          )}
+          <SitePicker aria-label="Patrol site" value={currentSite} onChange={setPickedSite} />
           {manage && activeSite && <RouteDialog siteId={activeSite} />}
         </div>
       </div>
+      {siteQuery.isPending && <p role="status">Loading sites…</p>}
+      {siteQuery.isError && <p role="alert">Could not load sites. <Button onClick={() => void siteQuery.refetch()}>Retry sites</Button></p>}
+      {siteQuery.isSuccess && sites?.length === 0 && <p>No accessible sites yet.</p>}
       {day && <p className="text-sm text-muted-foreground">{day.site} · {day.businessDate} (site-local day)</p>}
 
       {live.map((p) => {

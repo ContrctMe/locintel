@@ -80,7 +80,7 @@ public sealed record ConnectorCreatedResponse(Guid Id);
 public static class IngestEndpoints
 {
     /// <summary>Stage a CLEAN uploaded CSV: parse, validate, diff - nothing applied.</summary>
-    [Transactional(typeof(IngestDbContext))]
+    [NonTransactional]
     [WolverinePost("/api/ingest/uploads")]
     [ProducesResponseType(typeof(StagedUploadResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> StageUpload(
@@ -116,7 +116,10 @@ public static class IngestEndpoints
             var rows = CsvParser.Parse(text).Select(CsvParser.ToSourceRow).ToList();
             if (rows.Count == 0)
                 return ApiErrors.BadRequest("no data rows found");
+            // Object storage is finished before the staging lock and database transaction begin.
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
             batch = await staging.StageAsync(org, userId, "upload", rows, ct);
+            await transaction.CommitAsync(ct);
         }
         catch (InvalidDataException e)
         {
