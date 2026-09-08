@@ -80,15 +80,15 @@ public static class CaseBriefEndpoint
             .OrderBy(n => n.CreatedAt)
             .Select(n => n.Body)
             .ToListAsync(ct);
+        var evidence = await db
+            .Evidence.Where(e => e.CaseId == id)
+            .OrderBy(e => e.AddedAt)
+            .ToListAsync(ct);
+        var storedFiles = await files.GetManyAsync(evidence.Select(e => e.FileId).ToArray(), ct);
         var evidenceLines = new List<string>();
-        foreach (
-            var item in await db
-                .Evidence.Where(e => e.CaseId == id)
-                .OrderBy(e => e.AddedAt)
-                .ToListAsync(ct)
-        )
+        foreach (var item in evidence)
         {
-            var file = await files.GetAsync(item.FileId, ct);
+            var file = storedFiles.GetValueOrDefault(item.FileId);
             evidenceLines.Add(
                 $"{file?.Name ?? "file"}{(item.Label is null ? "" : $" - {item.Label}")} (added {item.AddedAt:yyyy-MM-dd})"
             );

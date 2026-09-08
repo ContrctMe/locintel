@@ -7,11 +7,11 @@ import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-const dir = mkdtempSync(path.join(tmpdir(), 'premise-capacity-control-'));
+const dir = mkdtempSync(path.join(tmpdir(), 'locintel-capacity-control-'));
 let mode = 'good';
 const server = http.createServer((req, res) => {
   const answer = () => {
-    res.writeHead(mode === 'error' ? 503 : 200, { 'content-type': 'application/json', 'X-Premise-Instance': 'control' });
+    res.writeHead(mode === 'error' ? 503 : 200, { 'content-type': 'application/json', 'X-LocIntel-Instance': 'control' });
     res.end(JSON.stringify(mode === 'invalid' ? { error: 'not a page' } : { items: [{ id: 'site' }] }));
   };
   ['slow', 'dropped'].includes(mode) ? setTimeout(answer, 200) : answer();

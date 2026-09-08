@@ -11,6 +11,7 @@ test('checklist picker finds site 201 by search and recovers each read failure',
     city: null,
   }));
   let failSites = true;
+  let failSearch = true;
   let failToday = true;
   let failTemplates = true;
   const searches: string[] = [];
@@ -21,6 +22,7 @@ test('checklist picker finds site 201 by search and recovers each read failure',
     expect(limit).toBeLessThanOrEqual(200);
     // the picker searches server-side (ADR 51): a word of the name starts with what was typed
     const q = query.get('q');
+    if (q === '201' && failSearch) return route.fulfill({ status: 503, json: { error: 'search unavailable' } });
     if (q !== null) searches.push(q);
     const words = (q ?? '').toLowerCase().split(/\s+/).filter(Boolean);
     const hits = sites.filter((site) =>
@@ -57,6 +59,9 @@ test('checklist picker finds site 201 by search and recovers each read failure',
   // the 201st site is one search away, not four pages of "load more"
   const picker = page.getByLabel('Checklist site');
   await picker.fill('201');
+  await expect(page.getByRole('alert').filter({ hasText: 'Could not search sites.' })).toBeVisible();
+  failSearch = false;
+  await page.getByRole('button', { name: 'Retry site search' }).click();
   await page.getByRole('option', { name: 'Site 201' }).click();
   await expect(page.getByText('Site 201 ·', { exact: false })).toBeVisible();
   expect(searches).toContain('201');

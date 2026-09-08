@@ -1,3 +1,5 @@
+import { useSiteMetadata } from '../features/sites';
+import { FilePicker } from '../features/files';
 import { enumValue } from '../lib/enum-value';
 import { api, type components } from '@locintel/api';
 import { Button, Card, CardContent, CardHeader, CardTitle, ConfirmButton, FormDialog,
@@ -12,7 +14,7 @@ import { can, useMe } from '../session';
 import { StatusBadge } from '../shell';
 import { EntityStatusBadge, LINK_ROLES } from './entities';
 import { OpenCaseDialog, PriorityBadge } from './cases';
-import { CATEGORIES, SEVERITIES, categoryLabel, SeverityBadge } from './incidents';
+import { CATEGORIES, SEVERITIES, categoryLabel, SeverityBadge } from '../features/incidents';
 
 
 
@@ -30,10 +32,7 @@ export function IncidentDetailPage() {
     queryKey: key,
     queryFn: ({ signal }) => api.get("/api/incidents/{id}", { signal, path: { id: incidentId } }),
   });
-  const { data: sites } = useQuery({
-    queryKey: ['sites', 'picker'],
-    queryFn: async ({ signal }) => (await api.get('/api/sites', { signal, query: { limit: 200 } })).items,
-  });
+  const { data: sites } = useSiteMetadata(incident ? [incident.siteId] : []);
   const site = sites?.find((s) => s.id === incident?.siteId);
   const [reason, setReason] = useState('');
   const [note, setNote] = useState('');
@@ -255,11 +254,6 @@ function AttachDialog({ incidentId, invalidate }: { incidentId: string; invalida
   const [open, setOpen] = useState(false);
   const [fileId, setFileId] = useState('');
   const [label, setLabel] = useState('');
-  const { data: files } = useQuery({
-    queryKey: ['files', 'picker'],
-    queryFn: async ({ signal }) => (await api.get('/api/files', { signal, query: { limit: 200 } })).items,
-    enabled: open,
-  });
   const attach = useApiMutation({
     mutationFn: () =>
       api.post("/api/incidents/{id}/attachments", { fileId, label: label.trim() || null }, { path: { id: incidentId } }),
@@ -278,10 +272,7 @@ function AttachDialog({ incidentId, invalidate }: { incidentId: string; invalida
       <div className="space-y-3">
         <div className="space-y-1">
           <Label htmlFor="att-file">File</Label>
-          <Select id="att-file" value={fileId} onChange={(e) => setFileId(e.target.value)}>
-            <option value="">Choose…</option>
-            {files?.map((f) => <option key={f.id} value={f.id}>{f.name} ({f.status})</option>)}
-          </Select>
+          <FilePicker id="att-file" value={fileId} onChange={setFileId} />
         </div>
         <div className="space-y-1">
           <Label htmlFor="att-label">Label</Label>

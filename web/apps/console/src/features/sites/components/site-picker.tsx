@@ -1,4 +1,5 @@
 import {
+  Button,
   Combobox,
   ComboboxContent,
   ComboboxEmpty,
@@ -60,7 +61,9 @@ export function SitePicker({
     >
       <ComboboxInput id={id} placeholder={placeholder} aria-label={ariaLabel} showClear={value !== null} />
       <ComboboxContent>
-        <ComboboxEmpty>{results.isPending ? 'Searching…' : 'No sites match.'}</ComboboxEmpty>
+        {results.isError ? (
+          <p role="alert" className="p-2">Could not search sites. <Button type="button" variant="outline" onClick={() => void results.refetch()}>Retry site search</Button></p>
+        ) : <ComboboxEmpty>{results.isPending ? 'Searching…' : 'No sites match.'}</ComboboxEmpty>}
         <ComboboxList>
           {(site: PickedSite) => (
             <ComboboxItem key={site.id} value={site}>

@@ -439,3 +439,10 @@ jurisdiction.
   Prove the full topology locally before selecting/purchasing a VM. Synthetic,
   invite-only staging; $20/month target, modest flexibility for operational value.
   [Scope, evidence, and remaining acceptance](../container-staging.md).
+
+- 2026-09-08: Engineering improvements use shared bounded CSV parsing and bulk
+  stored-file lookup from upstream. Incident imports retain a 5,000-row limit,
+  add a 4 MiB byte limit, reject undefined enum values, and read storage outside
+  database transactions. Product site pickers search beyond the first 200
+  records; evidence selectors paginate. Site labels and map coordinates load
+  only for displayed IDs. Current scope and checks: [Engineering improvements](../engineering-improvements.md).

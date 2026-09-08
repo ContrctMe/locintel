@@ -1,3 +1,4 @@
+import { SitePicker, type PickedSite, useSiteMetadata } from '../features/sites';
 import { api } from '@locintel/api';
 import { Card, CardContent, CardHeader, CardTitle, Select, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@locintel/ui';
 import { useQuery } from '@tanstack/react-query';
@@ -5,7 +6,7 @@ import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { IncidentMap, type MapPoint } from '../lib/incident-map';
 
-import { categoryLabel } from './incidents';
+import { categoryLabel } from '../features/incidents';
 
 
 
@@ -21,7 +22,8 @@ const isoDate = (d: Date) => d.toISOString().slice(0, 10);
  */
 export function AnalyticsPage() {
   const [days, setDays] = useState('30');
-  const [siteId, setSiteId] = useState('');
+  const [pickedSite, setPickedSite] = useState<PickedSite | null>(null);
+  const siteId = pickedSite?.id ?? '';
   const to = new Date();
   const from = new Date(to.getTime() - (Number(days) - 1) * 86_400_000);
   const params = new URLSearchParams({ from: isoDate(from), to: isoDate(to) });
@@ -30,10 +32,7 @@ export function AnalyticsPage() {
     queryKey: ['incidents', 'stats', params.toString()],
     queryFn: ({ signal }) => api.get('/api/incidents/stats', { signal, query: { from: isoDate(from), to: isoDate(to), siteId: siteId || undefined } }),
   });
-  const { data: sites } = useQuery({
-    queryKey: ['sites', 'analytics'],
-    queryFn: async ({ signal }) => (await api.get('/api/sites', { signal, query: { limit: 200 } })).items,
-  });
+  const { data: sites } = useSiteMetadata(stats?.bySite.map((site) => site.key) ?? []);
   const siteName = (id: string) => sites?.find((s) => s.id === id)?.name ?? id.slice(0, 8);
   const points: MapPoint[] = (stats?.bySite ?? []).flatMap((c) => {
     const site = sites?.find((s) => s.id === c.key);
@@ -58,10 +57,7 @@ export function AnalyticsPage() {
             <option value="90">Last 90 days</option>
             <option value="365">Last year</option>
           </Select>
-          <Select className="w-48" value={siteId} onChange={(e) => setSiteId(e.target.value)}>
-            <option value="">All sites</option>
-            {sites?.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </Select>
+          <SitePicker aria-label="Filter by site" placeholder="All sites" value={pickedSite} onChange={setPickedSite} />
         </div>
       </div>
 

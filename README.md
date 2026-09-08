@@ -7,54 +7,15 @@ incidents, people/vehicles, investigations, alerts, patrols, intelligence sharin
 and a services marketplace. See the [product blueprint](docs/product/crime-intelligence-blueprint.md).
 The inherited platform review is not a fresh review of all LocIntel features.
 
-Local container preparation is active; no hosted deployment is approved or running
-as part of this work. See [container staging preparation](docs/container-staging.md)
-for verified checks, remaining acceptance criteria, and the budget baseline
-(owner: project maintainers; updated 2026-09-05).
-Shared-budget browser rate limiting remains a verification blocker. The corrected
-all-in-one integration suite previously passed under a 4 GiB cap (302 passed, one skip,
-no OOM), although memory headroom remains tight.
-See [bounded-memory findings](docs/memory-diagnostics.md) for the reproduced
-fixture retention and its verified fix. The full local stack passed 778 measured
-requests, real scanning/reload, and session/file persistence after recreation.
-Those first measurements used Dynamic handler compilation. A controlled follow-up
-with pre-generated handlers passed at a **512 MiB API cap**, peaking near **254 MiB
-process RSS**, versus 1,722 MiB with Dynamic loading. The local profile now selects
-Static loading; AV remains separate. Longer-soak sizing and restore remain open.
-The [concurrency/soak follow-up](docs/concurrency-soak.md) exposed starvation
-at the default 20-connection pool. A diagnostic pool-64, 30-minute soak passed
-11,940 workload requests at a 241 MiB API peak. Bounded HTTP admission now passes
-the small-pool regression, focused checks and default-pool ramp through 40 clients
-(480/480, 237 ms p95). The admission-only two-hour soak completed 44,760 workload
-requests without errors or OOM events; API peak was 306 MiB. One health probe timed
-out, and file-backed memory kept growing despite stable late anonymous memory.
-Overlapping regression work confounds its tail latency; sizing remains provisional.
-The [transaction-lifetime review](docs/transaction-lifetimes.md) distinguishes
-necessary atomic writes from unnecessary read transactions. Seventeen reviewed reads
-now opt out of eager transactions. Scans, preview reads and connector fetches release
-connections before external work; conditional completion preserves atomic writes.
-Preview publication retains an erasure-coordination lock. Incident creation uses
-a single deferred commit; signup and evidence issuance are POST-only. Targeted
-integration, Static-handler and the new flows in all three browser engines pass.
-The broader sharded rerun recorded 326 passes, one readiness failure and one skip;
-one shard hung after test completion. Collectibility passed on subsequent reruns.
-Three diagnostic replays of the failing shard passed and exited cleanly; the original
-readiness/hang cause remains unconfirmed, with better failure capture now available.
-The new-image two-hour comparison completed: 47,560 soak requests and all 3,819
-health probes passed, with no OOMs and 186 ms p95. API cgroup memory peaked at
-317 MiB within 512 MiB, but continued file-backed growth prevents claiming a
-stable footprint. Sampled pool usage peaked at 10/20. Follow-up traced the dominant
-growth to page cache from the local upload adapter: every upload added exactly
-its page-rounded size. A no-collector control released and reloaded only the new
-files' cache with byte checks intact. Automatic reclaim then released 75.8 MiB
-under the unchanged 512 MiB cap without OOM or failed health checks. A local S3
-control sent 97.4 MiB directly to MinIO with zero API inactive-cache growth;
-MinIO itself ended near 497 MiB. Keep the API cap: representative warm/mixed
-production-storage sizing, causal lifetime comparisons and replica/hosted
-acceptance remain outstanding.
-The mixed-workload S3 follow-up is now in progress, using the unchanged API cap
-and a separately capped MinIO service; its final sizing result is pending.
-Details and evidence are tracked in the review.
+Current engineering changes and verification are tracked in
+[Engineering improvements](docs/engineering-improvements.md). Local `main` and
+`origin/main` were synchronized at `110429e` before this work; improvements live
+on `codex/engineering-improvements` in both repositories.
+
+Hosted deployment, production-provider qualification, backup/restore, and final
+capacity sizing remain separate acceptance work. See [container staging](docs/container-staging.md)
+and [capacity validation](docs/capacity-validation.md). Historical measurements
+are evidence for their recorded configuration and revision, not a current release guarantee.
 
 ## Inherited platform
 
@@ -64,9 +25,9 @@ tenancy with real isolation, plans and metering, roles and scopes, schedules
 that respect time zones, audit that holds up, and the operational seams
 (auth, billing, email, storage) behind swappable adapters.
 
-You don't install LocIntel. You **fork it, rename it, and build your vertical
-on top** — the template stays out of your domain and owns everything beneath
-it.
+LocIntel is already the product fork. Build product workflows here; contribute
+reusable platform fixes to the upstream template and bring them forward using
+the [fork maintenance procedure](docs/engineering-maintenance.md).
 
 ## What's in the box
 
@@ -78,7 +39,7 @@ it.
 - **Two-axis tenancy, three gates.** Every request passes entitlement (402,
   upsell) → grant (403) → scope (never fails — it *filters*). Row-level
   security enforces org isolation at the database, with the tenant GUC set on
-  every connection open by construction.
+  each transaction by construction (including implicit read transactions).
 - **Principals all the way down**: users (WorkOS AuthKit behind an
   OIDC-generic seam), magic-link contacts, API keys as service principals,
   and tenant-scoped guests — no anonymous code paths.
@@ -183,3 +144,5 @@ tools/                     init.py, new-module.py, run-integration-shard.sh
 ```
 
 Security: [assessment](docs/security-assessment.md) and [remediation ledger](docs/security-remediation.md), including deployment acceptance and verification evidence.
+
+Shared import limits, resource lookup behavior, and reproducible fork checks: [Engineering maintenance](docs/engineering-maintenance.md).

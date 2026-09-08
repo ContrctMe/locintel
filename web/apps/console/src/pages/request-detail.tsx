@@ -5,7 +5,7 @@ import { Link, useParams } from '@tanstack/react-router';
 import { useState } from 'react';
 import { fmtDateTime } from '../lib/format';
 import { useApiMutation } from '../lib/mutation';
-import { RequestStatusBadge, categoryLabel } from './marketplace';
+import { RequestStatusBadge, categoryLabel } from '../features/marketplace';
 
 export type RequestDetail = components['schemas']['RequestDetail'];
 

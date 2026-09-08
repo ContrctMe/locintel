@@ -14,7 +14,8 @@ public class HostLifetimeTests
         for (var i = 0; i < 3; i++)
             hosts.AddRange(await StartAndDisposeHost());
 
-        // Allow shutdown continuations to unwind before checking ownership.
+        // Use the shared bounded wait for shutdown continuations; collection is
+        // an ownership assertion, not a one-second latency guarantee under CI load.
         await ApiFixture.WaitUntilAsync(
             () =>
             {
@@ -24,7 +25,6 @@ public class HostLifetimeTests
                 return Task.FromResult(hosts.All(host => !host.IsAlive));
             },
             "disposed hosts and limiter timers to become collectible",
-            TimeSpan.FromSeconds(1),
             diagnostics: () =>
                 Task.FromResult(
                     string.Join(

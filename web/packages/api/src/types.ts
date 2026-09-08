@@ -8538,6 +8538,7 @@ export interface operations {
                 zoom?: number;
                 limit?: number;
                 after?: string;
+                ids?: string;
             };
             header?: never;
             path?: never;

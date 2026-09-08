@@ -43,6 +43,12 @@ git -C "$fork" rev-parse --verify -q template-renamed >/dev/null \
   || fail "init.py did not create template-renamed"
 [ -z "$(git -C "$fork" status --porcelain)" ] || fail "init.py left the tree dirty"
 
+# Operational files must be renamed too; these escaped the original suffix allow-list.
+for file in coverage.runsettings tools/fleet-bench.mjs tools/gateway.test.mjs tools/capacity.k6.js deploy/digitalocean/main.tf deploy/digitalocean/compat.tfvars.example deploy/digitalocean/compat.tftest.hcl web/apps/console/public/manifest.webmanifest .gitignore .csharpierignore; do
+  grep -Ei 'locintel' "$fork/$file" && fail "unrenamed product reference in $file"
+done
+grep -Fq '[Acme.*]*' "$fork/coverage.runsettings" || fail "coverage must measure fork assemblies"
+
 # The fork does its own work, in a file upstream also owns.
 echo "// fork-owned" >> "$fork/docs/production.md"
 git -C "$fork" add -A && git -C "$fork" commit -q -m "fork: local change"
@@ -90,4 +96,15 @@ grep -q "fork-owned" "$fork/docs/production.md" \
 grep -rq "LocIntel" "$fork/src/Acme.Api/Program.cs" \
   && fail "the rename did not hold through the sync"
 
-echo "PASS: two syncs, correct merge base, upstream delivered, fork intact"
+before=$(git -C "$fork" rev-parse template-renamed)
+exact=$(git -C "$fork" rev-parse template/main)
+(cd "$fork" && bash tools/sync-upstream.sh "" "$exact" > "$work/noop.log" 2>&1)
+[ "$before" = "$(git -C "$fork" rev-parse template-renamed)" ] || fail "same full SHA created another snapshot"
+[ -z "$(git -C "$fork" status --porcelain)" ] || fail "same full SHA dirtied the fork"
+if (cd "$fork" && bash tools/sync-upstream.sh "" template/main~1 > "$work/downgrade.log" 2>&1); then
+  fail "sync accepted a snapshot older than the current upstream baseline"
+fi
+grep -q 'non-descendant upstream snapshot' "$work/downgrade.log" || fail "downgrade failed for the wrong reason"
+[ "$before" = "$(git -C "$fork" rev-parse template-renamed)" ] || fail "rejected downgrade moved the snapshot branch"
+[ -z "$(git -C "$fork" status --porcelain)" ] || fail "rejected downgrade dirtied the fork"
+echo "PASS: two syncs, correct merge base, complete rename, downgrade refused, fork intact"

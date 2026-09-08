@@ -66,7 +66,7 @@ export default function () {
     const body = res.json();
     valid = res.status === 200 && (field === 'id' ? body.id === fixture.siteId : Array.isArray(body[field]) && body[field].length > 0);
   } catch (_) { /* invalid/non-JSON responses count as failures */ }
-  const tags = { route, instance: res.headers['X-Premise-Instance'] || 'missing' };
+  const tags = { route, instance: res.headers['X-LocIntel-Instance'] || 'missing' };
   failures.add(!valid, tags);
   latency.add(Date.now() - started, tags);
   responses.add(1, tags);

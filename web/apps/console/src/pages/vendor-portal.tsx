@@ -9,7 +9,7 @@ import { fmtDate, fmtDateTime } from '../lib/format';
 import { useApiMutation } from '../lib/mutation';
 
 import { can, useMe } from '../session';
-import { CATEGORIES, categoryLabel, RequestStatusBadge } from './marketplace';
+import { CATEGORIES, categoryLabel, RequestStatusBadge } from '../features/marketplace';
 import { RequestFacts, Timeline } from './request-detail';
 
 type Profile = components['schemas']['VendorProfileView'];

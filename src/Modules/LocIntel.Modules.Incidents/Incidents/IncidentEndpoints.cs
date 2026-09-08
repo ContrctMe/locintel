@@ -142,10 +142,11 @@ public static class IncidentEndpoints
             notes.Select(n => n.AuthorId).Append(incident.ReportedBy).Distinct().ToList(),
             ct
         );
+        var storedFiles = await files.GetManyAsync(attachments.Select(a => a.FileId).ToArray(), ct);
         var attachmentViews = new List<IncidentAttachmentView>(attachments.Count);
         foreach (var attachment in attachments)
         {
-            var file = await files.GetAsync(attachment.FileId, ct);
+            var file = storedFiles.GetValueOrDefault(attachment.FileId);
             attachmentViews.Add(
                 new IncidentAttachmentView(
                     attachment.Id,

@@ -1,6 +1,6 @@
 mock_provider "digitalocean" {}
 variables {
-  campaign           = "premise-compat-check"
+  campaign           = "locintel-compat-check"
   region             = "nyc3"
   kubernetes_version = "1.36.3-do.3"
   expires_at         = "2030-01-01T00:00:00Z"
