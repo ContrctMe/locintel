@@ -313,7 +313,12 @@ public static class ImportEndpoints
         var gate = await Gate.RequireAsync(accessor, scopes, Capabilities.IncidentsManage, ct);
         if (gate is not GateOutcome.Allowed { Scope: var scope })
             return gate.ToResult();
-        var batch = await db.ImportBatches.FirstOrDefaultAsync(b => b.Id == id, ct);
+        // Serialize commit/discard for this batch inside the existing transaction.
+        var batch = await db
+            .ImportBatches.FromSql(
+                $"SELECT * FROM incidents.import_batches WHERE id = {id} FOR UPDATE"
+            )
+            .FirstOrDefaultAsync(ct);
         if (batch is null)
             return Results.NotFound();
         if (batch.Status != ImportStatus.Staged)
@@ -386,7 +391,12 @@ public static class ImportEndpoints
     {
         if (!await scopes.CanAsync(accessor.Current, Capabilities.IncidentsManage, ct))
             return new GateOutcome.Forbidden(Capabilities.IncidentsManage).ToResult();
-        var batch = await db.ImportBatches.FirstOrDefaultAsync(b => b.Id == id, ct);
+        // Serialize commit/discard for this batch inside the existing transaction.
+        var batch = await db
+            .ImportBatches.FromSql(
+                $"SELECT * FROM incidents.import_batches WHERE id = {id} FOR UPDATE"
+            )
+            .FirstOrDefaultAsync(ct);
         if (batch is null)
             return Results.NotFound();
         if (batch.Status != ImportStatus.Staged)
