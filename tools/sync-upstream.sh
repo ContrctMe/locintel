@@ -38,6 +38,10 @@ git fetch -q template
 upstream_full=$(git rev-parse "$ref")
 upstream=$(git rev-parse --short "$ref")
 previous=$(git log -1 --format='%(trailers:key=Template-Commit,valueonly)' template-renamed)
+if [ "$previous" = "$upstream_full" ]; then
+  echo "template-renamed already holds $upstream; nothing to sync"
+  exit 0
+fi
 if [ -n "$previous" ] && ! git merge-base --is-ancestor "$previous" "$upstream_full"; then
   echo "refusing a non-descendant upstream snapshot; $ref does not include the previously synced $previous" >&2
   exit 1

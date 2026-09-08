@@ -97,6 +97,10 @@ grep -rq "LocIntel" "$fork/src/Acme.Api/Program.cs" \
   && fail "the rename did not hold through the sync"
 
 before=$(git -C "$fork" rev-parse template-renamed)
+exact=$(git -C "$fork" rev-parse template/main)
+(cd "$fork" && bash tools/sync-upstream.sh "" "$exact" > "$work/noop.log" 2>&1)
+[ "$before" = "$(git -C "$fork" rev-parse template-renamed)" ] || fail "same full SHA created another snapshot"
+[ -z "$(git -C "$fork" status --porcelain)" ] || fail "same full SHA dirtied the fork"
 if (cd "$fork" && bash tools/sync-upstream.sh "" template/main~1 > "$work/downgrade.log" 2>&1); then
   fail "sync accepted a snapshot older than the current upstream baseline"
 fi
