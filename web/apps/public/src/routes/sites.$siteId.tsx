@@ -4,7 +4,7 @@ import { publicApi, type PublicSiteDetail } from '../api';
 import { isTodayInZone, spanLabel } from '../lib/hours';
 
 const fetchSite = createServerFn({ method: 'GET' })
-  .inputValidator((siteId: string) => siteId)
+  .validator((siteId: string) => siteId)
   .handler(({ data }) => publicApi<PublicSiteDetail | null>(`/public/sites/${data}`, null));
 
 export const Route = createFileRoute('/sites/$siteId')({

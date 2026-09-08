@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace LocIntel.IntegrationTests;
 
 /// <summary>
@@ -14,6 +16,24 @@ public class OpenApiSnapshotTest(ApiFixture fixture) : IClassFixture<ApiFixture>
         var spec = await fixture.GuestClient().GetStringAsync("/openapi/v1.json");
         Assert.Contains("/api/sites", spec);
         Assert.Contains("/api/ingest/uploads", spec);
+        using var document = JsonDocument.Parse(spec);
+        var schema = document
+            .RootElement.GetProperty("paths")
+            .GetProperty("/api/patrols/routes/{id}/schedules")
+            .GetProperty("post")
+            .GetProperty("requestBody")
+            .GetProperty("content")
+            .GetProperty("application/json")
+            .GetProperty("schema")
+            .GetProperty("$ref")
+            .GetString()!;
+        var properties = document
+            .RootElement.GetProperty("components")
+            .GetProperty("schemas")
+            .GetProperty(schema.Split('/')[^1])
+            .GetProperty("properties");
+        Assert.True(properties.TryGetProperty("startLocal", out _));
+        Assert.False(properties.TryGetProperty("opens", out _));
 
         var dir = FindRepoRoot();
         if (dir is not null) // repo layout present (skip in detached CI sandboxes)

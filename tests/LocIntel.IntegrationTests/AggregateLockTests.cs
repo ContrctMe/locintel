@@ -95,7 +95,8 @@ public class AggregateLockTests(ApiFixture fixture) : IClassFixture<ApiFixture>
                         "First",
                         $"lock-{org.Value:N}",
                         RegionId.Default,
-                        null
+                        null,
+                        1
                     )
                 )
                 .AsTask(),
@@ -105,7 +106,8 @@ public class AggregateLockTests(ApiFixture fixture) : IClassFixture<ApiFixture>
                         "Second",
                         $"lock-{org.Value:N}",
                         RegionId.Default,
-                        null
+                        null,
+                        2
                     )
                 )
                 .AsTask()
@@ -119,8 +121,19 @@ public class AggregateLockTests(ApiFixture fixture) : IClassFixture<ApiFixture>
             },
             "the org directory row for the doubly-upserted org"
         );
-        Assert.Contains(row.Name, new[] { "First", "Second" });
+        // with source versions the winner is not "whichever ran last" but
+        // the newer version, whichever order the queue chose
         await using var check = Identity();
-        Assert.Equal(1, await check.OrgDirectory.CountAsync(d => d.OrgId == org));
+        var rows = await ApiFixture.WaitForAsync(
+            async () =>
+            {
+                await using var db = Identity();
+                var all = await db.OrgDirectory.Where(d => d.OrgId == org).ToListAsync();
+                return all.Any(d => d.SourceVersion == 2) ? all : null;
+            },
+            "the newer version to be the one applied"
+        );
+        Assert.Equal("Second", Assert.Single(rows).Name);
+        _ = row;
     }
 }

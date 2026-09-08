@@ -1,6 +1,7 @@
 using LocIntel.Modules.Identity.Data;
 using LocIntel.Platform.Auth;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Wolverine;
 using Wolverine.Attributes;
@@ -18,6 +19,7 @@ public static class DirectoryWebhookEndpoint
 {
     [Transactional(typeof(IdentityDbContext))]
     [WolverinePost("/auth/directory/webhook")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
     public static async Task<IResult> Receive(
         HttpContext http,
         IAuthProvider provider,

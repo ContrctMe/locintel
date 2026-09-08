@@ -23,7 +23,7 @@ namespace LocIntel.Modules.Entities.Entities;
 /// </summary>
 public static class EntityEndpoints
 {
-    [Transactional(typeof(EntitiesDbContext))]
+    [NonTransactional]
     [WolverineGet("/api/entities")]
     [ProducesResponseType(typeof(EntityListResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> List(

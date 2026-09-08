@@ -8,6 +8,8 @@ using Wolverine.Http;
 
 namespace LocIntel.Modules.Tenancy.Sites;
 
+public sealed record PublicOrgResponse(string Name, string Slug, string? BrandColor);
+
 /// <summary>
 /// The guest surface (ADR 7): public-safe site data for the host-derived org,
 /// behind the SAME gates as everything else - guests hold exactly public:read
@@ -63,6 +65,7 @@ public static class PublicSiteEndpoints
     /// </summary>
     [Transactional(typeof(TenancyDbContext))]
     [WolverineGet("/public/org")]
+    [ProducesResponseType(typeof(PublicOrgResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> OrgIdentity(
         TenancyDbContext db,
         IPrincipalAccessor accessor,
@@ -91,14 +94,7 @@ public static class PublicSiteEndpoints
             .OrganizationSettings.Where(s => s.Key == "brand.color")
             .Select(s => s.Value)
             .FirstOrDefaultAsync(ct);
-        return Results.Ok(
-            new
-            {
-                organization.Name,
-                organization.Slug,
-                brandColor,
-            }
-        );
+        return Results.Ok(new PublicOrgResponse(organization.Name, organization.Slug, brandColor));
     }
 
     /// <summary>

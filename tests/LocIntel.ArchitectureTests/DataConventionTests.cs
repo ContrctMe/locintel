@@ -7,6 +7,16 @@ namespace LocIntel.ArchitectureTests;
 public class DataConventionTests
 {
     [Fact]
+    public void The_scan_covers_every_module()
+    {
+        // the guard is only as wide as its input: eight contexts, one per catalog entry
+        var contexts = AllTypes()
+            .Where(t => typeof(ModuleDbContext).IsAssignableFrom(t) && !t.IsAbstract)
+            .Count();
+        Assert.Equal(LocIntel.Api.ModuleCatalog.AllWithPlatform.Count(), contexts);
+    }
+
+    [Fact]
     public void Every_DbContext_derives_from_ModuleDbContext()
     {
         // ADR 17: no module gets a bare DbContext - the base class carries the
@@ -25,10 +35,11 @@ public class DataConventionTests
         );
     }
 
+    // every catalogued module plus Platform - the scan used to cover Tenancy
+    // and Platform only, so a bare DbContext in any other module passed
     private static IEnumerable<Type> AllTypes() =>
-        new[]
-        {
-            typeof(Modules.Tenancy.TenancyModule).Assembly,
-            typeof(Platform.Kernel.OrgId).Assembly,
-        }.SelectMany(a => a.GetTypes());
+        LocIntel
+            .Api.ModuleCatalog.AllWithPlatform.Select(m => m.DbContextType.Assembly)
+            .Distinct()
+            .SelectMany(a => a.GetTypes());
 }

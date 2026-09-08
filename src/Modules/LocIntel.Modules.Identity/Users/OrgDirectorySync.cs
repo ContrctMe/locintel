@@ -1,6 +1,7 @@
 using LocIntel.Contracts;
 using LocIntel.Modules.Identity.Data;
 using LocIntel.Platform.Data;
+using LocIntel.Platform.Messaging;
 using Microsoft.EntityFrameworkCore;
 
 namespace LocIntel.Modules.Identity.Users;
@@ -18,6 +19,10 @@ public static class OrganizationUpsertedHandler
         // queue; serialize them so the second sees the first's row (AggregateLock)
         await db.TakeAsync(evt.OrgId.Value, ct);
         var entry = await db.OrgDirectory.FirstOrDefaultAsync(d => d.OrgId == evt.OrgId, ct);
+        // the lock stops two copies interleaving; the version stops an OLDER
+        // event, delivered late or redelivered, overwriting a newer row
+        if (!ProjectionVersion.IsNewer(evt.SourceVersion, entry?.SourceVersion ?? 0))
+            return;
         if (entry is null)
         {
             db.OrgDirectory.Add(
@@ -30,6 +35,7 @@ public static class OrganizationUpsertedHandler
                     ExternalId = evt.ExternalId,
                     Status = evt.Status,
                     IsPlatform = evt.IsPlatform,
+                    SourceVersion = evt.SourceVersion,
                 }
             );
         }
@@ -42,6 +48,7 @@ public static class OrganizationUpsertedHandler
             entry.Status = evt.Status;
             entry.IsPlatform = evt.IsPlatform;
             entry.SyncedAt = DateTimeOffset.UtcNow;
+            entry.SourceVersion = evt.SourceVersion;
         }
         await db.SaveChangesAsync(ct);
     }

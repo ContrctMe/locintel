@@ -2,6 +2,7 @@ using LocIntel.Contracts;
 using LocIntel.Modules.Identity.Data;
 using LocIntel.Platform.Kernel;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Wolverine.Attributes;
 using Wolverine.Http;
@@ -10,11 +11,22 @@ namespace LocIntel.Modules.Identity.Access;
 
 public sealed record UpdateRoleRequest(string Name, GrantSpec[] Grants);
 
+public sealed record GrantExceptionResponse(
+    Guid Id,
+    string Email,
+    string Domain,
+    string Action,
+    string? ScopePath,
+    string Reason,
+    DateTimeOffset ExpiresAt
+);
+
 /// <summary>Role lifecycle beyond create+assign: edit, unassign, delete - all behind the last-manager guard.</summary>
 public static class RoleManagementEndpoints
 {
     [Transactional(typeof(IdentityDbContext))]
     [WolverinePut("/api/roles/{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public static async Task<IResult> Update(
         Guid id,
         UpdateRoleRequest request,
@@ -68,6 +80,7 @@ public static class RoleManagementEndpoints
 
     [Transactional(typeof(IdentityDbContext))]
     [WolverineDelete("/api/roles/{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public static async Task<IResult> Delete(
         Guid id,
         IdentityDbContext db,
@@ -95,6 +108,7 @@ public static class RoleManagementEndpoints
 
     [Transactional(typeof(IdentityDbContext))]
     [WolverineDelete("/api/roles/{id}/assign/{userId}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public static async Task<IResult> Unassign(
         Guid id,
         Guid userId,
@@ -136,6 +150,7 @@ public static class RoleManagementEndpoints
 
     [Transactional(typeof(IdentityDbContext))]
     [WolverineGet("/api/grant-exceptions")]
+    [ProducesResponseType(typeof(List<GrantExceptionResponse>), StatusCodes.Status200OK)]
     public static async Task<IResult> ListExceptions(
         IdentityDbContext db,
         IPrincipalAccessor accessor,
@@ -152,22 +167,22 @@ public static class RoleManagementEndpoints
             where exception.ExpiresAt > now
             join user in db.Users on exception.UserId equals user.Id
             orderby exception.ExpiresAt
-            select new
-            {
+            select new GrantExceptionResponse(
                 exception.Id,
-                email = user.Email,
+                user.Email,
                 exception.Domain,
                 exception.Action,
                 exception.ScopePath,
                 exception.Reason,
-                exception.ExpiresAt,
-            }
+                exception.ExpiresAt
+            )
         ).ToListAsync(ct);
         return Results.Ok(exceptions);
     }
 
     [Transactional(typeof(IdentityDbContext))]
     [WolverineDelete("/api/grant-exceptions/{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public static async Task<IResult> RevokeException(
         Guid id,
         IdentityDbContext db,

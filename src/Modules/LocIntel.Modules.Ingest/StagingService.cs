@@ -25,7 +25,8 @@ public sealed class StagingService(IngestDbContext db, ISiteLookup sites)
         Guid createdBy,
         string source,
         IReadOnlyList<SourceRow> rows,
-        CancellationToken ct
+        CancellationToken ct,
+        Guid? batchId = null
     )
     {
         var liveSites = (await sites.ListSitesAsync(ct))
@@ -37,7 +38,7 @@ public sealed class StagingService(IngestDbContext db, ISiteLookup sites)
 
         var batch = new ImportBatch
         {
-            Id = Guid.CreateVersion7(),
+            Id = batchId ?? Guid.CreateVersion7(),
             OrgId = org,
             Source = source,
             CreatedBy = createdBy,

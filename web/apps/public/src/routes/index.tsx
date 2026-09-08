@@ -1,37 +1,14 @@
 import { createFileRoute, Link, useNavigate, useRouter } from '@tanstack/react-router';
 import { createServerFn } from '@tanstack/react-start';
-import { getRequestHeader, setCookie } from '@tanstack/react-start/server';
-import { publicApi, publicApiMaybe, type PublicMe, type PublicSite } from '../api';
+import { useState } from 'react';
+import { publicLocator, publicSignOut } from '../api';
 import { SiteMap } from '../SiteMap';
 
 const fetchLocator = createServerFn({ method: 'GET' })
-  .inputValidator((near?: string) => near)
-  .handler(async ({ data: near }) => ({
-    // maybe-variant: an unreachable API must not masquerade as an empty org
-    sites: await publicApiMaybe<PublicSite[]>(
-      near ? `/public/sites?near=${encodeURIComponent(near)}` : '/public/sites',
-    ),
-    me: await publicApi<PublicMe>('/me', { tier: 'guest' }),
-  }));
+  .validator((near?: string) => near)
+  .handler(({ data: near }) => publicLocator(near));
 
-const signOut = createServerFn({ method: 'POST' }).handler(async () => {
-  const apiBase = process.env.LOCINTEL_API ?? 'http://localhost:5293';
-  const cookie = getRequestHeader('cookie');
-  try {
-    const response = await fetch(`${apiBase}/auth/logout`, {
-      method: 'POST',
-      headers: cookie ? { cookie } : {},
-    });
-    // relay the API's cookie deletions onto THIS host, mirroring the redeem relay
-    for (const raw of response.headers.getSetCookie()) {
-      const pair = raw.split(';')[0] ?? '';
-      const eq = pair.indexOf('=');
-      if (eq > 0) setCookie(pair.slice(0, eq), '', { path: '/', maxAge: 0 });
-    }
-  } catch {
-    // the API being down must not trap the visitor in the session
-  }
-});
+const signOut = createServerFn({ method: 'POST' }).handler(publicSignOut);
 
 export const Route = createFileRoute('/')({
   validateSearch: (search: Record<string, unknown>): { near?: string } =>
@@ -46,6 +23,8 @@ function Locator() {
   const { near } = Route.useSearch();
   const navigate = useNavigate();
   const router = useRouter();
+  const [signingOut, setSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState<string>();
 
   if (sites === undefined) {
     return (
@@ -68,16 +47,27 @@ function Locator() {
           </span>
           <button
             type="button"
+            disabled={signingOut}
             className="underline-offset-4 hover:underline"
             onClick={async () => {
-              await signOut();
-              await router.invalidate();
+              setSigningOut(true);
+              setSignOutError(undefined);
+              try {
+                const result = await signOut();
+                if (!result.ok) setSignOutError(result.error);
+                else await router.invalidate();
+              } catch {
+                setSignOutError('We could not confirm sign-out. Your session may still be active. Please try again.');
+              } finally {
+                setSigningOut(false);
+              }
             }}
           >
-            Sign out
+            {signingOut ? 'Signing out…' : 'Sign out'}
           </button>
         </p>
       )}
+      {signOutError && <p role="alert">{signOutError}</p>}
       <div className="space-y-2">
         <h1 className="text-3xl font-semibold tracking-tight">Our locations</h1>
         <p className="text-muted-foreground">

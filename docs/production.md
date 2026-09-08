@@ -14,15 +14,71 @@ One image, three roles, selected by the `ROLE` environment variable (ADR 34):
 |---|---|---|
 | `migrate` | Applies all eight modules' EF migrations with **owner** credentials, provisions the unprivileged `app_user` role, reassigns schema ownership, exits | Once per deploy, before the others |
 | `api` | HTTP surface (Wolverine endpoints, auth, webhooks) | 1+ replicas |
-| `worker` | Outbox delivery, scheduled retries, occurrence materialization, retention purge, idempotency cleanup | 1+ replicas |
+| `worker` | Outbox delivery, scheduled retries, occurrence materialization, retention purge, idempotency cleanup | 1+ replicas — every recurring sweep is leased per period in `platform.sweep_runs` (first replica to claim `(sweep, period)` runs it, the rest skip), so replicas never duplicate a sweep |
 
 Ordering matters: `api`/`worker` should start (or restart) after `migrate`
 exits successfully — the Aspire graph does this with `WaitForCompletion`;
 in Kubernetes use an init container or a migration Job; in Compose use
 `depends_on: condition: service_completed_successfully`.
 
-`GET /healthz` returns 200 when the process is ready (503 while starting) and
-reports its role — wire it to your readiness probe.
+The API and worker serve two probes. `GET /livez` returns 200 as soon as the process
+serves requests — wire it to your liveness probe (restart on failure).
+`GET /healthz` returns 200 when the checks below pass (503 otherwise),
+and reports its role and version — wire it to your readiness probe
+(out of rotation while failing). An unknown `ROLE` refuses to start.
+
+Readiness requires completed bootstrap, a started/non-cancelling Wolverine
+runtime, accepting/non-faulted listeners, and an available durable local queue
+with no latched local queues. Under the actual application database identity it
+checks schema usage plus each SELECT/INSERT/UPDATE/DELETE privilege on the
+incoming, outgoing, and dead-letter tables, and on `identity.user_sessions`
+for the API or `platform.sweep_runs` for the worker. Both roles handle durable
+local messages, so both require the envelope permissions. Database checking is
+bounded to three seconds. Runtime state uses the public Wolverine runtime,
+sending-agent, and listener-circuit APIs, without probing private fields.
+
+This is a point-in-time readiness contract, not a complete database-permission
+audit or a promise that every handler will succeed. It does not execute a
+business transaction or verify external providers. Monitor backlog age, completed
+work, retry/dead-letter rates, and sweep completion separately: a running queue
+can still be failing a specific message. Provider diagnostics stay on the
+operator surface; vendor outages do not turn process-local liveness red.
+
+Sweep keys use the message contract's assembly and fully qualified type name, so
+same-named contracts cannot suppress each other. The lease is committed before
+the durable messages are published: scheduling is at most once per period, while
+successfully published messages use Wolverine's durable delivery. A crash in that
+small gap, or partway through per-org fan-out, delays the missing work until the
+next period. Every shipped sweep is condition-based and self-repairing, so this is
+the intended guarantee; make the claim and outbox publication transactional before
+adding a sweep whose individual period must never be missed.
+
+### Audit partition maintenance
+
+The worker publishes one daily `MaintainAuditPartitions` operation through the
+global sweep lease. Per-tenant `PurgeAuditData` only deletes rows past that
+tenant's entitlement window; it never creates or drops partitions. Global
+upkeep ensures current/next month and prunes **empty** monthly partitions older
+than 400 days. The threshold controls empty-table housekeeping, not data
+retention: populated partitions survive until tenant retention empties them,
+including the Scale plan's 730-day window and longer overrides.
+
+The additive `SafeAuditPartitionMaintenance` migration replaces the existing
+SECURITY DEFINER functions without changing applied migrations. A shared
+transaction advisory lock serializes concurrent calls and redelivery. Missing
+months are rebuilt by moving matching default-partition rows and attaching the
+new partition in one transaction; FORCE RLS and the tenant policy are installed
+before commit. Failure rolls back both movement and partition DDL. Wolverine
+handles retries after publication; claim-to-publication failure retains the
+next-period recovery limit described above.
+
+The function owner needs visibility across forced RLS for these operations.
+`row_security=off` makes insufficient privileges fail rather than mistaking a
+filtered partition for an empty one. The app role still receives no DDL rights.
+Missing-month repair and old-partition pruning take an exclusive parent-table
+lock, so large backfills can temporarily block access-log writes. Monitor failed
+upkeep, default-partition growth, and lock duration; move to staged/online repair
+only when measurements justify it. The default partition is never dropped.
 
 ## The database role split (ADR 38 — do not skip)
 
@@ -54,10 +110,18 @@ Everything the image reads. Section syntax (`A:B`) maps to env vars as
 |---|---|---|
 | `ROLE` | yes | `migrate` \| `api` \| `worker` (default `api`) |
 | `Build:Version` | recommended | Stamp it in CI (e.g. the git SHA or tag); surfaces in `/healthz` and the console footer so "what version are you running?" is answerable |
-| `ConnectionStrings:locintel` | yes | Owner credentials; rewritten for api/worker |
+| `ConnectionStrings:locintel` | yes | Owner credentials; rewritten for api/worker. Omitted `Maximum Pool Size` defaults to 20 per pool (or an explicitly larger `Minimum Pool Size`); explicit maximums are preserved |
 | `Database:AppUser` / `Database:AppPassword` | api/worker | The RLS-subject identity |
 | `Public:HostTemplate` | yes | e.g. `https://{slug}.yourproduct.com` — contact links are minted from this |
 | `Proxy:TrustForwardedHeaders` | yes, behind a proxy | Honors `X-Forwarded-Proto/Host/For` from the immediate peer. **Required in the documented topology**: without it, TLS terminates at the proxy, the app sees HTTP, session cookies lose the `Secure` flag and scheme-built URLs (billing returns, SSO portal returns) come out `http://`. Only enable when the proxy strips inbound `X-Forwarded-*` from clients (reverse proxies do). Production also hard-floors cookies to `Secure` regardless — a forgotten flag breaks logins loudly instead of leaking cookies silently |
+
+Pool limits apply **per pool, per process**, not per database or deployment.
+EF's regional data source, durable messaging, and direct Npgsql connections can
+have separate pools. Budget their aggregate across API/worker replicas below
+PostgreSQL's usable connection slots, leaving room for migration, diagnostics,
+and shutdown work. A default of 20 is not a multi-replica capacity guarantee;
+set native `Maximum Pool Size` explicitly when sizing a deployment. Measure
+pool waits as well as server occupancy before increasing it.
 
 ### Auth (ADR 14)
 
@@ -71,6 +135,33 @@ Everything the image reads. Section syntax (`A:B`) maps to env vars as
 Register the WorkOS webhook endpoint (dsync events) at
 `https://api.yourproduct.com/auth/directory/webhook`, and the AuthKit
 redirect URI at `https://console.yourproduct.com/auth/callback`.
+
+The console observes `X-LocIntel-Session-Context` on `/me` and sends that
+fingerprint as a request precondition. Preserve this header through proxies.
+It is not an authentication token: the encrypted HttpOnly cookie and normal
+authorization remain authoritative. A mismatched fingerprint returns 409 before
+business processing, preventing a stale tab from acting under another tab's
+new cookie. Clients without the optional precondition retain their existing
+API contract; deploy the matching console/API together. The console refuses a
+successful `/me` response without this header and offers session verification
+retry, rather than silently proceeding without stale-write protection.
+
+Same-origin console tabs notify each other with BroadcastChannel after session
+changes or fresh login. Focus/visibility checks detect changes from other paths;
+stale requests also trigger a reset. A frozen tab is not claimed to update
+immediately. Console API requests have a 30-second deadline covering the response
+body; query cancellation aborts their network reads. Upload workflows have a
+120-second overall deadline, including direct storage and scan polling. Polling
+uses the tenant-authorized `/api/files/{id}` metadata endpoint, so concurrent
+uploads cannot push the target off a list page. Public SSR upstream reads and
+session actions also have a 30-second request deadline. These
+are client limits, not a claim that server-side work rolls back on disconnect.
+Interrupted writes are never automatically retried: the console warns that the
+operation may have completed and asks users to refresh before retrying. Session
+changes drain those bounded mutations and preserve the warning after discarding
+the old tree. Larger/slower uploads require a deliberate deadline change and
+slow-link acceptance tests. Remaining verification and failure cases are tracked
+in the [current review](software-maturity-review-details.md).
 
 ### Billing (ADR 39)
 
@@ -101,8 +192,9 @@ contact links land in spam and that reads as "login is broken."
 
 | Key | Notes |
 |---|---|
-| `Storage:LocalRoot` | Local disk adapter — swap the `IObjectStore` registration in `Program.cs` to `S3ObjectStore` (`Storage:S3:*`) or `AzureBlobObjectStore` (`Storage:Azure:*`) for production; both are smoke-tested against MinIO/Azurite |
-| `Secrets:LocalMasterKey` | **Dev/test only — refuses to boot in Production.** Register a KMS adapter (`KmsKeyWrapper`, ADR 31) |
+| `Storage:Provider` | `s3` (`Storage:S3:BucketName`, optional `ServiceUrl`/`AccessKey`/`SecretKey`/`ForcePathStyle` for MinIO/R2) or `azure` (`Storage:Azure:ConnectionString`, `ContainerName`); both smoke-tested against MinIO/Azurite. `local` (`Storage:LocalRoot`) is **dev/test only — refuses to boot in Production**: tickets live in process memory and bytes on local disk |
+| `Scanner:Provider` | `clamav` (`Scanner:ClamAv:Host`, `Port` default 3310, `TimeoutSeconds` default 60; clamd with TCPSocket enabled) or a fork adapter behind `IVirusScanner`. `eicar` is **dev/test only — refuses to boot in Production**: it reads 128 KiB and knows one signature. A scanner that cannot answer keeps the object quarantined; it never reads as clean |
+| `Secrets:Provider` | `kms` (`Secrets:Kms:KeyId`, optional `ServiceUrl`/`AccessKey`/`SecretKey`; ADR 31, LocalStack-tested) or a fork adapter. `local` (`Secrets:LocalMasterKey`, the default when that key is set) is **dev/test only — refuses to boot in Production** |
 | `RateLimits:GuestPerMinute` / `RateLimits:UserPerMinute` | Defaults 60 / 300; per-org API quota comes from the entitlement |
 | `Impersonation:TtlSeconds` | Support-session length (default 3600) |
 | `Api:ExposeOpenApi` | Serve `/openapi/v1.json` (default true; the console developer page links it). Set false to hide the API surface |
@@ -111,9 +203,44 @@ contact links land in spam and that reads as "login is broken."
 
 ### Boot guards
 
+Scanner evidence: `ClamAvScannerTests` runs the production adapter against a real
+`clamav/clamav:1.5.4-debian` daemon with bundled signatures. It covers clean and
+infected uploads through durable processing, plus a paused-daemon timeout that
+keeps the file unavailable until an explicit successful handler retry. This is
+not evidence for signature-update operations, automatic retry timing, or cloud
+storage: the pipeline fixture uses local disk storage. Cloud storage adapters
+have separate MinIO/Azurite tests; KMS uses LocalStack, authentication uses the
+WorkOS emulator, billing uses stripe-mock, and SMTP uses Mailpit. Live cloud IAM,
+vendor account configuration, actual billing lifecycle, and email delivery remain
+deployment-specific validation, not outcomes established by these local tests.
+
+Upload safety: S3 tickets sign `If-None-Match: *` and Azure tickets grant only
+Create, so clients cannot overwrite existing scanned objects. Fork storage
+adapters must enforce the same create-only guarantee. `IObjectStore.GetLengthAsync`
+replaces `ExistsAsync`: return actual stored length, null for absence, and let
+other provider failures propagate. Completion rejects empty or oversized objects
+before publishing a scan. The declared size remains capped at 100 MiB.
+
+The cloud ticket does **not** cap bytes received by the storage service; size is
+checked at completion. Rejected or abandoned uploads remain unavailable but can
+consume storage. Monitor incomplete uploads and storage spend; deployments needing
+a hard ingress quota need provider policy or a bounded upload gateway. Do not
+claim that the application admission limit prevents storage-cost abuse.
+
+Configure storage CORS for the actual console origins, PUT/GET, Content-Type,
+and provider ticket headers (`If-None-Match` for S3; `x-ms-blob-type` for Azure).
+All ticket headers must reach storage. For an existing deployment, previously
+issued overwrite-capable URLs are not retroactively revoked: stop issuing old
+tickets and allow their 15-minute TTL to expire before trusting the new invariant,
+or revoke their signing credentials. Review previously uploaded content if such
+URLs were exposed. Validate these controls against the selected live provider;
+local evidence uses MinIO and Azurite, not AWS/Azure/R2 accounts.
+
 The image **refuses to start in Production** with any dev-only adapter
-still selected: local auth, local billing, local notifications, or the local
-key wrapper. Treat a failed boot here as the guard working, not a bug.
+still selected: local auth, local storage, the EICAR scanner, the local key
+wrapper, local billing, or local notifications - and with an unknown
+provider name in any environment. `ProductionBootGuardTests` proves each
+seam. Treat a failed boot here as the guard working, not a bug.
 
 ## Frontends and DNS
 
@@ -154,16 +281,47 @@ DNS: `console.yourproduct.com` (console + API) and a wildcard
 what `Public:HostTemplate` must match). Production subdomains do not share
 cookies; only localhost's port-blind cookies do (the dev quirk in CLAUDE.md).
 
-## Before go-live: Wolverine codegen
+## Building the image
 
-Wolverine generates handler plumbing at startup; the default Dynamic mode
-(fine in dev) does that work on every boot and says so in the log. For
-production images, pre-build the generated types
-(`dotnet run -- codegen write` during the image build, and set
-`opts.CodeGeneration.TypeLoadMode = TypeLoadMode.Static` under a
-production check) to cut startup time and memory. The template leaves
-Dynamic as the default because Static with a stale cache fails the boot -
-adopt it together with your CI image build, not before.
+There is no Dockerfile to drift. The SDK builds the OCI image:
+
+```bash
+dotnet run --project src/LocIntel.Api -c Release -- codegen write   # pre-generate Wolverine handler code
+dotnet publish src/LocIntel.Api -c Release -p:PublishProfile=DefaultContainer -p:ContainerImageTag=<tag> -p:Version=<version>
+```
+
+The image runs as the base image's non-root `app` user, listens on 8080,
+and is the one artifact all three roles run from. CI (`checks.yml`, the
+`image` job) builds it on every push and smokes it: `tools/smoke-image.sh`
+boots `migrate`, `api` and `worker` from the image in **Production** mode
+against a real PostgreSQL and asserts the migrate role exits cleanly and
+both long-running roles answer `/livez` and `/healthz`. It starts the worker
+before the API and requires the existing durable cleanup job to remove an
+expired idempotency record while retaining a fresh one. It also rejects dead
+letters, unexpected serving-role exits, error/exception logs, and root runtime
+users. The expanded script's current verification status is tracked in the
+[maturity review](software-maturity-review-details.md). That run is also the
+boot guards' negative control - a production-valid configuration must not
+be refused. `-p:Version` becomes `Build:Version`'s fallback in `/healthz`.
+
+### Wolverine codegen
+
+Wolverine generates handler plumbing at startup; in dev that happens on
+every boot. In Production the host loads the pre-generated code the image
+build wrote (`TypeLoadMode.Auto`): faster boot, less memory, and a fork
+that publishes without the codegen step still starts - it generates at
+boot as dev does, rather than dying with a stale-cache error.
+
+`CodeGeneration:Mode` can explicitly select `Dynamic`, `Auto`, or `Static`.
+For verified pre-generated images, use `Static` to refuse missing handlers rather
+than paying an unexpected runtime-compilation cost. The image smoke check now
+requires Static loading under a 512 MiB cap. Ordinary Development stays Dynamic;
+the Production default remains Auto for compatibility. This setting does not
+change the environment or relax any production-provider guard.
+
+The local container profile uses the same strict loading path with synthetic
+local adapters. See [memory diagnostics](memory-diagnostics.md) for measured
+RSS, managed memory, CPU, and the distinction from full production acceptance.
 
 ## Incidents
 

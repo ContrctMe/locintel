@@ -1,20 +1,11 @@
-import { api } from '@locintel/api';
+import { checklistsApi } from './api';
+import { useSites } from '../sites';
 import { Button, Card, CardContent, CardHeader, CardTitle, ConfirmButton, FormDialog,
   Input, Label, Select } from '@locintel/ui';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { useApiMutation } from '../lib/mutation';
-import type { Page } from '../lib/paging';
-import { can, useMe } from '../session';
-
-type Site = { id: string; name: string };
-type TodayList = {
-  id: string;
-  name: string;
-  items: { index: number; text: string; done: boolean; checkedAt: string | null }[];
-};
-type Today = { businessDate: string; site: string; lists: TodayList[] };
-type Template = { id: string; name: string; items: string[]; scopePath: string | null };
+import { useApiMutation } from '../../lib/mutation';
+import { can, useMe } from '../../session';
 
 /** The ops core loop (ADR 45): today's lists per site, on the site's clock. */
 export function ChecklistsPage() {
@@ -22,19 +13,18 @@ export function ChecklistsPage() {
   const manage = can(me, 'checklists:manage');
   const [siteId, setSiteId] = useState('');
 
-  const { data: sites } = useQuery({
-    queryKey: ['sites', 'picker'],
-    queryFn: async () => (await api.get<Page<Site>>('/api/sites?limit=200')).items,
-  });
+  const siteQuery = useSites('');
+  const sites = siteQuery.data?.pages.flatMap((page) => page.items);
   const activeSite = siteId || sites?.[0]?.id || '';
-  const { data: today } = useQuery({
+  const todayQuery = useQuery({
     queryKey: ['checklists', 'today', activeSite],
-    queryFn: () => api.get<Today>(`/api/checklists/today?siteId=${activeSite}`),
+    queryFn: ({ signal }) => checklistsApi.today(activeSite, signal),
     enabled: !!activeSite,
   });
+  const today = todayQuery.data;
   const check = useApiMutation({
     mutationFn: (input: { templateId: string; itemIndex: number; done: boolean }) =>
-      api.post('/api/checklists/check', { ...input, siteId: activeSite }),
+      checklistsApi.check({ ...input, siteId: activeSite }),
     invalidate: [['checklists', 'today', activeSite]],
   });
 
@@ -43,7 +33,7 @@ export function ChecklistsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">Checklists</h1>
         {sites && sites.length > 1 && (
-          <Select className="w-56" value={activeSite}
+          <Select aria-label="Checklist site" className="w-56" value={activeSite}
             onChange={(e) => setSiteId(e.target.value)}>
             {sites.map((s) => (
               <option key={s.id} value={s.id}>{s.name}</option>
@@ -51,6 +41,19 @@ export function ChecklistsPage() {
           </Select>
         )}
       </div>
+      {siteQuery.isPending && <p role="status">Loading sites…</p>}
+      {siteQuery.isError && <div role="alert">Could not load sites. <Button onClick={() => {
+        if (siteQuery.isFetchNextPageError) void siteQuery.fetchNextPage();
+        else void siteQuery.refetch();
+      }}>Retry sites</Button></div>}
+      {siteQuery.hasNextPage && !siteQuery.isError && <Button disabled={siteQuery.isFetchingNextPage}
+        onClick={() => void siteQuery.fetchNextPage()}>
+        {siteQuery.isFetchingNextPage ? 'Loading more sites…' : 'Load more sites'}
+      </Button>}
+      {sites?.length === 0 && !siteQuery.isError && <p>No accessible sites yet.</p>}
+      {activeSite && todayQuery.isPending && <p role="status">Loading checklists…</p>}
+      {todayQuery.isError && <div role="alert">Could not load checklists. <Button
+        onClick={() => void todayQuery.refetch()}>Retry checklists</Button></div>}
       {today && (
         <p className="text-sm text-muted-foreground">
           {today.site} · {today.businessDate} (site-local day)
@@ -89,7 +92,7 @@ export function ChecklistsPage() {
                         onChange={(e) =>
                           check.mutate({
                             templateId: list.id,
-                            itemIndex: item.index,
+                            itemIndex: Number(item.index),
                             done: e.target.checked,
                           })
                         }
@@ -115,13 +118,14 @@ function TemplatesCard() {
   const [name, setName] = useState('');
   const [items, setItems] = useState('');
 
-  const { data: templates } = useQuery({
+  const templatesQuery = useQuery({
     queryKey: ['checklists', 'templates'],
-    queryFn: () => api.get<Template[]>('/api/checklists/templates'),
+    queryFn: ({ signal }) => checklistsApi.templates(signal),
   });
+  const templates = templatesQuery.data;
   const create = useApiMutation({
     mutationFn: () =>
-      api.post('/api/checklists/templates', {
+      checklistsApi.create({
         name: name.trim(),
         items: items.split('\n').map((i) => i.trim()).filter(Boolean),
       }),
@@ -134,7 +138,7 @@ function TemplatesCard() {
     },
   });
   const remove = useApiMutation({
-    mutationFn: (id: string) => api.del(`/api/checklists/templates/${id}`),
+    mutationFn: checklistsApi.remove,
     invalidate: [['checklists']],
     success: 'Checklist deleted',
   });
@@ -177,6 +181,9 @@ function TemplatesCard() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
+        {templatesQuery.isPending && <p role="status">Loading templates…</p>}
+        {templatesQuery.isError && <div role="alert">Could not load templates. <Button
+          onClick={() => void templatesQuery.refetch()}>Retry templates</Button></div>}
         {templates?.length === 0 && (
           <p className="text-sm text-muted-foreground">No templates yet.</p>
         )}

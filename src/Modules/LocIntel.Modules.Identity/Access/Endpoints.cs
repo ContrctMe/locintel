@@ -2,6 +2,7 @@ using LocIntel.Contracts;
 using LocIntel.Modules.Identity.Data;
 using LocIntel.Platform.Kernel;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Wolverine.Http;
 
@@ -22,10 +23,20 @@ public sealed record AddGrantExceptionRequest(
     string? ScopePath = null
 );
 
+public sealed record RoleResponse(
+    Guid Id,
+    string Name,
+    IReadOnlyList<GrantSpec> Grants,
+    int AssignedCount
+);
+
+public sealed record RoleCreatedResponse(Guid Id);
+
 public static class AccessEndpoints
 {
     [Wolverine.Attributes.Transactional(typeof(IdentityDbContext))]
     [WolverineGet("/api/roles")]
+    [ProducesResponseType(typeof(List<RoleResponse>), StatusCodes.Status200OK)]
     public static async Task<IResult> ListRoles(
         IdentityDbContext db,
         IPrincipalAccessor accessor,
@@ -39,21 +50,20 @@ public static class AccessEndpoints
         // the editor's read: grants and reach, not just names
         var roles = await db
             .Roles.OrderBy(r => r.Name)
-            .Select(r => new
-            {
+            .Select(r => new RoleResponse(
                 r.Id,
                 r.Name,
-                grants = db
-                    .RoleGrants.Where(g => g.RoleId == r.Id)
-                    .Select(g => new { g.Domain, g.Action })
+                db.RoleGrants.Where(g => g.RoleId == r.Id)
+                    .Select(g => new GrantSpec(g.Domain, g.Action))
                     .ToList(),
-                assignedCount = db.MembershipRoles.Count(mr => mr.RoleId == r.Id),
-            })
+                db.MembershipRoles.Count(mr => mr.RoleId == r.Id)
+            ))
             .ToListAsync(ct);
         return Results.Ok(roles);
     }
 
     [WolverinePost("/api/roles")]
+    [ProducesResponseType(typeof(RoleCreatedResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> CreateRole(
         CreateRoleRequest request,
         IdentityDbContext db,
@@ -80,10 +90,11 @@ public static class AccessEndpoints
                 }
             );
         await db.SaveChangesAsync(ct);
-        return Results.Ok(new { role.Id });
+        return Results.Ok(new RoleCreatedResponse(role.Id));
     }
 
     [WolverinePost("/api/roles/{id}/assign")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public static async Task<IResult> Assign(
         Guid id,
         AssignRoleRequest request,
@@ -120,6 +131,7 @@ public static class AccessEndpoints
     }
 
     [WolverinePost("/api/grant-exceptions")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public static async Task<IResult> AddException(
         AddGrantExceptionRequest request,
         IdentityDbContext db,

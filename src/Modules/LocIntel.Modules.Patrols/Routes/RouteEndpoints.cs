@@ -134,7 +134,7 @@ public static class RouteEndpoints
     [ProducesResponseType(typeof(ScheduleCreated), StatusCodes.Status200OK)]
     public static async Task<IResult> AddSchedule(
         Guid id,
-        CreateScheduleRequest request,
+        CreatePatrolScheduleRequest request,
         PatrolsDbContext db,
         IPrincipalAccessor accessor,
         IScopeResolver scopes,

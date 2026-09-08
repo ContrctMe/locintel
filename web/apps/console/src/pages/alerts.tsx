@@ -1,3 +1,4 @@
+import { enumValue } from '../lib/enum-value';
 import { api } from '@locintel/api';
 import { Button, Card, CardContent, CardHeader, CardTitle, FormDialog, Input, Label, Select, Textarea } from '@locintel/ui';
 import { useQuery } from '@tanstack/react-query';
@@ -5,43 +6,36 @@ import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { fmtDate, fmtDateTime } from '../lib/format';
 import { useApiMutation } from '../lib/mutation';
-import type { Page } from '../lib/paging';
+
 import { can, useMe } from '../session';
 import { SeverityBadge } from './incidents';
 
-type Alert = {
-  id: string; kind: string; severity: string; title: string; body: string; incidentId: string | null;
-  bulletinId: string | null; entityId: string | null; createdAt: string; readAt: string | null;
-};
-type AlertPage = Page<Alert> & { unread: number };
-type Bulletin = {
-  id: string; kind: string; severity: string; title: string; body: string; scopePath: string | null;
-  entityId: string | null; incidentId: string | null; caseId: string | null; issuer: string | null;
-  issuedAt: string; expiresAt: string; status: string; active: boolean; acknowledged: boolean; acknowledgements: number;
-};
-type Hierarchy = { nodes: { id: string; name: string; depth: number; path: string }[] };
-type Site = { id: string; name: string };
+
+
+
+
+
 
 /** The feed (system alerts) and the board (bulletins / BOLOs), both already scope-filtered by the server. */
 export function AlertsPage() {
   const { data: me } = useMe();
   const manage = can(me, 'alerts:manage');
   const [showInactive, setShowInactive] = useState(false);
-  const { data: alerts } = useQuery({ queryKey: ['alerts', 'feed'], queryFn: () => api.get<AlertPage>('/api/alerts?limit=100') });
+  const { data: alerts } = useQuery({ queryKey: ['alerts', 'feed'], queryFn: ({ signal }) => api.get('/api/alerts', { signal, query: { limit: 100 } }) });
   const { data: bulletins } = useQuery({
     queryKey: ['alerts', 'bulletins', showInactive],
-    queryFn: () => api.get<Page<Bulletin>>(`/api/bulletins?limit=100${showInactive ? '&includeInactive=true' : ''}`),
+    queryFn: ({ signal }) => api.get('/api/bulletins', { signal, query: { limit: 100, includeInactive: showInactive } }),
   });
   const { data: sites } = useQuery({
     queryKey: ['sites', 'picker'],
-    queryFn: async () => (await api.get<Page<Site>>('/api/sites?limit=200')).items,
+    queryFn: async ({ signal }) => (await api.get('/api/sites', { signal, query: { limit: 200 } })).items,
   });
-  const markRead = useApiMutation({ mutationFn: (id: string) => api.post(`/api/alerts/${id}/read`), invalidate: [['alerts']] });
+  const markRead = useApiMutation({ mutationFn: (id: string) => api.post("/api/alerts/{id}/read", undefined, { path: { id } }), invalidate: [['alerts']] });
   const acknowledge = useApiMutation({
-    mutationFn: (input: { id: string; siteId: string | null }) => api.post(`/api/bulletins/${input.id}/acknowledge`, { siteId: input.siteId }),
+    mutationFn: (input: { id: string; siteId: string | null }) => api.post("/api/bulletins/{id}/acknowledge", { siteId: input.siteId }, { path: { id: input.id } }),
     invalidate: [['alerts']], success: 'Acknowledged',
   });
-  const withdraw = useApiMutation({ mutationFn: (id: string) => api.post(`/api/bulletins/${id}/withdraw`), invalidate: [['alerts']], success: 'Withdrawn' });
+  const withdraw = useApiMutation({ mutationFn: (id: string) => api.post("/api/bulletins/{id}/withdraw", undefined, { path: { id } }), invalidate: [['alerts']], success: 'Withdrawn' });
   const [ackSite, setAckSite] = useState('');
 
   return (
@@ -138,10 +132,10 @@ function IssueBulletinDialog() {
   const [body, setBody] = useState('');
   const [scopePath, setScopePath] = useState('');
   const [days, setDays] = useState('14');
-  const { data: hierarchy } = useQuery({ queryKey: ['hierarchy'], queryFn: () => api.get<Hierarchy>('/api/hierarchy'), enabled: open });
+  const { data: hierarchy } = useQuery({ queryKey: ['hierarchy'], queryFn: ({ signal }) => api.get("/api/hierarchy", { signal }), enabled: open });
   const issue = useApiMutation({
     mutationFn: () => api.post('/api/bulletins', {
-      kind, severity, title: title.trim(), body: body.trim(), scopePath: scopePath || null,
+      kind: enumValue(['Advisory', 'Bolo', 'Safety'], kind), severity: enumValue(['Low', 'Medium', 'High', 'Critical'], severity), title: title.trim(), body: body.trim(), scopePath: scopePath || null,
       expiresAt: new Date(Date.now() + Number(days) * 86_400_000).toISOString(),
     }),
     invalidate: [['alerts']], success: 'Bulletin issued', onSuccess: () => { setOpen(false); setTitle(''); setBody(''); },
@@ -163,7 +157,7 @@ function IssueBulletinDialog() {
           <div className="space-y-1"><Label htmlFor="bl-scope">Target</Label>
             <Select id="bl-scope" value={scopePath} onChange={(e) => setScopePath(e.target.value)}>
               <option value="">Whole organization</option>
-              {hierarchy?.nodes.map((n) => <option key={n.id} value={n.path}>{' '.repeat(n.depth * 2)}{n.name}</option>)}
+              {hierarchy?.nodes.map((n) => <option key={n.id} value={n.path}>{' '.repeat(Number(n.depth) * 2)}{n.name}</option>)}
             </Select></div>
           <div className="space-y-1"><Label htmlFor="bl-days">Days active (max 90)</Label><Input id="bl-days" type="number" min="1" max="90" value={days} onChange={(e) => setDays(e.target.value)} /></div>
         </div>

@@ -5,6 +5,7 @@ using LocIntel.Platform.Entitlements;
 using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Messaging;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Wolverine.Attributes;
@@ -20,6 +21,8 @@ public sealed record OperatorAddExceptionRequest(
     DateTimeOffset ExpiresAt
 );
 
+public sealed record EntitlementExceptionCreatedResponse(string Code, DateTimeOffset ExpiresAt);
+
 /// <summary>
 /// Entitlement CUSTODY (the operator persona): plan values and exceptions
 /// are operator-set, tenant-read. Every endpoint targets an org id and runs
@@ -32,6 +35,7 @@ public static class OperatorEntitlementEndpoints
     // its own transaction) - the outer chain must not open one
     [NonTransactional]
     [WolverineGet("/api/operator/orgs/{orgId}/entitlements")]
+    [ProducesResponseType(typeof(Dictionary<string, EntitlementSummary>), StatusCodes.Status200OK)]
     public static async Task<IResult> Effective(
         Guid orgId,
         HttpContext http,
@@ -61,6 +65,7 @@ public static class OperatorEntitlementEndpoints
     // its own transaction) - the outer chain must not open one
     [NonTransactional]
     [WolverinePut("/api/operator/orgs/{orgId}/entitlements/{code}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public static async Task<IResult> Set(
         Guid orgId,
         string code,
@@ -148,6 +153,7 @@ public static class OperatorEntitlementEndpoints
     // its own transaction) - the outer chain must not open one
     [NonTransactional]
     [WolverinePost("/api/operator/orgs/{orgId}/entitlements/{code}/exceptions")]
+    [ProducesResponseType(typeof(EntitlementExceptionCreatedResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> AddException(
         Guid orgId,
         string code,
@@ -188,7 +194,7 @@ public static class OperatorEntitlementEndpoints
                     }
                 );
                 await db.SaveChangesAsync(ct);
-                return Results.Ok(new { code, request.ExpiresAt });
+                return Results.Ok(new EntitlementExceptionCreatedResponse(code, request.ExpiresAt));
             }
         );
     }

@@ -4,15 +4,12 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { IncidentMap, type MapPoint } from '../lib/incident-map';
-import type { Page } from '../lib/paging';
+
 import { categoryLabel } from './incidents';
 
-type Count = { key: string; count: number; loss: number };
-type Stats = {
-  from: string; to: string; total: number; open: number; totalLoss: number;
-  byCategory: Count[]; bySeverity: Count[]; bySite: Count[]; byBusinessDate: Count[]; byHour: Count[]; byWeekday: Count[];
-};
-type Site = { id: string; name: string; latitude: number | null; longitude: number | null };
+
+
+
 
 const WEEKDAYS: Record<string, string> = { '1': 'Mon', '2': 'Tue', '3': 'Wed', '4': 'Thu', '5': 'Fri', '6': 'Sat', '7': 'Sun' };
 const isoDate = (d: Date) => d.toISOString().slice(0, 10);
@@ -31,24 +28,24 @@ export function AnalyticsPage() {
   if (siteId) params.set('siteId', siteId);
   const { data: stats } = useQuery({
     queryKey: ['incidents', 'stats', params.toString()],
-    queryFn: () => api.get<Stats>(`/api/incidents/stats?${params}`),
+    queryFn: ({ signal }) => api.get('/api/incidents/stats', { signal, query: { from: isoDate(from), to: isoDate(to), siteId: siteId || undefined } }),
   });
   const { data: sites } = useQuery({
     queryKey: ['sites', 'analytics'],
-    queryFn: async () => (await api.get<Page<Site>>('/api/sites?limit=200')).items,
+    queryFn: async ({ signal }) => (await api.get('/api/sites', { signal, query: { limit: 200 } })).items,
   });
   const siteName = (id: string) => sites?.find((s) => s.id === id)?.name ?? id.slice(0, 8);
   const points: MapPoint[] = (stats?.bySite ?? []).flatMap((c) => {
     const site = sites?.find((s) => s.id === c.key);
     return site && site.latitude != null && site.longitude != null
-      ? [{ id: site.id, name: site.name, lat: site.latitude, lng: site.longitude, count: c.count, loss: c.loss }]
+      ? [{ id: site.id, name: site.name, lat: Number(site.latitude), lng: Number(site.longitude), count: Number(c.count), loss: Number(c.loss) }]
       : [];
   });
   const hours = Array.from({ length: 24 }, (_, h) => {
     const key = h.toString().padStart(2, '0');
-    return { key, label: `${h}:00`, count: stats?.byHour.find((x) => x.key === key)?.count ?? 0 };
+    return { key, label: `${h}:00`, count: Number(stats?.byHour.find((x) => x.key === key)?.count ?? 0) };
   });
-  const weekdays = Object.keys(WEEKDAYS).map((k) => ({ key: k, label: WEEKDAYS[k] ?? k, count: stats?.byWeekday.find((x) => x.key === k)?.count ?? 0 }));
+  const weekdays = Object.keys(WEEKDAYS).map((k) => ({ key: k, label: WEEKDAYS[k] ?? k, count: Number(stats?.byWeekday.find((x) => x.key === k)?.count ?? 0) }));
 
   return (
     <div className="max-w-5xl space-y-6">
@@ -71,7 +68,7 @@ export function AnalyticsPage() {
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Tile label="Incidents" value={stats?.total} />
         <Tile label="Open" value={stats?.open} />
-        <Tile label="Reported loss" value={stats ? `$${stats.totalLoss.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : undefined} />
+        <Tile label="Reported loss" value={stats ? `$${Number(stats.totalLoss).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : undefined} />
         <Tile label="Sites affected" value={stats?.bySite.length} />
       </div>
 
@@ -83,8 +80,8 @@ export function AnalyticsPage() {
       )}
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Bars title="By category" rows={(stats?.byCategory ?? []).map((c) => ({ key: c.key, label: categoryLabel(c.key), count: c.count, loss: c.loss }))} showLoss />
-        <Bars title="By severity" rows={(stats?.bySeverity ?? []).map((c) => ({ key: c.key, label: c.key, count: c.count, loss: c.loss }))} />
+        <Bars title="By category" rows={(stats?.byCategory ?? []).map((c) => ({ key: c.key, label: categoryLabel(c.key), count: Number(c.count), loss: Number(c.loss) }))} showLoss />
+        <Bars title="By severity" rows={(stats?.bySeverity ?? []).map((c) => ({ key: c.key, label: c.key, count: Number(c.count), loss: Number(c.loss) }))} />
         <Bars title="By hour of day (site-local)" rows={hours} dense />
         <Bars title="By weekday (site-local)" rows={weekdays} />
       </div>
@@ -102,7 +99,7 @@ export function AnalyticsPage() {
                 <TableRow key={s.key}>
                   <TableCell><Link to="/incidents" className="hover:underline">{siteName(s.key)}</Link></TableCell>
                   <TableCell className="text-right tabular-nums">{s.count}</TableCell>
-                  <TableCell className="text-right tabular-nums">{s.loss > 0 ? `$${s.loss.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—'}</TableCell>
+                  <TableCell className="text-right tabular-nums">{Number(s.loss) > 0 ? `$${Number(s.loss).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—'}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -116,7 +113,7 @@ export function AnalyticsPage() {
           <TableHeader><TableRow><TableHead>Business date</TableHead><TableHead className="text-right">Incidents</TableHead><TableHead className="text-right">Loss</TableHead></TableRow></TableHeader>
           <TableBody>
             {stats?.byBusinessDate.map((d) => (
-              <TableRow key={d.key}><TableCell>{d.key}</TableCell><TableCell className="text-right tabular-nums">{d.count}</TableCell><TableCell className="text-right tabular-nums">{d.loss > 0 ? `$${d.loss.toLocaleString()}` : '—'}</TableCell></TableRow>
+              <TableRow key={d.key}><TableCell>{d.key}</TableCell><TableCell className="text-right tabular-nums">{d.count}</TableCell><TableCell className="text-right tabular-nums">{Number(d.loss) > 0 ? `$${Number(d.loss).toLocaleString()}` : '—'}</TableCell></TableRow>
             ))}
           </TableBody>
         </Table>

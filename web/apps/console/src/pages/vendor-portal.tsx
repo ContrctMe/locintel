@@ -1,4 +1,5 @@
-import { api } from '@locintel/api';
+import { enumValue } from '../lib/enum-value';
+import { api, type components } from '@locintel/api';
 import { Button, Card, CardContent, CardHeader, CardTitle, ConfirmButton, Input, Label, Select, Table,
   TableBody, TableCell, TableHead, TableHeader, TableRow, Textarea } from '@locintel/ui';
 import { useQuery } from '@tanstack/react-query';
@@ -6,17 +7,12 @@ import { Link, useParams } from '@tanstack/react-router';
 import { useState } from 'react';
 import { fmtDate, fmtDateTime } from '../lib/format';
 import { useApiMutation } from '../lib/mutation';
-import type { Page } from '../lib/paging';
-import { can, useMe } from '../session';
-import { CATEGORIES, categoryLabel, RequestStatusBadge, type RequestSummary } from './marketplace';
-import { RequestFacts, Timeline, type RequestDetail } from './request-detail';
 
-type Profile = {
-  orgId: string; updatedAt: string; name: string; description: string; categories: string[]; serviceAreas: string[];
-  latitude: number | null; longitude: number | null; serviceRadiusKm: number | null;
-  contactEmail: string | null; contactPhone: string | null; published: boolean;
-  credentials: { id: string; kind: string; label: string; number: string | null; jurisdiction: string | null; expiresAt: string; expired: boolean }[];
-};
+import { can, useMe } from '../session';
+import { CATEGORIES, categoryLabel, RequestStatusBadge } from './marketplace';
+import { RequestFacts, Timeline } from './request-detail';
+
+type Profile = components['schemas']['VendorProfileView'];
 
 /** The seller's side: profile, credentials, and the queue of requests addressed to this org. */
 export function VendorPortalPage() {
@@ -24,12 +20,12 @@ export function VendorPortalPage() {
   const manage = can(me, 'vendor:manage');
   const { data: profile, isError, isPending } = useQuery({
     queryKey: ['vendor', 'profile'],
-    queryFn: () => api.get<Profile>('/api/vendor/profile'),
+    queryFn: ({ signal }) => api.get("/api/vendor/profile", { signal }),
     retry: false,
   });
   const { data: queue } = useQuery({
     queryKey: ['vendor', 'requests'],
-    queryFn: () => api.get<Page<RequestSummary>>('/api/vendor/requests?limit=100'),
+    queryFn: ({ signal }) => api.get('/api/vendor/requests', { signal, query: { limit: 100 } }),
   });
   return (
     <div className="max-w-5xl space-y-6">
@@ -82,7 +78,7 @@ function ProfileCard({ profile }: { profile: Profile | null }) {
   const [credExpires, setCredExpires] = useState('');
   const save = useApiMutation({
     mutationFn: () => api.put('/api/vendor/profile', {
-      name: name.trim(), description: description.trim() || null, categories,
+      name: name.trim(), description: description.trim() || null, categories: categories.map((category) => enumValue(CATEGORIES, category)),
       serviceAreas: areas.split(',').map((a) => a.trim()).filter(Boolean),
       latitude: profile?.latitude ?? null, longitude: profile?.longitude ?? null, serviceRadiusKm: profile?.serviceRadiusKm ?? null,
       contactEmail: email.trim() || null, contactPhone: phone.trim() || null,
@@ -94,10 +90,10 @@ function ProfileCard({ profile }: { profile: Profile | null }) {
     invalidate: [['vendor']], success: 'Visibility updated',
   });
   const addCred = useApiMutation({
-    mutationFn: () => api.post('/api/vendor/credentials', { kind: credKind, label: credLabel.trim(), expiresAt: new Date(`${credExpires}T00:00:00Z`).toISOString() }),
+    mutationFn: () => api.post('/api/vendor/credentials', { kind: enumValue(['License', 'Insurance', 'Certification'], credKind), label: credLabel.trim(), expiresAt: new Date(`${credExpires}T00:00:00Z`).toISOString() }),
     invalidate: [['vendor']], success: 'Credential added', onSuccess: () => { setCredLabel(''); setCredExpires(''); },
   });
-  const removeCred = useApiMutation({ mutationFn: (id: string) => api.del(`/api/vendor/credentials/${id}`), invalidate: [['vendor']] });
+  const removeCred = useApiMutation({ mutationFn: (id: string) => api.del("/api/vendor/credentials/{id}", { path: { id } }), invalidate: [['vendor']] });
   const toggle = (c: string) => setCategories((cs) => (cs.includes(c) ? cs.filter((x) => x !== c) : [...cs, c]));
   return (
     <Card>
@@ -161,30 +157,28 @@ function ProfileCard({ profile }: { profile: Profile | null }) {
 export function VendorRequestPage() {
   const { requestId } = useParams({ strict: false }) as { requestId: string };
   const key = ['vendor', 'request', requestId];
-  const { data: r } = useQuery({ queryKey: key, queryFn: () => api.get<RequestDetail>(`/api/vendor/requests/${requestId}`) });
+  const { data: r } = useQuery({ queryKey: key, queryFn: ({ signal }) => api.get("/api/vendor/requests/{id}", { signal, path: { id: requestId } }) });
   const [reason, setReason] = useState('');
   const [message, setMessage] = useState('');
-  const act = (path: string, success: string) =>
-    useApiMutation({ mutationFn: (body?: unknown) => api.post(`/api/vendor/requests/${requestId}${path}`, body), invalidate: [['vendor']], success });
-  const accept = act('/accept', 'Accepted');
-  const decline = act('/decline', 'Declined');
-  const start = act('/start', 'Started');
-  const complete = act('/complete', 'Marked complete');
+  const accept = useApiMutation({ mutationFn: () => api.post('/api/vendor/requests/{id}/accept', undefined, { path: { id: requestId } }), invalidate: [['vendor']], success: 'Accepted' });
+  const decline = useApiMutation({ mutationFn: (body: { reason: string }) => api.post('/api/vendor/requests/{id}/decline', body, { path: { id: requestId } }), invalidate: [['vendor']], success: 'Declined' });
+  const start = useApiMutation({ mutationFn: () => api.post('/api/vendor/requests/{id}/start', undefined, { path: { id: requestId } }), invalidate: [['vendor']], success: 'Started' });
+  const complete = useApiMutation({ mutationFn: (body: { summary: string }) => api.post('/api/vendor/requests/{id}/complete', body, { path: { id: requestId } }), invalidate: [['vendor']], success: 'Marked complete' });
   const [amount, setAmount] = useState('');
   const [quoteNotes, setQuoteNotes] = useState('');
   const quote = useApiMutation({
-    mutationFn: () => api.post(`/api/vendor/requests/${requestId}/quotes`, { amount: Number(amount), notes: quoteNotes.trim() || null }),
+    mutationFn: () => api.post("/api/vendor/requests/{id}/quotes", { amount: Number(amount), notes: quoteNotes.trim() || null }, { path: { id: requestId } }),
     invalidate: [['vendor']], success: 'Quote submitted',
   });
   const position = useApiMutation({
     mutationFn: (kind: 'check-in' | 'check-out') =>
       new Promise<{ latitude: number; longitude: number }>((resolve, reject) =>
         navigator.geolocation.getCurrentPosition((p) => resolve({ latitude: p.coords.latitude, longitude: p.coords.longitude }), reject),
-      ).then((pos) => api.post(`/api/vendor/requests/${requestId}/${kind}`, pos)),
+      ).then((pos) => api.post(kind === 'check-in' ? '/api/vendor/requests/{id}/check-in' : '/api/vendor/requests/{id}/check-out', pos, { path: { id: requestId } })),
     invalidate: [key], success: 'Position recorded', errorFallback: 'Could not read your position',
   });
   const send = useApiMutation({
-    mutationFn: () => api.post(`/api/vendor/requests/${requestId}/messages`, { body: message.trim() }),
+    mutationFn: () => api.post("/api/vendor/requests/{id}/messages", { body: message.trim() }, { path: { id: requestId } }),
     invalidate: [key], onSuccess: () => setMessage(''),
   });
   if (!r) return <p className="text-sm text-muted-foreground">Loading…</p>;

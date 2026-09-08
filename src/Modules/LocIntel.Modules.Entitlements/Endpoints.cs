@@ -3,6 +3,7 @@ using LocIntel.Modules.Entitlements.Data;
 using LocIntel.Platform.Entitlements;
 using LocIntel.Platform.Kernel;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Wolverine.Attributes;
 using Wolverine.Http;
@@ -18,6 +19,7 @@ public static class EntitlementEndpoints
     /// <summary>Effective entitlements for the active org - part of the UI bootstrap.</summary>
     [Transactional(typeof(EntitlementsDbContext))]
     [WolverineGet("/api/entitlements")]
+    [ProducesResponseType(typeof(Dictionary<string, EntitlementSummary>), StatusCodes.Status200OK)]
     public static async Task<IResult> List(
         IPrincipalAccessor accessor,
         EntitlementsService service,

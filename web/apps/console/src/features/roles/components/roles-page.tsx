@@ -1,92 +1,51 @@
-import { api, CAPABILITIES } from '@locintel/api';
+import { type components } from '@locintel/api';
 import { Button, Card, CardContent, CardHeader, CardTitle, ConfirmButton, FormDialog,
   Input, Label, Select, Table, TableBody, TableCell, TableHead, TableHeader,
   TableRow } from '@locintel/ui';
-import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { fmtDate } from '../lib/format';
-import { useApiMutation } from '../lib/mutation';
+import { fmtDate } from '../../../lib/format';
+import { useApiMutation } from '../../../lib/mutation';
+import { rolesApi } from '../api';
+import { useGrantExceptions, useRoleHierarchy, useRoleMembers, useRoles } from '../hooks';
+import { GRANTABLE, grantKey, parseGrant } from '../schema';
+import { RoleEditor } from './role-editor';
 
-type Grant = { domain: string; action: string };
-type Role = { id: string; name: string; grants: Grant[]; assignedCount: number };
+type Role = components['schemas']['RoleResponse'];
 type Member = { userId: string; email: string; roles: string[] };
 type Node = { id: string; name: string; depth: number; path: string };
-type Hierarchy = { nodes: Node[] };
-type GrantException = {
-  id: string; email: string; domain: string; action: string;
-  scopePath: string | null; reason: string; expiresAt: string;
-};
-
-const WILDCARD = '*:*';
-// grantable pairs come from codegen (ADR 16); platform:operate is the
-// operator wall - an org role can hold it, but it only bites in the platform org
-const GRANTABLE = CAPABILITIES.filter((c) => c !== 'public:read' && c !== 'platform:operate');
-
-const grantKey = (g: Grant) => `${g.domain}:${g.action}`;
 
 /** The role editor: what a role grants, who holds it and where, and the exceptions. */
 export function RolesPage() {
-  const { data: roles } = useQuery({
-    queryKey: ['roles'],
-    queryFn: () => api.get<Role[]>('/api/roles'),
-  });
-  const { data: members } = useQuery({
-    queryKey: ['members', 'picker'],
-    queryFn: async () =>
-      (await api.get<{ items: Member[] }>('/api/members?limit=200')).items,
-  });
-  const { data: hierarchy } = useQuery({
-    queryKey: ['hierarchy'],
-    queryFn: () => api.get<Hierarchy>('/api/hierarchy'),
-    retry: false,
-  });
+  const rolesQuery = useRoles();
+  const membersQuery = useRoleMembers();
+  const hierarchyQuery = useRoleHierarchy();
+  const roles = rolesQuery.data;
+  const members = membersQuery.data;
+  const hierarchy = hierarchyQuery.data;
 
   const [editorOpen, setEditorOpen] = useState(false);
-  const [editing, setEditing] = useState<string | null>(null);
-  const [name, setName] = useState('');
-  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [editing, setEditing] = useState<Role | null>(null);
 
   const openCreate = () => {
     setEditing(null);
-    setName('');
-    setPicked(new Set());
     setEditorOpen(true);
   };
   const openEdit = (role: Role) => {
-    setEditing(role.id);
-    setName(role.name);
-    setPicked(new Set(role.grants.map(grantKey)));
+    setEditing(role);
     setEditorOpen(true);
   };
 
-  const save = useApiMutation({
-    mutationFn: () => {
-      const grants = [...picked].map((key) => {
-        const [domain = '', action = ''] = key.split(':');
-        return { domain, action };
-      });
-      return editing
-        ? api.put(`/api/roles/${editing}`, { name: name.trim(), grants })
-        : api.post('/api/roles', { name: name.trim(), grants });
-    },
-    invalidate: [['roles']],
-    success: 'Role saved',
-    errorFallback: 'Save failed',
-    onSuccess: () => setEditorOpen(false),
-  });
   const remove = useApiMutation({
-    mutationFn: (id: string) => api.del(`/api/roles/${id}`),
+    mutationFn: rolesApi.remove,
     invalidate: [['roles']],
     success: 'Role deleted',
     errorFallback: 'Delete failed',
   });
 
-  const toggle = (key: string) => {
-    const next = new Set(picked);
-    if (next.has(key)) next.delete(key);
-    else next.add(key);
-    setPicked(next);
-  };
+  if (rolesQuery.isPending || membersQuery.isPending || hierarchyQuery.isPending)
+    return <p className="text-sm text-muted-foreground">Loading roles…</p>;
+  if (rolesQuery.isError || membersQuery.isError)
+    return <p className="text-sm text-destructive">Could not load roles.</p>;
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -94,7 +53,10 @@ export function RolesPage() {
         <h1 className="text-2xl font-semibold">Roles</h1>
         <div className="flex gap-2">
           <AssignDialog roles={roles ?? []} members={members ?? []}
-            nodes={hierarchy?.nodes ?? []} />
+            nodes={(hierarchy?.nodes ?? []).map((node) => ({
+              ...node,
+              depth: Number(node.depth),
+            }))} />
           <FormDialog
             open={editorOpen}
             onOpenChange={setEditorOpen}
@@ -102,33 +64,11 @@ export function RolesPage() {
             title={editing ? 'Edit role' : 'New role'}
             description="Grants are additive; scope is chosen at assignment."
           >
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <Label htmlFor="role-name">Name</Label>
-                <Input id="role-name" value={name} onChange={(e) => setName(e.target.value)} />
-              </div>
-              <div className="space-y-1">
-                <Label>Grants</Label>
-                <div className="grid grid-cols-2 gap-1.5">
-                  <label className="flex items-center gap-2 text-sm">
-                    <input type="checkbox" checked={picked.has(WILDCARD)}
-                      onChange={() => toggle(WILDCARD)} />
-                    <span className="font-mono">*:* (everything)</span>
-                  </label>
-                  {GRANTABLE.map((c) => (
-                    <label key={c} className="flex items-center gap-2 text-sm">
-                      <input type="checkbox" checked={picked.has(c)} onChange={() => toggle(c)} />
-                      <span className="font-mono">{c}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <Button className="w-full"
-                disabled={!name.trim() || picked.size === 0 || save.isPending}
-                onClick={() => save.mutate()}>
-                {editing ? 'Save changes' : 'Create role'}
-              </Button>
-            </div>
+            <RoleEditor
+              key={editing?.id ?? 'new'}
+              role={editing}
+              onSaved={() => setEditorOpen(false)}
+            />
           </FormDialog>
         </div>
       </div>
@@ -181,7 +121,10 @@ export function RolesPage() {
         </CardContent>
       </Card>
 
-      <ExceptionsCard members={members ?? []} nodes={hierarchy?.nodes ?? []} />
+      <ExceptionsCard members={members ?? []} nodes={(hierarchy?.nodes ?? []).map((node) => ({
+        ...node,
+        depth: Number(node.depth),
+      }))} />
     </div>
   );
 }
@@ -195,7 +138,7 @@ function AssignDialog({ roles, members, nodes }: { roles: Role[]; members: Membe
 
   const assign = useApiMutation({
     mutationFn: () =>
-      api.post(`/api/roles/${roleId}/assign`, { userId, scopePath: scopePath || null }),
+      rolesApi.assign(roleId, userId, scopePath || null),
     invalidate: [['roles'], ['members']],
     success: 'Role assigned',
     onSuccess: () => {
@@ -255,10 +198,7 @@ function AssignDialog({ roles, members, nodes }: { roles: Role[]; members: Membe
 
 /** Time-boxed additive exceptions (never deny): first-class and auditable. */
 function ExceptionsCard({ members, nodes }: { members: Member[]; nodes: Node[] }) {
-  const { data: exceptions } = useQuery({
-    queryKey: ['grant-exceptions'],
-    queryFn: () => api.get<GrantException[]>('/api/grant-exceptions'),
-  });
+  const { data: exceptions } = useGrantExceptions();
   const [open, setOpen] = useState(false);
   const [userId, setUserId] = useState('');
   const [capability, setCapability] = useState('');
@@ -268,15 +208,15 @@ function ExceptionsCard({ members, nodes }: { members: Member[]; nodes: Node[] }
 
   const grant = useApiMutation({
     mutationFn: () => {
-      const [domain = '', action = ''] = capability.split(':');
-      return api.post('/api/grant-exceptions', {
+      const { domain, action } = parseGrant(capability);
+      return rolesApi.addException(
         userId,
         domain,
         action,
-        reason: reason.trim(),
-        expiresAt: new Date(Date.now() + Number(days) * 86400_000).toISOString(),
-        scopePath: scopePath || null,
-      });
+        reason.trim(),
+        new Date(Date.now() + Number(days) * 86400_000).toISOString(),
+        scopePath || null,
+      );
     },
     invalidate: [['grant-exceptions']],
     success: 'Exception granted',
@@ -288,7 +228,7 @@ function ExceptionsCard({ members, nodes }: { members: Member[]; nodes: Node[] }
     },
   });
   const revoke = useApiMutation({
-    mutationFn: (id: string) => api.del(`/api/grant-exceptions/${id}`),
+    mutationFn: rolesApi.removeException,
     invalidate: [['grant-exceptions']],
     success: 'Exception revoked',
   });

@@ -35,13 +35,13 @@ public static class PurgeFileTrashHandler
         var window = configuration.GetValue<int?>("Storage:TrashRetentionDays") ?? 30;
         var cutoff = DateTimeOffset.UtcNow.AddDays(-window);
         var expired = await db
-            .Files.Where(f => f.Status == FileStatus.Deleted && f.DeletedAt < cutoff)
+            .Files.FromSqlInterpolated(
+                $"SELECT * FROM storage.files WHERE status = 'Deleted' AND deleted_at < {cutoff} ORDER BY id FOR UPDATE"
+            )
             .ToListAsync(ct);
         foreach (var file in expired)
         {
-            await store.DeleteAsync(file.Key, ct);
-            if (file.PreviewKey is { } previewKey)
-                await store.DeleteAsync(previewKey, ct);
+            await FileBytes.EraseAsync(file, store, ct);
             file.Status = FileStatus.Erased;
             file.PreviewKey = null;
             await bus.AuditAsync(

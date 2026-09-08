@@ -1,42 +1,27 @@
-import { api } from '@locintel/api';
 import { Button, Card, CardContent, FormDialog, Input, Label, Select,
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TimeZoneSelect } from '@locintel/ui';
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
-import { useApiMutation } from '../lib/mutation';
-import type { Page } from '../lib/paging';
-import { can, useMe } from '../session';
-import { StatusBadge } from '../shell';
-
-type Site = { id: string; nodeId: string; name: string; timeZone: string; status: string; path: string };
-type Hierarchy = { id: string; nodes: { id: string; name: string; depth: number }[] };
+import { useApiMutation } from '../../../lib/mutation';
+import { can, useMe } from '../../../session';
+import { StatusBadge } from '../../../shell';
+import { sitesApi } from '../api';
+import { useHierarchy, useSites } from '../hooks';
 
 export function SitesPage() {
   const { data: me } = useMe();
   const [filter, setFilter] = useState('');
-  const sitesQuery = useInfiniteQuery({
-    queryKey: ['sites', 'list', filter],
-    queryFn: ({ pageParam }) =>
-      api.get<Page<Site>>(
-        `/api/sites?limit=50&offset=${pageParam}${filter ? `&q=${encodeURIComponent(filter)}` : ''}`,
-      ),
-    initialPageParam: 0,
-    getNextPageParam: (last) => last.nextOffset ?? undefined,
-  });
+  const sitesQuery = useSites(filter);
   const sites = sitesQuery.data?.pages.flatMap((p) => p.items);
   const total = sitesQuery.data?.pages[0]?.total;
-  const { data: hierarchy } = useQuery({
-    queryKey: ['hierarchy'],
-    queryFn: () => api.get<Hierarchy>('/api/hierarchy'),
-  });
+  const { data: hierarchy } = useHierarchy();
   const [name, setName] = useState('');
   const [timeZone, setTimeZone] = useState('America/New_York');
   const [nodeId, setNodeId] = useState('');
   const [creating, setCreating] = useState(false);
 
   const create = useApiMutation({
-    mutationFn: () => api.post('/api/sites', { nodeId, name, timeZone }),
+    mutationFn: () => sitesApi.create({ nodeId, name, timeZone }),
     invalidate: [['sites']],
     success: 'Site created',
     onSuccess: () => {
@@ -47,6 +32,11 @@ export function SitesPage() {
 
   const nodeName = (id: string) =>
     hierarchy?.nodes.find((n) => n.id === id)?.name ?? '—';
+
+  if (sitesQuery.isPending)
+    return <p className="text-sm text-muted-foreground">Loading sites…</p>;
+  if (sitesQuery.isError)
+    return <p className="text-sm text-destructive">Could not load sites.</p>;
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -77,7 +67,7 @@ export function SitesPage() {
                   <option value="">Choose…</option>
                   {hierarchy?.nodes.map((n) => (
                     <option key={n.id} value={n.id}>
-                      {' '.repeat(n.depth * 2)}{n.name}
+                      {' '.repeat(Number(n.depth) * 2)}{n.name}
                     </option>
                   ))}
                 </Select>
@@ -92,7 +82,7 @@ export function SitesPage() {
       </div>
       <Card>
         <CardContent className="pt-4">
-          {((total ?? 0) > 5 || filter) && (
+          {(Number(total ?? 0) > 5 || filter) && (
             <Input
               className="mb-3 max-w-xs"
               placeholder="Search name or city…"

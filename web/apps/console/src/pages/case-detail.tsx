@@ -1,4 +1,6 @@
-import { api } from '@locintel/api';
+import { enumValue } from '../lib/enum-value';
+import { issueEvidenceDownload } from '../features/cases';
+import { api, type components } from '@locintel/api';
 import { Button, Card, CardContent, CardHeader, CardTitle, ConfirmButton, FormDialog,
   Input, Label, Select, Textarea } from '@locintel/ui';
 import { useQuery } from '@tanstack/react-query';
@@ -6,39 +8,27 @@ import { Link, useParams } from '@tanstack/react-router';
 import { useState } from 'react';
 import { fmtDate, fmtDateTime } from '../lib/format';
 import { useApiMutation } from '../lib/mutation';
-import type { Page } from '../lib/paging';
+
 import { useMe } from '../session';
 import { StatusBadge } from '../shell';
 import { DISPOSITIONS, MEMBER_ROLES, PRIORITIES, PriorityBadge } from './cases';
-import { EntityStatusBadge, type EntitySummary } from './entities';
-import type { IncidentSummary } from './incidents';
+import { EntityStatusBadge } from './entities';
 
-type CaseDetail = {
-  id: string; title: string; summary: string; status: string; priority: string;
-  leadId: string | null; lead: string | null; disposition: string | null; closedAt: string | null;
-  closureNote: string | null; legalHold: boolean; canManage: boolean; canWork: boolean;
-  createdAt: string; updatedAt: string; deletedAt: string | null;
-  incidents: { id: string; incidentId: string; title: string | null; category: string | null; status: string | null; occurredAt: string | null }[];
-  entities: { id: string; entityId: string | null; displayName: string | null; kind: string | null; status: string | null; note: string | null; restricted: boolean }[];
-  members: { id: string; userId: string; user: string | null; role: string }[];
-  tasks: { id: string; title: string; assignee: string | null; dueAt: string | null; doneAt: string | null }[];
-  notes: { id: string; authorId: string; author: string | null; body: string; createdAt: string }[];
-  evidence: { id: string; fileId: string; fileName: string | null; fileStatus: string | null; label: string | null; addedByLabel: string | null; addedAt: string }[];
-  custodyEvents: number;
-};
-type Custody = { events: { id: string; fileId: string; action: string; actor: string | null; actorTier: string; detail: string | null; at: string }[] };
-type Member = { userId: string; email: string; name: string | null };
-type StoredFile = { id: string; name: string; status: string };
+
+type CaseDetail = components['schemas']['CaseDetail'];
+
+
+
 
 export function CaseDetailPage() {
   const { caseId } = useParams({ strict: false }) as { caseId: string };
   const { data: me } = useMe();
   const key = ['cases', 'detail', caseId];
-  const { data: c } = useQuery({ queryKey: key, queryFn: () => api.get<CaseDetail>(`/api/cases/${caseId}`) });
+  const { data: c } = useQuery({ queryKey: key, queryFn: ({ signal }) => api.get("/api/cases/{id}", { signal, path: { id: caseId } }) });
   const [showCustody, setShowCustody] = useState(false);
   const { data: custody } = useQuery({
     queryKey: ['cases', 'custody', caseId],
-    queryFn: () => api.get<Custody>(`/api/cases/${caseId}/custody`),
+    queryFn: ({ signal }) => api.get("/api/cases/{id}/custody", { signal, path: { id: caseId } }),
     enabled: showCustody,
   });
   const [disposition, setDisposition] = useState<string>('Resolved');
@@ -46,55 +36,49 @@ export function CaseDetailPage() {
   const [note, setNote] = useState('');
   const [taskTitle, setTaskTitle] = useState('');
 
-  const post = (path: string, success?: string) =>
-    useApiMutation({
-      mutationFn: (body?: unknown) => api.post(`/api/cases/${caseId}${path}`, body),
-      invalidate: [['cases'], ['files']],
-      success,
-    });
   const close = useApiMutation({
-    mutationFn: () => api.post(`/api/cases/${caseId}/close`, { disposition, note: closeNote.trim() || null }),
+    mutationFn: () => api.post("/api/cases/{id}/close", { disposition: enumValue(DISPOSITIONS, disposition), note: closeNote.trim() || null }, { path: { id: caseId } }),
     invalidate: [['cases']],
     success: 'Case closed',
   });
-  const reopen = post('/reopen', 'Case reopened');
+  const reopen = useApiMutation({ mutationFn: () => api.post('/api/cases/{id}/reopen', undefined, { path: { id: caseId } }), invalidate: [['cases'], ['files']], success: 'Case reopened' });
   const hold = useApiMutation({
-    mutationFn: (value: boolean) => api.post(`/api/cases/${caseId}/hold`, { hold: value }),
+    mutationFn: (value: boolean) => api.post("/api/cases/{id}/hold", { hold: value }, { path: { id: caseId } }),
     invalidate: [['cases'], ['files']],
     success: 'Legal hold updated',
   });
-  const remove = useApiMutation({ mutationFn: () => api.del(`/api/cases/${caseId}`), invalidate: [['cases']], success: 'Moved to trash' });
-  const restore = post('/restore', 'Case restored');
+  const remove = useApiMutation({ mutationFn: () => api.del("/api/cases/{id}", { path: { id: caseId } }), invalidate: [['cases']], success: 'Moved to trash' });
+  const restore = useApiMutation({ mutationFn: () => api.post('/api/cases/{id}/restore', undefined, { path: { id: caseId } }), invalidate: [['cases'], ['files']], success: 'Case restored' });
   const addNote = useApiMutation({
-    mutationFn: () => api.post(`/api/cases/${caseId}/notes`, { body: note.trim() }),
+    mutationFn: () => api.post("/api/cases/{id}/notes", { body: note.trim() }, { path: { id: caseId } }),
     invalidate: [key], success: 'Note added', onSuccess: () => setNote(''),
   });
   const addTask = useApiMutation({
-    mutationFn: () => api.post(`/api/cases/${caseId}/tasks`, { title: taskTitle.trim() }),
+    mutationFn: () => api.post("/api/cases/{id}/tasks", { title: taskTitle.trim() }, { path: { id: caseId } }),
     invalidate: [key], success: 'Task added', onSuccess: () => setTaskTitle(''),
   });
   const toggleTask = useApiMutation({
-    mutationFn: (t: { id: string; done: boolean }) => api.post(`/api/cases/${caseId}/tasks/${t.id}/done`, { done: t.done }),
+    mutationFn: (t: { id: string; done: boolean }) => api.post("/api/cases/{id}/tasks/{taskId}/done", { done: t.done }, { path: { id: caseId, taskId: t.id } }),
     invalidate: [key],
   });
   const removeChild = useApiMutation({
-    mutationFn: (path: string) => api.del(`/api/cases/${caseId}${path}`),
+    mutationFn: (remove: () => Promise<unknown>) => remove(),
     invalidate: [['cases']],
   });
   const download = useApiMutation({
     mutationFn: (evidenceId: string) =>
-      api.get<{ url: string }>(`/api/cases/${caseId}/evidence/${evidenceId}/download`),
+      issueEvidenceDownload(caseId, evidenceId),
     invalidate: [['cases', 'custody', caseId], key],
     onSuccess: (r) => window.open(r.url, '_blank', 'noopener'),
   });
   const [brief, setBrief] = useState<{ provider: string; text: string } | null>(null);
   const draftBrief = useApiMutation({
-    mutationFn: () => api.post<{ provider: string; text: string }>(`/api/cases/${caseId}/assist/brief`),
+    mutationFn: () => api.post("/api/cases/{id}/assist/brief", undefined, { path: { id: caseId } }),
     onSuccess: (b) => setBrief(b),
     errorFallback: 'Could not draft a brief',
   });
   const fileBrief = useApiMutation({
-    mutationFn: () => api.post(`/api/cases/${caseId}/notes`, { body: brief!.text }),
+    mutationFn: () => api.post("/api/cases/{id}/notes", { body: brief!.text }, { path: { id: caseId } }),
     invalidate: [key], success: 'Brief filed as a note', onSuccess: () => setBrief(null),
   });
 
@@ -182,9 +166,9 @@ export function CaseDetailPage() {
           <CardHeader>
             <CardTitle className="flex items-center justify-between text-base">
               Incidents
-              {manage && !c.deletedAt && <PickerDialog title="Add incident" path="/incidents" field="incidentId"
-                search={(q) => api.get<Page<IncidentSummary>>(`/api/incidents?limit=50&q=${encodeURIComponent(q)}`)}
-                label={(i) => `${i.businessDate} · ${i.title}`} caseId={caseId} />}
+              {manage && !c.deletedAt && <PickerDialog title="Add incident" kind="incidents" add={(incidentId) => api.post('/api/cases/{id}/incidents', { incidentId }, { path: { id: caseId } })}
+                search={(q, signal) => api.get('/api/incidents', { query: { limit: 50, q }, signal })}
+                label={(i) => `${i.businessDate} · ${i.title}`} />}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -197,7 +181,7 @@ export function CaseDetailPage() {
                   </Link>
                   {i.occurredAt && <span className="ml-2 text-muted-foreground">{fmtDate(i.occurredAt)}</span>}
                 </span>
-                {manage && <ConfirmButton size="sm" variant="ghost" onConfirm={() => removeChild.mutate(`/incidents/${i.id}`)}>Remove</ConfirmButton>}
+                {manage && <ConfirmButton size="sm" variant="ghost" onConfirm={() => removeChild.mutate(() => api.del('/api/cases/{id}/incidents/{linkId}', { path: { id: caseId, linkId: i.id } }))}>Remove</ConfirmButton>}
               </div>
             ))}
           </CardContent>
@@ -207,9 +191,9 @@ export function CaseDetailPage() {
           <CardHeader>
             <CardTitle className="flex items-center justify-between text-base">
               People &amp; vehicles
-              {manage && !c.deletedAt && <PickerDialog title="Add record" path="/entities" field="entityId"
-                search={(q) => api.get<Page<EntitySummary>>(`/api/entities?limit=50&q=${encodeURIComponent(q)}`)}
-                label={(e) => `${e.displayName} · ${e.kind}`} caseId={caseId} />}
+              {manage && !c.deletedAt && <PickerDialog title="Add record" kind="entities" add={(entityId) => api.post('/api/cases/{id}/entities', { entityId }, { path: { id: caseId } })}
+                search={(q, signal) => api.get('/api/entities', { query: { limit: 50, q }, signal })}
+                label={(e) => `${e.displayName} · ${e.kind}`} />}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -228,7 +212,7 @@ export function CaseDetailPage() {
                     <span className="ml-2"><EntityStatusBadge status={e.status!} /></span>
                   </span>
                 )}
-                {manage && <ConfirmButton size="sm" variant="ghost" onConfirm={() => removeChild.mutate(`/entities/${e.id}`)}>Remove</ConfirmButton>}
+                {manage && <ConfirmButton size="sm" variant="ghost" onConfirm={() => removeChild.mutate(() => api.del('/api/cases/{id}/entities/{linkId}', { path: { id: caseId, linkId: e.id } }))}>Remove</ConfirmButton>}
               </div>
             ))}
           </CardContent>
@@ -245,7 +229,7 @@ export function CaseDetailPage() {
             {c.members.map((m) => (
               <div key={m.id} className="flex items-center justify-between rounded-md border p-2 text-sm">
                 <span><span className="font-medium">{m.user ?? m.userId}</span><span className="ml-2 text-muted-foreground">{m.role}</span></span>
-                {manage && <ConfirmButton size="sm" variant="ghost" onConfirm={() => removeChild.mutate(`/members/${m.id}`)}>Remove</ConfirmButton>}
+                {manage && <ConfirmButton size="sm" variant="ghost" onConfirm={() => removeChild.mutate(() => api.del('/api/cases/{id}/members/{memberId}', { path: { id: caseId, memberId: m.id } }))}>Remove</ConfirmButton>}
               </div>
             ))}
           </CardContent>
@@ -264,7 +248,7 @@ export function CaseDetailPage() {
                   {t.assignee && <span className="text-xs text-muted-foreground">{t.assignee}</span>}
                   {t.dueAt && <span className="text-xs text-muted-foreground">due {fmtDate(t.dueAt)}</span>}
                 </span>
-                {work && <button className="text-xs hover:underline" onClick={() => removeChild.mutate(`/tasks/${t.id}`)}>Remove</button>}
+                {work && <button className="text-xs hover:underline" onClick={() => removeChild.mutate(() => api.del('/api/cases/{id}/tasks/{taskId}', { path: { id: caseId, taskId: t.id } }))}>Remove</button>}
               </label>
             ))}
             {work && (
@@ -300,7 +284,7 @@ export function CaseDetailPage() {
               </span>
               <span className="flex gap-1">
                 {work && <Button size="sm" variant="ghost" disabled={download.isPending} onClick={() => download.mutate(e.id)}>Download</Button>}
-                {manage && !c.legalHold && <ConfirmButton size="sm" variant="ghost" onConfirm={() => removeChild.mutate(`/evidence/${e.id}`)}>Remove</ConfirmButton>}
+                {manage && !c.legalHold && <ConfirmButton size="sm" variant="ghost" onConfirm={() => removeChild.mutate(() => api.del('/api/cases/{id}/evidence/{evidenceId}', { path: { id: caseId, evidenceId: e.id } }))}>Remove</ConfirmButton>}
               </span>
             </div>
           ))}
@@ -327,7 +311,7 @@ export function CaseDetailPage() {
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>{n.author ?? 'Unknown'} · {fmtDateTime(n.createdAt)}</span>
                 {(manage || (me?.tier === 'user' && me.userId === n.authorId)) && (
-                  <button className="hover:underline" onClick={() => removeChild.mutate(`/notes/${n.id}`)}>Remove</button>
+                  <button className="hover:underline" onClick={() => removeChild.mutate(() => api.del('/api/cases/{id}/notes/{noteId}', { path: { id: caseId, noteId: n.id } }))}>Remove</button>
                 )}
               </div>
               <p className="mt-1 whitespace-pre-wrap">{n.body}</p>
@@ -349,10 +333,10 @@ function EditCaseDialog({ c }: { c: CaseDetail }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(c.title);
   const [summary, setSummary] = useState(c.summary);
-  const [priority, setPriority] = useState(c.priority);
+  const [priority, setPriority] = useState<string>(c.priority);
   const [leadId, setLeadId] = useState(c.leadId ?? '');
   const save = useApiMutation({
-    mutationFn: () => api.put(`/api/cases/${c.id}`, { title: title.trim(), summary: summary.trim() || null, priority, leadId: leadId || null }),
+    mutationFn: () => api.put("/api/cases/{id}", { title: title.trim(), summary: summary.trim() || null, priority: enumValue(PRIORITIES, priority), leadId: leadId || null }, { path: { id: c.id } }),
     invalidate: [['cases']], success: 'Case updated', onSuccess: () => setOpen(false),
   });
   return (
@@ -379,15 +363,15 @@ function EditCaseDialog({ c }: { c: CaseDetail }) {
   );
 }
 
-function PickerDialog<T extends { id: string }>({ title, path, field, search, label, caseId }: {
-  title: string; path: string; field: string; search: (q: string) => Promise<Page<T>>; label: (t: T) => string; caseId: string;
+function PickerDialog<T extends { id: string }>({ title, kind, add: addItem, search, label }: {
+  title: string; kind: string; add: (id: string) => Promise<unknown>; search: (q: string, signal: AbortSignal) => Promise<{ items: T[] }>; label: (t: T) => string;
 }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
   const [picked, setPicked] = useState('');
-  const { data } = useQuery({ queryKey: ['cases', 'picker', path, q], queryFn: () => search(q.trim()), enabled: open });
+  const { data } = useQuery({ queryKey: ['cases', 'picker', kind, q], queryFn: ({ signal }) => search(q.trim(), signal), enabled: open });
   const add = useApiMutation({
-    mutationFn: () => api.post(`/api/cases/${caseId}${path}`, { [field]: picked }),
+    mutationFn: () => addItem(picked),
     invalidate: [['cases']], success: 'Added', onSuccess: () => { setOpen(false); setPicked(''); },
   });
   return (
@@ -410,11 +394,11 @@ function MemberDialog({ caseId }: { caseId: string }) {
   const [role, setRole] = useState<string>('Investigator');
   const { data: members } = useQuery({
     queryKey: ['members', 'picker'],
-    queryFn: async () => { const r = await api.get<Member[] | Page<Member>>('/api/members'); return Array.isArray(r) ? r : r.items; },
+    queryFn: async ({ signal }) => { const r = await api.get("/api/members", { signal }); return Array.isArray(r) ? r : r.items; },
     enabled: open,
   });
   const add = useApiMutation({
-    mutationFn: () => api.post(`/api/cases/${caseId}/members`, { userId, role }),
+    mutationFn: () => api.post("/api/cases/{id}/members", { userId, role: enumValue(MEMBER_ROLES, role) }, { path: { id: caseId } }),
     invalidate: [['cases']], success: 'Member added', onSuccess: () => { setOpen(false); setUserId(''); },
   });
   return (
@@ -439,11 +423,11 @@ function EvidenceDialog({ caseId }: { caseId: string }) {
   const [label, setLabel] = useState('');
   const { data: files } = useQuery({
     queryKey: ['files', 'picker'],
-    queryFn: async () => (await api.get<Page<StoredFile>>('/api/files?limit=200')).items,
+    queryFn: async ({ signal }) => (await api.get('/api/files', { signal, query: { limit: 200 } })).items,
     enabled: open,
   });
   const add = useApiMutation({
-    mutationFn: () => api.post(`/api/cases/${caseId}/evidence`, { fileId, label: label.trim() || null }),
+    mutationFn: () => api.post("/api/cases/{id}/evidence", { fileId, label: label.trim() || null }, { path: { id: caseId } }),
     invalidate: [['cases']], success: 'Evidence added', onSuccess: () => { setOpen(false); setFileId(''); setLabel(''); },
   });
   return (

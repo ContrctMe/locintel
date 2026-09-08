@@ -3,6 +3,12 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- The production artifact (docs/production.md): `dotnet publish -p:PublishProfile=DefaultContainer`
+         builds the OCI image with no Dockerfile. Non-root by default (the base image's `app` user),
+         one port, and CI smokes all three ROLEs from it before it can be called green. -->
+    <ContainerRepository>locintel</ContainerRepository>
+    <ContainerUser>app</ContainerUser>
+    <ContainerPort>8080</ContainerPort>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,6 +24,9 @@
     <ProjectReference Include="..\Modules\LocIntel.Modules.Checklists\LocIntel.Modules.Checklists.csproj" />
     <ProjectReference Include="..\Modules\LocIntel.Modules.Identity\LocIntel.Modules.Identity.csproj" />
     <ProjectReference Include="..\Integrations\LocIntel.Integrations.WorkOS\LocIntel.Integrations.WorkOS.csproj" />
+    <ProjectReference Include="..\Integrations\LocIntel.Integrations.AmazonS3\LocIntel.Integrations.AmazonS3.csproj" />
+    <ProjectReference Include="..\Integrations\LocIntel.Integrations.AzureBlob\LocIntel.Integrations.AzureBlob.csproj" />
+    <ProjectReference Include="..\Integrations\LocIntel.Integrations.ClamAV\LocIntel.Integrations.ClamAV.csproj" />
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />

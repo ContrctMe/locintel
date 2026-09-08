@@ -1,0 +1,131 @@
+# LOCAL SYNTHETIC PROFILE ONLY: HTTP, local identity/secrets/storage, no hosted use.
+# Deliberately no auto-restart: an OOM or exit must remain visible to the profiler.
+name: locintel-profile
+
+x-backend: &backend
+  image: locintel:memory-profile
+  mem_limit: 1g
+  memswap_limit: 1g
+  cpus: 1
+  pids_limit: 256
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  environment: &backend-env
+    ASPNETCORE_ENVIRONMENT: Development
+    CodeGeneration__Mode: Static
+    ConnectionStrings__locintel: Host=database;Database=locintel;Username=postgres;Password=profile-owner
+    Database__AppUser: app_user
+    Database__AppPassword: profile-app
+    Auth__Provider: local
+    Secrets__LocalMasterKey: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+    Storage__Provider: local
+    Storage__LocalRoot: /home/app/objects
+    DataProtection__KeyPath: /home/app/keys
+    Scanner__Provider: clamav
+    Scanner__ClamAv__Host: scanner
+    Notifications__Sms: off
+    Public__HostTemplate: http://{slug}.localhost:18080
+    Build__Version: local-memory-profile
+  volumes:
+    - app-data:/home/app
+  logging: &bounded-logs
+    driver: json-file
+    options: {max-size: 10m, max-file: "3"}
+
+services:
+  database:
+    image: postgres:17-alpine
+    mem_limit: 512m
+    memswap_limit: 512m
+    cpus: 1
+    pids_limit: 256
+    environment:
+      POSTGRES_DB: locintel
+      POSTGRES_PASSWORD: profile-owner
+    volumes: [database:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U postgres -d locintel]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    logging: *bounded-logs
+
+  migrate:
+    <<: *backend
+    environment:
+      <<: *backend-env
+      ROLE: migrate
+    depends_on:
+      database: {condition: service_healthy}
+
+  scanner:
+    image: clamav/clamav:1.5.4-debian
+    mem_limit: 4g
+    memswap_limit: 4g
+    cpus: 1
+    pids_limit: 256
+    volumes: [signatures:/var/lib/clamav]
+    healthcheck:
+      test: [CMD, clamdscan, --ping=1]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+    logging: *bounded-logs
+
+  worker:
+    <<: *backend
+    environment:
+      <<: *backend-env
+      ROLE: worker
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      scanner: {condition: service_healthy}
+
+  api:
+    <<: *backend
+    # Dynamic compilation OOM-killed at 1 GiB; pre-built handlers pass at 512 MiB.
+    mem_limit: 512m
+    memswap_limit: 512m
+    environment:
+      <<: *backend-env
+      ROLE: api
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      scanner: {condition: service_healthy}
+
+  public:
+    image: locintel-public:memory-profile
+    build: {context: ./web, target: public}
+    mem_limit: 512m
+    memswap_limit: 512m
+    cpus: 1
+    pids_limit: 128
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      LOCINTEL_API: http://api:8080
+    depends_on: [api]
+    logging: *bounded-logs
+
+  console:
+    image: locintel-console:memory-profile
+    build: {context: ./web, target: console}
+    mem_limit: 128m
+    memswap_limit: 128m
+    cpus: 0.5
+    pids_limit: 128
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    ports: [127.0.0.1:18080:8080]
+    depends_on: [api, public]
+    logging: *bounded-logs
+
+volumes:
+  database:
+  app-data:
+  signatures:

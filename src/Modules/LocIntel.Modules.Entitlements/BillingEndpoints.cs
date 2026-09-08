@@ -32,6 +32,8 @@ public sealed record CheckoutRequest(string PlanId, string ReturnPath);
 
 public sealed record PortalRequest(string ReturnPath);
 
+public sealed record BillingLinkResponse(string Url);
+
 /// <summary>
 /// The tenant's side of the billing seam (ADR 39): see the plan, buy a plan,
 /// manage it - all through provider-hosted URLs. The webhook below is the
@@ -87,6 +89,7 @@ public static class BillingEndpoints
     }
 
     [WolverinePost("/api/billing/checkout")]
+    [ProducesResponseType(typeof(BillingLinkResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> Checkout(
         CheckoutRequest request,
         HttpContext http,
@@ -110,11 +113,12 @@ public static class BillingEndpoints
             $"{origin}{returnPath}",
             ct
         );
-        return Results.Ok(new { url = url.ToString() });
+        return Results.Ok(new BillingLinkResponse(url.ToString()));
     }
 
     [Transactional(typeof(EntitlementsDbContext))]
     [WolverinePost("/api/billing/portal")]
+    [ProducesResponseType(typeof(BillingLinkResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> Portal(
         PortalRequest request,
         HttpContext http,
@@ -142,7 +146,7 @@ public static class BillingEndpoints
         );
         return url is null
             ? Results.NotFound(new { error = "this provider has no billing portal" })
-            : Results.Ok(new { url = url.ToString() });
+            : Results.Ok(new BillingLinkResponse(url.ToString()));
     }
 
     /// <summary>
@@ -151,6 +155,7 @@ public static class BillingEndpoints
     /// or irrelevant deliveries 400 without detail.
     /// </summary>
     [WolverinePost("/billing/webhook")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
     public static async Task<IResult> Webhook(
         HttpContext http,
         IBillingProvider provider,

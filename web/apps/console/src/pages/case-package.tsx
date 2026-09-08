@@ -4,20 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from '@tanstack/react-router';
 import { fmtDateTime } from '../lib/format';
 
-type Pkg = {
-  exportedAt: string; exportedByLabel: string | null;
-  case: {
-    id: string; title: string; summary: string; status: string; priority: string; lead: string | null;
-    disposition: string | null; closedAt: string | null; closureNote: string | null; legalHold: boolean; createdAt: string;
-    incidents: { incidentId: string; title: string | null; category: string | null; status: string | null; occurredAt: string | null }[];
-    entities: { displayName: string | null; kind: string | null; status: string | null; note: string | null; restricted: boolean }[];
-    members: { user: string | null; role: string }[];
-    tasks: { title: string; assignee: string | null; doneAt: string | null }[];
-    notes: { author: string | null; body: string; createdAt: string }[];
-    evidence: { fileName: string | null; label: string | null; addedByLabel: string | null; addedAt: string }[];
-  };
-  custody: { fileId: string; action: string; actor: string | null; actorTier: string; detail: string | null; at: string }[];
-};
+
 
 /**
  * The prosecution package as a print-ready page: fetching it IS the export
@@ -28,7 +15,7 @@ export function CasePackagePage() {
   const { caseId } = useParams({ strict: false }) as { caseId: string };
   const { data: pkg, isError } = useQuery({
     queryKey: ['cases', 'package', caseId],
-    queryFn: () => api.get<Pkg>(`/api/cases/${caseId}/package`),
+    queryFn: ({ signal }) => api.get("/api/cases/{id}/package", { signal, path: { id: caseId } }),
     staleTime: Infinity,
   });
   if (isError) return <p className="text-sm text-destructive">The package could not be exported (managers only).</p>;

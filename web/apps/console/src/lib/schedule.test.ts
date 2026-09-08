@@ -3,8 +3,8 @@ import { weeklySchedule } from './schedule';
 
 describe('weeklySchedule', () => {
   it('sorts BYDAY into calendar order regardless of click order', () => {
-    const { rrule } = weeklySchedule(['FR', 'MO', 'WE'], Date.UTC(2026, 5, 15));
-    expect(rrule).toBe('FREQ=WEEKLY;BYDAY=MO,WE,FR');
+    const { rRule } = weeklySchedule(['FR', 'MO', 'WE'], Date.UTC(2026, 5, 15));
+    expect(rRule).toBe('FREQ=WEEKLY;BYDAY=MO,WE,FR');
   });
 
   it('anchors a full week back so hours start today in every timezone', () => {

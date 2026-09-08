@@ -123,15 +123,14 @@ public static class PurgeOrgFilesHandler
             tenant.OrgId
             ?? throw new InvalidOperationException("purge arrived with no tenant on the envelope");
         var files = await db
-            .Files.IgnoreQueryFilters()
-            .Where(f => f.OrgId == org)
-            .Select(f => new { f.Key, f.PreviewKey })
+            .Files.FromSqlInterpolated(
+                $"SELECT * FROM storage.files WHERE org_id = {org.Value} ORDER BY id FOR UPDATE"
+            )
+            .IgnoreQueryFilters()
             .ToListAsync(ct);
         foreach (var file in files)
         {
-            await store.DeleteAsync(file.Key, ct);
-            if (file.PreviewKey is { } preview)
-                await store.DeleteAsync(preview, ct);
+            await FileBytes.EraseAsync(file, store, ct);
         }
         await db.Files.IgnoreQueryFilters().Where(f => f.OrgId == org).ExecuteDeleteAsync(ct);
     }

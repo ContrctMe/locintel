@@ -25,6 +25,8 @@ jobs:
         run: dotnet csharpier check .
       - name: Architecture tests
         run: dotnet test tests/LocIntel.ArchitectureTests -c Release --no-build
+      - name: Required gate regression
+        run: python3 tests/ci-gate.test.py
       - name: Wolverine codegen (catches fails-at-first-request wiring at CI time)
         run: dotnet run --project src/LocIntel.Api -c Release --no-build -- codegen write
         env:
@@ -49,9 +51,18 @@ jobs:
           found=0
           for project in tests/*.UnitTests/*.UnitTests.csproj; do
             found=1
-            dotnet test "$project" -c Release
+            results="$(dirname "$project")/TestResults/coverage-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+            dotnet test "$project" -c Release --collect:"XPlat Code Coverage" \
+              --settings coverage.runsettings --results-directory "$results"
+            find "$results" -name coverage.cobertura.xml -print -quit | grep -q . || \
+              { echo "$project produced no Cobertura report"; exit 1; }
           done
           [ "$found" = "1" ] || { echo "no unit-test projects found"; exit 1; }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-unit
+          path: tests/**/TestResults/**/coverage.cobertura.xml
+          if-no-files-found: error
 
   integration:
     runs-on: ubuntu-latest
@@ -73,12 +84,15 @@ jobs:
         run: |
           export LOCINTEL_TEST_SHUFFLE=$RANDOM
           echo "test order seed: $LOCINTEL_TEST_SHUFFLE (replay with LOCINTEL_TEST_SHUFFLE=$LOCINTEL_TEST_SHUFFLE)"
-          CONFIGURATION=Release tools/run-integration-shard.sh ${{ matrix.shard }} 2
+          COVERAGE=1 CONFIGURATION=Release tools/run-integration-shard.sh ${{ matrix.shard }} 2
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: integration-shard-${{ matrix.shard }}
-          path: tests/LocIntel.IntegrationTests/TestResults/*.trx
+          path: |
+            tests/LocIntel.IntegrationTests/TestResults/**/*.trx
+            tests/LocIntel.IntegrationTests/TestResults/**/coverage.cobertura.xml
+          if-no-files-found: error
 
   contract:
     # the committed OpenAPI document and generated client must match the code:
@@ -142,9 +156,108 @@ jobs:
         working-directory: web
         run: pnpm build
 
-  checks:
-    # the one status branch protection requires
-    needs: [architecture, unit, integration, contract, frontend]
+  image:
+    # The production artifact, built and smoked: one non-root OCI image from
+    # `dotnet publish` (no Dockerfile to drift), pre-generated Wolverine code
+    # inside it, and all three ROLEs booted from it in Production mode against
+    # a real PostgreSQL - which is also the boot guards' negative control: a
+    # production-valid configuration must NOT be refused.
     runs-on: ubuntu-latest
     steps:
-      - run: echo "all checks green"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet build src/LocIntel.Api -c Release
+      - name: Pre-generate Wolverine handler code into the artifact
+        run: dotnet run --project src/LocIntel.Api -c Release --no-build -- codegen write
+        env:
+          ConnectionStrings__locintel: "Host=localhost;Port=1;Database=x;Username=x;Password=x"
+          ASPNETCORE_ENVIRONMENT: Testing
+          ROLE: api
+      - name: Publish the image
+        run: |
+          dotnet publish src/LocIntel.Api -c Release -p:PublishProfile=DefaultContainer \
+            -p:ContainerImageTag=ci -p:Version=0.0.0-ci
+          docker image inspect locintel:ci --format 'user={{.Config.User}} ports={{.Config.ExposedPorts}}'
+      - name: Smoke the three roles from the image
+        run: tools/smoke-image.sh locintel:ci
+
+  browser:
+    # Critical flows and tenant transitions in Chromium, Firefox, and WebKit, with an axe pass on
+    # every page: sign-in by hint (the local provider, no credentials typed),
+    # the operator wall, keyboard navigation, creating and opening a site.
+    # tools/e2e-stack.sh boots Postgres, the migrate and api roles and the
+    # built console and public SSR servers, the same way locally.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install
+        working-directory: web
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm --filter @locintel/e2e exec playwright install --with-deps chromium firefox webkit
+      - name: Browser argument forwarding regression
+        working-directory: web
+        run: pnpm test:e2e --project=chromium --list
+      - name: Browser and accessibility suite
+        env:
+          Logging__LogLevel__Microsoft.AspNetCore.Hosting.Diagnostics: Information
+        run: tools/e2e-stack.sh
+      - name: Failed-stack diagnostic preservation regression
+        run: bash tests/e2e-stack-artifacts.test.sh
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-failure-diagnostics
+          path: web/tools/e2e/test-results/
+          if-no-files-found: ignore
+
+  coverage:
+    # Line and branch coverage by test tier (job) and module (assembly),
+    # REPORT-ONLY: no floor until a few weeks of numbers say where one
+    # belongs (maturity review). The summary lands on the run page.
+    needs: [unit, integration]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/download-artifact@v4
+        with:
+          name: coverage-unit
+          path: tests/LocIntel.CoverageInput/unit
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: integration-shard-*
+          path: tests/LocIntel.CoverageInput/integration
+          merge-multiple: true
+      - name: Report by tier and module
+        run: |
+          tools/coverage-report.sh coverage tests/LocIntel.CoverageInput >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+
+  checks:
+    # the one status branch protection requires
+    if: ${{ always() }}
+    needs: [architecture, unit, integration, contract, frontend, image, browser, coverage]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require every dependency to succeed
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: python3 tools/check-ci-results.py

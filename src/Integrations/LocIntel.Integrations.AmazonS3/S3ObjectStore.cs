@@ -62,12 +62,18 @@ public sealed class S3ObjectStore : IObjectStore
                 Verb = HttpVerb.PUT,
                 Expires = expires.UtcDateTime,
                 ContentType = contentType,
+                // Signed: omitting the condition must invalidate the ticket.
+                Headers = { ["If-None-Match"] = "*" },
             }
         );
         return new UploadTicket(
             FixScheme(url),
             "PUT",
-            new Dictionary<string, string> { ["Content-Type"] = contentType },
+            new Dictionary<string, string>
+            {
+                ["Content-Type"] = contentType,
+                ["If-None-Match"] = "*",
+            },
             expires
         );
     }
@@ -95,16 +101,15 @@ public sealed class S3ObjectStore : IObjectStore
     private string FixScheme(string url) =>
         _plainHttp && url.StartsWith("https://") ? "http://" + url["https://".Length..] : url;
 
-    public async ValueTask<bool> ExistsAsync(string key, CancellationToken ct = default)
+    public async ValueTask<long?> GetLengthAsync(string key, CancellationToken ct = default)
     {
         try
         {
-            await _client.GetObjectMetadataAsync(_bucket, key, ct);
-            return true;
+            return (await _client.GetObjectMetadataAsync(_bucket, key, ct)).ContentLength;
         }
         catch (AmazonS3Exception e) when (e.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
-            return false;
+            return null;
         }
     }
 

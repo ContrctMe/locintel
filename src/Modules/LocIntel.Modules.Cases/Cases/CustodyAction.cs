@@ -7,9 +7,10 @@ namespace LocIntel.Modules.Cases.Cases;
 public enum CustodyAction
 {
     Added,
-    Downloaded,
+    Downloaded, // Historical entries: retained, not rewritten as proof of delivery.
     Exported,
     Removed,
     HoldPlaced,
     HoldReleased,
+    DownloadAccessIssued,
 }

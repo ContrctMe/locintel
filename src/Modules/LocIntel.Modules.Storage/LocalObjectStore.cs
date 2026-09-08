@@ -58,8 +58,21 @@ public sealed class LocalObjectStore(IConfiguration configuration) : IObjectStor
         return (ticket.key, ticket.maxBytes);
     }
 
-    public ValueTask<bool> ExistsAsync(string key, CancellationToken ct = default) =>
-        ValueTask.FromResult(File.Exists(PathFor(key)));
+    public ValueTask<long?> GetLengthAsync(string key, CancellationToken ct = default)
+    {
+        try
+        {
+            return ValueTask.FromResult<long?>(new FileInfo(PathFor(key)).Length);
+        }
+        catch (FileNotFoundException)
+        {
+            return ValueTask.FromResult<long?>(null);
+        }
+        catch (DirectoryNotFoundException)
+        {
+            return ValueTask.FromResult<long?>(null);
+        }
+    }
 
     public ValueTask<Stream> OpenReadAsync(string key, CancellationToken ct = default) =>
         ValueTask.FromResult<Stream>(File.OpenRead(PathFor(key)));

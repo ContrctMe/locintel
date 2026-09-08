@@ -6,8 +6,8 @@ import { useState } from 'react';
 import { fmtDateTime } from '../lib/format';
 import { useApiMutation } from '../lib/mutation';
 import { useMe } from '../session';
+import { useSessionTransition } from '../app/session-boundary';
 
-type Session = { id: string; userAgent: string | null; createdAt: string; current: boolean };
 type Prefs = { phone: string | null; smsAlerts: boolean; smsMarketplace: boolean; smsNetwork: boolean; browserAlerts: boolean; smsAvailable: boolean };
 
 /** Best-effort browser/OS from the UA - a label, not a fingerprint. */
@@ -42,11 +42,11 @@ function describeAgent(ua: string | null): string {
 export function AccountPage() {
   const { data: me } = useMe();
   const [name, setName] = useState<string | null>(null);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const changeSession = useSessionTransition();
 
   const { data: sessions } = useQuery({
     queryKey: ['sessions'],
-    queryFn: () => api.get<Session[]>('/auth/sessions'),
+    queryFn: ({ signal }) => api.get('/auth/sessions', { signal }),
   });
 
   const rename = useApiMutation({
@@ -59,7 +59,7 @@ export function AccountPage() {
     success: 'Reset email sent',
   });
   const revoke = useApiMutation({
-    mutationFn: (id: string) => api.del(`/auth/sessions/${id}`),
+    mutationFn: (id: string) => api.del('/auth/sessions/{id}', { path: { id } }),
     invalidate: [['sessions']],
     success: 'Session revoked',
   });
@@ -68,26 +68,15 @@ export function AccountPage() {
     invalidate: [['sessions']],
     success: 'Other sessions signed out',
   });
-  // stays on useMutation semantics via wrapper except the rich 409 body:
-  // last-manager refusal needs the org list, so it renders inline
-  const deleteAccount = useApiMutation({
-    mutationFn: async () => {
-      try {
-        return await api.del('/auth/account');
-      } catch (e) {
-        const body = (e as { body?: { code?: string; organizations?: string[] } }).body;
-        setDeleteError(
-          body?.code === 'last_manager'
-            ? `You are the last manager of: ${(body.organizations ?? []).join(', ')}. Transfer management or offboard first.`
-            : null,
-        );
-        throw e;
-      }
-    },
-    errorFallback: 'Deletion failed',
-    onSuccess: () => {
-      location.href = '/';
-    },
+  const deleteAccount = () => changeSession(async () => {
+    try {
+      return await api.del('/auth/account');
+    } catch (e) {
+      const body = (e as { body?: { code?: string; organizations?: string[] } }).body;
+      if (body?.code === 'last_manager')
+        throw new Error(`You are the last manager of: ${(body.organizations ?? []).join(', ')}. Transfer management or offboard first.`);
+      throw e;
+    }
   });
 
   if (!me || me.tier !== 'user') return null;
@@ -167,12 +156,10 @@ export function AccountPage() {
             Deleting your account removes your access everywhere and your identity provider
             record. Organizations you manage alone must be handed over or offboarded first.
           </p>
-          {deleteError && <p className="text-sm text-destructive">{deleteError}</p>}
           <ConfirmButton
             variant="destructive"
             confirmLabel="Permanently delete?"
-            disabled={deleteAccount.isPending}
-            onConfirm={() => deleteAccount.mutate()}
+            onConfirm={() => void deleteAccount()}
           >
             Delete account
           </ConfirmButton>
@@ -184,7 +171,7 @@ export function AccountPage() {
 
 /** Reachability beyond email: SMS opt-in per kind (needs the SMS transport on) and browser notifications for alerts. */
 function NotificationsCard() {
-  const { data: prefs } = useQuery({ queryKey: ['me', 'notifications'], queryFn: () => api.get<Prefs>('/api/me/notifications') });
+  const { data: prefs } = useQuery({ queryKey: ['me', 'notifications'], queryFn: ({ signal }) => api.get('/api/me/notifications', { signal }) });
   if (!prefs) return null;
   return <NotificationsForm key={JSON.stringify(prefs)} prefs={prefs} />;
 }

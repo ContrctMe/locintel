@@ -1,3 +1,4 @@
+import { enumValue } from '../lib/enum-value';
 import { api } from '@locintel/api';
 import { Button, Card, CardContent, CardHeader, CardTitle, ConfirmButton, FormDialog,
   Input, Label, Select, Textarea } from '@locintel/ui';
@@ -6,10 +7,10 @@ import { Link, useParams } from '@tanstack/react-router';
 import { useState } from 'react';
 import { fmtDate, fmtDateTime } from '../lib/format';
 import { useApiMutation } from '../lib/mutation';
-import type { Page } from '../lib/paging';
+
 import { can, useMe } from '../session';
 import { ENTITY_STATUSES, EntityStatusBadge, LINK_ROLES, parseDescriptors } from './entities';
-import type { IncidentSummary } from './incidents';
+
 
 type LinkView = {
   id: string; incidentId: string; siteId: string; incidentTitle: string | null;
@@ -25,7 +26,7 @@ type Entity = {
   creator: string | null; createdAt: string; updatedAt: string; deletedAt: string | null;
   links: LinkView[]; grants: GrantView[] | null;
 };
-type Member = { userId: string; email: string; name: string | null };
+
 
 export function EntityDetailPage() {
   const { entityId } = useParams({ strict: false }) as { entityId: string };
@@ -34,36 +35,36 @@ export function EntityDetailPage() {
   const key = ['entities', 'detail', entityId];
   const { data: entity } = useQuery({
     queryKey: key,
-    queryFn: () => api.get<Entity>(`/api/entities/${entityId}`),
+    queryFn: ({ signal }) => api.get("/api/entities/{id}", { signal, path: { id: entityId } }),
   });
   const [editing, setEditing] = useState(false);
 
   const setStatus = useApiMutation({
-    mutationFn: (status: string) => api.post(`/api/entities/${entityId}/status`, { status }),
+    mutationFn: (status: string) => api.post("/api/entities/{id}/status", { status: enumValue(ENTITY_STATUSES, status) }, { path: { id: entityId } }),
     invalidate: [['entities']],
     success: 'Status updated',
   });
   const hold = useApiMutation({
-    mutationFn: (value: boolean) => api.post(`/api/entities/${entityId}/hold`, { hold: value }),
+    mutationFn: (value: boolean) => api.post("/api/entities/{id}/hold", { hold: value }, { path: { id: entityId } }),
     invalidate: [['entities']],
     success: 'Legal hold updated',
   });
   const remove = useApiMutation({
-    mutationFn: () => api.del(`/api/entities/${entityId}`),
+    mutationFn: () => api.del("/api/entities/{id}", { path: { id: entityId } }),
     invalidate: [['entities']],
     success: 'Moved to trash',
   });
   const restore = useApiMutation({
-    mutationFn: () => api.post(`/api/entities/${entityId}/restore`),
+    mutationFn: () => api.post("/api/entities/{id}/restore", undefined, { path: { id: entityId } }),
     invalidate: [['entities']],
     success: 'Record restored',
   });
   const unlink = useApiMutation({
-    mutationFn: (linkId: string) => api.del(`/api/entities/${entityId}/links/${linkId}`),
+    mutationFn: (linkId: string) => api.del("/api/entities/{id}/links/{linkId}", { path: { id: entityId, linkId } }),
     invalidate: [['entities'], ['incidents']],
   });
   const revoke = useApiMutation({
-    mutationFn: (grantId: string) => api.del(`/api/entities/${entityId}/grants/${grantId}`),
+    mutationFn: (grantId: string) => api.del("/api/entities/{id}/grants/{grantId}", { path: { id: entityId, grantId } }),
     invalidate: [key],
     success: 'Access revoked',
   });
@@ -240,13 +241,13 @@ function EditDialog({ entity, open, onOpenChange }: {
   const [expiresAt, setExpiresAt] = useState(entity.expiresAt.slice(0, 10));
   const save = useApiMutation({
     mutationFn: () =>
-      api.put(`/api/entities/${entity.id}`, {
+      api.put("/api/entities/{id}", {
         displayName: displayName.trim(),
         aliases: aliases.split(',').map((a) => a.trim()).filter(Boolean),
         descriptors: parseDescriptors(descriptors),
         summary: summary.trim() || null,
         expiresAt: new Date(`${expiresAt}T00:00:00Z`).toISOString(),
-      }),
+      }, { path: { id: entity.id } }),
     invalidate: [['entities']],
     success: 'Record updated',
     onSuccess: () => onOpenChange(false),
@@ -293,15 +294,13 @@ function LinkIncidentDialog({ entityId }: { entityId: string }) {
   const [note, setNote] = useState('');
   const { data: incidents } = useQuery({
     queryKey: ['incidents', 'picker', q],
-    queryFn: async () =>
-      (await api.get<Page<IncidentSummary>>(
-        `/api/incidents?limit=50${q.trim() ? `&q=${encodeURIComponent(q.trim())}` : ''}`,
-      )).items,
+    queryFn: async ({ signal }) =>
+      (await api.get('/api/incidents', { signal, query: { limit: 50, q: q.trim() || undefined } })).items,
     enabled: open,
   });
   const link = useApiMutation({
     mutationFn: () =>
-      api.post(`/api/entities/${entityId}/links`, { incidentId, role, note: note.trim() || null }),
+      api.post("/api/entities/{id}/links", { incidentId, role: enumValue(LINK_ROLES, role), note: note.trim() || null }, { path: { id: entityId } }),
     invalidate: [['entities'], ['incidents']],
     success: 'Incident linked',
     onSuccess: () => {
@@ -355,19 +354,19 @@ function GrantDialog({ entityId, invalidate }: { entityId: string; invalidate: s
   const [days, setDays] = useState('7');
   const { data: members } = useQuery({
     queryKey: ['members', 'picker'],
-    queryFn: async () => {
-      const result = await api.get<Member[] | Page<Member>>('/api/members');
+    queryFn: async ({ signal }) => {
+      const result = await api.get("/api/members", { signal });
       return Array.isArray(result) ? result : result.items;
     },
     enabled: open,
   });
   const grant = useApiMutation({
     mutationFn: () =>
-      api.post(`/api/entities/${entityId}/grants`, {
+      api.post("/api/entities/{id}/grants", {
         userId,
         reason: reason.trim(),
         expiresAt: new Date(Date.now() + Number(days) * 86_400_000).toISOString(),
-      }),
+      }, { path: { id: entityId } }),
     invalidate: [invalidate],
     success: 'Access granted',
     onSuccess: () => {

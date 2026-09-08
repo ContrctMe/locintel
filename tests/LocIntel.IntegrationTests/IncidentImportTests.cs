@@ -168,6 +168,13 @@ public class IncidentImportTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         };
         (await client.SendAsync(put)).EnsureSuccessStatusCode();
         (await client.PostAsync($"/api/files/{fileId}/complete", null)).EnsureSuccessStatusCode();
+        await ApiFixture.WaitUntilAsync(
+            async () =>
+                (await client.GetFromJsonAsync<JsonElement>($"/api/files/{fileId}"))
+                    .GetProperty("status")
+                    .GetString() == "Clean",
+            "incident import upload to finish its asynchronous scan"
+        );
         return fileId;
     }
 }

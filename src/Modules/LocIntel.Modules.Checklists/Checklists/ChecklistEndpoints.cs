@@ -38,6 +38,8 @@ public sealed record ChecklistTemplateSummary(
     DateTimeOffset CreatedAt
 );
 
+public sealed record ChecklistTemplateCreatedResponse(Guid Id);
+
 /// <summary>
 /// The ops archetype's core loop (ADR 45), and the reference vertical slice:
 /// this module was scaffolded by tools/new-module.py and consumes Tenancy
@@ -75,6 +77,7 @@ public static class ChecklistEndpoints
 
     [Transactional(typeof(ChecklistsDbContext))]
     [WolverinePost("/api/checklists/templates")]
+    [ProducesResponseType(typeof(ChecklistTemplateCreatedResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> CreateTemplate(
         CreateTemplateRequest request,
         ChecklistsDbContext db,
@@ -111,11 +114,12 @@ public static class ChecklistEndpoints
             "checklist.template_created",
             new { template.Id, template.Name }
         );
-        return Results.Ok(new { template.Id });
+        return Results.Ok(new ChecklistTemplateCreatedResponse(template.Id));
     }
 
     [Transactional(typeof(ChecklistsDbContext))]
     [WolverineDelete("/api/checklists/templates/{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public static async Task<IResult> DeleteTemplate(
         Guid id,
         ChecklistsDbContext db,
@@ -203,6 +207,7 @@ public static class ChecklistEndpoints
 
     [Transactional(typeof(ChecklistsDbContext))]
     [WolverinePost("/api/checklists/check")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public static async Task<IResult> Check(
         CheckItemRequest request,
         ChecklistsDbContext db,

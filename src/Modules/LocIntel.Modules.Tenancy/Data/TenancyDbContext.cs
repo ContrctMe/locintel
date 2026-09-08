@@ -44,6 +44,11 @@ public sealed class TenancyDbContext(
                 .HasConversion<string>()
                 .HasMaxLength(20);
             b.Property(o => o.CloseRequestedAt).HasColumnName("close_requested_at");
+            b.Property(o => o.Version)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
             b.Property(o => o.CreatedAt).HasColumnName("created_at");
             b.HasIndex(o => o.Slug).IsUnique();
             b.HasIndex(o => o.ExternalId).IsUnique().HasFilter("external_id IS NOT NULL");

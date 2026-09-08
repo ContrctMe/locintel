@@ -1,25 +1,23 @@
-import { api } from '@locintel/api';
+import { api, type components } from '@locintel/api';
 import { Button, Card, CardContent, CardHeader, CardTitle, ConfirmButton, FormDialog, Input, Label, Select, Textarea } from '@locintel/ui';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { fmtDateTime } from '../lib/format';
 import { useApiMutation } from '../lib/mutation';
-import type { Page } from '../lib/paging';
+
 import { weeklySchedule, type DayCode } from '../lib/schedule';
 import { can, useMe } from '../session';
 import { SeverityBadge } from './incidents';
 
-type Site = { id: string; name: string; timeZone: string };
+
 type Checkpoint = { code: string; label: string; latitude: number | null; longitude: number | null };
-type Route = { id: string; siteId: string; name: string; checkpoints: Checkpoint[]; expectedMinutes: number; archived: boolean;
-  schedules: { id: string; rRule: string; anchorDate: string; startLocal: string; exDates: string[]; active: boolean }[] };
-type Scan = { id: string; code: string; label: string | null; scannedAt: string; distanceMeters: number | null; withinGeofence: boolean | null; note: string | null };
-type Patrol = { id: string; routeId: string; routeName: string; businessDate: string; scheduledStartLocal: string | null; status: string;
-  startedAt: string; startedByLabel: string | null; endedAt: string | null; summary: string | null; checkpointsTotal: number; checkpointsScanned: number; scans: Scan[] };
-type Expected = { routeId: string; routeName: string; startLocal: string; startUtc: string; patrolId: string | null; status: string | null };
-type Day = { businessDate: string; site: string; expected: Expected[]; patrols: Patrol[] };
-type Report = Day & { expected: Expected[]; completed: number; missed: Expected[]; incidents: { id: string; title: string; category: string; severity: string; status: string; occurredAt: string }[] };
+type Route = components['schemas']['RouteView'];
+
+
+
+
+
 
 const DAYS: { code: DayCode; label: string }[] = [
   { code: 'MO', label: 'Mon' }, { code: 'TU', label: 'Tue' }, { code: 'WE', label: 'Wed' }, { code: 'TH', label: 'Thu' },
@@ -33,12 +31,12 @@ export function PatrolsPage() {
   const perform = can(me, 'patrols:perform');
   const [siteId, setSiteId] = useState('');
   const [reportDate, setReportDate] = useState('');
-  const { data: sites } = useQuery({ queryKey: ['sites', 'picker'], queryFn: async () => (await api.get<Page<Site>>('/api/sites?limit=200')).items });
+  const { data: sites } = useQuery({ queryKey: ['sites', 'picker'], queryFn: async ({ signal }) => (await api.get('/api/sites', { signal, query: { limit: 200 } })).items });
   const activeSite = siteId || sites?.[0]?.id || '';
-  const { data: day } = useQuery({ queryKey: ['patrols', 'today', activeSite], queryFn: () => api.get<Day>(`/api/patrols/today?siteId=${activeSite}`), enabled: !!activeSite, refetchInterval: 30_000 });
-  const { data: routes } = useQuery({ queryKey: ['patrols', 'routes', activeSite], queryFn: () => api.get<{ items: Route[] }>(`/api/patrols/routes?siteId=${activeSite}`), enabled: !!activeSite });
+  const { data: day } = useQuery({ queryKey: ['patrols', 'today', activeSite], queryFn: ({ signal }) => api.get('/api/patrols/today', { signal, query: { siteId: activeSite } }), enabled: !!activeSite, refetchInterval: 30_000 });
+  const { data: routes } = useQuery({ queryKey: ['patrols', 'routes', activeSite], queryFn: ({ signal }) => api.get('/api/patrols/routes', { signal, query: { siteId: activeSite } }), enabled: !!activeSite });
   const date = reportDate || day?.businessDate || '';
-  const { data: report } = useQuery({ queryKey: ['patrols', 'report', activeSite, date], queryFn: () => api.get<Report>(`/api/patrols/report?siteId=${activeSite}&date=${date}`), enabled: !!activeSite && !!date });
+  const { data: report } = useQuery({ queryKey: ['patrols', 'report', activeSite, date], queryFn: ({ signal }) => api.get('/api/patrols/report', { signal, query: { siteId: activeSite, date } }), enabled: !!activeSite && !!date });
 
   const start = useApiMutation({
     mutationFn: (input: { routeId: string; scheduledStartLocal: string | null }) => api.post('/api/patrols', input),
@@ -51,12 +49,12 @@ export function PatrolsPage() {
           ? navigator.geolocation.getCurrentPosition((p) => resolve({ latitude: p.coords.latitude, longitude: p.coords.longitude }), () => resolve({}), { timeout: 4000 })
           : resolve({}),
       );
-      return api.post(`/api/patrols/${input.patrolId}/scan`, { code: input.code, ...pos });
+      return api.post("/api/patrols/{id}/scan", { code: input.code, ...pos }, { path: { id: input.patrolId } });
     },
     invalidate: [['patrols']],
   });
-  const end = useApiMutation({ mutationFn: (input: { patrolId: string; summary: string }) => api.post(`/api/patrols/${input.patrolId}/end`, { summary: input.summary }), invalidate: [['patrols']], success: 'Patrol completed' });
-  const abandon = useApiMutation({ mutationFn: (patrolId: string) => api.post(`/api/patrols/${patrolId}/abandon`, { reason: 'Abandoned from console' }), invalidate: [['patrols']] });
+  const end = useApiMutation({ mutationFn: (input: { patrolId: string; summary: string }) => api.post("/api/patrols/{id}/end", { summary: input.summary }, { path: { id: input.patrolId } }), invalidate: [['patrols']], success: 'Patrol completed' });
+  const abandon = useApiMutation({ mutationFn: (patrolId: string) => api.post("/api/patrols/{id}/abandon", { reason: 'Abandoned from console' }, { path: { id: patrolId } }), invalidate: [['patrols']] });
   const [summary, setSummary] = useState('');
   const live = day?.patrols.filter((p) => p.status === 'InProgress') ?? [];
 
@@ -93,7 +91,7 @@ export function PatrolsPage() {
               <ul className="space-y-1 text-xs text-muted-foreground">
                 {p.scans.map((s) => (
                   <li key={s.id}>{fmtDateTime(s.scannedAt)} · {s.label ?? s.code}
-                    {s.distanceMeters != null && <span className={s.withinGeofence ? ' text-emerald-700 dark:text-emerald-300' : ' text-destructive'}> · {Math.round(s.distanceMeters)} m</span>}
+                    {s.distanceMeters != null && <span className={s.withinGeofence ? ' text-emerald-700 dark:text-emerald-300' : ' text-destructive'}> · {Math.round(Number(s.distanceMeters))} m</span>}
                     {s.note && ` · ${s.note}`}
                   </li>
                 ))}
@@ -169,7 +167,7 @@ export function PatrolsPage() {
         <CardContent className="space-y-3 text-sm">
           {report && (
             <>
-              <p className="text-muted-foreground">{report.completed} of {report.expected.length ?? report.expected} expected rounds completed{report.missed.length > 0 && ` · ${report.missed.length} missed`}</p>
+              <p className="text-muted-foreground">{report.completed} of {report.expected} expected rounds completed{report.missed.length > 0 && ` · ${report.missed.length} missed`}</p>
               {report.patrols.map((p) => (
                 <div key={p.id} className="rounded-md border p-2">
                   <div className="flex items-center justify-between">
@@ -232,8 +230,8 @@ function ScheduleDialog({ route }: { route: Route }) {
   const [time, setTime] = useState('22:00');
   const create = useApiMutation({
     mutationFn: () => {
-      const { rrule, anchorDate } = weeklySchedule(days, Date.now());
-      return api.post(`/api/patrols/routes/${route.id}/schedules`, { rRule: rrule, anchorDate, startLocal: time });
+      const { rRule, anchorDate } = weeklySchedule(days, Date.now());
+      return api.post("/api/patrols/routes/{id}/schedules", { rRule, anchorDate, startLocal: time }, { path: { id: route.id } });
     },
     invalidate: [['patrols']], success: 'Schedule added', onSuccess: () => setOpen(false),
   });
@@ -254,13 +252,13 @@ function ScheduleDialog({ route }: { route: Route }) {
 }
 
 function RemoveSchedule({ id }: { id: string }) {
-  const remove = useApiMutation({ mutationFn: () => api.del(`/api/patrols/schedules/${id}`), invalidate: [['patrols']] });
+  const remove = useApiMutation({ mutationFn: () => api.del("/api/patrols/schedules/{id}", { path: { id } }), invalidate: [['patrols']] });
   return <button className="hover:underline" onClick={() => remove.mutate()}>Remove</button>;
 }
 
 function ArchiveRoute({ route }: { route: Route }) {
   const archive = useApiMutation({
-    mutationFn: () => api.put(`/api/patrols/routes/${route.id}`, { name: route.name, checkpoints: route.checkpoints, expectedMinutes: route.expectedMinutes, archived: true }),
+    mutationFn: () => api.put("/api/patrols/routes/{id}", { name: route.name, checkpoints: route.checkpoints, expectedMinutes: route.expectedMinutes, archived: true }, { path: { id: route.id } }),
     invalidate: [['patrols']], success: 'Route archived',
   });
   return <ConfirmButton size="sm" variant="ghost" className="mt-1" onConfirm={() => archive.mutate()}>Archive</ConfirmButton>;

@@ -89,9 +89,41 @@ public class CaseTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         var item = Assert.Single(detail.GetProperty("evidence").EnumerateArray());
         Assert.Equal("receipt.jpg", item.GetProperty("fileName").GetString());
 
-        // download through the case: signed URL + custody event
-        var download = await owner.GetFromJsonAsync<JsonElement>(
-            $"/api/cases/{caseId}/evidence/{evidenceId}/download"
+        var downloadPath = $"/api/cases/{caseId}/evidence/{evidenceId}/download";
+        Assert.Equal(
+            HttpStatusCode.MethodNotAllowed,
+            (await owner.GetAsync(downloadPath)).StatusCode
+        );
+        using var forged = new HttpRequestMessage(HttpMethod.Post, downloadPath);
+        forged.Headers.Add("Origin", "https://evil.example.test");
+        Assert.Equal(HttpStatusCode.Forbidden, (await owner.SendAsync(forged)).StatusCode);
+        using var otherOrg = await fixture.LoginAsync(ApiFixture.UserB);
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (await otherOrg.PostAsync(downloadPath, null)).StatusCode
+        );
+        var issuanceKey = Guid.NewGuid().ToString();
+        HttpRequestMessage Issue() =>
+            new(HttpMethod.Post, downloadPath) { Headers = { { "Idempotency-Key", issuanceKey } } };
+        using var issued = await owner.SendAsync(Issue());
+        issued.EnsureSuccessStatusCode();
+        var download = await issued.Content.ReadFromJsonAsync<JsonElement>();
+        using var replayed = await owner.SendAsync(Issue());
+        replayed.EnsureSuccessStatusCode();
+        Assert.Equal(
+            download.GetProperty("url").GetString(),
+            (await replayed.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("url").GetString()
+        );
+        var custodyAfter = await owner.GetFromJsonAsync<JsonElement>(
+            $"/api/cases/{caseId}/custody"
+        );
+        Assert.Single(
+            custodyAfter.GetProperty("events").EnumerateArray(),
+            e => e.GetProperty("action").GetString() == "DownloadAccessIssued"
+        );
+        Assert.DoesNotContain(
+            custodyAfter.GetProperty("events").EnumerateArray(),
+            e => e.GetProperty("action").GetString() == "Downloaded"
         );
         Assert.Equal("receipt.jpg", download.GetProperty("fileName").GetString());
         Assert.False(string.IsNullOrEmpty(download.GetProperty("url").GetString()));
@@ -136,7 +168,7 @@ public class CaseTests(ApiFixture fixture) : IClassFixture<ApiFixture>
             .EnumerateArray()
             .Select(c => c.GetProperty("action").GetString())
             .ToList();
-        Assert.Equal(["Added", "Downloaded", "HoldPlaced", "Exported"], actions);
+        Assert.Equal(["Added", "DownloadAccessIssued", "HoldPlaced", "Exported"], actions);
 
         // release, tick the task, close with a disposition
         (

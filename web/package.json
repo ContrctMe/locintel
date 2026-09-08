@@ -9,7 +9,8 @@
     "dev:console": "pnpm --filter @locintel/console dev",
     "dev:public": "pnpm --filter @locintel/public dev",
     "lint": "oxlint apps packages/api/src",
-    "test": "pnpm -r --if-present test"
+    "test": "pnpm -r --filter '!@locintel/e2e' --if-present test",
+    "test:e2e": "pnpm --filter @locintel/e2e run test"
   },
   "devDependencies": {
     "axe-core": "^4.13.0",

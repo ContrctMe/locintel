@@ -18,4 +18,7 @@ public sealed class OrgDirectoryEntry
     public string Status { get; set; } = "Active";
     public bool IsPlatform { get; set; }
     public DateTimeOffset SyncedAt { get; set; } = DateTimeOffset.UtcNow;
+
+    /// <summary>The owner row's version last applied here; an older or equal event is stale.</summary>
+    public long SourceVersion { get; set; }
 }

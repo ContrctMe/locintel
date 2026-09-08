@@ -147,7 +147,14 @@ public sealed class DevBootstrap(
         // what every org-writing flow does: publish the event (org_directory)
         var bus = sp.GetRequiredService<IMessageBus>();
         await bus.PublishAsync(
-            new OrganizationUpserted(org.Id, org.Name, org.Slug, org.Region, org.ExternalId)
+            new OrganizationUpserted(
+                org.Id,
+                org.Name,
+                org.Slug,
+                org.Region,
+                org.ExternalId,
+                org.Version
+            )
         );
         await bus.PublishAsync(
             new OrganizationUpserted(
@@ -156,6 +163,7 @@ public sealed class DevBootstrap(
                 platformOrg.Slug,
                 platformOrg.Region,
                 platformOrg.ExternalId,
+                platformOrg.Version,
                 "Active",
                 IsPlatform: true
             )

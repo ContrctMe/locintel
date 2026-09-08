@@ -1,3 +1,4 @@
+import { enumValue } from '../lib/enum-value';
 import { api } from '@locintel/api';
 import { Button, Card, CardContent, FormDialog, Input, Label, Select, Table, TableBody,
   TableCell, TableHead, TableHeader, TableRow, Textarea } from '@locintel/ui';
@@ -6,7 +7,7 @@ import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { fmtDateTime } from '../lib/format';
 import { useApiMutation } from '../lib/mutation';
-import type { Page } from '../lib/paging';
+
 import { can, useMe } from '../session';
 import { StatusBadge } from '../shell';
 
@@ -47,9 +48,9 @@ export function CasesPage() {
   const query = params.toString();
   const cases = useInfiniteQuery({
     queryKey: ['cases', 'list', query],
-    queryFn: ({ pageParam }) => api.get<Page<CaseSummary>>(`/api/cases?${query}&offset=${pageParam}`),
+    queryFn: ({ pageParam , signal }) => api.get('/api/cases', { signal, query: { limit: 50, status: status ? enumValue(['Open', 'Closed'], status) : undefined, priority: priority ? enumValue(PRIORITIES, priority) : undefined, mine, q: q.trim() || undefined, trash, offset: pageParam } }),
     initialPageParam: 0,
-    getNextPageParam: (last) => last.nextOffset ?? undefined,
+    getNextPageParam: (last) => last.nextOffset == null ? undefined : Number(last.nextOffset),
   });
   const items = cases.data?.pages.flatMap((p) => p.items);
   const total = cases.data?.pages[0]?.total;
@@ -146,10 +147,10 @@ export function OpenCaseDialog({ incidentId, trigger }: { incidentId?: string; t
   const [priority, setPriority] = useState<string>('Medium');
   const create = useApiMutation({
     mutationFn: () =>
-      api.post<{ id: string }>('/api/cases', {
+      api.post("/api/cases", {
         title: title.trim(),
         summary: summary.trim() || null,
-        priority,
+        priority: enumValue(PRIORITIES, priority),
         incidentIds: incidentId ? [incidentId] : [],
       }),
     invalidate: [['cases']],

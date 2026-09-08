@@ -1,12 +1,13 @@
+import { enumValue } from '../lib/enum-value';
 import { api } from '@locintel/api';
 import { Button, Card, CardContent, Input, Select } from '@locintel/ui';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useApiMutation } from '../lib/mutation';
-import type { Page } from '../lib/paging';
+
 import { can, useMe } from '../session';
-import { CATEGORIES, categoryLabel, type VendorSummary } from './marketplace';
+import { CATEGORIES, categoryLabel } from './marketplace';
 
 /** The catalog: every published vendor org, with credential health and your org's preferred/blocked marks. */
 export function MarketplaceVendorsPage() {
@@ -21,7 +22,7 @@ export function MarketplaceVendorsPage() {
   if (q.trim()) params.set('q', q.trim());
   const { data } = useQuery({
     queryKey: ['marketplace', 'vendors', params.toString()],
-    queryFn: () => api.get<Page<VendorSummary>>(`/api/marketplace/vendors?${params}`),
+    queryFn: ({ signal }) => api.get('/api/marketplace/vendors', { signal, query: { limit: 100, category: category ? enumValue(CATEGORIES, category) : undefined, area: area.trim() || undefined, q: q.trim() || undefined } }),
   });
   const mark = useApiMutation({
     mutationFn: (input: { vendorOrgId: string; blocked: boolean }) => api.post('/api/marketplace/preferred', input),
@@ -30,9 +31,9 @@ export function MarketplaceVendorsPage() {
   });
   const unmark = useApiMutation({
     mutationFn: async (vendorOrgId: string) => {
-      const rows = await api.get<{ id: string; vendorOrgId: string }[]>('/api/marketplace/preferred');
+      const rows = await api.get("/api/marketplace/preferred");
       const row = rows.find((r) => r.vendorOrgId === vendorOrgId);
-      if (row) await api.del(`/api/marketplace/preferred/${row.id}`);
+      if (row) await api.del("/api/marketplace/preferred/{id}", { path: { id: row.id } });
     },
     invalidate: [['marketplace']],
     success: 'Removed',
@@ -68,7 +69,7 @@ export function MarketplaceVendorsPage() {
               </p>
               <p className="text-xs">
                 <span className="text-emerald-700 dark:text-emerald-300">{v.validCredentials} valid credentials</span>
-                {v.expiredCredentials > 0 && <span className="ml-2 text-destructive">{v.expiredCredentials} expired</span>}
+                {Number(v.expiredCredentials) > 0 && <span className="ml-2 text-destructive">{v.expiredCredentials} expired</span>}
               </p>
               {manage && (
                 <div className="flex gap-2">

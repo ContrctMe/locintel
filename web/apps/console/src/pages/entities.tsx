@@ -1,3 +1,4 @@
+import { enumValue } from '../lib/enum-value';
 import { api } from '@locintel/api';
 import { Button, Card, CardContent, FormDialog, Input, Label, Select, Table, TableBody,
   TableCell, TableHead, TableHeader, TableRow, Textarea } from '@locintel/ui';
@@ -6,7 +7,7 @@ import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { fmtDate } from '../lib/format';
 import { useApiMutation } from '../lib/mutation';
-import type { Page } from '../lib/paging';
+
 import { can, useMe } from '../session';
 
 export type EntitySummary = {
@@ -61,10 +62,10 @@ export function EntitiesPage() {
   const query = params.toString();
   const entities = useInfiniteQuery({
     queryKey: ['entities', 'list', query],
-    queryFn: ({ pageParam }) =>
-      api.get<Page<EntitySummary>>(`/api/entities?${query}&offset=${pageParam}`),
+    queryFn: ({ pageParam , signal }) =>
+      api.get('/api/entities', { signal, query: { limit: 50, kind: kind ? enumValue(ENTITY_KINDS, kind) : undefined, status: status ? enumValue(ENTITY_STATUSES, status) : undefined, q: q.trim() || undefined, trash, offset: pageParam } }),
     initialPageParam: 0,
-    getNextPageParam: (last) => last.nextOffset ?? undefined,
+    getNextPageParam: (last) => last.nextOffset == null ? undefined : Number(last.nextOffset),
   });
   const items = entities.data?.pages.flatMap((p) => p.items);
   const total = entities.data?.pages[0]?.total;
@@ -175,7 +176,7 @@ function CreateEntityDialog() {
   const create = useApiMutation({
     mutationFn: () =>
       api.post('/api/entities', {
-        kind,
+        kind: enumValue(ENTITY_KINDS, kind),
         displayName: displayName.trim(),
         aliases: aliases.split(',').map((a) => a.trim()).filter(Boolean),
         descriptors: parseDescriptors(descriptors),

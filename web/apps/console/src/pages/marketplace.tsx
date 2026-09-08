@@ -1,3 +1,4 @@
+import { enumValue } from '../lib/enum-value';
 import { api } from '@locintel/api';
 import { Button, Card, CardContent, FormDialog, Input, Label, Select, Table, TableBody,
   TableCell, TableHead, TableHeader, TableRow, Textarea } from '@locintel/ui';
@@ -6,7 +7,7 @@ import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { fmtDateTime } from '../lib/format';
 import { apiError, useApiMutation } from '../lib/mutation';
-import type { Page } from '../lib/paging';
+
 import { can, useMe } from '../session';
 
 export type RequestSummary = {
@@ -18,13 +19,13 @@ export type VendorSummary = {
   orgId: string; name: string; description: string; categories: string[]; serviceAreas: string[];
   validCredentials: number; expiredCredentials: number; preferred: boolean; blocked: boolean;
 };
-type Site = { id: string; name: string };
+
 
 export const CATEGORIES = ['GuardService', 'MobilePatrol', 'AlarmResponse', 'Investigation', 'CctvInstall',
   'AccessControl', 'BoardUp', 'Restoration', 'LegalSupport', 'EquipmentSupply', 'KeyHolding', 'Other'] as const;
 export const URGENCIES = ['Emergency', 'Scheduled', 'Standing'] as const;
 export const REQUEST_STATUSES = ['Draft', 'Submitted', 'Accepted', 'Declined', 'InProgress', 'Completed', 'Verified', 'Disputed', 'Cancelled'] as const;
-export const categoryLabel = (c: string) => c.replace(/([a-z])([A-Z])/g, '$1 $2').replace('Cctv', 'CCTV');
+export const categoryLabel = (c: string | null) => (c ?? 'Unspecified').replace(/([a-z])([A-Z])/g, '$1 $2').replace('Cctv', 'CCTV');
 
 export function RequestStatusBadge({ status }: { status: string }) {
   const tone =
@@ -46,9 +47,9 @@ export function MarketplacePage() {
   const query = params.toString();
   const requests = useInfiniteQuery({
     queryKey: ['marketplace', 'requests', query],
-    queryFn: ({ pageParam }) => api.get<Page<RequestSummary>>(`/api/marketplace/requests?${query}&offset=${pageParam}`),
+    queryFn: ({ pageParam , signal }) => api.get('/api/marketplace/requests', { signal, query: { limit: 50, status: status ? enumValue(REQUEST_STATUSES, status) : undefined, offset: pageParam } }),
     initialPageParam: 0,
-    getNextPageParam: (last) => last.nextOffset ?? undefined,
+    getNextPageParam: (last) => last.nextOffset == null ? undefined : Number(last.nextOffset),
   });
   const items = requests.data?.pages.flatMap((p) => p.items).filter((r) => !q.trim() || r.title.toLowerCase().includes(q.toLowerCase()));
 
@@ -126,12 +127,12 @@ export function NewRequestDialog({ siteId: presetSite, incidentId, caseId, trigg
   const [spec, setSpec] = useState('');
   const { data: vendors } = useQuery({
     queryKey: ['marketplace', 'vendors', 'picker', category],
-    queryFn: async () => (await api.get<Page<VendorSummary>>(`/api/marketplace/vendors?category=${category}&limit=100`)).items,
+    queryFn: async ({ signal }) => (await api.get('/api/marketplace/vendors', { signal, query: { category: enumValue(CATEGORIES, category), limit: 100 } })).items,
     enabled: open,
   });
   const { data: sites } = useQuery({
     queryKey: ['sites', 'picker'],
-    queryFn: async () => (await api.get<Page<Site>>('/api/sites?limit=200')).items,
+    queryFn: async ({ signal }) => (await api.get('/api/sites', { signal, query: { limit: 200 } })).items,
     enabled: open && !presetSite,
   });
   const usable = vendors?.filter((v) => !v.blocked).sort((a, b) => Number(b.preferred) - Number(a.preferred));
@@ -142,13 +143,13 @@ export function NewRequestDialog({ siteId: presetSite, incidentId, caseId, trigg
         const i = line.indexOf(':');
         if (i > 0) specObj[line.slice(0, i).trim()] = line.slice(i + 1).trim();
       }
-      const created = await api.post<{ id: string }>('/api/marketplace/requests', {
-        vendorOrgId: vendorOrgId || null, category, urgency, siteId, title: title.trim(), details: details.trim() || null,
+      const created = await api.post("/api/marketplace/requests", {
+        vendorOrgId: vendorOrgId || null, category: enumValue(CATEGORIES, category), urgency: enumValue(URGENCIES, urgency), siteId, title: title.trim(), details: details.trim() || null,
         spec: specObj, startsAt: new Date(startsAt).toISOString(),
         endsAt: endsAt ? new Date(endsAt).toISOString() : null, rrule: rrule.trim() || null,
         budgetAmount: budget ? Number(budget) : null, incidentId: incidentId ?? null, caseId: caseId ?? null,
       });
-      await api.post(`/api/marketplace/requests/${created.id}/submit`);
+      await api.post("/api/marketplace/requests/{id}/submit", undefined, { path: { id: created.id } });
       return created;
     },
     invalidate: [['marketplace']],

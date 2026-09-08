@@ -14,7 +14,7 @@ public sealed record GenerateDerivatives(Guid FileId);
 
 public static class ScanUploadedFileHandler
 {
-    [Transactional(typeof(StorageDbContext))]
+    [NonTransactional]
     public static async Task Handle(
         ScanUploadedFile message,
         Envelope envelope,
@@ -31,29 +31,21 @@ public static class ScanUploadedFileHandler
                 $"ScanUploadedFile arrived with no tenant on the envelope (TenantId='{envelope.TenantId}')"
             );
 
-        var file = await db.Files.FirstOrDefaultAsync(f => f.Id == message.FileId, ct);
+        var file = await db
+            .Files.AsNoTracking()
+            .FirstOrDefaultAsync(f => f.Id == message.FileId, ct);
         if (file is null || file.Status != FileStatus.Uploaded)
             return;
 
         await using var content = await store.OpenReadAsync(file.Key, ct);
         var verdict = await scanner.ScanAsync(content, ct);
-        file.Status = verdict == ScanVerdict.Clean ? FileStatus.Clean : FileStatus.Quarantined;
-        file.ScannedAt = DateTimeOffset.UtcNow;
-        await db.SaveChangesAsync(ct);
-
-        if (file.Status == FileStatus.Clean)
-            await bus.PublishAsync(
-                new GenerateDerivatives(file.Id),
-                new DeliveryOptions { TenantId = org.Value.ToString() }
-            );
-        else
-            await bus.PublishAsync(
-                new LocIntel.Contracts.RecordDomainAudit(
-                    "file.quarantined",
-                    System.Text.Json.JsonSerializer.Serialize(new { file.Id, file.Name })
-                ),
-                new DeliveryOptions { TenantId = org.Value.ToString() }
-            );
+        // Inline transactional completion: a crash before it commits retries the scan;
+        // a crash after it commits retries a now-ineligible file without duplicate effects.
+        await bus.InvokeForTenantAsync(
+            org.Value.ToString(),
+            new ApplyFileScan(file.Id, file.Key, verdict),
+            ct
+        );
     }
 }
 
@@ -62,23 +54,26 @@ public static class GenerateDerivativesHandler
     private const long PreviewLimit = 1024 * 1024;
     private const int PreviewBytes = 4096;
 
-    [Transactional(typeof(StorageDbContext))]
+    [NonTransactional]
     public static async Task Handle(
         GenerateDerivatives message,
         Envelope envelope,
         ITenantContext tenant,
         StorageDbContext db,
         IObjectStore store,
+        IMessageBus bus,
         CancellationToken ct
     )
     {
-        if (tenant.OrgId is null)
+        if (tenant.OrgId is not { } org)
             throw new InvalidOperationException(
                 $"GenerateDerivatives arrived with no tenant on the envelope (TenantId='{envelope.TenantId}')"
             );
 
-        var file = await db.Files.FirstOrDefaultAsync(f => f.Id == message.FileId, ct);
-        if (file is null || file.Status != FileStatus.Clean)
+        var file = await db
+            .Files.AsNoTracking()
+            .FirstOrDefaultAsync(f => f.Id == message.FileId, ct);
+        if (file is null || file.Status != FileStatus.Clean || file.PreviewKey != null)
             return;
 
         // v1 derivative: a text head-preview for small text-ish files. Image
@@ -97,9 +92,10 @@ public static class GenerateDerivativesHandler
             throwOnEndOfStream: false,
             ct
         );
-        var previewKey = file.Key + ".preview.txt";
-        await store.WriteAsync(previewKey, new MemoryStream(buffer, 0, read), "text/plain", ct);
-        file.PreviewKey = previewKey;
-        await db.SaveChangesAsync(ct);
+        await bus.InvokeForTenantAsync(
+            org.Value.ToString(),
+            new SaveFilePreview(file.Id, file.Key, buffer[..read]),
+            ct
+        );
     }
 }

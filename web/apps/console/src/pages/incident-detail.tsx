@@ -1,4 +1,5 @@
-import { api } from '@locintel/api';
+import { enumValue } from '../lib/enum-value';
+import { api, type components } from '@locintel/api';
 import { Button, Card, CardContent, CardHeader, CardTitle, ConfirmButton, FormDialog,
   Input, Label, Select, Textarea } from '@locintel/ui';
 import { useQuery } from '@tanstack/react-query';
@@ -6,29 +7,18 @@ import { Link, useParams } from '@tanstack/react-router';
 import { useState } from 'react';
 import { fmtDateTime } from '../lib/format';
 import { useApiMutation } from '../lib/mutation';
-import type { Page } from '../lib/paging';
+
 import { can, useMe } from '../session';
 import { StatusBadge } from '../shell';
-import { EntityStatusBadge, LINK_ROLES, type EntitySummary } from './entities';
-import { OpenCaseDialog, PriorityBadge, type CaseSummary } from './cases';
+import { EntityStatusBadge, LINK_ROLES } from './entities';
+import { OpenCaseDialog, PriorityBadge } from './cases';
 import { CATEGORIES, SEVERITIES, categoryLabel, SeverityBadge } from './incidents';
 
-type Note = { id: string; authorId: string; author: string | null; body: string; createdAt: string };
-type Attachment = {
-  id: string; fileId: string; fileName: string | null; contentType: string | null;
-  fileStatus: string | null; label: string | null; addedAt: string;
-};
-type Incident = {
-  id: string; siteId: string; category: string; severity: string; status: string;
-  source: string; title: string; narrative: string; locationDetail: string | null;
-  occurredAt: string; businessDate: string; reportedAt: string; reporter: string | null;
-  lossAmount: number | null; recoveredAmount: number | null; currency: string;
-  policeReportNumber: string | null; tags: string[]; closedAt: string | null;
-  closureReason: string | null; legalHold: boolean; deletedAt: string | null;
-  notes: Note[]; attachments: Attachment[];
-};
-type Site = { id: string; name: string; timeZone: string };
-type StoredFile = { id: string; name: string; status: string };
+
+
+type Incident = components['schemas']['IncidentDetail'];
+
+
 
 export function IncidentDetailPage() {
   const { incidentId } = useParams({ strict: false }) as { incidentId: string };
@@ -38,61 +28,55 @@ export function IncidentDetailPage() {
   const key = ['incidents', 'detail', incidentId];
   const { data: incident } = useQuery({
     queryKey: key,
-    queryFn: () => api.get<Incident>(`/api/incidents/${incidentId}`),
+    queryFn: ({ signal }) => api.get("/api/incidents/{id}", { signal, path: { id: incidentId } }),
   });
   const { data: sites } = useQuery({
     queryKey: ['sites', 'picker'],
-    queryFn: async () => (await api.get<Page<Site>>('/api/sites?limit=200')).items,
+    queryFn: async ({ signal }) => (await api.get('/api/sites', { signal, query: { limit: 200 } })).items,
   });
   const site = sites?.find((s) => s.id === incident?.siteId);
   const [reason, setReason] = useState('');
   const [note, setNote] = useState('');
 
-  const act = (path: string, success: string, body?: unknown) =>
-    useApiMutation({
-      mutationFn: () => api.post(`/api/incidents/${incidentId}${path}`, body),
-      invalidate: [['incidents']],
-      success,
-    });
   const close = useApiMutation({
-    mutationFn: () => api.post(`/api/incidents/${incidentId}/close`, { reason: reason.trim() }),
+    mutationFn: () => api.post("/api/incidents/{id}/close", { reason: reason.trim() }, { path: { id: incidentId } }),
     invalidate: [['incidents']],
     success: 'Incident closed',
     onSuccess: () => setReason(''),
   });
-  const reopen = act('/reopen', 'Incident reopened');
+  const reopen = useApiMutation({ mutationFn: () => api.post('/api/incidents/{id}/reopen', undefined, { path: { id: incidentId } }), invalidate: [['incidents']], success: 'Incident reopened' });
   const hold = useApiMutation({
     mutationFn: (value: boolean) =>
-      api.post(`/api/incidents/${incidentId}/hold`, { hold: value }),
+      api.post("/api/incidents/{id}/hold", { hold: value }, { path: { id: incidentId } }),
     invalidate: [['incidents']],
     success: 'Legal hold updated',
   });
   const remove = useApiMutation({
-    mutationFn: () => api.del(`/api/incidents/${incidentId}`),
+    mutationFn: () => api.del("/api/incidents/{id}", { path: { id: incidentId } }),
     invalidate: [['incidents']],
     success: 'Moved to trash',
   });
-  const restore = act('/restore', 'Incident restored');
+  const restore = useApiMutation({ mutationFn: () => api.post('/api/incidents/{id}/restore', undefined, { path: { id: incidentId } }), invalidate: [['incidents']], success: 'Incident restored' });
   const addNote = useApiMutation({
-    mutationFn: () => api.post(`/api/incidents/${incidentId}/notes`, { body: note.trim() }),
+    mutationFn: () => api.post("/api/incidents/{id}/notes", { body: note.trim() }, { path: { id: incidentId } }),
     invalidate: [key],
     success: 'Note added',
     onSuccess: () => setNote(''),
   });
   const removeNote = useApiMutation({
-    mutationFn: (noteId: string) => api.del(`/api/incidents/${incidentId}/notes/${noteId}`),
+    mutationFn: (noteId: string) => api.del("/api/incidents/{id}/notes/{noteId}", { path: { id: incidentId, noteId } }),
     invalidate: [key],
   });
   const detach = useApiMutation({
     mutationFn: (attachmentId: string) =>
-      api.del(`/api/incidents/${incidentId}/attachments/${attachmentId}`),
+      api.del("/api/incidents/{id}/attachments/{attachmentId}", { path: { id: incidentId, attachmentId } }),
     invalidate: [key],
   });
 
   if (!incident) return <p className="text-sm text-muted-foreground">Loading…</p>;
 
-  const money = (v: number | null) =>
-    v == null ? '—' : `${incident.currency} ${v.toLocaleString(undefined, {
+  const money = (v: number | string | null) =>
+    v == null ? '—' : `${incident.currency} ${Number(v).toLocaleString(undefined, {
       minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   return (
@@ -273,12 +257,12 @@ function AttachDialog({ incidentId, invalidate }: { incidentId: string; invalida
   const [label, setLabel] = useState('');
   const { data: files } = useQuery({
     queryKey: ['files', 'picker'],
-    queryFn: async () => (await api.get<Page<StoredFile>>('/api/files?limit=200')).items,
+    queryFn: async ({ signal }) => (await api.get('/api/files', { signal, query: { limit: 200 } })).items,
     enabled: open,
   });
   const attach = useApiMutation({
     mutationFn: () =>
-      api.post(`/api/incidents/${incidentId}/attachments`, { fileId, label: label.trim() || null }),
+      api.post("/api/incidents/{id}/attachments", { fileId, label: label.trim() || null }, { path: { id: incidentId } }),
     invalidate: [invalidate],
     success: 'File attached',
     onSuccess: () => {
@@ -316,7 +300,7 @@ function AttachDialog({ incidentId, invalidate }: { incidentId: string; invalida
 function LinkedEntitiesCard({ incidentId, manage }: { incidentId: string; manage: boolean }) {
   const { data } = useQuery({
     queryKey: ['entities', 'by-incident', incidentId],
-    queryFn: () => api.get<Page<EntitySummary>>(`/api/entities?incidentId=${incidentId}&limit=100`),
+    queryFn: ({ signal }) => api.get('/api/entities', { signal, query: { incidentId, limit: 100 } }),
   });
   return (
     <Card>
@@ -353,14 +337,12 @@ function LinkEntityDialog({ incidentId }: { incidentId: string }) {
   const [role, setRole] = useState<string>('Suspect');
   const { data: entities } = useQuery({
     queryKey: ['entities', 'picker', q],
-    queryFn: async () =>
-      (await api.get<Page<EntitySummary>>(
-        `/api/entities?limit=50${q.trim() ? `&q=${encodeURIComponent(q.trim())}` : ''}`,
-      )).items,
+    queryFn: async ({ signal }) =>
+      (await api.get('/api/entities', { signal, query: { limit: 50, q: q.trim() || undefined } })).items,
     enabled: open,
   });
   const link = useApiMutation({
-    mutationFn: () => api.post(`/api/entities/${entityId}/links`, { incidentId, role }),
+    mutationFn: () => api.post("/api/entities/{id}/links", { incidentId, role: enumValue(LINK_ROLES, role) }, { path: { id: entityId } }),
     invalidate: [['entities']],
     success: 'Record linked',
     onSuccess: () => {
@@ -400,7 +382,7 @@ function LinkEntityDialog({ incidentId }: { incidentId: string }) {
 function CasesCard({ incidentId, manage }: { incidentId: string; manage: boolean }) {
   const { data } = useQuery({
     queryKey: ['cases', 'by-incident', incidentId],
-    queryFn: () => api.get<Page<CaseSummary>>(`/api/cases?incidentId=${incidentId}&status=&limit=50`),
+    queryFn: ({ signal }) => api.get('/api/cases', { signal, query: { incidentId, limit: 50 } }),
   });
   return (
     <Card>
@@ -423,13 +405,13 @@ function CasesCard({ incidentId, manage }: { incidentId: string; manage: boolean
   );
 }
 
-type Suggestion = { provider: string; category: string; severity: string; tags: string[]; summary: string; confidence: number };
+type Suggestion = components['schemas']['IncidentAssistResponse'];
 
 /** Edit the incident; "Suggest" asks the assistance port and fills the form - the person still saves. */
 function EditIncidentDialog({ incident }: { incident: Incident }) {
   const [open, setOpen] = useState(false);
-  const [category, setCategory] = useState(incident.category);
-  const [severity, setSeverity] = useState(incident.severity);
+  const [category, setCategory] = useState<string>(incident.category);
+  const [severity, setSeverity] = useState<string>(incident.severity);
   const [title, setTitle] = useState(incident.title);
   const [narrative, setNarrative] = useState(incident.narrative);
   const [locationDetail, setLocationDetail] = useState(incident.locationDetail ?? '');
@@ -439,17 +421,17 @@ function EditIncidentDialog({ incident }: { incident: Incident }) {
   const [tags, setTags] = useState(incident.tags.join(', '));
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
   const suggest = useApiMutation({
-    mutationFn: () => api.post<Suggestion>(`/api/incidents/${incident.id}/assist`),
+    mutationFn: () => api.post("/api/incidents/{id}/assist", undefined, { path: { id: incident.id } }),
     onSuccess: (s) => { setSuggestion(s); setCategory(s.category); setSeverity(s.severity); if (s.tags.length) setTags(s.tags.join(', ')); },
     errorFallback: 'No suggestion available',
   });
   const save = useApiMutation({
-    mutationFn: () => api.put(`/api/incidents/${incident.id}`, {
-      category, severity, title: title.trim(), occurredAt: incident.occurredAt, narrative: narrative.trim() || null,
+    mutationFn: () => api.put("/api/incidents/{id}", {
+      category: enumValue(CATEGORIES, category), severity: enumValue(SEVERITIES, severity), title: title.trim(), occurredAt: incident.occurredAt, narrative: narrative.trim() || null,
       locationDetail: locationDetail.trim() || null, lossAmount: lossAmount ? Number(lossAmount) : null,
       recoveredAmount: recovered ? Number(recovered) : null, currency: incident.currency,
       policeReportNumber: police.trim() || null, tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
-    }),
+    }, { path: { id: incident.id } }),
     invalidate: [['incidents']], success: 'Incident updated', onSuccess: () => setOpen(false),
   });
   return (
@@ -459,7 +441,7 @@ function EditIncidentDialog({ incident }: { incident: Incident }) {
           <Button size="sm" variant="outline" disabled={suggest.isPending} onClick={() => suggest.mutate()}>
             {suggest.isPending ? 'Thinking…' : 'Suggest category, severity, tags'}
           </Button>
-          {suggestion && <span className="text-xs text-muted-foreground">{suggestion.provider} · {Math.round(suggestion.confidence * 100)}% · {suggestion.summary}</span>}
+          {suggestion && <span className="text-xs text-muted-foreground">{suggestion.provider} · {Math.round(Number(suggestion.confidence) * 100)}% · {suggestion.summary}</span>}
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1"><Label htmlFor="ei-cat">Category</Label>

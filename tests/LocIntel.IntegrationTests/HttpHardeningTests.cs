@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using System.Diagnostics.Metrics;
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Hosting;
@@ -38,6 +40,25 @@ public class HttpHardeningTests(TinyRateLimitFixture fixture) : IClassFixture<Ti
     [Fact]
     public async Task Exhausted_limit_answers_429_with_retry_after()
     {
+        var results = new ConcurrentBag<string>();
+        using var listener = new MeterListener();
+        listener.InstrumentPublished = (instrument, observer) =>
+        {
+            if (
+                instrument.Meter.Name == "Microsoft.AspNetCore.RateLimiting"
+                && instrument.Name == "aspnetcore.rate_limiting.requests"
+            )
+                observer.EnableMeasurementEvents(instrument);
+        };
+        listener.SetMeasurementEventCallback<long>(
+            (_, _, tags, _) =>
+            {
+                foreach (var tag in tags)
+                    if (tag.Key == "aspnetcore.rate_limiting.result" && tag.Value is string result)
+                        results.Add(result);
+            }
+        );
+        listener.Start();
         var guest = fixture.GuestClient();
         HttpResponseMessage? limited = null;
         for (var i = 0; i < 10 && limited is null; i++)
@@ -49,6 +70,8 @@ public class HttpHardeningTests(TinyRateLimitFixture fixture) : IClassFixture<Ti
         Assert.NotNull(limited);
         Assert.NotNull(limited!.Headers.RetryAfter);
         Assert.InRange(limited.Headers.RetryAfter!.Delta!.Value.TotalSeconds, 1, 60);
+        Assert.Contains("acquired", results);
+        Assert.Contains("global_limiter", results);
     }
 
     [Fact]

@@ -8,7 +8,7 @@ import { getRequestHeader, setCookie } from '@tanstack/react-start/server';
  * public app), then sends the now-identified contact to the locator.
  */
 const redeem = createServerFn({ method: 'GET' })
-  .inputValidator((token: string) => token)
+  .validator((token: string) => token)
   .handler(async ({ data: token }) => {
     const apiBase = process.env.LOCINTEL_API ?? 'http://localhost:5293';
     const host = getRequestHeader('host');
@@ -16,6 +16,7 @@ const redeem = createServerFn({ method: 'GET' })
       const response = await fetch(
         `${apiBase}/contact/redeem?token=${encodeURIComponent(token)}`,
         {
+          signal: AbortSignal.timeout(30_000),
           headers: host ? { 'X-Forwarded-Host': host } : {},
           redirect: 'manual',
         },

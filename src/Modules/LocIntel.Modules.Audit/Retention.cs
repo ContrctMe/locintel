@@ -33,15 +33,6 @@ public static class PurgeAuditDataHandler
 
         var policy = await policies.GetAsync(org, ct);
         var cutoff = time.GetUtcNow().AddDays(-policy.RetentionDays);
-        // partition upkeep piggybacks the daily sweep: SECURITY DEFINER
-        // functions, because the app role holds no DDL (ADR 38). ensure()
-        // keeps current+next month present; prune() drops whole months older
-        // than the coarse floor - per-org retention stays the row deletes
-        // below. Idempotent and org-agnostic, so running per-org is harmless.
-        await db.Database.ExecuteSqlRawAsync(
-            "SELECT audit.ensure_access_log_partitions(); SELECT audit.prune_access_log_partitions(400);",
-            ct
-        );
         await db.Changes.Where(a => a.OccurredAt < cutoff).ExecuteDeleteAsync(ct);
         await db.DomainEvents.Where(a => a.OccurredAt < cutoff).ExecuteDeleteAsync(ct);
         await db.AuthzDecisions.Where(a => a.OccurredAt < cutoff).ExecuteDeleteAsync(ct);

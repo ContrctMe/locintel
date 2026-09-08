@@ -2,14 +2,13 @@ namespace LocIntel.Api;
 
 /// <summary>
 /// CSRF defence-in-depth (security review). SameSite=Lax already strips the
-/// session cookie from cross-site POSTs, and no route mutates state on a GET
-/// - so the attack is mitigated. This is the second layer: an unsafe-method
+/// session cookie from cross-site POSTs. This is the second layer: an unsafe-method
 /// request that carries the session cookie AND an Origin header must have
 /// that Origin match the request host. It needs no client change (the
 /// console shares the API's origin, ADR 21) and no config.
 ///
 /// Deliberately lenient where it must be: it only fires when the SESSION
-/// cookie is present, so signature-authenticated webhooks and API-key
+/// cookie is present (or the request provisions a signup), so signature-authenticated webhooks and API-key
 /// callers (which carry no cookie) are untouched; and a missing Origin
 /// header passes, so native/non-browser clients are not blocked. Browsers
 /// always send Origin on cross-origin unsafe requests, which is exactly the
@@ -23,7 +22,10 @@ public sealed class CsrfOriginMiddleware(RequestDelegate next)
             !HttpMethods.IsGet(context.Request.Method)
             && !HttpMethods.IsHead(context.Request.Method)
             && !HttpMethods.IsOptions(context.Request.Method)
-            && context.Request.Cookies.ContainsKey("locintel_session")
+            && (
+                context.Request.Cookies.ContainsKey("locintel_session")
+                || context.Request.Path == "/auth/signup"
+            )
             && context.Request.Headers.Origin.FirstOrDefault() is { Length: > 0 } origin
             && !OriginMatchesHost(origin, context.Request.Host)
         )

@@ -36,6 +36,22 @@ public sealed class AzuriteFixture : IAsyncLifetime
 public class AzureBlobAdapterTests(AzuriteFixture fixture) : IClassFixture<AzuriteFixture>
 {
     [Fact]
+    public async Task Server_writes_preserve_bytes_and_distinguish_empty_from_missing()
+    {
+        const string key = "primary/test-org/files/server-write";
+        Assert.Null(await fixture.Store.GetLengthAsync(key));
+        await fixture.Store.WriteAsync(key, new MemoryStream(), "text/plain");
+        Assert.Equal(0L, await fixture.Store.GetLengthAsync(key));
+        await fixture.Store.WriteAsync(key, new MemoryStream("preview"u8.ToArray()), "text/plain");
+        Assert.Equal(7L, await fixture.Store.GetLengthAsync(key));
+        await using (var stream = await fixture.Store.OpenReadAsync(key))
+        using (var reader = new StreamReader(stream))
+            Assert.Equal("preview", await reader.ReadToEndAsync());
+        await fixture.Store.DeleteAsync(key);
+        Assert.Null(await fixture.Store.GetLengthAsync(key));
+    }
+
+    [Fact]
     public async Task Sas_ticket_round_trip()
     {
         var key = "primary/test-org/files/azure-probe";
@@ -57,7 +73,7 @@ public class AzureBlobAdapterTests(AzuriteFixture fixture) : IClassFixture<Azuri
         Assert.True(uploaded.IsSuccessStatusCode, uploaded.StatusCode.ToString());
 
         // server-side read (scan path)
-        Assert.True(await fixture.Store.ExistsAsync(key));
+        Assert.Equal(payload.LongLength, await fixture.Store.GetLengthAsync(key));
         await using (var stream = await fixture.Store.OpenReadAsync(key))
         using (var reader = new StreamReader(stream))
             Assert.Equal("azure adapter proves the ticket contract", await reader.ReadToEndAsync());
@@ -66,8 +82,21 @@ public class AzureBlobAdapterTests(AzuriteFixture fixture) : IClassFixture<Azuri
         var url = await fixture.Store.GetDownloadUrlAsync(key, TimeSpan.FromMinutes(1));
         Assert.Equal("azure adapter proves the ticket contract", await http.GetStringAsync(url));
 
+        // SAS permissions must prevent replacing bytes after a clean scan.
+        using var overwrite = new HttpRequestMessage(HttpMethod.Put, ticket.Url)
+        {
+            Content = new ByteArrayContent("replacement bytes"u8.ToArray()),
+        };
+        foreach (var (name, value) in ticket.Headers)
+            if (name == "Content-Type")
+                overwrite.Content.Headers.ContentType = new(value);
+            else
+                overwrite.Headers.Add(name, value);
+        Assert.False((await http.SendAsync(overwrite)).IsSuccessStatusCode);
+        Assert.Equal("azure adapter proves the ticket contract", await http.GetStringAsync(url));
+
         // erasure path
         await fixture.Store.DeleteAsync(key);
-        Assert.False(await fixture.Store.ExistsAsync(key));
+        Assert.Null(await fixture.Store.GetLengthAsync(key));
     }
 }

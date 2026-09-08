@@ -21,7 +21,7 @@ namespace LocIntel.Modules.Incidents.Incidents;
 /// </summary>
 public static class IncidentEndpoints
 {
-    [Transactional(typeof(IncidentsDbContext))]
+    [NonTransactional]
     [WolverineGet("/api/incidents")]
     [ProducesResponseType(typeof(IncidentListResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> List(
@@ -104,7 +104,7 @@ public static class IncidentEndpoints
         );
     }
 
-    [Transactional(typeof(IncidentsDbContext))]
+    [NonTransactional]
     [WolverineGet("/api/incidents/{id}")]
     [ProducesResponseType(typeof(IncidentDetail), StatusCodes.Status200OK)]
     public static async Task<IResult> Get(
@@ -200,7 +200,10 @@ public static class IncidentEndpoints
         );
     }
 
-    [Transactional(typeof(IncidentsDbContext))]
+    [Transactional(
+        typeof(IncidentsDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverinePost("/api/incidents")]
     [ProducesResponseType(typeof(IncidentCreated), StatusCodes.Status200OK)]
     public static async Task<IResult> Report(
@@ -257,7 +260,7 @@ public static class IncidentEndpoints
             Tags = CleanTags(request.Tags),
         };
         db.Incidents.Add(incident);
-        await db.SaveChangesAsync(ct);
+        // Queue audit/outbox before Wolverine's single final save; no early commit.
         await bus.AuditAsync(
             actor.Org,
             actor.Audit,

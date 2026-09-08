@@ -8,7 +8,11 @@ using Wolverine.Attributes;
 
 namespace LocIntel.Modules.Ingest;
 
-public sealed record SyncSiteConnector(Guid ConnectorId);
+public sealed record SyncSiteConnector(Guid ConnectorId)
+{
+    // Serialized with the work request: delivery retries use the same staged batch.
+    public Guid BatchId { get; init; } = Guid.CreateVersion7();
+}
 
 /// <summary>
 /// Pull-connector sync (ADR 18): decrypt credentials (audited - ADR 31),
@@ -17,13 +21,12 @@ public sealed record SyncSiteConnector(Guid ConnectorId);
 /// </summary>
 public static class SyncSiteConnectorHandler
 {
-    [Transactional(typeof(IngestDbContext))]
+    [NonTransactional]
     public static async Task Handle(
         SyncSiteConnector message,
         Envelope envelope,
         ITenantContext tenant,
         IngestDbContext db,
-        StagingService staging,
         IKeyWrapper kms,
         IHttpClientFactory httpFactory,
         IMessageBus bus,
@@ -35,21 +38,32 @@ public static class SyncSiteConnectorHandler
                 $"SyncSiteConnector arrived with no tenant on the envelope (TenantId='{envelope.TenantId}')"
             );
 
-        var connector = await db.Connectors.FirstOrDefaultAsync(
-            c => c.Id == message.ConnectorId,
-            ct
-        );
+        if (await db.Batches.AnyAsync(b => b.Id == message.BatchId, ct))
+            return;
+        var connector = await db
+            .Connectors.AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Id == message.ConnectorId, ct);
         if (connector is null)
             return;
 
-        var apiKey = await EnvelopeCrypto.DecryptAsync(connector.EncryptedCredentials, kms, ct);
-        await bus.PublishAsync(
+        // Commit the access attempt before KMS/HTTP; failure must not erase its audit.
+        await bus.InvokeForTenantAsync(
+            org.Value.ToString(),
             new LocIntel.Contracts.RecordDomainAudit(
                 "connector.credentials_accessed",
-                System.Text.Json.JsonSerializer.Serialize(new { connector.Id, connector.Name })
+                System.Text.Json.JsonSerializer.Serialize(
+                    new
+                    {
+                        connector.Id,
+                        connector.Name,
+                        message.BatchId,
+                        purpose = "sync-attempt",
+                    }
+                )
             ),
-            new DeliveryOptions { TenantId = org.Value.ToString() }
+            ct
         );
+        var apiKey = await EnvelopeCrypto.DecryptAsync(connector.EncryptedCredentials, kms, ct);
 
         using var http = httpFactory.CreateClient("ingest-connector");
         using var request = new HttpRequestMessage(HttpMethod.Get, connector.Url);
@@ -68,11 +82,18 @@ public static class SyncSiteConnectorHandler
                 r.Node ?? "",
                 r.Status ?? "open"
             ))
-            .ToList();
+            .ToArray();
 
-        await staging.StageAsync(org, connector.CreatedByOrSystem(), connector.Name, rows, ct);
-        connector.LastSyncedAt = DateTimeOffset.UtcNow;
-        await db.SaveChangesAsync(ct);
+        await bus.InvokeForTenantAsync(
+            org.Value.ToString(),
+            new ApplyConnectorSync(
+                connector.Id,
+                message.BatchId,
+                ApplyConnectorSync.SnapshotFingerprint(connector),
+                rows
+            ),
+            ct
+        );
     }
 
     private sealed record ConnectorSiteRecord(
@@ -83,10 +104,4 @@ public static class SyncSiteConnectorHandler
         [property: System.Text.Json.Serialization.JsonPropertyName("node")] string? Node,
         [property: System.Text.Json.Serialization.JsonPropertyName("status")] string? Status
     );
-}
-
-file static class ConnectorExtensions
-{
-    // connectors sync as system work; batches record the system actor
-    public static Guid CreatedByOrSystem(this SiteConnector _) => Guid.Empty;
 }

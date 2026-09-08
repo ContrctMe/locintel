@@ -1,3 +1,4 @@
+import { enumValue } from '../lib/enum-value';
 import { api } from '@locintel/api';
 import { Button, Card, CardContent, FormDialog, Input, Label, Select, Table, TableBody,
   TableCell, TableHead, TableHeader, TableRow, Textarea } from '@locintel/ui';
@@ -6,7 +7,7 @@ import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { fmtDateTime } from '../lib/format';
 import { useApiMutation } from '../lib/mutation';
-import type { Page } from '../lib/paging';
+
 import { can, useMe } from '../session';
 import { StatusBadge } from '../shell';
 
@@ -48,7 +49,7 @@ export function IncidentsPage() {
 
   const { data: sites } = useQuery({
     queryKey: ['sites', 'picker'],
-    queryFn: async () => (await api.get<Page<Site>>('/api/sites?limit=200')).items,
+    queryFn: async ({ signal }) => (await api.get('/api/sites', { signal, query: { limit: 200 } })).items,
   });
   const params = new URLSearchParams({ limit: '50' });
   if (siteId) params.set('siteId', siteId);
@@ -59,10 +60,10 @@ export function IncidentsPage() {
   const query = params.toString();
   const incidents = useInfiniteQuery({
     queryKey: ['incidents', 'list', query],
-    queryFn: ({ pageParam }) =>
-      api.get<Page<IncidentSummary>>(`/api/incidents?${query}&offset=${pageParam}`),
+    queryFn: ({ pageParam , signal }) =>
+      api.get('/api/incidents', { signal, query: { limit: 50, siteId: siteId || undefined, status: status ? enumValue(['Open', 'Closed'], status) : undefined, category: category ? enumValue(CATEGORIES, category) : undefined, q: q.trim() || undefined, trash, offset: pageParam } }),
     initialPageParam: 0,
-    getNextPageParam: (last) => last.nextOffset ?? undefined,
+    getNextPageParam: (last) => last.nextOffset == null ? undefined : Number(last.nextOffset),
   });
   const items = incidents.data?.pages.flatMap((p) => p.items);
   const total = incidents.data?.pages[0]?.total;
@@ -180,8 +181,8 @@ function ReportDialog({ sites }: { sites: Site[] }) {
     mutationFn: () =>
       api.post('/api/incidents', {
         siteId,
-        category,
-        severity,
+        category: enumValue(CATEGORIES, category),
+        severity: enumValue(SEVERITIES, severity),
         title: title.trim(),
         occurredAt: new Date(occurredAt).toISOString(),
         narrative: narrative.trim() || null,
@@ -260,9 +261,9 @@ function ReportDialog({ sites }: { sites: Site[] }) {
   );
 }
 
-type ImportBatch = { id: string; fileName: string; status: string; total: number; valid: number; invalid: number; createdAt: string };
-type ImportDetail = { batch: ImportBatch; rows: { rowNumber: number; siteRef: string; title: string; errors: string[] }[] };
-type StoredFile = { id: string; name: string; status: string };
+
+
+
 
 /** Historical incidents from CSV (stage, preview, commit - ADR 18's shape). Upload on the Files page first. */
 function ImportDialog() {
@@ -271,27 +272,27 @@ function ImportDialog() {
   const [batchId, setBatchId] = useState('');
   const { data: files } = useQuery({
     queryKey: ['files', 'picker'],
-    queryFn: async () => (await api.get<Page<StoredFile>>('/api/files?limit=200')).items,
+    queryFn: async ({ signal }) => (await api.get('/api/files', { signal, query: { limit: 200 } })).items,
     enabled: open,
   });
   const { data: detail } = useQuery({
     queryKey: ['incidents', 'import', batchId],
-    queryFn: () => api.get<ImportDetail>(`/api/incidents/imports/${batchId}`),
+    queryFn: ({ signal }) => api.get("/api/incidents/imports/{id}", { signal, path: { id: batchId } }),
     enabled: !!batchId,
   });
   const stage = useApiMutation({
-    mutationFn: () => api.post<ImportBatch>('/api/incidents/imports', { fileId }),
+    mutationFn: () => api.post("/api/incidents/imports", { fileId }),
     onSuccess: (b) => setBatchId(b.id),
     errorFallback: 'Could not stage the file',
   });
   const commit = useApiMutation({
-    mutationFn: () => api.post<{ created: number }>(`/api/incidents/imports/${batchId}/commit`),
+    mutationFn: () => api.post("/api/incidents/imports/{id}/commit", undefined, { path: { id: batchId } }),
     invalidate: [['incidents']],
     success: 'Incidents imported',
     onSuccess: () => { setOpen(false); setBatchId(''); },
   });
   const discard = useApiMutation({
-    mutationFn: () => api.post(`/api/incidents/imports/${batchId}/discard`),
+    mutationFn: () => api.post("/api/incidents/imports/{id}/discard", undefined, { path: { id: batchId } }),
     onSuccess: () => setBatchId(''),
   });
   const invalid = detail?.rows.filter((r) => r.errors.length > 0) ?? [];

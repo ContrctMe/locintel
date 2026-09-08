@@ -9,6 +9,7 @@
     <Project Path="src/Integrations/LocIntel.Integrations.AmazonS3/LocIntel.Integrations.AmazonS3.csproj" />
     <Project Path="src/Integrations/LocIntel.Integrations.Anthropic/LocIntel.Integrations.Anthropic.csproj" />
     <Project Path="src/Integrations/LocIntel.Integrations.AzureBlob/LocIntel.Integrations.AzureBlob.csproj" />
+    <Project Path="src/Integrations/LocIntel.Integrations.ClamAV/LocIntel.Integrations.ClamAV.csproj" />
     <Project Path="src/Integrations/LocIntel.Integrations.Smtp/LocIntel.Integrations.Smtp.csproj" />
     <Project Path="src/Integrations/LocIntel.Integrations.Stripe/LocIntel.Integrations.Stripe.csproj" />
     <Project Path="src/Integrations/LocIntel.Integrations.Twilio/LocIntel.Integrations.Twilio.csproj" />

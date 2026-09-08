@@ -41,10 +41,8 @@ public sealed class AzureBlobObjectStore : IObjectStore
         var blob = _container.GetBlobClient(key);
         var expiresAt = DateTimeOffset.UtcNow.AddMinutes(15);
         var sas = blob.GenerateSasUri(
-            new BlobSasBuilder(BlobSasPermissions.Create | BlobSasPermissions.Write, expiresAt)
-            {
-                ContentType = contentType,
-            }
+            // Write would allow the ticket to replace already-scanned content.
+            new BlobSasBuilder(BlobSasPermissions.Create, expiresAt) { ContentType = contentType }
         );
         // raw PUT to a block blob needs the blob-type header alongside the SAS
         return new UploadTicket(
@@ -72,8 +70,19 @@ public sealed class AzureBlobObjectStore : IObjectStore
                 )
         );
 
-    public async ValueTask<bool> ExistsAsync(string key, CancellationToken ct = default) =>
-        await _container.GetBlobClient(key).ExistsAsync(ct);
+    public async ValueTask<long?> GetLengthAsync(string key, CancellationToken ct = default)
+    {
+        try
+        {
+            return (await _container.GetBlobClient(key).GetPropertiesAsync(cancellationToken: ct))
+                .Value
+                .ContentLength;
+        }
+        catch (Azure.RequestFailedException e) when (e.Status == 404)
+        {
+            return null;
+        }
+    }
 
     public async ValueTask<Stream> OpenReadAsync(string key, CancellationToken ct = default) =>
         await _container.GetBlobClient(key).OpenReadAsync(cancellationToken: ct);

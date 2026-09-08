@@ -1,10 +1,11 @@
 import { api } from '@locintel/api';
 import { Badge, Button, cn, Input, Label, Toaster } from '@locintel/ui';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Link, useRouterState } from '@tanstack/react-router';
 import { useState, type ReactNode } from 'react';
-import { can, useMe, type Me } from './session';
 import { useAlertPings } from './lib/alert-pings';
+import { can, parseMe, useMe } from './session';
+import { useSessionTransition } from './app/session-boundary';
 
 // grouped by rhythm of use: daily operations, then org administration,
 // then the operator wall (UX review P2)
@@ -47,12 +48,19 @@ const NAV_GROUPS = [
 
 export function Shell({ children }: { children: ReactNode }) {
   useAlertPings();
-  const { data: me, isLoading } = useMe();
-  const queryClient = useQueryClient();
+  const { data: me, isLoading, error, refetch } = useMe();
+  const changeSession = useSessionTransition();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const [navOpen, setNavOpen] = useState(false);
 
   if (isLoading) return <div className="p-12 text-muted-foreground">Loading session…</div>;
+
+  if (error) return (
+    <main className="p-12 space-y-4">
+      <p role="alert">Could not verify your session. {error.message}</p>
+      <Button onClick={() => { void refetch(); }}>Retry session verification</Button>
+    </main>
+  );
 
   if (me?.tier !== 'user') {
     return <SignInScreen />;
@@ -123,11 +131,12 @@ export function Shell({ children }: { children: ReactNode }) {
         <div className="space-y-2 border-t p-3">
           {me.organizations.length > 1 && (
             <select
+              aria-label="Active organization"
               className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
               value={me.activeOrg ?? ''}
               onChange={async (e) => {
-                await api.post('/auth/switch-org', { orgId: e.target.value });
-                await queryClient.invalidateQueries(); // org switch re-resolves everything
+                const orgId = e.target.value;
+                await changeSession(() => api.post('/auth/switch-org', { orgId }));
               }}
             >
               {me.organizations.map((o) => (
@@ -151,8 +160,7 @@ export function Shell({ children }: { children: ReactNode }) {
               variant="ghost"
               size="sm"
               onClick={async () => {
-                await api.post('/auth/logout');
-                await queryClient.invalidateQueries({ queryKey: ['me'] });
+                await changeSession(() => api.post('/auth/logout'));
               }}
             >
               Sign out
@@ -205,11 +213,12 @@ export function Shell({ children }: { children: ReactNode }) {
         <div className="space-y-2 border-t p-3">
           {me.organizations.length > 1 && (
             <select
+              aria-label="Active organization"
               className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
               value={me.activeOrg ?? ''}
               onChange={async (e) => {
-                await api.post('/auth/switch-org', { orgId: e.target.value });
-                await queryClient.invalidateQueries(); // org switch re-resolves everything
+                const orgId = e.target.value;
+                await changeSession(() => api.post('/auth/switch-org', { orgId }));
               }}
             >
               {me.organizations.map((o) => (
@@ -233,8 +242,7 @@ export function Shell({ children }: { children: ReactNode }) {
               variant="ghost"
               size="sm"
               onClick={async () => {
-                await api.post('/auth/logout');
-                await queryClient.invalidateQueries({ queryKey: ['me'] });
+                await changeSession(() => api.post('/auth/logout'));
               }}
             >
               Sign out
@@ -267,15 +275,16 @@ export function Shell({ children }: { children: ReactNode }) {
 function ApiVersion() {
   const { data } = useQuery({
     queryKey: ['healthz'],
-    queryFn: () => api.get<{ version: string }>('/healthz'),
+    queryFn: ({ signal }) => api.get('/healthz', { signal }),
     staleTime: Infinity,
   });
   if (!data?.version) return null;
-  return <span className="block truncate text-[10px] text-muted-foreground/70">{data.version}</span>;
+  // muted at full opacity and 12px: the 10px/70% version of this failed contrast on every page (axe)
+  return <span className="block truncate text-xs text-muted-foreground">{data.version}</span>;
 }
 
 function ImpersonationBanner({ orgName, expiresAt }: { orgName: string; expiresAt: string }) {
-  const queryClient = useQueryClient();
+  const changeSession = useSessionTransition();
   const ends = new Date(expiresAt).toLocaleTimeString(undefined, {
     hour: 'numeric',
     minute: '2-digit',
@@ -290,8 +299,7 @@ function ImpersonationBanner({ orgName, expiresAt }: { orgName: string; expiresA
         variant="outline"
         size="sm"
         onClick={async () => {
-          await api.post('/auth/impersonation/stop');
-          await queryClient.invalidateQueries(); // back to the platform org: everything re-resolves
+          await changeSession(() => api.post('/auth/impersonation/stop'));
         }}
       >
         Stop impersonating
@@ -327,23 +335,21 @@ function SignInScreen() {
             Create account
           </button>
         ) : (
-          <div className="space-y-2 text-left">
+          <form method="post" action="/auth/signup" className="space-y-2 text-left">
             <Label htmlFor="signup-email">Email for your new account</Label>
             <Input
               id="signup-email"
+              name="email"
               type="email"
+              required
+              maxLength={320}
               value={signupEmail}
               onChange={(e) => setSignupEmail(e.target.value)}
             />
-            <Button asChild className="w-full" variant="secondary">
-              <a
-                href={`/auth/signup?email=${encodeURIComponent(signupEmail)}`}
-                aria-disabled={!signupEmail.includes('@')}
-              >
-                Create account
-              </a>
+            <Button type="submit" className="w-full" variant="secondary" disabled={!signupEmail.trim()}>
+              Create account
             </Button>
-          </div>
+          </form>
         )}
       </div>
     </main>
@@ -351,10 +357,9 @@ function SignInScreen() {
 }
 
 function CreateOrgScreen() {
-  const queryClient = useQueryClient();
+  const changeSession = useSessionTransition();
   const signOut = async () => {
-    await api.post('/auth/logout');
-    await queryClient.invalidateQueries({ queryKey: ['me'] });
+    await changeSession(() => api.post('/auth/logout'));
   };
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
@@ -365,15 +370,14 @@ function CreateOrgScreen() {
     setCreating(true);
     setError(null);
     try {
-      const { orgId } = await api.post<{ orgId: string }>('/api/orgs', { name, slug });
+      const { orgId } = await api.post('/api/orgs', { name, slug });
       // founder membership arrives via the outbox: poll, then switch in
       for (let attempt = 0; attempt < 50; attempt++) {
-        const me = await api.get<Me>('/me');
+        const me = parseMe(await api.get('/me'));
         if (me.tier === 'user' && me.organizations.some((o) => o.id === orgId)) break;
         await new Promise((resolve) => setTimeout(resolve, 200));
       }
-      await api.post('/auth/switch-org', { orgId });
-      await queryClient.invalidateQueries();
+      await changeSession(() => api.post('/auth/switch-org', { orgId }));
     } catch (e) {
       setError(
         String((e as { body?: { error?: string } }).body?.error ?? 'could not create organization'),

@@ -1,25 +1,19 @@
+import { enumValue } from '../lib/enum-value';
 import { api } from '@locintel/api';
 import { Button, Card, CardContent, CardHeader, CardTitle, ConfirmButton, FormDialog, Input, Label, Select, Textarea } from '@locintel/ui';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
+
 import { useState } from 'react';
 import { fmtDate } from '../lib/format';
 import { useApiMutation } from '../lib/mutation';
-import type { Page } from '../lib/paging';
+
 import { can, useMe } from '../session';
-import { type EntitySummary } from './entities';
+
 import { SeverityBadge } from './incidents';
 
-type Share = {
-  id: string; name: string; description: string; ownerName: string; owned: boolean; role: string;
-  membership: string; status: string; activeMembers: number; activeBulletins: number; createdAt: string;
-};
-type ShareDetail = { share: Share; members: { orgId: string; orgName: string; role: string; status: string; joinedAt: string | null }[] };
-type Bulletin = {
-  id: string; shareId: string; shareName: string; publisherName: string; mine: boolean; kind: string; severity: string;
-  title: string; body: string; entityKind: string | null; displayName: string | null; aliases: string[];
-  descriptors: Record<string, string>; areas: string[]; publishedAt: string; expiresAt: string; withdrawnAt: string | null; active: boolean;
-};
+
+
+
 
 /** Cross-org intelligence sharing (blueprint module 9): shares you are in, what flows through them. */
 export function NetworkPage() {
@@ -27,11 +21,11 @@ export function NetworkPage() {
   const manage = can(me, 'network:manage');
   const [selected, setSelected] = useState('');
   const [q, setQ] = useState('');
-  const { data: shares } = useQuery({ queryKey: ['network', 'shares'], queryFn: () => api.get<{ items: Share[] }>('/api/network/shares') });
+  const { data: shares } = useQuery({ queryKey: ['network', 'shares'], queryFn: ({ signal }) => api.get("/api/network/shares", { signal }) });
   const activeShare = shares?.items.find((s) => s.id === selected) ?? null;
   const { data: detail } = useQuery({
     queryKey: ['network', 'share', selected],
-    queryFn: () => api.get<ShareDetail>(`/api/network/shares/${selected}`),
+    queryFn: ({ signal }) => api.get("/api/network/shares/{id}", { signal, path: { id: selected } }),
     enabled: !!selected,
   });
   const params = new URLSearchParams({ limit: '100' });
@@ -39,13 +33,13 @@ export function NetworkPage() {
   if (q.trim()) params.set('q', q.trim());
   const { data: bulletins } = useQuery({
     queryKey: ['network', 'bulletins', params.toString()],
-    queryFn: () => api.get<Page<Bulletin>>(`/api/network/bulletins?${params}`),
+    queryFn: ({ signal }) => api.get('/api/network/bulletins', { signal, query: { limit: 100, shareId: selected || undefined, q: q.trim() || undefined } }),
   });
-  const accept = useApiMutation({ mutationFn: (id: string) => api.post(`/api/network/shares/${id}/accept`), invalidate: [['network']], success: 'Joined' });
-  const leave = useApiMutation({ mutationFn: (id: string) => api.post(`/api/network/shares/${id}/leave`), invalidate: [['network']], success: 'Left the share' });
-  const remove = useApiMutation({ mutationFn: (i: { id: string; orgId: string }) => api.del(`/api/network/shares/${i.id}/members/${i.orgId}`), invalidate: [['network']], success: 'Removed' });
-  const withdraw = useApiMutation({ mutationFn: (id: string) => api.post(`/api/network/bulletins/${id}/withdraw`), invalidate: [['network']], success: 'Withdrawn' });
-  const importOne = useApiMutation({ mutationFn: (id: string) => api.post(`/api/network/bulletins/${id}/import`), invalidate: [['entities']], success: 'Import queued; it will appear under People & vehicles shortly' });
+  const accept = useApiMutation({ mutationFn: (id: string) => api.post("/api/network/shares/{id}/accept", undefined, { path: { id } }), invalidate: [['network']], success: 'Joined' });
+  const leave = useApiMutation({ mutationFn: (id: string) => api.post("/api/network/shares/{id}/leave", undefined, { path: { id } }), invalidate: [['network']], success: 'Left the share' });
+  const remove = useApiMutation({ mutationFn: (i: { id: string; orgId: string }) => api.del("/api/network/shares/{id}/members/{orgId}", { path: { id: i.id, orgId: i.orgId } }), invalidate: [['network']], success: 'Removed' });
+  const withdraw = useApiMutation({ mutationFn: (id: string) => api.post("/api/network/bulletins/{id}/withdraw", undefined, { path: { id } }), invalidate: [['network']], success: 'Withdrawn' });
+  const importOne = useApiMutation({ mutationFn: (id: string) => api.post("/api/network/bulletins/{id}/import", undefined, { path: { id } }), invalidate: [['entities']], success: 'Import queued; it will appear under People & vehicles shortly' });
 
   return (
     <div className="max-w-5xl space-y-6">
@@ -173,7 +167,7 @@ function InviteDialog({ shareId }: { shareId: string }) {
   const [open, setOpen] = useState(false);
   const [slug, setSlug] = useState('');
   const invite = useApiMutation({
-    mutationFn: () => api.post(`/api/network/shares/${shareId}/invite`, { slug: slug.trim() }),
+    mutationFn: () => api.post("/api/network/shares/{id}/invite", { slug: slug.trim() }, { path: { id: shareId } }),
     invalidate: [['network']], success: 'Invitation sent', onSuccess: () => { setOpen(false); setSlug(''); },
   });
   return (
@@ -197,14 +191,14 @@ function PublishDialog({ shareId }: { shareId: string }) {
   const [areas, setAreas] = useState('');
   const { data: entities } = useQuery({
     queryKey: ['entities', 'picker', q],
-    queryFn: async () => (await api.get<Page<EntitySummary>>(`/api/entities?limit=50${q.trim() ? `&q=${encodeURIComponent(q.trim())}` : ''}`)).items,
+    queryFn: async ({ signal }) => (await api.get('/api/entities', { signal, query: { limit: 50, q: q.trim() || undefined } })).items,
     enabled: open,
   });
   const publish = useApiMutation({
-    mutationFn: () => api.post(`/api/network/shares/${shareId}/bulletins`, {
-      kind, severity, title: title.trim(), body: body.trim(), entityId: entityId || null,
+    mutationFn: () => api.post("/api/network/shares/{id}/bulletins", {
+      kind: enumValue(['Advisory', 'Bolo'], kind), severity: enumValue(['Low', 'Medium', 'High', 'Critical'], severity), title: title.trim(), body: body.trim(), entityId: entityId || null,
       areas: areas.split(',').map((a) => a.trim()).filter(Boolean),
-    }),
+    }, { path: { id: shareId } }),
     invalidate: [['network']], success: 'Published to the share', onSuccess: () => { setOpen(false); setTitle(''); setBody(''); setEntityId(''); },
   });
   return (

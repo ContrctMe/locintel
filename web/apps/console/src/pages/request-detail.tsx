@@ -1,4 +1,4 @@
-import { api } from '@locintel/api';
+import { api, type components } from '@locintel/api';
 import { Button, Card, CardContent, CardHeader, CardTitle, Input, Textarea } from '@locintel/ui';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from '@tanstack/react-router';
@@ -7,20 +7,7 @@ import { fmtDateTime } from '../lib/format';
 import { useApiMutation } from '../lib/mutation';
 import { RequestStatusBadge, categoryLabel } from './marketplace';
 
-export type RequestDetail = {
-  id: string; vendorOrgId: string | null; vendorName: string | null; mode: string; requesterName: string; category: string;
-  urgency: string; status: string; siteId: string; siteName: string; siteTimeZone: string;
-  siteLatitude: number | null; siteLongitude: number | null; title: string; details: string;
-  spec: Record<string, string>; startsAt: string; endsAt: string | null; rrule: string | null;
-  budgetAmount: number | null; currency: string; incidentId: string | null; caseId: string | null;
-  submittedAt: string | null; responseDueAt: string | null; escalatedAt: string | null; escalationCount: number; acceptedAt: string | null; declineReason: string | null;
-  completedAt: string | null; completionSummary: string | null; verifiedAt: string | null;
-  disputeReason: string | null; cancelledAt: string | null; cancelReason: string | null; canManage: boolean;
-  events: { id: string; side: string; actor: string | null; kind: string; body: string | null;
-    distanceFromSiteMeters: number | null; withinGeofence: boolean | null; at: string }[];
-  quotes: { id: string; vendorOrgId: string; vendorName: string | null; amount: number; currency: string; notes: string | null; validUntil: string | null; status: string; createdAt: string }[];
-  recipients: { vendorOrgId: string; vendorName: string | null; status: string; notifiedAt: string }[];
-};
+export type RequestDetail = components['schemas']['RequestDetail'];
 
 /** Shared body for both sides of a request: facts, then the timeline. */
 export function RequestFacts({ r, side }: { r: RequestDetail; side: 'requester' | 'vendor' }) {
@@ -42,9 +29,9 @@ export function RequestFacts({ r, side }: { r: RequestDetail; side: 'requester' 
           <Field label="Ends">{r.endsAt ? fmtDateTime(r.endsAt) : '—'}</Field>
           {r.rrule && <Field label="Recurs">{r.rrule} ({r.siteTimeZone})</Field>}
           {r.status === 'Submitted' && r.responseDueAt && (
-            <Field label="Response due">{fmtDateTime(r.responseDueAt)}{r.escalationCount > 0 && ` · escalated ${r.escalationCount}×`}</Field>
+            <Field label="Response due">{fmtDateTime(r.responseDueAt)}{Number(r.escalationCount) > 0 && ` · escalated ${r.escalationCount}×`}</Field>
           )}
-          <Field label="Budget">{r.budgetAmount == null ? '—' : `${r.currency} ${r.budgetAmount.toLocaleString()}`}</Field>
+          <Field label="Budget">{r.budgetAmount == null ? '—' : `${r.currency} ${Number(r.budgetAmount).toLocaleString()}`}</Field>
           {r.incidentId && <Field label="Incident"><Link to="/incidents/$incidentId" params={{ incidentId: r.incidentId }} className="hover:underline">Open</Link></Field>}
           {r.caseId && <Field label="Case"><Link to="/cases/$caseId" params={{ caseId: r.caseId }} className="hover:underline">Open</Link></Field>}
           {Object.keys(r.spec).length > 0 && (
@@ -82,7 +69,7 @@ export function Timeline({ r }: { r: RequestDetail }) {
               {e.actor && <span className="ml-2 text-xs text-muted-foreground">{e.actor}</span>}
               {e.distanceFromSiteMeters != null && (
                 <span className={`ml-2 text-xs ${e.withinGeofence ? 'text-emerald-700 dark:text-emerald-300' : 'text-destructive'}`}>
-                  {Math.round(e.distanceFromSiteMeters)} m from site
+                  {Math.round(Number(e.distanceFromSiteMeters))} m from site
                 </span>
               )}
             </span>
@@ -101,21 +88,19 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 export function RequestDetailPage() {
   const { requestId } = useParams({ strict: false }) as { requestId: string };
   const key = ['marketplace', 'request', requestId];
-  const { data: r } = useQuery({ queryKey: key, queryFn: () => api.get<RequestDetail>(`/api/marketplace/requests/${requestId}`) });
+  const { data: r } = useQuery({ queryKey: key, queryFn: ({ signal }) => api.get("/api/marketplace/requests/{id}", { signal, path: { id: requestId } }) });
   const [reason, setReason] = useState('');
   const [message, setMessage] = useState('');
-  const act = (path: string, success: string) =>
-    useApiMutation({ mutationFn: (body?: unknown) => api.post(`/api/marketplace/requests/${requestId}${path}`, body), invalidate: [['marketplace']], success });
-  const submit = act('/submit', 'Sent to the vendor');
-  const verify = act('/verify', 'Work verified');
-  const dispute = act('/dispute', 'Dispute raised');
-  const cancel = act('/cancel', 'Request cancelled');
+  const submit = useApiMutation({ mutationFn: () => api.post('/api/marketplace/requests/{id}/submit', undefined, { path: { id: requestId } }), invalidate: [['marketplace']], success: 'Sent to the vendor' });
+  const verify = useApiMutation({ mutationFn: () => api.post('/api/marketplace/requests/{id}/verify', undefined, { path: { id: requestId } }), invalidate: [['marketplace']], success: 'Work verified' });
+  const dispute = useApiMutation({ mutationFn: (body: { reason: string }) => api.post('/api/marketplace/requests/{id}/dispute', body, { path: { id: requestId } }), invalidate: [['marketplace']], success: 'Dispute raised' });
+  const cancel = useApiMutation({ mutationFn: (body: { reason: string }) => api.post('/api/marketplace/requests/{id}/cancel', body, { path: { id: requestId } }), invalidate: [['marketplace']], success: 'Request cancelled' });
   const award = useApiMutation({
-    mutationFn: (quoteId: string) => api.post(`/api/marketplace/requests/${requestId}/quotes/${quoteId}/accept`),
+    mutationFn: (quoteId: string) => api.post("/api/marketplace/requests/{id}/quotes/{quoteId}/accept", undefined, { path: { id: requestId, quoteId } }),
     invalidate: [['marketplace']], success: 'Quote accepted; the vendor is assigned',
   });
   const send = useApiMutation({
-    mutationFn: () => api.post(`/api/marketplace/requests/${requestId}/messages`, { body: message.trim() }),
+    mutationFn: () => api.post("/api/marketplace/requests/{id}/messages", { body: message.trim() }, { path: { id: requestId } }),
     invalidate: [key], onSuccess: () => setMessage(''),
   });
   if (!r) return <p className="text-sm text-muted-foreground">Loading…</p>;
@@ -150,7 +135,7 @@ export function RequestDetailPage() {
             {r.quotes.map((q) => (
               <div key={q.id} className="flex items-center justify-between rounded-md border p-2">
                 <span>
-                  <span className="font-medium">{q.vendorName ?? q.vendorOrgId}</span> · {q.currency} {q.amount.toLocaleString()}
+                  <span className="font-medium">{q.vendorName ?? q.vendorOrgId}</span> · {q.currency} {Number(q.amount).toLocaleString()}
                   {q.notes && <span className="ml-2 text-muted-foreground">{q.notes}</span>}
                   {q.validUntil && <span className="ml-2 text-xs text-muted-foreground">valid until {fmtDateTime(q.validUntil)}</span>}
                   <span className="ml-2 text-xs text-muted-foreground">{q.status}</span>

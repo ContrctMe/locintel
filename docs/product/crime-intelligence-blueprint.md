@@ -432,3 +432,10 @@ jurisdiction.
   commit stamp, later than the fork's three shape migrations), so the
   fork's local adjustment of the test went. Nothing new to feed back from
   this round.
+- 2026-09-05: **Container staging preparation**: sync verified Premise remediation
+  commit `e1b1552` on `codex/container-staging`, retaining product-specific actor
+  gates and lazy-loaded routes. Migrate product consumers to the strict generated
+  client; distinguish patrol schedule request schemas from site-hour requests.
+  Prove the full topology locally before selecting/purchasing a VM. Synthetic,
+  invite-only staging; $20/month target, modest flexibility for operational value.
+  [Scope, evidence, and remaining acceptance](../container-staging.md).

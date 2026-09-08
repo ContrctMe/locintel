@@ -19,7 +19,7 @@ namespace LocIntel.Modules.Incidents.Incidents;
 /// </summary>
 public static class IncidentStatsEndpoint
 {
-    [Transactional(typeof(IncidentsDbContext))]
+    [NonTransactional]
     [WolverineGet("/api/incidents/stats")]
     [ProducesResponseType(typeof(IncidentStatsResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> Stats(

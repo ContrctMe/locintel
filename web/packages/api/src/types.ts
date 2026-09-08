@@ -1655,7 +1655,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * GET_api_files_id
+         * @description GET_api_files_id
+         */
+        get: operations["GET_api_files_id"];
         put?: never;
         post?: never;
         /**
@@ -2747,13 +2751,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * GET_api_cases_id_evidence_evidenceId_download
-         * @description GET_api_cases_id_evidence_evidenceId_download
-         */
-        get: operations["GET_api_cases_id_evidence_evidenceId_download"];
+        get?: never;
         put?: never;
-        post?: never;
+        /**
+         * POST_api_cases_id_evidence_evidenceId_download
+         * @description POST_api_cases_id_evidence_evidenceId_download
+         */
+        post: operations["POST_api_cases_id_evidence_evidenceId_download"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4263,19 +4267,30 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: {
+        get?: never;
+        put?: never;
+        post: {
             parameters: {
-                query: {
-                    email: string;
-                };
+                query?: never;
                 header?: never;
                 path?: never;
                 cookie?: never;
             };
-            requestBody?: never;
+            requestBody: {
+                content: {
+                    "application/x-www-form-urlencoded": components["schemas"]["SignupForm"];
+                };
+            };
             responses: {
-                /** @description OK */
-                200: {
+                /** @description See Other */
+                303: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -4283,8 +4298,6 @@ export interface paths {
                 };
             };
         };
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4419,7 +4432,9 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["MeResponse"];
+                    };
                 };
             };
         };
@@ -4522,7 +4537,9 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["SessionResponse"][];
+                    };
                 };
             };
         };
@@ -4730,7 +4747,9 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["DeadLetterListResponse"];
+                    };
                 };
             };
         };
@@ -4833,7 +4852,9 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["OperatorOverviewResponse"];
+                    };
                 };
             };
         };
@@ -4866,7 +4887,9 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["OperatorHealthResponse"];
+                    };
                 };
             };
         };
@@ -4899,7 +4922,9 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["HealthResponse"];
+                    };
                 };
             };
         };
@@ -5034,6 +5059,27 @@ export interface components {
             /** Format: date-time */
             readAt: null | string;
         };
+        ApiKeyResponse: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            prefix: string;
+            role: string;
+            scopePath: null | string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            lastUsedAt: null | string;
+            /** Format: date-time */
+            expiresAt: null | string;
+            revoked: boolean;
+        };
+        ApiKeySecretResponse: {
+            /** Format: uuid */
+            id: string;
+            secret: string;
+            prefix: string;
+        };
         AssignRoleRequest: {
             /** Format: uuid */
             userId: string;
@@ -5051,6 +5097,47 @@ export interface components {
             label: string;
             type: string;
             public: boolean;
+        };
+        AuditConfigResponse: {
+            logGrants: boolean;
+            logReads: boolean;
+            floor: components["schemas"]["AuditFloorResponse"];
+        };
+        AuditExportQueuedResponse: {
+            status: string;
+            destination: string;
+        };
+        AuditFloorResponse: {
+            domainEvents: boolean;
+            authzDenials: boolean;
+            changeDiffs: boolean;
+        };
+        AuditRowResponse: {
+            /** Format: uuid */
+            id: string;
+            actorTier: string;
+            /** Format: date-time */
+            occurredAt: string;
+            actorLabel?: null | string;
+            /** Format: uuid */
+            actorId?: null | string;
+            eventName?: null | string;
+            payload?: unknown;
+            schemaName?: null | string;
+            tableName?: null | string;
+            rowId?: null | string;
+            operation?: null | string;
+            diff?: unknown;
+            action?: null | string;
+            outcome?: null | string;
+            scopeSummary?: null | string;
+            method?: null | string;
+            path?: null | string;
+            /** Format: int32 */
+            statusCode?: null | number | string;
+        };
+        BillingLinkResponse: {
+            url: string;
         };
         BillingResponse: {
             provider: string;
@@ -5348,6 +5435,10 @@ export interface components {
             /** Format: date-time */
             checkedAt: null | string;
         };
+        ChecklistTemplateCreatedResponse: {
+            /** Format: uuid */
+            id: string;
+        };
         ChecklistTemplateSummary: {
             /** Format: uuid */
             id: string;
@@ -5394,8 +5485,37 @@ export interface components {
             /** Format: date-time */
             purgesAt: null | string;
         };
+        CommitBatchResponse: {
+            /** Format: int32 */
+            applied: number | string;
+        };
         CompleteRequest: {
             summary?: null | string;
+        };
+        ConnectorCreatedResponse: {
+            /** Format: uuid */
+            id: string;
+        };
+        ConnectorResponse: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            type: string;
+            url: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            lastSyncedAt: null | string;
+            /** Format: int32 */
+            syncIntervalHours: null | number | string;
+        };
+        ContactResponse: {
+            /** Format: uuid */
+            id: string;
+            email: string;
+            /** Format: date-time */
+            createdAt: string;
+            revoked: boolean;
         };
         CreateApiKeyRequest: {
             name: string;
@@ -5436,6 +5556,11 @@ export interface components {
             /** Format: int64 */
             sizeBytes: number | string;
         };
+        CreateFileResponse: {
+            /** Format: uuid */
+            fileId: string;
+            ticket: components["schemas"]["UploadTicket"];
+        };
         CreateHierarchyRequest: {
             name: string;
             levels: string[];
@@ -5448,6 +5573,14 @@ export interface components {
         CreateOrgRequest: {
             name: string;
             slug: string;
+        };
+        CreatePatrolScheduleRequest: {
+            rRule: string;
+            /** Format: date */
+            anchorDate: string;
+            /** Format: time */
+            startLocal: string;
+            exDates?: null | string[];
         };
         CreateRequest: {
             category: components["schemas"]["ServiceCategory"];
@@ -5546,7 +5679,7 @@ export interface components {
             expired: boolean;
         };
         /** @enum {unknown} */
-        CustodyAction: "Added" | "Downloaded" | "Exported" | "Removed" | "HoldPlaced" | "HoldReleased";
+        CustodyAction: "Added" | "Downloaded" | "Exported" | "Removed" | "HoldPlaced" | "HoldReleased" | "DownloadAccessIssued";
         CustodyEventView: {
             /** Format: uuid */
             id: string;
@@ -5575,8 +5708,41 @@ export interface components {
             patrols: components["schemas"]["PatrolView"][];
             incidents: components["schemas"]["IncidentLine"][];
         };
+        DeadLetterListResponse: {
+            /** Format: int32 */
+            total: number | string;
+            items: components["schemas"]["DeadLetterResponse"][];
+        };
+        DeadLetterResponse: {
+            /** Format: uuid */
+            id: string;
+            messageType: string;
+            exceptionType: string;
+            exceptionMessage: string;
+            /** Format: date-time */
+            sentAt: string;
+            tenantId: null | string;
+            replayable: boolean;
+        };
+        DownloadFileResponse: {
+            url: string;
+            /** Format: int32 */
+            expiresInSeconds: number | string;
+        };
         EndPatrolRequest: {
             summary?: null | string;
+        };
+        EntitlementExceptionCreatedResponse: {
+            code: string;
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        EntitlementSummary: {
+            value: string;
+            shape: string;
+            policy: string;
+            /** Format: int64 */
+            usage: null | number | string;
         };
         EntityChildRemoved: {
             /** Format: uuid */
@@ -5729,9 +5895,38 @@ export interface components {
             /** Format: date-time */
             expiresAt: string;
         };
+        GrantExceptionResponse: {
+            /** Format: uuid */
+            id: string;
+            email: string;
+            domain: string;
+            action: string;
+            scopePath: null | string;
+            reason: string;
+            /** Format: date-time */
+            expiresAt: string;
+        };
         GrantSpec: {
             domain: string;
             action: string;
+        };
+        HealthResponse: {
+            status: string;
+            role: string;
+            version: string;
+        };
+        HierarchyCreatedResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            rootNodeId: string;
+        };
+        HierarchyResponse: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            levels: string[];
+            nodes: components["schemas"]["NodeResponse"][];
         };
         ImpersonationResponse: {
             /** Format: date-time */
@@ -5749,6 +5944,15 @@ export interface components {
             /** Format: uuid */
             id: string;
             status: components["schemas"]["ImportStatus"];
+        };
+        ImportBatchResponse: {
+            /** Format: uuid */
+            id: string;
+            source: string;
+            status: string;
+            counts: components["schemas"]["ImportCounts"];
+            /** Format: date-time */
+            createdAt: string;
         };
         ImportBatchView: {
             /** Format: uuid */
@@ -5776,6 +5980,18 @@ export interface components {
             id: string;
             /** Format: int32 */
             created: number | string;
+        };
+        ImportCounts: {
+            /** Format: int32 */
+            create: number | string;
+            /** Format: int32 */
+            update: number | string;
+            /** Format: int32 */
+            close: number | string;
+            /** Format: int32 */
+            unchanged: number | string;
+            /** Format: int32 */
+            invalid: number | string;
         };
         ImportQueued: {
             /** Format: uuid */
@@ -5971,6 +6187,25 @@ export interface components {
             /** Format: date-time */
             deletedAt: null | string;
         };
+        IngestPreviewResponse: {
+            /** Format: uuid */
+            id: string;
+            source: string;
+            status: string;
+            counts: components["schemas"]["ImportCounts"];
+            rows: components["schemas"]["StagedSiteResponse"][];
+        };
+        InvitationCreatedResponse: {
+            invitationId: string;
+        };
+        InvitationResponse: {
+            id: string;
+            email: string;
+            state: string;
+            /** Format: date-time */
+            expiresAt: string;
+            role: null | string;
+        };
         InviteMemberRequest: {
             email: string;
             /** Format: uuid */
@@ -6078,12 +6313,39 @@ export interface components {
             /** Format: date-time */
             joinedAt: null | string;
         };
+        MeResponse: {
+            tier: string;
+            /** Format: uuid */
+            userId?: null | string;
+            email?: null | string;
+            name?: null | string;
+            /** Format: uuid */
+            activeOrg?: null | string;
+            organizations?: null | components["schemas"]["SessionOrgResponse"][];
+            capabilities?: null | string[];
+            /** Format: date-time */
+            impersonationExpiresAt?: null | string;
+            /** Format: uuid */
+            contactId?: null | string;
+            /** Format: uuid */
+            org?: null | string;
+        };
         MessageRequest: {
             body: string;
         };
         MoveNodeRequest: {
             /** Format: uuid */
             newParentId: string;
+        };
+        NodeResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            parentId: null | string;
+            name: string;
+            /** Format: int32 */
+            depth: number | string;
+            path: string;
         };
         NotificationPreferenceView: {
             phone: null | string;
@@ -6099,14 +6361,72 @@ export interface components {
             priority?: components["schemas"]["CasePriority"];
             incidentIds?: null | string[];
         };
+        OperatedOrgResponse: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            slug: string;
+            status: string;
+            isPlatform: boolean;
+            /** Format: date-time */
+            createdAt: string;
+        };
         OperatorAddExceptionRequest: {
             value: string;
             reason: string;
             /** Format: date-time */
             expiresAt: string;
         };
+        OperatorHealthCheckResponse: {
+            name: string;
+            ok: boolean;
+            /** Format: int64 */
+            latencyMs: number | string;
+            error: null | string;
+        };
+        OperatorHealthResponse: {
+            checks: components["schemas"]["OperatorHealthCheckResponse"][];
+        };
+        OperatorOverviewResponse: {
+            orgsByStatus: components["schemas"]["OrgStatusCountResponse"][];
+            /** Format: int32 */
+            closuresPending: number | string;
+            /** Format: int32 */
+            users: number | string;
+            /** Format: int32 */
+            deadLetters: number | string;
+        };
         OperatorSetEntitlementRequest: {
             value: string;
+        };
+        OperatorUserOrgResponse: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            status: string;
+        };
+        OperatorUserResponse: {
+            /** Format: uuid */
+            id: string;
+            email: string;
+            name: null | string;
+            /** Format: date-time */
+            createdAt: string;
+            orgs: components["schemas"]["OperatorUserOrgResponse"][];
+        };
+        OrgCreatedResponse: {
+            /** Format: uuid */
+            orgId: string;
+            slug: string;
+        };
+        OrgExportQueuedResponse: {
+            status: string;
+            destination: string;
+        };
+        OrgStatusCountResponse: {
+            status: string;
+            /** Format: int32 */
+            count: number | string;
         };
         PatrolDayResponse: {
             /** Format: date */
@@ -6196,6 +6516,11 @@ export interface components {
             endsAtUtc: string;
             /** Format: date */
             localDate: string;
+        };
+        PublicOrgResponse: {
+            name: string;
+            slug: string;
+            brandColor: null | string;
         };
         PublicSiteAttribute: {
             key: string;
@@ -6466,9 +6791,36 @@ export interface components {
             /** Format: int32 */
             pending: number | string;
         };
+        RoleCreatedResponse: {
+            /** Format: uuid */
+            id: string;
+        };
+        RoleResponse: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            grants: components["schemas"]["GrantSpec"][];
+            /** Format: int32 */
+            assignedCount: number | string;
+        };
         RotateApiKeyRequest: {
             /** Format: int32 */
             overlapHours?: null | number | string;
+        };
+        RotatedApiKeyResponse: {
+            /** Format: uuid */
+            id: string;
+            secret: string;
+            prefix: string;
+            /** Format: date-time */
+            oldKeyExpiresAt: null | string;
+        };
+        RotatedWebhookSecretResponse: {
+            /** Format: uuid */
+            id: string;
+            secret: string;
+            /** Format: date-time */
+            previousSecretExpiresAt: null | string;
         };
         RouteCreated: {
             /** Format: uuid */
@@ -6531,9 +6883,26 @@ export interface components {
             /** Format: uuid */
             id: string;
         };
+        ScheduleCreatedResponse: {
+            /** Format: uuid */
+            id: string;
+        };
         ScheduleRemoved: {
             /** Format: uuid */
             id: string;
+        };
+        ScheduleResponse: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            rRule: string;
+            /** Format: date */
+            anchorDate: string;
+            /** Format: time */
+            opens: string;
+            /** Format: time */
+            closes: string;
+            exDates: string[];
         };
         ScheduleView: {
             /** Format: uuid */
@@ -6548,6 +6917,22 @@ export interface components {
         };
         /** @enum {unknown} */
         ServiceCategory: "GuardService" | "MobilePatrol" | "AlarmResponse" | "Investigation" | "CctvInstall" | "AccessControl" | "BoardUp" | "Restoration" | "LegalSupport" | "EquipmentSupply" | "KeyHolding" | "Other" | null;
+        SessionOrgResponse: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            slug: string;
+            status: string;
+            isPlatform: boolean;
+        };
+        SessionResponse: {
+            /** Format: uuid */
+            id: string;
+            userAgent: null | string;
+            /** Format: date-time */
+            createdAt: string;
+            current: boolean;
+        };
         SetAuditConfigRequest: {
             logGrants: boolean;
             logReads: boolean;
@@ -6671,6 +7056,9 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
         };
+        SignupForm: {
+            email: string;
+        };
         SiteListResponse: {
             items: components["schemas"]["SiteResponse"][];
             /** Format: int32 */
@@ -6703,6 +7091,14 @@ export interface components {
         };
         /** @enum {unknown} */
         SiteStatus: "ComingSoon" | "Open" | "TemporarilyClosed" | "Closed" | null;
+        SiteWindowResponse: {
+            /** Format: date-time */
+            startsAtUtc: string;
+            /** Format: date-time */
+            endsAtUtc: string;
+            /** Format: date */
+            localDate: string;
+        };
         SlaSweepQueued: {
             /** Format: date-time */
             queuedAt: string;
@@ -6719,6 +7115,19 @@ export interface components {
         SsoStatusResponse: {
             available: boolean;
             entitled: boolean;
+        };
+        StagedSiteResponse: {
+            externalId: string;
+            name: string;
+            nodePath: string;
+            action: string;
+            errors: string[];
+            changes: string[];
+        };
+        StagedUploadResponse: {
+            /** Format: uuid */
+            batchId: string;
+            counts: components["schemas"]["ImportCounts"];
         };
         StageImportRequest: {
             /** Format: uuid */
@@ -6750,6 +7159,14 @@ export interface components {
             occurredAt?: null | string;
             contact?: null | string;
             website?: null | string;
+        };
+        SuppressionResponse: {
+            /** Format: uuid */
+            id: string;
+            email: string;
+            reason: string;
+            /** Format: date-time */
+            createdAt: string;
         };
         SwitchOrgRequest: {
             /** Format: uuid */
@@ -6851,6 +7268,15 @@ export interface components {
             /** Format: uint32 */
             version?: null | number | string;
         };
+        UploadTicket: {
+            url: string;
+            method: string;
+            headers: {
+                [key: string]: string;
+            };
+            /** Format: date-time */
+            expiresAt: string;
+        };
         UpsertVendorProfileRequest: {
             name: string;
             description: null | string;
@@ -6906,6 +7332,39 @@ export interface components {
             preferred: boolean;
             blocked: boolean;
         };
+        WebhookDeliveryResponse: {
+            eventName: string;
+            /** Format: int32 */
+            attempt: number | string;
+            /** Format: int32 */
+            statusCode: null | number | string;
+            ok: boolean;
+            /** Format: date-time */
+            occurredAt: string;
+        };
+        WebhookDeliverySummary: {
+            eventName: string;
+            ok: boolean;
+            /** Format: int32 */
+            statusCode: null | number | string;
+            /** Format: date-time */
+            occurredAt: string;
+        };
+        WebhookResponse: {
+            /** Format: uuid */
+            id: string;
+            url: string;
+            events: string[];
+            active: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            lastDelivery: null | components["schemas"]["WebhookDeliverySummary"];
+        };
+        WebhookSecretResponse: {
+            /** Format: uuid */
+            id: string;
+            secret: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -6932,7 +7391,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": string[];
                 };
             };
             /** @description Not Found */
@@ -6970,6 +7429,15 @@ export interface operations {
                     "application/json": components["schemas"]["IResult"];
                 };
             };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -7000,6 +7468,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IResult"];
+                };
+            };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Not Found */
@@ -7192,7 +7669,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["ScheduleResponse"][];
                 };
             };
             /** @description Not Found */
@@ -7227,7 +7704,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["ScheduleCreatedResponse"];
                 };
             };
             /** @description Not Found */
@@ -7262,6 +7739,15 @@ export interface operations {
                     "application/json": components["schemas"]["IResult"];
                 };
             };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -7292,7 +7778,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["SiteWindowResponse"][];
                 };
             };
             /** @description Not Found */
@@ -7350,7 +7836,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["PublicOrgResponse"];
                 };
             };
             /** @description Not Found */
@@ -7508,6 +7994,15 @@ export interface operations {
                     "application/json": components["schemas"]["IResult"];
                 };
             };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -7565,7 +8060,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["SettingResponse"];
                 };
             };
             /** @description Not Found */
@@ -7632,6 +8127,15 @@ export interface operations {
                     "application/json": components["schemas"]["IResult"];
                 };
             };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrgExportQueuedResponse"];
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -7661,6 +8165,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IResult"];
+                };
+            };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrgExportQueuedResponse"];
                 };
             };
             /** @description Not Found */
@@ -7694,6 +8207,15 @@ export interface operations {
                     "application/json": components["schemas"]["IResult"];
                 };
             };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -7724,7 +8246,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["OrgCreatedResponse"];
                 };
             };
             /** @description Not Found */
@@ -7760,6 +8282,15 @@ export interface operations {
                     "application/json": components["schemas"]["IResult"];
                 };
             };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -7786,7 +8317,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["OperatedOrgResponse"][];
                 };
             };
             /** @description Not Found */
@@ -7820,6 +8351,15 @@ export interface operations {
                     "application/json": components["schemas"]["IResult"];
                 };
             };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -7849,6 +8389,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IResult"];
+                };
+            };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Not Found */
@@ -7938,6 +8487,15 @@ export interface operations {
                     "application/json": components["schemas"]["IResult"];
                 };
             };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -7993,7 +8551,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["HierarchyResponse"];
                 };
             };
             /** @description Not Found */
@@ -8026,7 +8584,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["HierarchyCreatedResponse"];
                 };
             };
             /** @description Not Found */
@@ -8059,7 +8617,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["NodeResponse"];
                 };
             };
             /** @description Not Found */
@@ -8097,6 +8655,15 @@ export interface operations {
                     "application/json": components["schemas"]["IResult"];
                 };
             };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -8126,6 +8693,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IResult"];
+                };
+            };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Not Found */
@@ -8163,6 +8739,15 @@ export interface operations {
                     "application/json": components["schemas"]["IResult"];
                 };
             };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -8196,6 +8781,15 @@ export interface operations {
                     "application/json": components["schemas"]["IResult"];
                 };
             };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -8225,6 +8819,15 @@ export interface operations {
                     "application/json": components["schemas"]["IResult"];
                 };
             };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -8252,6 +8855,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IResult"];
+                };
+            };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Not Found */
@@ -8313,7 +8925,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["InvitationResponse"][];
                 };
             };
             /** @description Not Found */
@@ -8346,7 +8958,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["InvitationCreatedResponse"];
                 };
             };
             /** @description Not Found */
@@ -8380,6 +8992,15 @@ export interface operations {
                     "application/json": components["schemas"]["IResult"];
                 };
             };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -8409,6 +9030,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IResult"];
+                };
+            };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Not Found */
@@ -8561,7 +9191,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["ContactResponse"][];
                 };
             };
             /** @description Not Found */
@@ -8595,6 +9225,15 @@ export interface operations {
                     "application/json": components["schemas"]["IResult"];
                 };
             };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -8621,7 +9260,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["ApiKeyResponse"][];
                 };
             };
             /** @description Not Found */
@@ -8654,7 +9293,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["ApiKeySecretResponse"];
                 };
             };
             /** @description Not Found */
@@ -8689,7 +9328,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["RotatedApiKeyResponse"];
                 };
             };
             /** @description Not Found */
@@ -8723,6 +9362,15 @@ export interface operations {
                     "application/json": components["schemas"]["IResult"];
                 };
             };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -8749,7 +9397,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["RoleResponse"][];
                 };
             };
             /** @description Not Found */
@@ -8782,7 +9430,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["RoleCreatedResponse"];
                 };
             };
             /** @description Not Found */
@@ -8820,6 +9468,15 @@ export interface operations {
                     "application/json": components["schemas"]["IResult"];
                 };
             };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -8846,7 +9503,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["GrantExceptionResponse"][];
                 };
             };
             /** @description Not Found */
@@ -8880,6 +9537,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IResult"];
+                };
+            };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Not Found */
@@ -8942,6 +9608,15 @@ export interface operations {
                     "application/json": components["schemas"]["IResult"];
                 };
             };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -8970,7 +9645,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["SuppressionResponse"][];
                 };
             };
             /** @description Not Found */
@@ -9004,6 +9679,15 @@ export interface operations {
                     "application/json": components["schemas"]["IResult"];
                 };
             };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -9032,7 +9716,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["OperatorUserResponse"][];
                 };
             };
             /** @description Not Found */
@@ -9070,6 +9754,15 @@ export interface operations {
                     "application/json": components["schemas"]["IResult"];
                 };
             };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -9099,6 +9792,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IResult"];
+                };
+            };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Not Found */
@@ -9133,6 +9835,15 @@ export interface operations {
                     "application/json": components["schemas"]["IResult"];
                 };
             };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -9162,6 +9873,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IResult"];
+                };
+            };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Not Found */
@@ -9223,7 +9943,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["BillingLinkResponse"];
                 };
             };
             /** @description Not Found */
@@ -9256,7 +9976,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["BillingLinkResponse"];
                 };
             };
             /** @description Not Found */
@@ -9288,6 +10008,15 @@ export interface operations {
                     "application/json": components["schemas"]["IResult"];
                 };
             };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -9314,7 +10043,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": {
+                        [key: string]: components["schemas"]["EntitlementSummary"];
+                    };
                 };
             };
             /** @description Not Found */
@@ -9345,7 +10076,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": {
+                        [key: string]: components["schemas"]["EntitlementSummary"];
+                    };
                 };
             };
             /** @description Not Found */
@@ -9384,6 +10117,15 @@ export interface operations {
                     "application/json": components["schemas"]["IResult"];
                 };
             };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -9417,7 +10159,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["EntitlementExceptionCreatedResponse"];
                 };
             };
             /** @description Not Found */
@@ -9450,7 +10192,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["AuditRowResponse"][];
                 };
             };
             /** @description Not Found */
@@ -9479,7 +10221,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["AuditConfigResponse"];
                 };
             };
             /** @description Not Found */
@@ -9515,6 +10257,15 @@ export interface operations {
                     "application/json": components["schemas"]["IResult"];
                 };
             };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -9544,6 +10295,15 @@ export interface operations {
                     "application/json": components["schemas"]["IResult"];
                 };
             };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditExportQueuedResponse"];
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -9570,7 +10330,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["WebhookResponse"][];
                 };
             };
             /** @description Not Found */
@@ -9603,7 +10363,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["WebhookSecretResponse"];
                 };
             };
             /** @description Not Found */
@@ -9634,7 +10394,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["RotatedWebhookSecretResponse"];
                 };
             };
             /** @description Not Found */
@@ -9668,6 +10428,15 @@ export interface operations {
                     "application/json": components["schemas"]["IResult"];
                 };
             };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -9696,7 +10465,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["WebhookDeliveryResponse"][];
                 };
             };
             /** @description Not Found */
@@ -9728,6 +10497,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IResult"];
+                };
+            };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Not Found */
@@ -9794,7 +10572,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["CreateFileResponse"];
                 };
             };
             /** @description Not Found */
@@ -9828,6 +10606,15 @@ export interface operations {
                     "application/json": components["schemas"]["IResult"];
                 };
             };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -9856,7 +10643,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["DownloadFileResponse"];
                 };
             };
             /** @description Not Found */
@@ -9894,6 +10681,46 @@ export interface operations {
                     "application/json": components["schemas"]["IResult"];
                 };
             };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    GET_api_files_id: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FileSummary"];
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -9923,6 +10750,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IResult"];
+                };
+            };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Not Found */
@@ -9956,6 +10792,15 @@ export interface operations {
                     "application/json": components["schemas"]["IResult"];
                 };
             };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -9986,7 +10831,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["StagedUploadResponse"];
                 };
             };
             /** @description Not Found */
@@ -10017,7 +10862,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["IngestPreviewResponse"];
                 };
             };
             /** @description Not Found */
@@ -10046,7 +10891,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["ImportBatchResponse"][];
                 };
             };
             /** @description Not Found */
@@ -10080,6 +10925,15 @@ export interface operations {
                     "application/json": components["schemas"]["IResult"];
                 };
             };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -10108,7 +10962,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["CommitBatchResponse"];
                 };
             };
             /** @description Not Found */
@@ -10137,7 +10991,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["ConnectorResponse"][];
                 };
             };
             /** @description Not Found */
@@ -10170,7 +11024,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["ConnectorCreatedResponse"];
                 };
             };
             /** @description Not Found */
@@ -10208,6 +11062,15 @@ export interface operations {
                     "application/json": components["schemas"]["IResult"];
                 };
             };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -10239,6 +11102,15 @@ export interface operations {
                     "application/json": components["schemas"]["IResult"];
                 };
             };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
             /** @description Not Found */
             404: {
                 headers: {
@@ -10268,6 +11140,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IResult"];
+                };
+            };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Not Found */
@@ -10329,7 +11210,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IResult"];
+                    "application/json": components["schemas"]["ChecklistTemplateCreatedResponse"];
                 };
             };
             /** @description Not Found */
@@ -10361,6 +11242,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IResult"];
+                };
+            };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Not Found */
@@ -10425,6 +11315,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IResult"];
+                };
+            };
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Not Found */
@@ -12018,7 +12917,7 @@ export interface operations {
             };
         };
     };
-    GET_api_cases_id_evidence_evidenceId_download: {
+    POST_api_cases_id_evidence_evidenceId_download: {
         parameters: {
             query?: never;
             header?: never;
@@ -14228,7 +15127,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CreateScheduleRequest"];
+                "application/json": components["schemas"]["CreatePatrolScheduleRequest"];
             };
         };
         responses: {

@@ -30,6 +30,16 @@ public sealed record MemberListResponse(
     int? NextOffset
 );
 
+public sealed record InvitationResponse(
+    string Id,
+    string Email,
+    string State,
+    DateTimeOffset ExpiresAt,
+    string? Role
+);
+
+public sealed record InvitationCreatedResponse(string InvitationId);
+
 /// <summary>
 /// Member management (day-zero arc): the provider (WorkOS) carries invitation
 /// delivery, acceptance, and reminders; we carry role intent and the local
@@ -43,6 +53,7 @@ public static class MemberEndpoints
     /// </summary>
     [Transactional(typeof(IdentityDbContext))]
     [WolverinePost("/api/members/leave")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public static async Task<IResult> Leave(
         Microsoft.AspNetCore.Http.HttpContext http,
         IdentityDbContext db,
@@ -164,6 +175,7 @@ public static class MemberEndpoints
 
     [Transactional(typeof(IdentityDbContext))]
     [WolverinePost("/api/members/invitations")]
+    [ProducesResponseType(typeof(InvitationCreatedResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> Invite(
         InviteMemberRequest request,
         IdentityDbContext db,
@@ -210,11 +222,12 @@ public static class MemberEndpoints
         await db.SaveChangesAsync(ct);
 
         await bus.AuditAsync(org, AuditActor.User(inviter), "member.invited", new { email });
-        return Results.Ok(new { invitationId });
+        return Results.Ok(new InvitationCreatedResponse(invitationId));
     }
 
     [Transactional(typeof(IdentityDbContext))]
     [WolverineGet("/api/members/invitations")]
+    [ProducesResponseType(typeof(List<InvitationResponse>), StatusCodes.Status200OK)]
     public static async Task<IResult> ListInvitations(
         IdentityDbContext db,
         IPrincipalAccessor accessor,
@@ -231,7 +244,7 @@ public static class MemberEndpoints
             provider is not IOrganizationDirectory directory
             || directoryEntry?.ExternalId is not { } externalOrgId
         )
-            return Results.Ok(Array.Empty<object>());
+            return Results.Ok(Array.Empty<InvitationResponse>());
 
         var pending = await directory.ListInvitationsAsync(externalOrgId, ct);
         var intents = await db.InvitedRoles.ToListAsync(ct);
@@ -252,6 +265,7 @@ public static class MemberEndpoints
 
     [Transactional(typeof(IdentityDbContext))]
     [WolverineDelete("/api/members/invitations/{invitationId}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public static async Task<IResult> Revoke(
         string invitationId,
         IdentityDbContext db,
@@ -279,6 +293,7 @@ public static class MemberEndpoints
 
     [Transactional(typeof(IdentityDbContext))]
     [WolverineDelete("/api/members/{userId}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public static async Task<IResult> Remove(
         Guid userId,
         IdentityDbContext db,

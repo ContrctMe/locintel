@@ -1,0 +1,12 @@
+namespace LocIntel.Api;
+
+internal static class ProviderOptionsValidation
+{
+    public static bool IsHttpUrl(string? value) =>
+        value is null
+        || Uri.TryCreate(value, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https";
+
+    public static bool CredentialsMatch(string? first, string? second) =>
+        first is null && second is null
+        || !string.IsNullOrWhiteSpace(first) && !string.IsNullOrWhiteSpace(second);
+}

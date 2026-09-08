@@ -122,9 +122,9 @@ public static class CaseEvidenceEndpoints
         return Results.Ok(new CaseChildRemoved(item.Id));
     }
 
-    /// <summary>Authorize here, log the custody event, THEN sign (ADR 19): the URL itself is unguarded.</summary>
+    /// <summary>Authorize and record access issuance before returning the signed URL; issuance is not delivery.</summary>
     [Transactional(typeof(CasesDbContext))]
-    [WolverineGet("/api/cases/{id}/evidence/{evidenceId}/download")]
+    [WolverinePost("/api/cases/{id}/evidence/{evidenceId}/download")]
     [ProducesResponseType(typeof(CaseEvidenceDownload), StatusCodes.Status200OK)]
     public static async Task<IResult> Download(
         Guid id,
@@ -151,12 +151,18 @@ public static class CaseEvidenceEndpoints
         var signed = await signer.GetDownloadUrlAsync(item.FileId, ct);
         if (signed is null)
             return Results.NotFound();
-        CustodyLog.Record(db, access.Case, item.FileId, CustodyAction.Downloaded, access.Actor);
+        CustodyLog.Record(
+            db,
+            access.Case,
+            item.FileId,
+            CustodyAction.DownloadAccessIssued,
+            access.Actor
+        );
         await db.SaveChangesAsync(ct);
         await bus.AuditAsync(
             access.Actor.Org,
             access.Actor.Audit,
-            "case.evidence_downloaded",
+            "case.evidence_download_access_issued",
             new { CaseId = id, item.FileId }
         );
         return Results.Ok(

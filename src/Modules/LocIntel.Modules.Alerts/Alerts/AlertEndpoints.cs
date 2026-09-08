@@ -14,7 +14,7 @@ namespace LocIntel.Modules.Alerts.Alerts;
 /// <summary>The feed: scope-filtered, read state per user.</summary>
 public static class AlertEndpoints
 {
-    [Transactional(typeof(AlertsDbContext))]
+    [NonTransactional]
     [WolverineGet("/api/alerts")]
     [ProducesResponseType(typeof(AlertListResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> List(
@@ -113,7 +113,7 @@ public static class AlertEndpoints
         return Results.Ok(new AlertMarkedRead(id, read.ReadAt));
     }
 
-    [Transactional(typeof(AlertsDbContext))]
+    [NonTransactional]
     [WolverineGet("/api/alerts/summary")]
     [ProducesResponseType(typeof(AlertSummary), StatusCodes.Status200OK)]
     public static async Task<IResult> Summary(

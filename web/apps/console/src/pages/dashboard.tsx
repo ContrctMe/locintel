@@ -5,16 +5,6 @@ import { Link } from '@tanstack/react-router';
 import {entitlementLabel, fmtDateTime, eventLabel } from '../lib/format';
 import { can, useMe } from '../session';
 
-type Effective = Record<string, { value: string; shape: string; policy: string; usage: number | null }>;
-type SitesSummary = { total: number; openCount: number };
-type IncidentStats = { total: number; open: number; totalLoss: number; byCategory: { key: string; count: number; loss: number }[] };
-type AlertSummary = { unread: number; activeBulletins: number; unacknowledgedBulletins: number };
-type Invitation = { id: string; state: string };
-type AuditEvent = {
-  id: string; eventName: string; actorTier: string; occurredAt: string;
-  actorLabel?: string | null;
-};
-
 /** The overview (UX review P2): what needs attention, then the plan. */
 export function DashboardPage() {
   const { data: me } = useMe();
@@ -26,31 +16,31 @@ export function DashboardPage() {
 
   const { data: entitlements } = useQuery({
     queryKey: ['entitlements'],
-    queryFn: () => api.get<Effective>('/api/entitlements'),
+    queryFn: ({ signal }) => api.get('/api/entitlements', { signal }),
   });
   const { data: sites } = useQuery({
     queryKey: ['sites', 'summary'],
-    queryFn: () => api.get<SitesSummary>('/api/sites?limit=1'),
+    queryFn: ({ signal }) => api.get('/api/sites', { query: { limit: 1 }, signal }),
     enabled: seesSites,
   });
   const { data: invitations } = useQuery({
     queryKey: ['invitations'],
-    queryFn: () => api.get<Invitation[]>('/api/members/invitations'),
+    queryFn: ({ signal }) => api.get('/api/members/invitations', { signal }),
     enabled: seesMembers,
   });
   const { data: incidents } = useQuery({
     queryKey: ['incidents', 'stats', 'dashboard'],
-    queryFn: () => api.get<IncidentStats>('/api/incidents/stats'),
+    queryFn: ({ signal }) => api.get('/api/incidents/stats', { signal }),
     enabled: seesIncidents,
   });
   const { data: alerts } = useQuery({
     queryKey: ['alerts', 'summary'],
-    queryFn: () => api.get<AlertSummary>('/api/alerts/summary'),
+    queryFn: ({ signal }) => api.get('/api/alerts/summary', { signal }),
     enabled: seesAlerts,
   });
   const { data: events } = useQuery({
     queryKey: ['audit', 'events', 5],
-    queryFn: () => api.get<AuditEvent[]>('/api/audit/events?limit=5'),
+    queryFn: ({ signal }) => api.get('/api/audit/{kind}', { path: { kind: 'events' }, query: { limit: 5 }, signal }),
     enabled: seesAudit,
   });
 
@@ -72,7 +62,7 @@ export function DashboardPage() {
                 </div>
                 <div className="text-sm text-muted-foreground">
                   incidents, last 30 days · {incidents?.open ?? 0} open
-                  {incidents && incidents.totalLoss > 0 && ` · $${incidents.totalLoss.toLocaleString()} loss`}
+                  {incidents && Number(incidents.totalLoss) > 0 && ` · $${Number(incidents.totalLoss).toLocaleString()} loss`}
                 </div>
                 {incidents && incidents.byCategory.length > 0 && (
                   <div className="mt-1 text-xs text-muted-foreground">
@@ -92,7 +82,7 @@ export function DashboardPage() {
                 </div>
                 <div className="text-sm text-muted-foreground">
                   unread alerts · {alerts?.activeBulletins ?? 0} active bulletins
-                  {alerts && alerts.unacknowledgedBulletins > 0 && ` · ${alerts.unacknowledgedBulletins} to acknowledge`}
+                  {alerts && Number(alerts.unacknowledgedBulletins) > 0 && ` · ${alerts.unacknowledgedBulletins} to acknowledge`}
                 </div>
               </Link>
             </CardContent>
@@ -146,7 +136,7 @@ export function DashboardPage() {
                 {events.map((e) => (
                   <li key={e.id} className="flex justify-between gap-4">
                     <span className="min-w-0 truncate">
-                      {eventLabel(e.eventName)}
+                      {eventLabel(e.eventName ?? 'unknown')}
                       {e.actorLabel && (
                         <span className="ml-2 text-xs text-muted-foreground">{e.actorLabel}</span>
                       )}
@@ -172,7 +162,7 @@ export function DashboardPage() {
                 const limit = Number(entry?.value);
                 const showBar =
                   entry?.usage != null && Number.isFinite(limit) && limit > 0;
-                const ratio = showBar ? Math.min(entry.usage! / limit, 1) : 0;
+                const ratio = showBar ? Math.min(Number(entry.usage) / limit, 1) : 0;
                 return (
                   <div key={code} className="space-y-1 border-b py-1.5">
                     <div className="flex justify-between">

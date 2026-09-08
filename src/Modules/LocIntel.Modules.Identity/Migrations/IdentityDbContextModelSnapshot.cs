@@ -492,6 +492,10 @@ namespace LocIntel.Modules.Identity.Migrations
                         .HasColumnType("character varying(80)")
                         .HasColumnName("slug");
 
+                    b.Property<long>("SourceVersion")
+                        .HasColumnType("bigint")
+                        .HasColumnName("source_version");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)

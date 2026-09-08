@@ -1,4 +1,4 @@
-import { api } from '@locintel/api';
+import { api, type components } from '@locintel/api';
 import { Button, Card, CardContent, Table, TableBody, TableCell, TableHead,
   TableHeader, TableRow } from '@locintel/ui';
 import { useQuery } from '@tanstack/react-query';
@@ -14,9 +14,7 @@ const KIND_LABELS: Record<Kind, string> = {
   authz: 'Access decisions',
   access: 'Request log',
 };
-type Row = Record<string, unknown> & {
-  id: string; occurredAt: string; actorTier: string; actorLabel?: string | null;
-};
+type Row = components['schemas']['AuditRowResponse'];
 
 export function AuditPage() {
   const [kind, setKind] = useState<Kind>('events');
@@ -24,7 +22,7 @@ export function AuditPage() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const { data: rows } = useQuery({
     queryKey: ['audit', kind, limit],
-    queryFn: () => api.get<Row[]>(`/api/audit/${kind}?limit=${limit}`),
+    queryFn: ({ signal }) => api.get('/api/audit/{kind}', { path: { kind }, query: { limit }, signal }),
   });
   const exportTrail = useApiMutation({
     mutationFn: () => api.post('/api/audit/export'),

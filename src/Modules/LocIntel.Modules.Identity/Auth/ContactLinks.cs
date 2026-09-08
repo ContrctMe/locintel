@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -18,6 +19,8 @@ using Wolverine;
 using Wolverine.Http;
 
 namespace LocIntel.Modules.Identity.Auth;
+
+public sealed record ContactResponse(Guid Id, string Email, DateTimeOffset CreatedAt, bool Revoked);
 
 /// <summary>
 /// The identified-contact tier (ADR 7): known via a signed, expiring token -
@@ -216,6 +219,7 @@ public static class SendContactLinkHandler
 public static class ContactManagementEndpoints
 {
     [WolverineGet("/api/contacts")]
+    [ProducesResponseType(typeof(List<ContactResponse>), StatusCodes.Status200OK)]
     public static async Task<IResult> List(
         IdentityDbContext db,
         IPrincipalAccessor accessor,
@@ -239,6 +243,7 @@ public static class ContactManagementEndpoints
     }
 
     [WolverineDelete("/api/contacts/{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public static async Task<IResult> Revoke(
         Guid id,
         IdentityDbContext db,

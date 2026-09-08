@@ -15,10 +15,9 @@ namespace LocIntel.Platform.Data;
 /// TenantSessionInterceptor + database policies) backstops a disabled or
 /// forgotten tenant filter: fail closed, not leak.
 ///
-/// IMPORTANT: the tenant filter references CurrentOrg on the *context instance*
-/// - EF rewrites that per instance despite the cached model. Never capture the
-/// ITenantContext object in a filter expression; the first request's tenant
-/// would be baked into the cached model.
+/// IMPORTANT: EF binds the tenant filter's typed context reference to the
+/// current instance. Never capture ITenantContext (which freezes the tenant)
+/// or a live DbContext (which the cached model would retain after disposal).
 /// </summary>
 public abstract class ModuleDbContext(DbContextOptions options, ITenantContext tenant)
     : DbContext(options)
@@ -86,8 +85,15 @@ public abstract class ModuleDbContext(DbContextOptions options, ITenantContext t
             .Invoke(this, [modelBuilder]);
 
     private void AddTenantFilter<TEntity>(ModelBuilder modelBuilder)
-        where TEntity : class, IOrgScoped =>
-        modelBuilder.Entity<TEntity>().HasQueryFilter(TenantFilter, e => e.OrgId == CurrentOrg);
+        where TEntity : class, IOrgScoped
+    {
+        // EF replaces this typed reference with the context executing the query.
+        // A live `this` would root its original host through EF's model cache.
+        ModuleDbContext context = null!;
+        modelBuilder
+            .Entity<TEntity>()
+            .HasQueryFilter(TenantFilter, e => e.OrgId == context.CurrentOrg);
+    }
 
     private void AddSoftDeleteFilter<TEntity>(ModelBuilder modelBuilder)
         where TEntity : class, ISoftDeletable =>

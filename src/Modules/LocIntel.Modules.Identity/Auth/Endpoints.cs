@@ -14,6 +14,27 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace LocIntel.Modules.Identity.Auth;
 
+public sealed record SessionOrgResponse(
+    Guid Id,
+    string Name,
+    string Slug,
+    string Status,
+    bool IsPlatform
+);
+
+public sealed record MeResponse(
+    string Tier,
+    Guid? UserId = null,
+    string? Email = null,
+    string? Name = null,
+    Guid? ActiveOrg = null,
+    IReadOnlyList<SessionOrgResponse>? Organizations = null,
+    IReadOnlyList<string>? Capabilities = null,
+    DateTimeOffset? ImpersonationExpiresAt = null,
+    Guid? ContactId = null,
+    Guid? Org = null
+);
+
 /// <summary>
 /// Cookie-session auth flow (ADR 21): HttpOnly encrypted cookie issued by the
 /// API after the code exchange; no token ever reaches JavaScript. Minimal APIs
@@ -55,23 +76,35 @@ public static class AuthEndpoints
             }
         );
 
-        app.MapGet(
-            "/auth/signup",
-            async (IAuthProvider provider, string email, CancellationToken ct) =>
-            {
-                var trimmed = email.Trim().ToLowerInvariant();
-                if (!trimmed.Contains('@') || trimmed.Length > 320)
-                    return Results.BadRequest(new { error = "a valid email is required" });
-                // AuthKit's hosted screen registers users itself; providers
-                // that need the record first (the emulator, bare OIDC setups
-                // with admin-created users) get it via the capability.
-                if (provider is IUserProvisioning provisioning)
-                    await provisioning.EnsureUserAsync(trimmed, ct);
-                return Results.Redirect(
-                    $"/auth/login?hint={Uri.EscapeDataString(trimmed)}&signup=true"
-                );
-            }
-        );
+        app.MapPost(
+                "/auth/signup",
+                async (HttpContext http, IAuthProvider provider, CancellationToken ct) =>
+                {
+                    if (!http.Request.HasFormContentType)
+                        return Results.BadRequest(new { error = "submit the signup form" });
+                    var form = await http.Request.ReadFormAsync(ct);
+                    var email = form["email"];
+                    var trimmed = email.ToString().Trim().ToLowerInvariant();
+                    if (
+                        email.Count != 1
+                        || trimmed.Length > 320
+                        || !System.Net.Mail.MailAddress.TryCreate(trimmed, out var address)
+                        || address.Address != trimmed
+                    )
+                        return Results.BadRequest(new { error = "a valid email is required" });
+                    // AuthKit's hosted screen registers users itself; providers
+                    // that need the record first (the emulator, bare OIDC setups
+                    // with admin-created users) get it via the capability.
+                    if (provider is IUserProvisioning provisioning)
+                        await provisioning.EnsureUserAsync(trimmed, ct);
+                    http.Response.Headers.Location =
+                        $"/auth/login?hint={Uri.EscapeDataString(trimmed)}&signup=true";
+                    return Results.StatusCode(StatusCodes.Status303SeeOther);
+                }
+            )
+            .Accepts<SignupForm>("application/x-www-form-urlencoded")
+            .Produces(StatusCodes.Status303SeeOther)
+            .Produces(StatusCodes.Status400BadRequest);
 
         app.MapGet(
             "/auth/callback",
@@ -236,91 +269,92 @@ public static class AuthEndpoints
         );
 
         app.MapGet(
-            "/me",
-            async (
-                IPrincipalAccessor accessor,
-                IdentityDbContext db,
-                IScopeResolver scopes,
-                CancellationToken ct
-            ) =>
-            {
-                switch (accessor.Current)
+                "/me",
+                async (
+                    IPrincipalAccessor accessor,
+                    IdentityDbContext db,
+                    IScopeResolver scopes,
+                    CancellationToken ct
+                ) =>
                 {
-                    case Principal.User u:
+                    switch (accessor.Current)
                     {
-                        var orgIds = await db
-                            .Memberships.Where(m => m.UserId == u.UserId)
-                            .Select(m => m.OrgId)
-                            .ToListAsync(ct);
-                        // local read model (org_directory), never Tenancy's tables
-                        // an impersonated org (ADR 42) is not a membership;
-                        // surface it anyway so the console has a name to show
-                        if (
-                            u.Impersonating
-                            && u.ActiveOrg is { } impersonated
-                            && !orgIds.Contains(impersonated)
-                        )
-                            orgIds.Add(impersonated);
-                        var summaries = await db
-                            .OrgDirectory.Where(d => orgIds.Contains(d.OrgId))
-                            .Select(d => new
-                            {
-                                id = d.OrgId.Value,
-                                name = d.Name,
-                                slug = d.Slug,
-                                status = d.Status,
-                                isPlatform = d.IsPlatform,
-                            })
-                            .ToListAsync(ct);
-                        // resolved capabilities: the UI hides/disables instead
-                        // of letting users discover 403s (the /me bootstrap)
-                        var activeIsPlatform =
-                            u.ActiveOrg is { } activeOrgId
-                            && await db
-                                .OrgDirectory.Where(d => d.OrgId == activeOrgId)
-                                .Select(d => d.IsPlatform)
-                                .FirstOrDefaultAsync(ct);
-                        var capabilities = new List<string>();
-                        foreach (var capability in Capabilities.All)
+                        case Principal.User u:
                         {
-                            // the org flag is the operator wall: never
-                            // advertise platform reach to an ordinary org
-                            if (capability == Capabilities.PlatformOperate && !activeIsPlatform)
-                                continue;
-                            if (await scopes.CanAsync(u, capability, ct))
-                                capabilities.Add(capability);
+                            var orgIds = await db
+                                .Memberships.Where(m => m.UserId == u.UserId)
+                                .Select(m => m.OrgId)
+                                .ToListAsync(ct);
+                            // local read model (org_directory), never Tenancy's tables
+                            // an impersonated org (ADR 42) is not a membership;
+                            // surface it anyway so the console has a name to show
+                            if (
+                                u.Impersonating
+                                && u.ActiveOrg is { } impersonated
+                                && !orgIds.Contains(impersonated)
+                            )
+                                orgIds.Add(impersonated);
+                            var summaries = await db
+                                .OrgDirectory.Where(d => orgIds.Contains(d.OrgId))
+                                .Select(d => new
+                                {
+                                    id = d.OrgId.Value,
+                                    name = d.Name,
+                                    slug = d.Slug,
+                                    status = d.Status,
+                                    isPlatform = d.IsPlatform,
+                                })
+                                .ToListAsync(ct);
+                            // resolved capabilities: the UI hides/disables instead
+                            // of letting users discover 403s (the /me bootstrap)
+                            var activeIsPlatform =
+                                u.ActiveOrg is { } activeOrgId
+                                && await db
+                                    .OrgDirectory.Where(d => d.OrgId == activeOrgId)
+                                    .Select(d => d.IsPlatform)
+                                    .FirstOrDefaultAsync(ct);
+                            var capabilities = new List<string>();
+                            foreach (var capability in Capabilities.All)
+                            {
+                                // the org flag is the operator wall: never
+                                // advertise platform reach to an ordinary org
+                                if (capability == Capabilities.PlatformOperate && !activeIsPlatform)
+                                    continue;
+                                if (await scopes.CanAsync(u, capability, ct))
+                                    capabilities.Add(capability);
+                            }
+                            return Results.Ok(
+                                new
+                                {
+                                    tier = "user",
+                                    userId = u.UserId,
+                                    email = u.Email,
+                                    name = u.Name,
+                                    activeOrg = u.ActiveOrg?.Value,
+                                    organizations = summaries,
+                                    capabilities,
+                                    impersonationExpiresAt = u.ImpersonationExpiresAt,
+                                }
+                            );
                         }
-                        return Results.Ok(
-                            new
-                            {
-                                tier = "user",
-                                userId = u.UserId,
-                                email = u.Email,
-                                name = u.Name,
-                                activeOrg = u.ActiveOrg?.Value,
-                                organizations = summaries,
-                                capabilities,
-                                impersonationExpiresAt = u.ImpersonationExpiresAt,
-                            }
-                        );
+                        case Principal.Contact c:
+                            return Results.Ok(
+                                new
+                                {
+                                    tier = "contact",
+                                    contactId = c.ContactId,
+                                    email = c.Email,
+                                    org = c.Org.Value,
+                                }
+                            );
+                        case Principal.Guest g:
+                            return Results.Ok(new { tier = "guest", org = g.Org?.Value });
+                        default:
+                            return Results.Unauthorized();
                     }
-                    case Principal.Contact c:
-                        return Results.Ok(
-                            new
-                            {
-                                tier = "contact",
-                                contactId = c.ContactId,
-                                email = c.Email,
-                                org = c.Org.Value,
-                            }
-                        );
-                    case Principal.Guest g:
-                        return Results.Ok(new { tier = "guest", org = g.Org?.Value });
-                    default:
-                        return Results.Unauthorized();
                 }
-            }
-        );
+            )
+            .Produces<MeResponse>();
 
         return app;
     }

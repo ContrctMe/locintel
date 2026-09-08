@@ -23,7 +23,7 @@ namespace LocIntel.Modules.Cases.Cases;
 /// </summary>
 public static class CaseEndpoints
 {
-    [Transactional(typeof(CasesDbContext))]
+    [NonTransactional]
     [WolverineGet("/api/cases")]
     [ProducesResponseType(typeof(CaseListResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> List(

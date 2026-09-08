@@ -1,4 +1,28 @@
-import { getRequestHeader } from '@tanstack/react-start/server';
+import { getRequestHeader, setCookie } from '@tanstack/react-start/server';
+
+/** Revoke upstream before relaying cookie deletions to this public host. */
+export async function publicSignOut(): Promise<{ ok: boolean; error?: string }> {
+  const cookie = getRequestHeader('cookie');
+  try {
+    const response = await fetch(`${process.env.LOCINTEL_API ?? 'http://localhost:5293'}/auth/logout`, {
+      method: 'POST',
+      signal: AbortSignal.timeout(30_000),
+      headers: cookie ? { cookie } : {},
+      redirect: 'manual',
+    });
+    const deletions = response.headers.getSetCookie();
+    if (response.status !== 204 || deletions.length === 0) throw new Error('Logout not confirmed');
+    for (const raw of deletions) {
+      const pair = raw.split(';')[0] ?? '';
+      const eq = pair.indexOf('=');
+      if (eq > 0) setCookie(pair.slice(0, eq), '', { path: '/', maxAge: 0 });
+    }
+  } catch {
+    // A lost response is not proof of revocation, nor of local cookie removal.
+    return { ok: false, error: 'We could not confirm sign-out. Your session may still be active. Please try again.' };
+  }
+  return { ok: true };
+}
 
 /**
  * Server-side fetch to the API, forwarding the browser's host so the guest
@@ -6,23 +30,8 @@ import { getRequestHeader } from '@tanstack/react-start/server';
  * unknown degrades to empty - the public page always renders.
  */
 export async function publicApi<T>(path: string, fallback: T): Promise<T> {
-  const apiBase = process.env.LOCINTEL_API ?? 'http://localhost:5293';
-  try {
-    const host = getRequestHeader('host');
-    // the browser's cookie rides along: an identified contact stays
-    // identified through the SSR hop
-    const cookie = getRequestHeader('cookie');
-    const response = await fetch(`${apiBase}${path}`, {
-      headers: {
-        ...(host ? { 'X-Forwarded-Host': host } : {}),
-        ...(cookie ? { cookie } : {}),
-      },
-    });
-    if (!response.ok) return fallback;
-    return (await response.json()) as T;
-  } catch {
-    return fallback;
-  }
+  const value = await publicApiMaybe<T>(path);
+  return value === undefined ? fallback : value;
 }
 
 export type PublicSite = {
@@ -56,6 +65,7 @@ export async function publicApiMaybe<T>(path: string): Promise<T | undefined> {
     const host = getRequestHeader('host');
     const cookie = getRequestHeader('cookie');
     const response = await fetch(`${apiBase}${path}`, {
+      signal: AbortSignal.timeout(30_000),
       headers: {
         ...(host ? { 'X-Forwarded-Host': host } : {}),
         ...(cookie ? { cookie } : {}),
@@ -69,6 +79,15 @@ export async function publicApiMaybe<T>(path: string): Promise<T | undefined> {
 }
 
 export type PublicMe = { tier: string; email?: string };
+
+/** Independent locator reads share a 30-second concurrent upstream budget. */
+export async function publicLocator(near?: string) {
+  const [sites, me] = await Promise.all([
+    publicApiMaybe<PublicSite[]>(near ? `/public/sites?near=${encodeURIComponent(near)}` : '/public/sites'),
+    publicApi<PublicMe>('/me', { tier: 'guest' }),
+  ]);
+  return { sites, me };
+}
 
 export type PublicOrg = { name: string; slug: string; brandColor?: string | null };
 
