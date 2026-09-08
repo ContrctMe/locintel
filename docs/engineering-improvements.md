@@ -4,8 +4,8 @@ Baseline: LocIntel `main` / `origin/main` at `110429e`. Work happens on
 `codex/engineering-improvements` in both repositories. No deployment is part of
 this change. Upstream commits are `e74e2c5` (shared imports/lookups/pickers),
 `0262df5` (fork maintenance and test concurrency), `00d1562` (picker retry), and
-`5b07779` (idempotent full-SHA sync). Upstream publication is pending explicit
-authorization; these commits are retained in the local template feature branch.
+`5b07779` (idempotent full-SHA sync). These commits are published on the upstream
+`codex/engineering-improvements` branch.
 Normalized snapshot `480777f` records source
 `5b0777993e62d2c09706f5ad8a790bdaea5c2ee2`; its final merge required no code changes.
 
@@ -39,8 +39,7 @@ coordinates merely because another feature references its ID.
 Canonical upstream: `https://github.com/Contrct-Owner/multi-tenant-site-saas.git`.
 Local-checkout remotes are not a portable source of truth. The normalized
 snapshot records its complete source commit. Until the upstream improvement
-branch is published and merged, retain the local source commits. After publication,
-use `template/codex/engineering-improvements` as the sync ref;
+branch is merged, use `template/codex/engineering-improvements` as the sync ref;
 `template/main` may not contain the new baseline and must not overwrite it.
 
 Intentional product differences to review during every sync:
