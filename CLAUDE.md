@@ -17,7 +17,7 @@ subtree it belongs to). Every request passes **three gates**, in order:
 
 ## Architectural decisions
 
-All 51 settled decisions live in `docs/decisions/` (one ADR each, indexed in its
+Settled decisions live in `docs/decisions/` (one ADR each, indexed in its
 README). **Consult them before proposing structural changes.** Decisions marked
 `pinned: true` are expensive to reverse once data exists — do not contradict them
 without the maintainer explicitly reopening the decision.
@@ -71,7 +71,7 @@ don't restate them here.
   transactions. `SessionStateTests` refuses the session-scoped shapes.
 - **Never put tenant/site/actor on metric labels** — traces and logs only, as
   baggage (ADR 33).
-- **Frontend imports UI only from `@/ui`**, never `components/ui/*` directly
+- **Frontend imports UI only from `@locintel/ui`**, never `components/ui/*` directly
   (ADR 20). Capability keys come from codegen, never hand-typed strings (ADR 16).
 - **Guests are principals.** No anonymous code paths — the principal pipeline
   builds a tenant-scoped Guest from the request host before authn (ADR 07).
@@ -153,7 +153,7 @@ don't restate them here.
   then `tools/coverage-report.sh` - by tier (job) and module (assembly).
 - Browser + a11y suite (Docker, Playwright; the same script CI runs):
   `tools/e2e-stack.sh` boots Postgres, migrate + api with the local provider,
-  the console dev server, then Playwright with an axe pass per page.
+  the built console and public SSR servers, then Playwright with an axe pass per page.
 - Fleet suite (Docker; N api + N worker behind a proxy on one host):
   `tools/replica-stack.sh 2` runs `tests/LocIntel.FleetTests`;
   `tools/replica-stack.sh 4 --bench` runs the load baseline through the proxy.

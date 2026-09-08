@@ -16,8 +16,7 @@ namespace LocIntel.Modules.Reporting.Migrations
                 table: "artifacts",
                 type: "boolean",
                 nullable: false,
-                defaultValue: false
-            );
+                defaultValue: false);
         }
 
         /// <inheritdoc />
@@ -26,8 +25,7 @@ namespace LocIntel.Modules.Reporting.Migrations
             migrationBuilder.DropColumn(
                 name: "file_published",
                 schema: "reporting",
-                table: "artifacts"
-            );
+                table: "artifacts");
         }
     }
 }

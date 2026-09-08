@@ -51,9 +51,18 @@ public static class SiteListEndpoints
         int? zoom,
         int? limit,
         string? after,
+        string? ids,
         CancellationToken ct
     )
     {
+        SiteId[]? requestedIds = null;
+        if (ids is not null)
+        {
+            var parts = ids.Split(',');
+            if (parts.Length > 200 || parts.Any(part => !Guid.TryParse(part, out _)))
+                return ApiErrors.BadRequest("ids must contain between 1 and 200 UUIDs");
+            requestedIds = parts.Select(part => new SiteId(Guid.Parse(part))).Distinct().ToArray();
+        }
         // a comma-separated set of lifecycle statuses (the console's filter bar)
         SiteStatus[]? statuses = null;
         if (!string.IsNullOrWhiteSpace(status))
@@ -86,6 +95,8 @@ public static class SiteListEndpoints
 
         var scope = await scopes.ScopeForAsync(accessor.Current, Capabilities.SitesRead, ct);
         var query = db.Sites.InScope(scope);
+        if (requestedIds is not null)
+            query = query.Where(s => requestedIds.Contains(s.Id));
         if (under is { } nodeId)
         {
             var node = await db.HierarchyNodes.FirstOrDefaultAsync(n => n.Id == nodeId, ct);

@@ -35,7 +35,13 @@ git rev-parse --verify -q template-renamed >/dev/null \
 [ -z "$(git status --porcelain)" ] || { echo "working tree must be clean" >&2; exit 1; }
 
 git fetch -q template
+upstream_full=$(git rev-parse "$ref")
 upstream=$(git rev-parse --short "$ref")
+previous=$(git log -1 --format='%(trailers:key=Template-Commit,valueonly)' template-renamed)
+if [ -n "$previous" ] && ! git merge-base --is-ancestor "$previous" "$upstream_full"; then
+  echo "refusing a non-descendant upstream snapshot; $ref does not include the previously synced $previous" >&2
+  exit 1
+fi
 last=$(git log -1 --format=%s template-renamed | grep -oE '[0-9a-f]{7,}' | head -1 || true)
 if [ "$last" = "$upstream" ]; then
   echo "template-renamed already holds $upstream; nothing to sync"
@@ -61,7 +67,8 @@ git worktree add -q --detach "$wt" "$ref"
   git add -A
   tree=$(git write-tree)
   commit=$(git commit-tree "$tree" -p "$parent" \
-    -m "template $ref $upstream, renamed to $product (init.py + csharpier)")
+    -m "template $ref $upstream, renamed to $product (init.py + csharpier)" \
+    -m "Template-Commit: $upstream_full")
   git branch -f template-renamed "$commit"
 )
 echo "template-renamed -> $(git rev-parse --short template-renamed) (upstream $upstream)"

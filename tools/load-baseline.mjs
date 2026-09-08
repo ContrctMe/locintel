@@ -7,7 +7,7 @@
 //
 const [base, token, secondsArg, concurrencyArg] = process.argv.slice(2);
 if (!base || !token) {
-  console.error('usage: node tools/load-baseline.mjs <baseUrl> <premise_key> [seconds] [concurrency]');
+  console.error('usage: node tools/load-baseline.mjs <baseUrl> <locintel_key> [seconds] [concurrency]');
   process.exit(1);
 }
 const seconds = Number(secondsArg ?? 10);
@@ -27,12 +27,12 @@ const targets = [
 const headers = { authorization: `Bearer ${token}` };
 
 // Optional: a command that runs one SQL statement against the database the
-// api uses (e.g. `docker exec fleet-pg psql -U postgres -d premise -tA -c`).
+// api uses (e.g. `docker exec fleet-pg psql -U postgres -d locintel -tA -c`).
 // With pg_stat_statements loaded, each target then reports how many
 // statements the database ran per request, split into the request's own
 // work and the background chatter (Wolverine's envelope polling).
 import { execFileSync } from 'node:child_process';
-const statsCmd = process.env.PREMISE_PG_STATS_CMD;
+const statsCmd = process.env.LOCINTEL_PG_STATS_CMD;
 const sql = (statement) =>
   statsCmd ? execFileSync('sh', ['-c', `${statsCmd} "${statement.replaceAll('"', '\\"')}"`], { encoding: 'utf8' }).trim() : '';
 const statsReset = () => statsCmd && sql('SELECT pg_stat_statements_reset()');
@@ -91,7 +91,7 @@ async function measure(name, path) {
   console.log(
     `${name.padEnd(32)} rps=${(latencies.length / elapsed).toFixed(0).padStart(6)}  p50=${pct(50)}ms  p95=${pct(95)}ms  p99=${pct(99)}ms  errors=${errors}${perRequest}`,
   );
-  if (stats && process.env.PREMISE_PG_STATS_TOP) for (const line of stats.top) console.log(`    ${line}`);
+  if (stats && process.env.LOCINTEL_PG_STATS_TOP) for (const line of stats.top) console.log(`    ${line}`);
 }
 
 // resolve one site id for the detail target

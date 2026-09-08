@@ -1,6 +1,6 @@
 {
-  "name": "Premise Console",
-  "short_name": "Premise",
+  "name": "LocIntel Console",
+  "short_name": "LocIntel",
   "description": "Manage your organization's locations, people, and hours.",
   "start_url": "/",
   "display": "standalone",

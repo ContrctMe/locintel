@@ -99,6 +99,12 @@ public sealed record NodeSnapshot(Guid Id, string NamePath);
 public interface IStoredFileLookup
 {
     Task<StoredFileInfo?> GetAsync(Guid fileId, CancellationToken ct = default);
+
+    /// <summary>Tenant-visible, non-derived files keyed by id; missing ids are omitted.</summary>
+    Task<IReadOnlyDictionary<Guid, StoredFileInfo>> GetManyAsync(
+        IReadOnlyCollection<Guid> fileIds,
+        CancellationToken ct = default
+    );
 }
 
 public sealed record StoredFileInfo(

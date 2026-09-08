@@ -1,4 +1,5 @@
 import {
+  Button,
   Combobox,
   ComboboxContent,
   ComboboxEmpty,
@@ -49,6 +50,7 @@ export function SitePicker({
   const items: PickedSite[] = results.data?.items.map((s) => ({ id: s.id, name: s.name, city: s.city })) ?? [];
   // the server already filtered; keep every item the list holds
   return (
+    <div className="space-y-2">
     <Combobox<PickedSite>
       items={items}
       value={value}
@@ -60,7 +62,7 @@ export function SitePicker({
     >
       <ComboboxInput id={id} placeholder={placeholder} aria-label={ariaLabel} showClear={value !== null} />
       <ComboboxContent>
-        <ComboboxEmpty>{results.isPending ? 'Searching…' : 'No sites match.'}</ComboboxEmpty>
+        <ComboboxEmpty>{results.isPending ? 'Searching…' : results.isError ? 'Search unavailable.' : 'No sites match.'}</ComboboxEmpty>
         <ComboboxList>
           {(site: PickedSite) => (
             <ComboboxItem key={site.id} value={site}>
@@ -73,5 +75,7 @@ export function SitePicker({
         </ComboboxList>
       </ComboboxContent>
     </Combobox>
+    {results.isError && <p role="alert">Could not search sites. <Button type="button" variant="outline" onClick={() => void results.refetch()}>Retry site search</Button></p>}
+    </div>
   );
 }

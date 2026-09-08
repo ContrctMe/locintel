@@ -767,6 +767,13 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "ids",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {

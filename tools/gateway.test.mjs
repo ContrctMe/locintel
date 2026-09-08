@@ -51,9 +51,9 @@ async function request(index, token, path = '/api/sites?limit=1', extra = {}) {
   const start = performance.now();
   const response = await fetch(gateways[index % gateways.length] + path, { redirect: 'manual', signal: AbortSignal.timeout(5000), headers: { authorization: `Bearer ${token}`, ...extra } });
   const body = await response.text();
-  for (const header of ['x-premise-gateway-key', 'x-premise-fairness-partition', 'x-premise-client-ip'])
+  for (const header of ['x-locintel-gateway-key', 'x-locintel-fairness-partition', 'x-locintel-client-ip'])
     assert.equal(response.headers.get(header), null, `private header exposed: ${header}`);
-  return { status: response.status, retry: response.headers.get('retry-after'), instance: response.headers.get('x-premise-instance'), latencyMs: performance.now() - start, body };
+  return { status: response.status, retry: response.headers.get('retry-after'), instance: response.headers.get('x-locintel-instance'), latencyMs: performance.now() - start, body };
 }
 async function until(check, description, timeoutMs = 10000) {
   const deadline = performance.now() + timeoutMs;
@@ -61,7 +61,7 @@ async function until(check, description, timeoutMs = 10000) {
   throw new Error(`Timed out: ${description}`);
 }
 function policy(noisyOrg, quietOrg, noisyMinute, quietMinute, sustainedUnit = 'minute') {
-  return { domain: 'premise', descriptors: ['burst', 'sustained'].map(window => ({ key: 'window', value: window,
+  return { domain: 'locintel', descriptors: ['burst', 'sustained'].map(window => ({ key: 'window', value: window,
     descriptors: [
       { key: 'partition', value: `org:${noisyOrg}`, rate_limit: { unit: window === 'burst' ? 'second' : sustainedUnit, requests_per_unit: window === 'burst' ? 1000 : noisyMinute } },
       { key: 'partition', value: `org:${quietOrg}`, rate_limit: { unit: window === 'burst' ? 'second' : sustainedUnit, requests_per_unit: window === 'burst' ? 1000 : quietMinute } },
@@ -120,7 +120,7 @@ try {
   writeFileSync(policyPath, JSON.stringify(policy(noisyOrg, quietOrg, 5, 1), null, 2));
   await until(async () => (await request(0, quietKey.secret)).status === 429, 'hot policy update');
   assert.equal((await request(1, fixture.token)).status, 429, 'changing a limit must not reset the spent window');
-  assert.equal((await request(0, fixture.token, '/api/sites?limit=1', { 'x-premise-fairness-partition': `org:${quietOrg}`, 'x-premise-gateway-key': 'forged' })).status, 429);
+  assert.equal((await request(0, fixture.token, '/api/sites?limit=1', { 'x-locintel-fairness-partition': `org:${quietOrg}`, 'x-locintel-gateway-key': 'forged' })).status, 429);
   summary.controls.push({ name: 'hot policy update preserves counters; spoofed partition ignored', passed: true });
 
   for (const path of ['/_gateway/identity', '/_GATEWAY/identity', '/_GaTeWaY/identity', '//_gateway/identity', '/%5fgateway/identity', '/_gateway%2fidentity']) {

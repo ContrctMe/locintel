@@ -20,7 +20,7 @@ it.
 - **Two-axis tenancy, three gates.** Every request passes entitlement (402,
   upsell) → grant (403) → scope (never fails — it *filters*). Row-level
   security enforces org isolation at the database, with the tenant GUC set on
-  every connection open by construction.
+  each transaction by construction (including implicit read transactions).
 - **Principals all the way down**: users (WorkOS AuthKit behind an
   OIDC-generic seam), magic-link contacts, API keys as service principals,
   and tenant-scoped guests — no anonymous code paths.
@@ -125,3 +125,5 @@ tools/                     init.py, new-module.py, run-integration-shard.sh
 ```
 
 Security: [assessment](docs/security-assessment.md) and [remediation ledger](docs/security-remediation.md), including deployment acceptance and verification evidence.
+
+Shared import limits, resource lookup behavior, and reproducible fork checks: [Engineering maintenance](docs/engineering-maintenance.md).
