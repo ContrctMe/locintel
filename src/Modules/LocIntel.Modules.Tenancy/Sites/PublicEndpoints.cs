@@ -1,5 +1,7 @@
+using LocIntel.Contracts;
 using LocIntel.Modules.Tenancy.Data;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Spatial;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -34,6 +36,9 @@ public sealed record PublicOpenWindow(
     DateOnly LocalDate
 );
 
+/// <summary>A page of the locator: the sites and the cursor for the next page (null on a nearest-first page and at the end).</summary>
+public sealed record PublicSiteListResponse(IReadOnlyList<PublicSiteSummary> Items, string? Next);
+
 public sealed record PublicSiteAttribute(
     string Key,
     string Label,
@@ -63,7 +68,10 @@ public static class PublicSiteEndpoints
     /// brand.color org setting finally has a reader). A shell enhancer: 404
     /// when the host resolves to nothing, and the page renders unbranded.
     /// </summary>
-    [Transactional(typeof(TenancyDbContext))]
+    [Transactional(
+        typeof(TenancyDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/public/org")]
     [ProducesResponseType(typeof(PublicOrgResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> OrgIdentity(
@@ -97,78 +105,205 @@ public static class PublicSiteEndpoints
         return Results.Ok(new PublicOrgResponse(organization.Name, organization.Slug, brandColor));
     }
 
+    /// <summary>The nearest-first list stops at these radii (km), widening until a page is full.</summary>
+    private static readonly double[] RingsKm = [2, 10, 50, 250, 1000];
+
+    /// <summary>The most candidates one ring reads; a denser ring than this is the city centre, and the first ring already holds a page.</summary>
+    private const int RingCap = 2_000;
+
+    private const int DefaultLimit = 50;
+    private const int MaxLimit = 200;
+
     /// <summary>
-    /// The locator list (ADR 43): geo-aware when asked. ?near=lat,lng sorts
-    /// by great-circle distance and returns distanceKm; sites without
-    /// coordinates sort last, alphabetical. Distance math runs in memory on
-    /// purpose - the public fleet list is unpaged and modest by design, and
-    /// haversine-in-SQL buys translation risk for nothing at this size.
+    /// The locator list (ADR 43), paged (code review, 2026-09): alphabetical
+    /// pages ride the (name, id) keyset like the console's list; ?near=lat,lng
+    /// returns the nearest page instead, found by widening rings of the
+    /// spatial cell key (ADR 51) so a million-site org never sorts itself in
+    /// memory, then sites without coordinates, alphabetical, so a fleet that
+    /// is only partly mapped still lists every location. Nearest pages carry
+    /// no cursor: the point of "near" is the closest ones.
     /// </summary>
-    [Transactional(typeof(TenancyDbContext))]
+    [Transactional(
+        typeof(TenancyDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/public/sites")]
-    [ProducesResponseType(typeof(List<PublicSiteSummary>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PublicSiteListResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> List(
         TenancyDbContext db,
         IPrincipalAccessor accessor,
         IScopeResolver scopes,
         TimeProvider time,
         string? near,
+        int? limit,
+        string? after,
         CancellationToken ct
     )
     {
         if (!await scopes.CanAsync(accessor.Current, Capabilities.PublicRead, ct))
-            return Results.Ok(Array.Empty<object>()); // unknown host: empty, never an error
+            return Results.Ok(new PublicSiteListResponse([], null)); // unknown host: empty, never an error
+        var take = Math.Clamp(limit ?? DefaultLimit, 1, MaxLimit);
         var now = time.GetUtcNow();
-        var sites = await db
-            .Sites.Where(s => s.Status == SiteStatus.Open || s.Status == SiteStatus.ComingSoon)
-            .OrderBy(s => s.Name)
-            .Select(s => new
-            {
-                id = s.Id.Value,
-                s.Name,
-                s.City,
-                s.TimeZone,
-                s.Latitude,
-                s.Longitude,
-                status = s.Status.ToString(),
-                openNow = db.SiteOpenWindows.Any(w =>
-                    w.SiteId == s.Id && w.StartsAtUtc <= now && now < w.EndsAtUtc
-                ),
-            })
-            .ToListAsync(ct);
+        var listed = db.Sites.Where(s =>
+            s.Status == SiteStatus.Open || s.Status == SiteStatus.ComingSoon
+        );
 
-        (double Lat, double Lng)? origin = null;
-        if (near?.Split(',') is [var latRaw, var lngRaw])
+        if (Origin(near) is { } from)
+            return Results.Ok(
+                new PublicSiteListResponse(
+                    await NearestAsync(db, listed, from, take, now, ct),
+                    null
+                )
+            );
+
+        SiteCursor? cursor = null;
+        if (after is not null)
         {
-            var style = System.Globalization.CultureInfo.InvariantCulture;
-            if (
-                double.TryParse(latRaw, style, out var lat)
-                && double.TryParse(lngRaw, style, out var lng)
-                && Math.Abs(lat) <= 90
-                && Math.Abs(lng) <= 180
-            )
-                origin = (lat, lng);
+            if (!SiteCursor.TryParse(after, out var parsed))
+                return ApiErrors.BadRequest("after is not a cursor this list issued");
+            cursor = parsed;
         }
-
-        var shaped = sites
-            .Select(s => new PublicSiteSummary(
-                s.id,
-                s.Name,
-                s.City,
-                s.TimeZone,
-                s.Latitude,
-                s.Longitude,
-                s.status,
-                s.openNow,
-                origin is { } from && s.Latitude is { } slat && s.Longitude is { } slng
-                    ? Math.Round(HaversineKm(from.Lat, from.Lng, slat, slng), 1)
-                    : null
-            ))
-            .OrderBy(s => s.DistanceKm ?? double.MaxValue)
-            .ThenBy(s => s.Name)
-            .ToList();
-        return Results.Ok(shaped);
+        var page = listed;
+        if (cursor is { Name: var afterName, Id: var afterId })
+            page = page.Where(s =>
+                s.Name.CompareTo(afterName) >= 0
+                && (s.Name.CompareTo(afterName) > 0 || s.Id.CompareTo(afterId) > 0)
+            );
+        var sites = await page.OrderBy(s => s.Name)
+            .ThenBy(s => s.Id)
+            .Take(take + 1)
+            .ToListAsync(ct);
+        var more = sites.Count > take;
+        if (more)
+            sites.RemoveAt(take);
+        var open = await OpenNowAsync(db, sites, now, ct);
+        return Results.Ok(
+            new PublicSiteListResponse(
+                sites.Select(s => Shape(s, open.Contains(s.Id), null)).ToList(),
+                more ? SiteCursor.Encode(sites[^1]) : null
+            )
+        );
     }
+
+    private static (double Lat, double Lng)? Origin(string? near)
+    {
+        if (near?.Split(',') is not [var latRaw, var lngRaw])
+            return null;
+        var style = System.Globalization.CultureInfo.InvariantCulture;
+        return
+            double.TryParse(latRaw, style, out var lat)
+            && double.TryParse(lngRaw, style, out var lng)
+            && Math.Abs(lat) <= 90
+            && Math.Abs(lng) <= 180
+            ? (lat, lng)
+            : null;
+    }
+
+    private static async Task<List<PublicSiteSummary>> NearestAsync(
+        TenancyDbContext db,
+        IQueryable<Site> listed,
+        (double Lat, double Lng) from,
+        int take,
+        DateTimeOffset now,
+        CancellationToken ct
+    )
+    {
+        List<Site> candidates = [];
+        foreach (var radius in RingsKm)
+        {
+            candidates = await listed
+                .Where(SpatialPredicates.InViewport<Site>(BoxAround(from, radius)))
+                .OrderBy(s => s.Cell) // the (org_id, cell) index's own order: a stable cap, no sort
+                .Take(RingCap)
+                .ToListAsync(ct);
+            if (candidates.Count >= take)
+                break;
+        }
+        var nearest = candidates
+            .Select(s =>
+                (
+                    site: s,
+                    km: HaversineKm(from.Lat, from.Lng, s.Latitude!.Value, s.Longitude!.Value)
+                )
+            )
+            .OrderBy(x => x.km)
+            .ThenBy(x => x.site.Name)
+            .Take(take)
+            .ToList();
+        var sites = nearest.Select(x => x.site).ToList();
+        // a fleet that is only partly mapped still lists every location
+        if (sites.Count < take)
+            sites.AddRange(
+                await listed
+                    .Where(s => s.Cell == null)
+                    .OrderBy(s => s.Name)
+                    .ThenBy(s => s.Id)
+                    .Take(take - sites.Count)
+                    .ToListAsync(ct)
+            );
+        var open = await OpenNowAsync(db, sites, now, ct);
+        var distances = nearest.ToDictionary(x => x.site.Id, x => Math.Round(x.km, 1));
+        return sites
+            .Select(s =>
+                Shape(s, open.Contains(s.Id), distances.TryGetValue(s.Id, out var km) ? km : null)
+            )
+            .ToList();
+    }
+
+    /// <summary>A box <paramref name="km"/> around the origin, clamped to the Mercator world and wrapped at the antimeridian.</summary>
+    private static BoundingBox BoxAround((double Lat, double Lng) origin, double km)
+    {
+        const double kmPerDegree = 111.32;
+        var dLat = km / kmPerDegree;
+        var south = Math.Max(-SpatialCells.MaxLatitude, origin.Lat - dLat);
+        var north = Math.Min(SpatialCells.MaxLatitude, origin.Lat + dLat);
+        var cos = Math.Cos(origin.Lat * Math.PI / 180);
+        var dLng = cos < 0.01 ? 180 : km / (kmPerDegree * cos);
+        if (dLng >= 180)
+            return new BoundingBox(-180, south, 180, north);
+        var west = origin.Lng - dLng;
+        var east = origin.Lng + dLng;
+        if (west < -180)
+            west += 360;
+        if (east > 180)
+            east -= 360;
+        return new BoundingBox(west, south, east, north);
+    }
+
+    /// <summary>One read for the page's "open now" flags: the windows that contain this instant for these sites.</summary>
+    private static async Task<HashSet<SiteId>> OpenNowAsync(
+        TenancyDbContext db,
+        IReadOnlyList<Site> sites,
+        DateTimeOffset now,
+        CancellationToken ct
+    )
+    {
+        if (sites.Count == 0)
+            return [];
+        var ids = sites.Select(s => s.Id).ToArray();
+        return (
+            await db
+                .SiteOpenWindows.Where(w =>
+                    ids.Contains(w.SiteId) && w.StartsAtUtc <= now && now < w.EndsAtUtc
+                )
+                .Select(w => w.SiteId)
+                .Distinct()
+                .ToListAsync(ct)
+        ).ToHashSet();
+    }
+
+    private static PublicSiteSummary Shape(Site s, bool openNow, double? distanceKm) =>
+        new(
+            s.Id.Value,
+            s.Name,
+            s.City,
+            s.TimeZone,
+            s.Latitude,
+            s.Longitude,
+            s.Status.ToString(),
+            openNow,
+            distanceKm
+        );
 
     private static double HaversineKm(double lat1, double lng1, double lat2, double lng2)
     {
@@ -180,7 +315,10 @@ public static class PublicSiteEndpoints
         return 2 * earthRadiusKm * Math.Asin(Math.Sqrt(a));
     }
 
-    [Transactional(typeof(TenancyDbContext))]
+    [Transactional(
+        typeof(TenancyDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/public/sites/{id}")]
     [ProducesResponseType(typeof(PublicSiteDetailResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> Get(

@@ -60,10 +60,8 @@ public class TenantIsolationTests(ApiFixture fixture) : IClassFixture<ApiFixture
     [Fact]
     public async Task Guest_with_no_org_sees_no_rows_fail_closed()
     {
-        var settings = await fixture
-            .GuestClient()
-            .GetFromJsonAsync<List<SettingDto>>("/api/settings");
-        Assert.Empty(settings!);
+        var response = await fixture.GuestClient().GetAsync("/api/settings");
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
@@ -143,7 +141,15 @@ public class TenantIsolationTests(ApiFixture fixture) : IClassFixture<ApiFixture
         TenancyDbContext Make(TenantContext tenant) =>
             new(
                 new DbContextOptionsBuilder<TenancyDbContext>()
-                    .UseNpgsql(cs)
+                    .UseNpgsql(
+                        cs,
+                        n =>
+                            LocIntel.Platform.Data.ModulePersistence.Configure(
+                                n,
+                                "tenancy",
+                                typeof(TenancyDbContext)
+                            )
+                    )
                     .AddInterceptors(LocIntel.Platform.Data.TenantSessionInterceptor.Instance)
                     .Options,
                 tenant

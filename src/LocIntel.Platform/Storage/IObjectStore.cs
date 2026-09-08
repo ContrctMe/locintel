@@ -10,6 +10,9 @@ namespace LocIntel.Platform.Storage;
 /// </summary>
 public interface IObjectStore
 {
+    /// <summary>False uses the authenticated bounded upload relay instead of an unbounded provider ticket.</summary>
+    bool SupportsBoundedUpload => false;
+
     /// <summary>
     /// Short-lived create-only upload instruction. Clients must send every ticket header.
     /// maxBytes is a hint where the provider supports it; completion MUST verify stored length.
@@ -27,6 +30,8 @@ public interface IObjectStore
     /// <summary>Stored byte length, or null only when absent; provider failures must propagate.</summary>
     ValueTask<long?> GetLengthAsync(string key, CancellationToken ct = default);
     ValueTask<Stream> OpenReadAsync(string key, CancellationToken ct = default);
+
+    /// <summary>Writes bytes without disposing the caller-owned content stream.</summary>
     ValueTask WriteAsync(
         string key,
         Stream content,

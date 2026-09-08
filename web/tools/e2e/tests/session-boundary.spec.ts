@@ -1,5 +1,13 @@
 import { expect, test, type Page } from '@playwright/test';
-import { ALICE, nav, OPERATOR, signIn } from './support';
+
+// the node picker is a Cascader: open it, take the first row (the root, a
+// committable branch - a site may sit on any node)
+async function pickRootNode(page: Page) {
+  await page.getByLabel('Hierarchy node').click();
+  // the listbox is the cascader's; the time-zone select's <option>s are not it
+  await page.getByRole('listbox').getByRole('option').first().click();
+}
+import { ALICE, nav, OPERATOR, signIn, signOut } from './support';
 
 async function request(page: Page, path: string, body?: unknown) {
   return page.evaluate(async ({ path, body }) => {
@@ -13,9 +21,15 @@ async function request(page: Page, path: string, body?: unknown) {
   }, { path, body });
 }
 
+// the org switcher sits in the top bar on every page
+const orgSwitcher = (page: Page) => page.getByRole('combobox', { name: 'Active organization' });
+// the page body: what sits under the top bar inside the main landmark (the
+// top bar names the org too, so a node named after it must be found below)
+const body = (page: Page) => page.getByRole('main').locator('header ~ div');
+
 async function switchTo(page: Page, name: string) {
-  await page.locator('aside').getByRole('combobox', { name: 'Active organization' }).selectOption({ label: name });
-  await expect(page.locator('aside').getByText(name, { exact: true }).first()).toBeVisible();
+  await orgSwitcher(page).selectOption({ label: name });
+  await expect(orgSwitcher(page).locator('option:checked')).toHaveText(name);
 }
 
 async function twoOrganizations(page: Page) {
@@ -26,9 +40,11 @@ async function twoOrganizations(page: Page) {
   await page.getByLabel('Organization name').fill(a);
   await page.getByRole('button', { name: 'Create organization' }).click();
   await expect(nav(page).getByRole('link', { name: 'Sites', exact: true })).toBeVisible();
+  // an org is born with a hierarchy (seeded through the outbox): wait for its root
   const seed = async (name: string) => {
-    const hierarchy = await request(page, '/api/hierarchy', { name: `${name} root`, levels: ['Region', 'Site'] });
-    await request(page, '/api/sites', { name, nodeId: hierarchy.rootNodeId, timeZone: 'Etc/UTC' });
+    await expect.poll(() => request(page, '/api/hierarchy').then((h) => h.nodes.length, () => 0)).toBeGreaterThan(0);
+    const hierarchy = await request(page, '/api/hierarchy');
+    await request(page, '/api/sites', { name, nodeId: hierarchy.nodes[0].id, timeZone: 'Etc/UTC' });
   };
   await seed('A-only site');
   await request(page, '/api/orgs', { name: b, slug: `b-${stamp}` });
@@ -68,19 +84,27 @@ test('tenant switch clears cached data and form drafts before a delayed new read
     await expect(page.getByRole('link', { name: org === a ? 'A-only site' : 'B-only site' })).toBeVisible();
     await expect(page.getByRole('link', { name: org === a ? 'B-only site' : 'A-only site' })).toHaveCount(0);
   }
+  // on a phone the rail collapses to a tab bar; the org switcher lives under More
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole('button', { name: 'Open navigation' }).click();
+  await page.getByRole('button', { name: 'More', exact: true }).click();
   await expect(page.getByRole('combobox', { name: 'Active organization' })).toBeVisible();
 });
 
 test('a late previous-tenant response cannot repopulate the new cache', async ({ page }) => {
-  const { b } = await twoOrganizations(page);
+  // an org's root node carries the org's name
+  const { a, b } = await twoOrganizations(page);
   let release!: () => void;
   let captured!: () => void;
   let fulfilled!: () => void;
   const held = new Promise<void>((resolve) => { release = resolve; });
   const started = new Promise<void>((resolve) => { captured = resolve; });
   const finished = new Promise<void>((resolve) => { fulfilled = resolve; });
+  await nav(page).getByRole('link', { name: 'Hierarchy', exact: true }).click();
+  await expect(body(page).getByText(a, { exact: true })).toBeVisible();
+  // the tree read seconds ago is still fresh (30s default, 5min in the shell), so
+  // a page mount alone sends nothing: forget the tab cache and reload to put a
+  // previous-tenant read in flight
+  await page.evaluate(() => sessionStorage.clear());
   await page.route('**/api/hierarchy', async (route) => {
     const response = await route.fetch();
     captured();
@@ -88,14 +112,17 @@ test('a late previous-tenant response cannot repopulate the new cache', async ({
     await route.fulfill({ response });
     fulfilled();
   }, { times: 1 });
-  await nav(page).getByRole('link', { name: 'Hierarchy', exact: true }).click();
+  await page.reload();
   await started;
   await switchTo(page, b);
-  await expect(page.getByText('B-only site root', { exact: true })).toBeVisible();
+  // the shell's Scope panel also names hierarchy nodes: assert on the page body
+  await expect(body(page).getByText(b, { exact: true })).toBeVisible();
   release();
   await finished;
-  await expect(page.getByText('B-only site root', { exact: true })).toBeVisible();
-  await expect(page.getByText('A-only site root', { exact: true })).toHaveCount(0);
+  await expect(body(page).getByText(b, { exact: true })).toBeVisible();
+  // ...but a stale tenant's name must appear NOWHERE, scope panel included
+  // (the org switcher still lists it as a choice; a rendered node or title may not)
+  await expect(page.getByText(a, { exact: true }).and(page.locator(':not(option)'))).toHaveCount(0);
   await nav(page).getByRole('link', { name: 'Sites', exact: true }).click();
   await expect(page.getByRole('link', { name: 'B-only site' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'A-only site' })).toHaveCount(0);
@@ -129,11 +156,11 @@ test('an in-flight tenant mutation finishes before switching the cookie', async 
   });
   await page.getByRole('button', { name: 'New site' }).click();
   await page.getByLabel('Name', { exact: true }).fill('Pending A write');
-  await page.getByLabel('Hierarchy node').selectOption({ index: 1 });
+  await pickRootNode(page);
   await page.getByRole('button', { name: 'Create site', exact: true }).click();
   await started;
   await page.keyboard.press('Escape');
-  await page.locator('aside').getByRole('combobox').selectOption({ label: b });
+  await orgSwitcher(page).selectOption({ label: b });
   await expect(page.getByRole('status')).toContainText('Changing session');
   expect(switches).toBe(0);
   release();
@@ -172,11 +199,11 @@ test('a stalled write releases a session transition with an outcome warning and 
   try {
     await page.getByRole('button', { name: 'New site' }).click();
     await page.getByLabel('Name', { exact: true }).fill('Uncertain A write');
-    await page.getByLabel('Hierarchy node').selectOption({ index: 1 });
+    await pickRootNode(page);
     await page.getByRole('button', { name: 'Create site', exact: true }).click();
     await saved;
     await page.keyboard.press('Escape');
-    await page.locator('aside').getByRole('combobox').selectOption({ label: b });
+    await orgSwitcher(page).selectOption({ label: b });
     await expect(page.getByRole('status')).toContainText('Changing session');
     await page.evaluate(() => window.dispatchEvent(new Event('test:expire-network')));
     await expect(page.getByRole('link', { name: 'B-only site' })).toBeVisible();
@@ -229,7 +256,7 @@ test('session changes abort the previous tenant network read', async ({ page }) 
     const firstRead = () => page.evaluate(() =>
       (window as unknown as { cancellationProbe: { aborted: boolean; settled?: string }[] }).cancellationProbe[0]);
     expect(await firstRead()).toEqual({ aborted: false });
-    await page.locator('aside').getByRole('combobox').selectOption({ label: b });
+    await orgSwitcher(page).selectOption({ label: b });
     // Assert native fetch cancellation, not WebKit's interception event timing.
     await expect.poll(firstRead).toEqual({ aborted: true, settled: 'AbortError' });
     await expect(page.getByRole('link', { name: 'B-only site' })).toBeVisible();
@@ -240,7 +267,13 @@ test('session changes abort the previous tenant network read', async ({ page }) 
 });
 
 test('missing session headers block the console and allow recovery after repair', async ({ page }) => {
-  await signIn(page, ALICE);
+  // Its own identity and org: by this point in the run the seeded owner's
+  // per-minute budget is spent, and this test is about headers, not budgets.
+  const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  await page.goto(`/auth/login?hint=headers-${stamp}@example.test`);
+  await page.getByLabel('Organization name').fill(`Headers ${stamp}`);
+  await page.getByRole('button', { name: 'Create organization' }).click();
+  await expect(nav(page).getByRole('link', { name: 'Dashboard' })).toBeVisible();
   await page.route('**/me', async (route) => {
     const response = await route.fetch();
     const headers = response.headers();
@@ -271,7 +304,7 @@ test('another tab discards tenant data and drafts after a shared-cookie switch',
   await other.getByRole('button', { name: 'New site' }).click();
   await expect(other.getByLabel('Name', { exact: true })).toHaveValue('');
   await other.keyboard.press('Escape');
-  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  await signOut(page);
   await expect(other.getByRole('heading', { name: 'LocIntel Console' })).toBeVisible();
   await expect(other.getByRole('link', { name: 'B-only site' })).toHaveCount(0);
 });
@@ -282,7 +315,7 @@ test('a stale-tab role draft cannot be written under a changed session cookie', 
   await other.goto('/roles');
   await other.getByRole('button', { name: 'New role', exact: true }).click();
   await other.getByRole('dialog').getByLabel('Name', { exact: true }).fill('Private A role');
-  await other.getByRole('dialog').getByRole('checkbox', { name: '*:* (everything)', exact: true }).check();
+  await other.getByRole('dialog').getByRole('checkbox', { name: 'Everything', exact: true }).check();
   const session = await request(page, '/me');
   const target = session.organizations.find((org: { name: string }) => org.name === b);
   // Model a cookie change outside this tab's notification path (another app or
@@ -309,7 +342,7 @@ test('impersonation and logout discard the previous session tree', async ({ page
   await page.getByRole('button', { name: 'Stop impersonating' }).click();
   await expect(nav(page).getByRole('link', { name: 'Operator', exact: true })).toBeVisible();
   await expect(page.getByText('Support session:', { exact: true })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  await signOut(page);
   await expect(page.getByRole('heading', { name: 'LocIntel Console' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Operator' })).toHaveCount(0);
 });
@@ -348,6 +381,8 @@ test('a fresh login in another tab refreshes the previous identity', async ({ pa
   const other = await context.newPage();
   await signIn(other, OPERATOR);
   await expect(nav(page).getByRole('link', { name: 'Operator', exact: true })).toBeVisible();
-  await expect(page.getByRole('link', { name: first, exact: true })).toHaveCount(0);
-  await expect(page.getByRole('link', { name: OPERATOR, exact: true })).toBeVisible();
+  // who the tab is now: the account menu names the identity
+  await page.getByRole('button', { name: 'Account menu' }).click();
+  await expect(page.getByRole('menu')).toContainText(OPERATOR);
+  await expect(page.getByRole('menu')).not.toContainText(first);
 });

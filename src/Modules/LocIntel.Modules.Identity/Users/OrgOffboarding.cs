@@ -3,6 +3,7 @@ using LocIntel.Contracts;
 using LocIntel.Modules.Identity.Access;
 using LocIntel.Modules.Identity.Data;
 using LocIntel.Platform.Auth;
+using LocIntel.Platform.Data;
 using LocIntel.Platform.Kernel;
 using Microsoft.EntityFrameworkCore;
 using Wolverine.Attributes;
@@ -39,7 +40,7 @@ public sealed class IdentityExporter(IdentityDbContext db) : IOrgDataExporter
                             .ToList(),
                     }
             )
-            .ToListAsync(ct);
+            .ToBoundedExportListAsync(ct);
         var roles = await db
             .Roles.IgnoreQueryFilters()
             .Where(r => r.OrgId == org)
@@ -52,7 +53,7 @@ public sealed class IdentityExporter(IdentityDbContext db) : IOrgDataExporter
                     .Select(g => new { g.Domain, g.Action })
                     .ToList(),
             })
-            .ToListAsync(ct);
+            .ToBoundedExportListAsync(ct);
         var exceptions = await db
             .GrantExceptions.IgnoreQueryFilters()
             .Where(e => e.OrgId == org)
@@ -64,7 +65,7 @@ public sealed class IdentityExporter(IdentityDbContext db) : IOrgDataExporter
                 e.ExpiresAt,
                 e.CreatedAt,
             })
-            .ToListAsync(ct);
+            .ToBoundedExportListAsync(ct);
         return JsonSerializer.Serialize(
             new
             {

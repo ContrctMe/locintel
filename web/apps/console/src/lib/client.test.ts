@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ApiError, api, apiProblem, resetSessionContext } from '@locintel/api';
+import { ApiError, api, apiPlanLimit, apiProblem, isTransient, resetSessionContext } from '@locintel/api';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -8,6 +8,36 @@ afterEach(() => {
 });
 
 describe('API response normalization', () => {
+  it('passes a caller-owned idempotency key through to report submission', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ id: 'report', state: 'Queued' }));
+    vi.stubGlobal('fetch', fetchMock);
+    await api.post('/api/reports', { reportType: 'site', mode: 'single', selection: 'selected', siteIds: [], options: {} }, { idempotencyKey: 'stable-report-key' });
+    expect(fetchMock).toHaveBeenCalledWith('/api/reports', expect.objectContaining({ headers: expect.objectContaining({ 'Idempotency-Key': 'stable-report-key' }) }));
+  });
+  it('treats only a 503 the server timed as safe to repeat', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+      Response.json({ error: 'Another report is being admitted.', code: 'admission_busy' },
+        { status: 503, headers: { 'Retry-After': '2' } })));
+    const timed = (await api.get('/api/reports').catch((e: unknown) => e)) as ApiError;
+    expect(timed.retryAfterSeconds).toBe(2);
+    expect(isTransient(timed)).toBe(true);
+    // A bare 503 can come from in front of the API, after the write landed.
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 503 })));
+    const bare = (await api.get('/api/reports').catch((e: unknown) => e)) as ApiError;
+    expect(bare.retryAfterSeconds).toBeUndefined();
+    expect(isTransient(bare)).toBe(false);
+  });
+
+  it('reads a plan limit out of the gate\'s 402 so callers can offer the plan', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json(
+      { error: 'plan limit reached', code: 'reports.monthly', limit: 1000, current: 1000 },
+      { status: 402 })));
+    const error = (await api.get('/api/reports/quota').catch((e: unknown) => e)) as ApiError;
+    expect(apiPlanLimit(error.status, error.body)).toEqual({ code: 'reports.monthly', limit: 1000, current: 1000 });
+    expect(error.message).toContain('1000 of 1000 used');
+    expect(apiPlanLimit(500, { code: 'x' })).toBeUndefined();
+  });
+
   it('refuses browser session bootstrap without the context precondition header', async () => {
     vi.stubGlobal('window', new EventTarget());
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ tier: 'guest' })));

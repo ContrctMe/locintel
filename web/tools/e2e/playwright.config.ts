@@ -12,6 +12,8 @@ export default defineConfig({
   retries: 0,
   reporter: [['list']],
   use: {
+    // The local production public server uses a temporary self-signed TLS certificate.
+    ignoreHTTPSErrors: true,
     baseURL: process.env.E2E_CONSOLE ?? 'http://localhost:5173',
     trace: 'retain-on-failure',
   },

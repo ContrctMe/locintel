@@ -52,7 +52,10 @@ public sealed record RotatedApiKeyResponse(
 /// </summary>
 public static class ApiKeyEndpoints
 {
-    [Transactional(typeof(IdentityDbContext))]
+    [Transactional(
+        typeof(IdentityDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/api-keys")]
     [ProducesResponseType(typeof(List<ApiKeyResponse>), StatusCodes.Status200OK)]
     public static async Task<IResult> List(
@@ -103,11 +106,11 @@ public static class ApiKeyEndpoints
             return gate.ToResult();
         var userId = principal.UserId;
         if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Length > 120)
-            return Results.BadRequest(new { error = "name must be 1-120 characters" });
+            return ApiErrors.BadRequest("name must be 1-120 characters");
         if (!await db.Roles.AnyAsync(r => r.Id == request.RoleId && r.OrgId == org, ct))
-            return Results.NotFound(new { error = "unknown role" });
+            return ApiErrors.NotFound("unknown role");
         if (request.ExpiresInDays is < 1 or > 3650)
-            return Results.BadRequest(new { error = "expiresInDays must be 1-3650" });
+            return ApiErrors.BadRequest("expiresInDays must be 1-3650");
 
         var secret =
             "locintel_"
@@ -160,7 +163,7 @@ public static class ApiKeyEndpoints
             return gate.ToResult();
         var userId = principal.UserId;
         if (request.OverlapHours is < 0 or > 168)
-            return Results.BadRequest(new { error = "overlapHours must be 0-168" });
+            return ApiErrors.BadRequest("overlapHours must be 0-168");
         var old = await db.ApiKeys.FirstOrDefaultAsync(
             k => k.Id == id && k.OrgId == org && k.RevokedAt == null,
             ct

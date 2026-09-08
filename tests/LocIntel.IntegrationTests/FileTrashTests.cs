@@ -1,7 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using LocIntel.Modules.Storage.Data;
+using LocIntel.Platform.Kernel;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
+using Wolverine;
 
 namespace LocIntel.IntegrationTests;
 
@@ -103,6 +108,44 @@ public class FileTrashTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         Assert.Equal(
             HttpStatusCode.NotFound,
             (await client.PostAsync($"/api/files/{fileId}/restore", null)).StatusCode
+        );
+    }
+
+    [Fact]
+    public async Task Hold_placed_in_trash_prevents_the_retention_sweep_from_erasing_bytes()
+    {
+        var (client, fileId) = await UploadCleanAsync("held-in-trash.txt");
+        (await client.DeleteAsync($"/api/files/{fileId}")).EnsureSuccessStatusCode();
+        (
+            await client.PostAsJsonAsync($"/api/files/{fileId}/hold", new { hold = true })
+        ).EnsureSuccessStatusCode();
+        using var scope = fixture.Factory.Services.CreateScope();
+        scope
+            .ServiceProvider.GetRequiredService<TenantContext>()
+            .Set(fixture.OrgA, RegionId.Default);
+        var db = scope.ServiceProvider.GetRequiredService<StorageDbContext>();
+        await db
+            .Files.Where(x => x.Id == fileId)
+            .ExecuteUpdateAsync(set =>
+                set.SetProperty(x => x.DeletedAt, DateTimeOffset.UtcNow.AddDays(-31))
+            );
+        var bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
+        var options = new DeliveryOptions { TenantId = fixture.OrgA.Value.ToString() };
+        await bus.InvokeAsync(new LocIntel.Modules.Storage.PurgeFileTrash(), options);
+        var file = await db.Files.AsNoTracking().SingleAsync(x => x.Id == fileId);
+        Assert.Equal(FileStatus.Deleted, file.Status);
+        Assert.True(
+            await scope
+                .ServiceProvider.GetRequiredService<LocIntel.Platform.Storage.IObjectStore>()
+                .GetLengthAsync(file.Key) > 0
+        );
+        (
+            await client.PostAsJsonAsync($"/api/files/{fileId}/hold", new { hold = false })
+        ).EnsureSuccessStatusCode();
+        await bus.InvokeAsync(new LocIntel.Modules.Storage.PurgeFileTrash(), options);
+        Assert.Equal(
+            FileStatus.Erased,
+            (await db.Files.AsNoTracking().SingleAsync(x => x.Id == fileId)).Status
         );
     }
 }

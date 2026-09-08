@@ -31,31 +31,15 @@ public sealed class AzureBlobObjectStore : IObjectStore
         );
     }
 
-    public async ValueTask<UploadTicket> CreateUploadTicketAsync(
+    public ValueTask<UploadTicket> CreateUploadTicketAsync(
         string key,
         string contentType,
         long maxBytes,
         CancellationToken ct = default
-    )
-    {
-        var blob = _container.GetBlobClient(key);
-        var expiresAt = DateTimeOffset.UtcNow.AddMinutes(15);
-        var sas = blob.GenerateSasUri(
-            // Write would allow the ticket to replace already-scanned content.
-            new BlobSasBuilder(BlobSasPermissions.Create, expiresAt) { ContentType = contentType }
+    ) =>
+        throw new NotSupportedException(
+            "Azure SAS cannot enforce an upload byte limit; use the authenticated bounded upload relay."
         );
-        // raw PUT to a block blob needs the blob-type header alongside the SAS
-        return new UploadTicket(
-            sas.ToString(),
-            "PUT",
-            new Dictionary<string, string>
-            {
-                ["x-ms-blob-type"] = "BlockBlob",
-                ["Content-Type"] = contentType,
-            },
-            expiresAt
-        );
-    }
 
     public ValueTask<Uri> GetDownloadUrlAsync(
         string key,
@@ -67,6 +51,9 @@ public sealed class AzureBlobObjectStore : IObjectStore
                 .GetBlobClient(key)
                 .GenerateSasUri(
                     new BlobSasBuilder(BlobSasPermissions.Read, DateTimeOffset.UtcNow.Add(ttl))
+                    {
+                        ContentDisposition = "attachment",
+                    }
                 )
         );
 

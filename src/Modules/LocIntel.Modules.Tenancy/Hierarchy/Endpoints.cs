@@ -30,6 +30,10 @@ public sealed record HierarchyResponse(
 
 public sealed record HierarchyCreatedResponse(Guid Id, Guid RootNodeId);
 
+public sealed record UpdateHierarchyLevelsRequest(string[] Levels);
+
+public sealed record HierarchyLevelsResponse(IReadOnlyList<string> Levels);
+
 public static class HierarchyEndpoints
 {
     [Transactional(typeof(TenancyDbContext))]
@@ -45,10 +49,12 @@ public static class HierarchyEndpoints
     )
     {
         var gate = await Gate.RequireUserAsync(accessor, scopes, Capabilities.HierarchyManage, ct);
+        if (gate is GateOutcome.Allowed { Scope: not NodeScope.EntireOrg })
+            return new GateOutcome.Forbidden(Capabilities.HierarchyManage).ToResult();
         if (gate is not GateOutcome.Allowed { Principal: Principal.User principal, Org: var org })
             return gate.ToResult();
         if (request.Levels.Length == 0)
-            return Results.BadRequest(new { error = "at least one level is required" });
+            return ApiErrors.BadRequest("at least one level is required");
 
         // Gate 1: depth is entitlement-capped AT PROVISIONING (the register's
         // canonical structural-capability example).
@@ -63,7 +69,7 @@ public static class HierarchyEndpoints
                 )
             );
         if (await db.Hierarchies.AnyAsync(h => h.IsAuthoritative, ct))
-            return Results.Conflict(new { error = "hierarchy already exists" });
+            return ApiErrors.Conflict("hierarchy already exists");
 
         var hierarchy = OrgHierarchy.Create(org, request.Name, request.Levels);
         var root = HierarchyNode.CreateRoot(org, hierarchy.Id, request.Name);
@@ -73,15 +79,86 @@ public static class HierarchyEndpoints
         return Results.Ok(new HierarchyCreatedResponse(hierarchy.Id, root.Id));
     }
 
-    [WolverineGet("/api/hierarchy")]
-    [ProducesResponseType(typeof(HierarchyResponse), StatusCodes.Status200OK)]
-    public static async Task<IResult> Get(TenancyDbContext db, CancellationToken ct)
+    /// <summary>
+    /// Rename the levels (every org starts with the defaults - see
+    /// HierarchyDefaults). Levels are names for depths, so the list may grow
+    /// up to the plan's depth and may not shrink below a depth a node uses.
+    /// </summary>
+    [Transactional(typeof(TenancyDbContext))]
+    [WolverinePut("/api/hierarchy")]
+    [ProducesResponseType(typeof(HierarchyLevelsResponse), StatusCodes.Status200OK)]
+    public static async Task<IResult> UpdateLevels(
+        UpdateHierarchyLevelsRequest request,
+        TenancyDbContext db,
+        IPrincipalAccessor accessor,
+        IScopeResolver scopes,
+        IEntitlements entitlements,
+        CancellationToken ct
+    )
     {
+        var gate = await Gate.RequireUserAsync(accessor, scopes, Capabilities.HierarchyManage, ct);
+        if (gate is GateOutcome.Allowed { Scope: not NodeScope.EntireOrg })
+            return new GateOutcome.Forbidden(Capabilities.HierarchyManage).ToResult();
+        if (gate is not GateOutcome.Allowed { Org: var org })
+            return gate.ToResult();
+        var levels = request.Levels.Select(l => l.Trim()).ToArray();
+        if (levels.Length == 0 || levels.Any(l => l.Length is 0 or > 100))
+            return ApiErrors.BadRequest("each level needs a name of 1-100 characters");
+        var depthLimit = await entitlements.LimitAsync(org, EntitlementCatalog.HierarchyDepth, ct);
+        if (levels.Length > depthLimit)
+            return GateResults.LimitReached(
+                new EntitlementDecision(
+                    EntitlementOutcome.Blocked,
+                    EntitlementCatalog.HierarchyDepth,
+                    depthLimit,
+                    levels.Length
+                )
+            );
         var hierarchy = await db.Hierarchies.FirstOrDefaultAsync(h => h.IsAuthoritative, ct);
         if (hierarchy is null)
             return Results.NotFound();
+        var deepest = await db
+            .HierarchyNodes.Where(n => n.HierarchyId == hierarchy.Id)
+            .MaxAsync(n => (int?)n.Depth, ct);
+        if (deepest is { } used && levels.Length < used)
+            return ApiErrors.BadRequest(
+                $"nodes already use {used} level(s); remove them before dropping a level"
+            );
+        hierarchy.Levels = levels;
+        await db.SaveChangesAsync(ct);
+        return Results.Ok(new HierarchyLevelsResponse(hierarchy.Levels));
+    }
+
+    [Transactional(
+        typeof(TenancyDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
+    [WolverineGet("/api/hierarchy")]
+    [ProducesResponseType(typeof(HierarchyResponse), StatusCodes.Status200OK)]
+    public static async Task<IResult> Get(
+        TenancyDbContext db,
+        IPrincipalAccessor accessor,
+        IScopeResolver scopes,
+        CancellationToken ct
+    )
+    {
+        var gate = await Gate.RequireAsync(accessor, scopes, Capabilities.SitesRead, ct);
+        if (gate is not GateOutcome.Allowed { Scope: var scope })
+            return gate.ToResult();
+        var hierarchy = await db.Hierarchies.FirstOrDefaultAsync(h => h.IsAuthoritative, ct);
+        if (hierarchy is null)
+            return Results.NotFound();
+        var entireOrg = scope is NodeScope.EntireOrg;
+        var paths = scope is NodeScope.Subtrees subtrees
+            ? subtrees.Paths.Select(p => new LTree(p)).ToArray()
+            : [];
         var nodes = await db
             .HierarchyNodes.Where(n => n.HierarchyId == hierarchy.Id)
+            .Where(n =>
+                entireOrg
+                || paths.Any(p => n.Path.IsDescendantOf(p))
+                || paths.Any(p => n.Path.IsAncestorOf(p))
+            )
             .OrderBy(n => n.Path)
             .Select(n => new NodeResponse(n.Id, n.ParentId, n.Name, n.Depth, n.Path.ToString()))
             .ToListAsync(ct);
@@ -109,11 +186,8 @@ public static class HierarchyEndpoints
             return Results.Forbid();
         var hierarchy = await db.Hierarchies.FirstAsync(h => h.Id == parent.HierarchyId, ct);
         if (parent.Depth + 1 > hierarchy.Levels.Length)
-            return Results.BadRequest(
-                new
-                {
-                    error = $"hierarchy is limited to {hierarchy.Levels.Length} level(s) below the root",
-                }
+            return ApiErrors.BadRequest(
+                $"hierarchy is limited to {hierarchy.Levels.Length} level(s) below the root"
             );
 
         var node = HierarchyNode.CreateChild(parent, request.Name);
@@ -142,7 +216,7 @@ public static class HierarchyEndpoints
     )
     {
         if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Length > 200)
-            return Results.BadRequest(new { error = "name must be 1-200 characters" });
+            return ApiErrors.BadRequest("name must be 1-200 characters");
         var node = await db.HierarchyNodes.FirstOrDefaultAsync(n => n.Id == id, ct);
         if (node is null)
             return Results.NotFound();
@@ -195,17 +269,17 @@ public static class HierarchyEndpoints
         if (!scope.Covers(node.Path.ToString()))
             return Results.Forbid();
         if (node.ParentId is null)
-            return Results.BadRequest(new { error = "the root cannot be deleted" });
+            return ApiErrors.BadRequest("the root cannot be deleted");
 
         var children = await db.HierarchyNodes.CountAsync(n => n.ParentId == id, ct);
         if (children > 0)
-            return Results.Conflict(
-                new { error = "node has child nodes - move or delete them first", children }
+            return ApiErrors.Conflict(
+                $"node has {children} child node(s) - move or delete them first"
             );
         var sites = await db.Sites.CountAsync(s => s.NodeId == id, ct);
         if (sites > 0)
-            return Results.Conflict(
-                new { error = "sites are attached to this node - move them first", sites }
+            return ApiErrors.Conflict(
+                $"{sites} site(s) are attached to this node - move them first"
             );
 
         db.HierarchyNodes.Remove(node);
@@ -276,12 +350,12 @@ public static class HierarchyEndpoints
         if (!moveScope.Covers(node.Path.ToString()) || !moveScope.Covers(newParent.Path.ToString()))
             return Results.Forbid();
         if (node.ParentId is null)
-            return Results.BadRequest(new { error = "the root cannot move" });
+            return ApiErrors.BadRequest("the root cannot move");
         // in-memory prefix check (LTree.IsDescendantOf only translates in queries)
         var nodePrefix = node.Path.ToString();
         var parentPath = newParent.Path.ToString();
         if (parentPath == nodePrefix || parentPath.StartsWith(nodePrefix + '.'))
-            return Results.BadRequest(new { error = "cannot move a node under its own subtree" });
+            return ApiErrors.BadRequest("cannot move a node under its own subtree");
 
         var oldPrefix = node.Path.ToString();
         var newPrefix = $"{newParent.Path}.{HierarchyNode.Label(node.Id)}";
@@ -292,7 +366,7 @@ public static class HierarchyEndpoints
             .HierarchyNodes.Where(n => n.Path.IsDescendantOf(node.Path))
             .MaxAsync(n => n.Depth, ct);
         if (subtreeDepth + depthDelta > hierarchy.Levels.Length)
-            return Results.BadRequest(new { error = "move would exceed the hierarchy's depth" });
+            return ApiErrors.BadRequest("move would exceed the hierarchy's depth");
 
         node.ParentId = newParent.Id;
         await db.SaveChangesAsync(ct);
@@ -309,7 +383,8 @@ public static class HierarchyEndpoints
         await db.Database.ExecuteSqlAsync(
             $"""
             UPDATE tenancy.sites
-            SET path = ({newPrefix}::ltree || subpath(path, nlevel({oldPrefix}::ltree)))
+            SET path = ({newPrefix}::ltree || subpath(path, nlevel({oldPrefix}::ltree))),
+                path_text = ({newPrefix}::ltree || subpath(path, nlevel({oldPrefix}::ltree)))::text
             WHERE path <@ {oldPrefix}::ltree
             """,
             ct

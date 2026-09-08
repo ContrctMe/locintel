@@ -1,5 +1,7 @@
 <!doctype html>
-<html lang="en">
+<!-- dark-first console: the .dark class IS the theme switch (ADR 20/47);
+     a toggle removes it, no media query involved -->
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -10,7 +12,7 @@
          says it is offline -->
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
-    <meta name="theme-color" content="#8c1d54" />
+    <meta name="theme-color" content="#09090b" />
   </head>
   <body>
     <div id="root"></div>

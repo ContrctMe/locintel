@@ -17,7 +17,7 @@ subtree it belongs to). Every request passes **three gates**, in order:
 
 ## Architectural decisions
 
-All 48 settled decisions live in `docs/decisions/` (one ADR each, indexed in its
+All 51 settled decisions live in `docs/decisions/` (one ADR each, indexed in its
 README). **Consult them before proposing structural changes.** Decisions marked
 `pinned: true` are expensive to reverse once data exists — do not contradict them
 without the maintainer explicitly reopening the decision.
@@ -52,6 +52,23 @@ don't restate them here.
   materialized through the outbox (the `org_directory` pattern). Authority
   is which object you own plus which commands exist - never an RLS clause.
 - **Keys are UUIDv7**, never database sequences (ADR 35 preconditions).
+- **Spatial columns are `geography` in SRID 4326** (ADR 50), NetTopologySuite
+  types in code, geometry only inside tile generation. `sites.location` is
+  derived from latitude/longitude on save - never set it by hand.
+- **Under RLS only leakproof operators reach an index** (ADR 51): PostGIS,
+  ltree and ILIKE predicates are sequential scans for `app_user`. Hot
+  predicates on tenant tables go through derived btree keys (`cell`,
+  `path_text`, search terms, keyset cursors); prove a new one with EXPLAIN as
+  `app_user`, never as the migrate role (`ScaleIndexTests` shows how).
+- **Per-process state must declare its scope** (ADR 52/54): idempotency
+  keys and sweep leases remain shared through Postgres; request fairness
+  belongs to the gateway, independent of billing. Local concurrency limits
+  protect each process. Document intentionally local caches in
+  `docs/production.md`; prove shared behavior with the fleet/gateway suites.
+- **No session state on a database connection** (ADR 53): the tenant
+  variable is `SET LOCAL` per transaction, never `set_config(..., false)`;
+  a transaction-mode pooler hands connections between tenants between
+  transactions. `SessionStateTests` refuses the session-scoped shapes.
 - **Never put tenant/site/actor on metric labels** — traces and logs only, as
   baggage (ADR 33).
 - **Frontend imports UI only from `@/ui`**, never `components/ui/*` directly
@@ -137,8 +154,15 @@ don't restate them here.
 - Browser + a11y suite (Docker, Playwright; the same script CI runs):
   `tools/e2e-stack.sh` boots Postgres, migrate + api with the local provider,
   the console dev server, then Playwright with an axe pass per page.
+- Fleet suite (Docker; N api + N worker behind a proxy on one host):
+  `tools/replica-stack.sh 2` runs `tests/LocIntel.FleetTests`;
+  `tools/replica-stack.sh 4 --bench` runs the load baseline through the proxy.
 - Frontend (web/): `pnpm install`, `pnpm typecheck`, `pnpm build`,
   `pnpm dev:console` (SPA, proxies to the API), `pnpm dev:public` (Start/SSR)
+- ReUI/shadcn installs run FROM `web/packages/ui` (the CLI reads
+  `components.json` and `.env.local` only from its cwd): `pnpm dlx
+  shadcn@latest add @reui/<item>`; then re-export from `src/index.ts`, and
+  rewrite `@/` imports to relative - Vite in the apps has no `@` alias.
 - Contract codegen (ADR 16): run the integration tests (snapshots
   `web/packages/api/openapi.json`), then `pnpm codegen:api` (types) and
   `pnpm codegen:keys` (capability/entitlement unions). A dirty openapi.json

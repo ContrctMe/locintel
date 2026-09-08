@@ -1,13 +1,23 @@
 import { expect, test, type Page } from '@playwright/test';
 import { ALICE, OPERATOR, expectAccessible, nav, signIn } from './support';
 
+// the node picker is a Cascader: open it, take the first row (the root, a
+// committable branch - a site may sit on any node)
+async function pickRootNode(page: Page) {
+  await page.getByLabel('Hierarchy node').click();
+  // the listbox is the cascader's; the time-zone select's <option>s are not it
+  await page.getByRole('listbox').getByRole('option').first().click();
+}
+
 async function createSite(page: Page) {
   await page.goto('/hierarchy');
   const create = page.getByRole('button', { name: 'Create hierarchy' });
   const addNode = page.getByRole('button', { name: 'Add node' });
   await expect(create.or(addNode)).toBeVisible();
   if (await create.isVisible()) {
-    await page.getByLabel('Level names (root-first, comma-separated)').fill('Region, Site');
+    // one field per level (an org born through /api/orgs already has these)
+    await page.getByLabel('Top level', { exact: true }).fill('Region');
+    await page.getByLabel('Level 2', { exact: true }).fill('Site');
     await create.click();
     await expect(addNode).toBeVisible();
   }
@@ -15,10 +25,13 @@ async function createSite(page: Page) {
   await page.goto('/sites');
   const name = `E2E Site ${Date.now()}`;
   await page.getByRole('button', { name: 'New site' }).click();
-  await page.getByLabel('Name').fill(name);
-  await page.getByLabel('Hierarchy node').selectOption({ index: 1 });
+  await page.getByLabel('Name', { exact: true }).fill(name);
+  await pickRootNode(page);
   await page.getByRole('button', { name: 'Create site' }).click();
   await expect(page.getByText('Site created', { exact: true })).toBeVisible();
+  // creating lands on the site, where its hours and closures live
+  await expect(page).toHaveURL(/\/sites\/[0-9a-f-]+$/);
+  await expect(page.getByRole('heading', { name })).toBeVisible();
   return name;
 }
 
@@ -86,15 +99,18 @@ test.describe('sign-in and the shell', () => {
       return me.organizations.map((org) => org.name);
     })).toContain(second);
     await page.reload();
-    await page.locator('aside').getByRole('combobox').selectOption({ label: second });
-    await expect(page.locator('aside').getByText(second, { exact: true }).first()).toBeVisible();
+    const orgSwitcher = page.getByRole('combobox', { name: 'Active organization' });
+    await orgSwitcher.selectOption({ label: second });
+    await expect(orgSwitcher.locator('option:checked')).toHaveText(second);
   });
 });
 
 test.describe('site management', () => {
-  test('creating a site and opening it', async ({ page }) => {
+  test('creating a site lands on it, and the list finds it', async ({ page }) => {
     await signIn(page, ALICE);
     const name = await createSite(page);
+    await page.goto('/sites');
+    await page.getByPlaceholder('Search sites…').fill(name);
     await page.getByRole('link', { name }).click();
     await expect(page).toHaveURL(/\/sites\/[0-9a-f-]+$/);
     await expect(page.getByRole('heading', { name })).toBeVisible();
@@ -102,8 +118,7 @@ test.describe('site management', () => {
 
   test('an optimistic-concurrency conflict is explained to the editor', async ({ page }) => {
     await signIn(page, ALICE);
-    const name = await createSite(page);
-    await page.getByRole('link', { name }).click();
+    await createSite(page);
     await page.route('**/api/sites/*', async (route) => {
       if (route.request().method() === 'POST')
         await route.fulfill({ status: 409, contentType: 'application/json', body: '{}' });
@@ -131,8 +146,13 @@ test.describe('critical workflows', () => {
     await page.goto('/roles');
     const name = `E2E role ${Date.now()}`;
     await page.getByRole('button', { name: 'New role' }).click();
-    await page.getByLabel('Name').fill(name);
-    await page.getByRole('dialog').getByLabel('sites:read', { exact: true }).check();
+    await page.getByLabel('Name', { exact: true }).fill(name);
+    await page.getByRole('dialog').getByRole('checkbox', { name: 'See sites', exact: true }).check();
+    // Long grant lists must scroll inside the popup, keeping the dialog within the viewport.
+    await expect.poll(() => page.getByRole('dialog').evaluate((dialog) => {
+      const bounds = dialog.getBoundingClientRect();
+      return bounds.top >= 0 && bounds.bottom <= window.innerHeight;
+    })).toBe(true);
     await page.getByRole('button', { name: 'Create role' }).click();
     await expect(page.getByText('Role saved', { exact: true })).toBeVisible();
 
@@ -156,8 +176,10 @@ test.describe('critical workflows', () => {
     }
     const nodeName = `E2E Region ${Date.now()}`;
     await addNode.click();
-    await page.getByLabel('Name').fill(nodeName);
-    await page.getByLabel('Parent').selectOption({ index: 1 });
+    await page.getByLabel('Name', { exact: true }).fill(nodeName);
+    // the parent is the node picker (a Cascader): the first row is the root
+    await page.getByLabel('Parent', { exact: true }).click();
+    await page.getByRole('listbox').getByRole('option').first().click();
     await page.getByRole('button', { name: 'Add node', exact: true }).last().click();
     await expect(page.getByText('Node added', { exact: true })).toBeVisible();
 
@@ -169,8 +191,10 @@ test.describe('critical workflows', () => {
       buffer: Buffer.from(`external_id,name,time_zone,node,status\n${externalId},E2E Imported,America/New_York,${nodeName},open\n`),
     });
     await expect(page.getByText(/Diff preview — 1 new/)).toBeVisible();
-    await page.getByRole('button', { name: 'Commit 1 changes' }).click();
-    await expect(page.getByText('Batch is Committed.')).toBeVisible();
+    await page.getByRole('button', { name: 'Commit 1 row' }).click();
+    const committed = page.getByRole('alert').filter({ hasText: 'Committed' });
+    await expect(committed).toContainText('1 new');
+    await expect(committed.getByRole('link', { name: 'View sites' })).toBeVisible();
   });
 
   test('a network failure produces an actionable page state', async ({ page }) => {

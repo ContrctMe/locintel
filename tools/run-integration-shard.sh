@@ -59,7 +59,7 @@ if [ "${COVERAGE:-0}" = "1" ]; then
 fi
 results="$PROJECT/TestResults/shard-$INDEX-$$"
 dotnet test "$PROJECT" -c "$CONFIGURATION" --no-build --filter "$filter" "$@" \
-  --blame-hang-timeout 5m --blame-hang-dump-type mini \
+  --blame-hang-timeout 5m --blame-hang-dump-type "${HANG_DUMP_TYPE:-mini}" \
   --results-directory "$results" \
   --logger "trx;LogFileName=integration-shard-$INDEX.trx"
 if [ "${COVERAGE:-0}" = "1" ] && ! find "$results" -name coverage.cobertura.xml -print -quit | grep -q .; then

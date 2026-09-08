@@ -15,6 +15,7 @@ public static class IdentityModule
         services.AddScoped<IOperatorContext, LocIntel.Modules.Identity.Access.OperatorContext>();
         services.AddScoped<LocIntel.Contracts.IOrgDataExporter, Users.IdentityExporter>();
         services.AddScoped<LocIntel.Contracts.IActorDirectory, Users.ActorDirectory>();
+        services.AddScoped<LocIntel.Contracts.IReportRequester, Users.ReportRequester>();
         return services;
     }
 }

@@ -1,4 +1,5 @@
 using LocIntel.Modules.Storage.Data;
+using LocIntel.Platform.Data;
 using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Storage;
 using Microsoft.EntityFrameworkCore;
@@ -31,6 +32,7 @@ public static class ScanUploadedFileHandler
                 $"ScanUploadedFile arrived with no tenant on the envelope (TenantId='{envelope.TenantId}')"
             );
 
+        await db.TakeAsync(message.FileId, ct);
         var file = await db.Files.FirstOrDefaultAsync(f => f.Id == message.FileId, ct);
         if (file is null || file.Status != FileStatus.Uploaded)
             return;
@@ -77,6 +79,7 @@ public static class GenerateDerivativesHandler
                 $"GenerateDerivatives arrived with no tenant on the envelope (TenantId='{envelope.TenantId}')"
             );
 
+        await db.TakeAsync(message.FileId, ct);
         var file = await db.Files.FirstOrDefaultAsync(f => f.Id == message.FileId, ct);
         if (file is null || file.Status != FileStatus.Clean)
             return;

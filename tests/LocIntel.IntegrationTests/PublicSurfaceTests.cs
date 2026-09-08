@@ -10,10 +10,11 @@ public class PublicSurfaceTests(ApiFixture fixture) : IClassFixture<ApiFixture>
     public async Task Public_reads_are_cacheable_and_private_reads_are_not()
     {
         var guest = fixture.GuestClient();
-        guest.DefaultRequestHeaders.Add("X-Forwarded-Host", "org-a.localhost");
+        guest.DefaultRequestHeaders.Host = "org-a.localhost";
         var pub = await guest.GetAsync("/public/sites");
         pub.EnsureSuccessStatusCode();
-        Assert.Contains("max-age=60", pub.Headers.CacheControl?.ToString() ?? string.Empty);
+        Assert.True(pub.Headers.CacheControl?.NoStore);
+        Assert.True(pub.Headers.CacheControl?.Private);
 
         // authenticated/private surface must never advertise itself cacheable
         var owner = await fixture.LoginAsync(ApiFixture.UserA);

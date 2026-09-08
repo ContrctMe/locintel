@@ -1,6 +1,7 @@
 using System.Text.Json;
 using LocIntel.Contracts;
 using LocIntel.Modules.Checklists.Data;
+using LocIntel.Platform.Data;
 using LocIntel.Platform.Kernel;
 using Microsoft.EntityFrameworkCore;
 using Wolverine.Attributes;
@@ -29,7 +30,7 @@ public sealed class ChecklistsExporter(ChecklistsDbContext db) : IOrgDataExporte
                 t.ScopePath,
                 t.CreatedAt,
             })
-            .ToListAsync(ct);
+            .ToBoundedExportListAsync(ct);
         var checks = await db
             .Checks.IgnoreQueryFilters()
             .Where(c => c.OrgId == org)
@@ -41,7 +42,7 @@ public sealed class ChecklistsExporter(ChecklistsDbContext db) : IOrgDataExporte
                 c.ItemIndex,
                 c.CheckedAt,
             })
-            .ToListAsync(ct);
+            .ToBoundedExportListAsync(ct);
         return JsonSerializer.Serialize(
             new { templates, checks },
             new JsonSerializerOptions(JsonSerializerDefaults.Web) { WriteIndented = true }

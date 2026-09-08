@@ -135,12 +135,14 @@ public class BillingTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         // plan values applied - except the operator-held one (custody wins)
         Assert.Equal("6", await EffectiveValue(owner, "hierarchy.depth"));
         Assert.Equal("10000", await EffectiveValue(owner, "contact_links.monthly"));
+        Assert.Equal("5000", await EffectiveValue(owner, "reports.monthly"));
         Assert.Equal("3", await EffectiveValue(owner, "sites.max"));
 
         // plan change reshapes the plan rows
         await PostWebhook(fixture.OrgA.Value, "scale", "Active");
         await WaitForPlan(owner, "scale");
         Assert.Equal("8", await EffectiveValue(owner, "hierarchy.depth"));
+        Assert.Equal("50000", await EffectiveValue(owner, "reports.monthly"));
         Assert.Equal("3", await EffectiveValue(owner, "sites.max"));
 
         // cancellation strips plan rows back to defaults; custody still holds
@@ -150,6 +152,7 @@ public class BillingTests(ApiFixture fixture) : IClassFixture<ApiFixture>
             "entitlements to fall back to the catalog default after cancellation"
         );
         Assert.Equal("4", await EffectiveValue(owner, "hierarchy.depth")); // catalog default
+        Assert.Equal("1000", await EffectiveValue(owner, "reports.monthly"));
         Assert.Equal("3", await EffectiveValue(owner, "sites.max")); // operator row survives
         var canceled = await owner.GetFromJsonAsync<JsonElement>("/api/billing");
         Assert.Equal("Canceled", canceled.GetProperty("status").GetString());

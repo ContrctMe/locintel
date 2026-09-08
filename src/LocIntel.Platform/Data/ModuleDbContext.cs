@@ -12,7 +12,7 @@ namespace LocIntel.Platform.Data;
 ///  - "SoftDelete" named query filter on every ISoftDeletable entity
 /// Named filters (EF 10) can be disabled independently - e.g. an admin restore
 /// screen disables SoftDelete but must never disable Tenant. RLS (set by
-/// TenantSessionInterceptor + database policies) backstops a disabled or
+/// TenantSessionInterceptor, SET LOCAL per command + database policies) backstops a disabled or
 /// forgotten tenant filter: fail closed, not leak.
 ///
 /// IMPORTANT: the tenant filter references CurrentOrg on the *context instance*
@@ -36,6 +36,27 @@ public abstract class ModuleDbContext(DbContextOptions options, ITenantContext t
     public virtual bool AuditsOwnChanges => true;
 
     public ITenantContext Tenant { get; } = tenant;
+
+    /// <summary>
+    /// Every SaveChanges runs in a transaction, even a one-statement one
+    /// (ADR 53): the tenant variable is set when the transaction starts, and
+    /// a write batch is never prefixed with it - EF addresses a batch's
+    /// statements by position, and a leading SET would shift every index.
+    /// </summary>
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        Database.AutoTransactionBehavior = AutoTransactionBehavior.Always;
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(
+        bool acceptAllChangesOnSuccess,
+        CancellationToken cancellationToken = default
+    )
+    {
+        Database.AutoTransactionBehavior = AutoTransactionBehavior.Always;
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
 
     /// <summary>
     /// Org for the tenant query filter. Empty when no tenant is set, which

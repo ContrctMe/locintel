@@ -39,7 +39,9 @@ export function SiteMap({
           fillColor: '#8c1d54',
           fillOpacity: 0.75,
         }).addTo(map!);
-        marker.bindTooltip(site.name);
+        const label = document.createElement('span');
+        label.textContent = site.name;
+        marker.bindTooltip(label);
         if (onSelect) marker.on('click', () => onSelect(site.id));
         return marker;
       });

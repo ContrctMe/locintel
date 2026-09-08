@@ -44,7 +44,6 @@ public partial class TestWaitHygieneTests
         ["IngestTests.cs"] = 5,
         ["LifecycleTests.cs"] = 1,
         ["OrgClosureTests.cs"] = 2,
-        ["RateLimitTests.cs"] = 2,
         ["RotationTests.cs"] = 1,
         ["SiteClosureTests.cs"] = 3,
         ["SmtpTransportTests.cs"] = 1,

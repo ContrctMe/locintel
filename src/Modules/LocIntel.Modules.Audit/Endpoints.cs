@@ -41,7 +41,10 @@ public sealed record AuditConfigResponse(bool LogGrants, bool LogReads, AuditFlo
 
 public static class AuditEndpoints
 {
-    [Transactional(typeof(AuditDbContext))]
+    [Transactional(
+        typeof(AuditDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/audit/{kind}")]
     [ProducesResponseType(typeof(List<AuditRowResponse>), StatusCodes.Status200OK)]
     public static async Task<IResult> Query(
@@ -116,7 +119,10 @@ public static class AuditEndpoints
         return rows is null ? Results.NotFound() : Results.Ok(rows);
     }
 
-    [Transactional(typeof(AuditDbContext))]
+    [Transactional(
+        typeof(AuditDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/admin/audit-config")]
     [ProducesResponseType(typeof(AuditConfigResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> GetConfig(

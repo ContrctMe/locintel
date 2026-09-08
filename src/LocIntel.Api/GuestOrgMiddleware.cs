@@ -16,11 +16,8 @@ public sealed class GuestOrgMiddleware(RequestDelegate next)
     {
         if (context.User.Identity?.IsAuthenticated != true)
         {
-            // SSR/public app fetches forward the browser's host (standard
-            // proxy header); direct requests carry it on Host
-            var host =
-                context.Request.Headers["X-Forwarded-Host"].FirstOrDefault()
-                ?? context.Request.Host.Host;
+            // Only the forwarded-header middleware may replace Host after validating the peer.
+            var host = context.Request.Host.Host;
             var label = host.Split('.')[0];
             if (
                 label.Length > 0

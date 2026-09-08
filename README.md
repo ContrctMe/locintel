@@ -13,9 +13,9 @@ it.
 ## What's in the box
 
 - **Vertically sliced modular monolith** — C# / .NET 10 / EF Core / PostgreSQL,
-  Wolverine for mediation, messaging, and the transactional outbox. Eight
+  Wolverine for mediation, messaging, and the transactional outbox. Ten
   modules (tenancy, identity, entitlements, audit, storage, ingest,
-  checklists + platform),
+  checklists, spatial, reporting + platform; reporting is in progress),
   each with its own schema, DbContext, and migration history.
 - **Two-axis tenancy, three gates.** Every request passes entitlement (402,
   upsell) → grant (403) → scope (never fails — it *filters*). Row-level
@@ -82,13 +82,32 @@ guards that refuse to boot until dev-only adapters are replaced.
 
 Current engineering maturity and the prioritized path to production readiness:
 [software maturity review and forward roadmap](docs/software-maturity-review-details.md)
-(follow-up remediation active; deployment readiness conditional; maintained by the project maintainers; last updated 2026-09-05).
+(hosted CI verified; unreproduced reliability risks provisionally accepted for staging, not resolved;
+current local architecture hardening covers strict site-capacity reservations and transaction conventions;
+deployment acceptance remains open; maintained by the project maintainers; last updated 2026-09-07).
+
+Performance, scalability evidence, and the plan to validate 1,000 requests/sec:
+[performance and scalability assessment](docs/performance-and-scalability-assessment.md)
+(theoretical limits, measured results, open risks, and deployment acceptance criteria; 2026-09-07).
+Implementation and new experiments: [capacity validation](docs/capacity-validation.md).
+Request-rate policy replacement: [gateway operational fairness](docs/gateway-fairness.md)
+(accepted direction and verification ledger; implementation in progress).
+
+Disposable cloud testing and provisional production target:
+[DigitalOcean deployment plan](docs/digitalocean-test-environment.md)
+(proposed topology, failure gates, campaign cost and teardown; 2026-09-07).
 
 Public authentication failure behavior and verification:
 [public session recovery](docs/public-session-recovery.md).
 
 Checklist fleet navigation and failure behavior:
 [checklist site selection](docs/checklist-site-selection.md).
+
+Site-library report generation, persistent site PDFs, shared site permissions and run history
+for forks: [ADR 56](docs/decisions/0056-reporting-execution-and-delivery.md) settles
+execution, accounting and lifecycle; [reporting](docs/reporting.md) is the fork
+authoring guide (PDFs, maps/photos, bulk ZIPs, console workflow and entitlement
+quotas). Live-provider and target-deployment qualification remain pending.
 
 ## Layout
 
@@ -104,3 +123,5 @@ web/apps/public/           public locator ({slug}.yourdomain, SSR)
 web/packages/api/          generated client + capability keys (never hand-edit)
 tools/                     init.py, new-module.py, run-integration-shard.sh
 ```
+
+Security: [assessment](docs/security-assessment.md) and [remediation ledger](docs/security-remediation.md), including deployment acceptance and verification evidence.

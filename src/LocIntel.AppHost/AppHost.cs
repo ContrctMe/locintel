@@ -3,6 +3,8 @@
 // flag), with the Aspire dashboard as the OTLP sink (ADR 33). Local dev runs
 // the REAL WorkOS adapter (ADR 14) against @workos/emulate - the local
 // provider remains for bare `dotnet run` and the test suites.
+using LocIntel.Platform.Data;
+
 var builder = DistributedApplication.CreateBuilder(args);
 
 // LOCINTEL_AUTH=local boots WITHOUT the WorkOS emulator, using the local auth
@@ -16,10 +18,48 @@ var localAuth = string.Equals(
     StringComparison.OrdinalIgnoreCase
 );
 
-var postgres = builder
+var postgresServer = builder
     .AddPostgres("postgres")
-    .WithDataVolume("locintel-pgdata")
-    .AddDatabase("locintel");
+    // PostGIS (ADR 50), the same pinned multi-arch image the tests and scripts use
+    .WithImage(PostgresImage.Repository, PostgresImage.Tag)
+    .WithImageSHA256(PostgresImage.Sha256)
+    .WithDataVolume("locintel-pgdata");
+var postgres = postgresServer.AddDatabase("locintel");
+
+// LOCINTEL_PGBOUNCER=1 puts a PgBouncer container between api/worker and
+// Postgres, the pooler production runs (docs/production.md): session mode,
+// because the RLS session variable and Wolverine's advisory locks are
+// connection state (ADR 52). The migrate role keeps talking to Postgres
+// directly. Off by default so the ordinary dev boot is unchanged.
+var pooled = string.Equals(
+    Environment.GetEnvironmentVariable("LOCINTEL_PGBOUNCER"),
+    "1",
+    StringComparison.Ordinal
+);
+var pgbouncer = pooled
+    ? builder
+        .AddContainer("pgbouncer", "edoburu/pgbouncer", "v1.24.1-p1")
+        .WithEndpoint(targetPort: 5432, scheme: "tcp", name: "tcp")
+        .WithEnvironment("DB_HOST", "postgres")
+        .WithEnvironment("DB_PORT", "5432")
+        .WithEnvironment("DB_USER", "postgres")
+        .WithEnvironment("DB_PASSWORD", postgresServer.Resource.PasswordParameter)
+        .WithEnvironment("DB_NAME", "locintel")
+        .WithEnvironment("AUTH_TYPE", "scram-sha-256")
+        .WithEnvironment("AUTH_USER", "postgres")
+        .WithEnvironment("AUTH_QUERY", "SELECT usename, passwd FROM pg_shadow WHERE usename=$1")
+        .WithEnvironment("POOL_MODE", "session")
+        .WithEnvironment("MAX_CLIENT_CONN", "1000")
+        .WithEnvironment("DEFAULT_POOL_SIZE", "20")
+        .WithEnvironment("IGNORE_STARTUP_PARAMETERS", "extra_float_digits,search_path")
+        .WaitFor(postgresServer)
+    : null;
+
+// Runtime roles never receive the owner connection string, even in development.
+var databaseEndpoint = pgbouncer?.GetEndpoint("tcp") ?? postgresServer.GetEndpoint("tcp");
+var appConnection = ReferenceExpression.Create(
+    $"Host={databaseEndpoint.Property(EndpointProperty.Host)};Port={databaseEndpoint.Property(EndpointProperty.Port)};Database=locintel;Username=app_user;Password=app_user"
+);
 
 var workos = localAuth
     ? null
@@ -50,11 +90,13 @@ var migrate = builder
 
 var apiBuilder = builder
     .AddProject<Projects.LocIntel_Api>("api")
-    .WithReference(postgres)
+    .WithEnvironment("ConnectionStrings__locintel", appConnection)
     .WaitForCompletion(migrate)
     .WithEnvironment("ROLE", "api")
     .WithEnvironment("Database__AppUser", "app_user")
     .WithEnvironment("Database__AppPassword", "app_user");
+if (pgbouncer is not null)
+    apiBuilder = apiBuilder.WaitFor(pgbouncer);
 
 if (workos is not null && workosEndpoint is not null)
     apiBuilder = apiBuilder
@@ -86,14 +128,16 @@ builder
 // launchProfileName: null - the worker must NOT inherit launchSettings'
 // http port, or it races the api for 5293 and every API path 404s
 // (whichever resource registers first wins the proxy).
-builder
+var workerBuilder = builder
     .AddProject<Projects.LocIntel_Api>("worker", launchProfileName: null)
     .WithEnvironment("ASPNETCORE_ENVIRONMENT", "Development")
     .WithEnvironment("ASPNETCORE_URLS", "http://127.0.0.1:0")
-    .WithReference(postgres)
+    .WithEnvironment("ConnectionStrings__locintel", appConnection)
     .WaitForCompletion(migrate)
     .WithEnvironment("Database__AppUser", "app_user")
     .WithEnvironment("Database__AppPassword", "app_user")
     .WithEnvironment("ROLE", "worker");
+if (pgbouncer is not null)
+    workerBuilder.WaitFor(pgbouncer);
 
 builder.Build().Run();

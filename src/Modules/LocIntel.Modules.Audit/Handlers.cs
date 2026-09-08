@@ -1,5 +1,6 @@
 using LocIntel.Contracts;
 using LocIntel.Modules.Audit.Data;
+using LocIntel.Platform.Entitlements;
 using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Messaging;
 using Microsoft.EntityFrameworkCore;
@@ -44,20 +45,30 @@ public static class RecordDomainAuditHandler
         // outbound webhooks ride the same stream (ADR 40): the event record
         // and its subscriptions live in this module, so the fan-out is one
         // same-context query away
-        var endpoints = await db.WebhookEndpoints.Where(e => e.Active).ToListAsync(ct);
+        var endpoints = await db
+            .WebhookEndpoints.Where(e => e.Active)
+            .OrderBy(e => e.CreatedAt)
+            .Take(WebhookDispatch.MaxEndpoints)
+            .ToListAsync(ct);
         var groupId = Guid.CreateVersion7();
         foreach (var endpoint in endpoints.Where(e => e.Matches(message.EventName)))
-            await bus.PublishAsync(
-                new DeliverWebhook(
-                    endpoint.Id,
-                    groupId,
-                    message.EventName,
-                    message.PayloadJson,
-                    envelope.SentAt,
-                    Attempt: 1
-                ),
-                new Wolverine.DeliveryOptions { TenantId = org.ToString() }
-            );
+            if (
+                !await WebhookDispatch.EnqueueAsync(
+                    db,
+                    new OrgId(org),
+                    new DeliverWebhook(
+                        endpoint.Id,
+                        groupId,
+                        message.EventName,
+                        message.PayloadJson,
+                        envelope.SentAt,
+                        Attempt: 1
+                    ),
+                    bus,
+                    ct
+                )
+            )
+                throw new CapacityBusyException();
     }
 
     private static Guid RequireOrg(ITenantContext tenant, Envelope envelope) =>

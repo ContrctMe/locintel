@@ -5,7 +5,8 @@ import sys
 import xml.etree.ElementTree as ET
 
 required = {
-    "LocIntel.Modules.Tenancy.Sites.SiteEndpoints": {"Create", "List", "Update"},
+    "LocIntel.Modules.Tenancy.Sites.SiteEndpoints": {"Create", "Update"},
+    "LocIntel.Modules.Tenancy.Sites.SiteListEndpoints": {"List"},
     "LocIntel.Modules.Identity.Users.OrganizationUpsertedHandler": {"Handle"},
     "LocIntel.Modules.Ingest.StagingService": {"StageAsync"},
 }

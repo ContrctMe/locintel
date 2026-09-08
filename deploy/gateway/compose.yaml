@@ -1,0 +1,107 @@
+# Local reference topology. Production forks supply real adapters/TLS/secrets;
+# see docs/gateway-fairness.md. Only gateway HTTP is published to the host.
+name: locintel-gateway
+x-app: &app
+  image: locintel:gateway-dev
+  user: "${LOCAL_UID:?run tools/gateway-stack.sh}:0"
+  volumes:
+    - ${GATEWAY_RUNTIME:?run tools/gateway-stack.sh}/state:/state
+  environment: &app-env
+    ASPNETCORE_ENVIRONMENT: Development
+    ASPNETCORE_URLS: http://+:8080
+    ConnectionStrings__locintel: Host=postgres;Database=locintel;Username=app_user;Password=app_user;Maximum Pool Size=20;Max Auto Prepare=100
+    Database__AppUser: app_user
+    Database__AppPassword: app_user
+    Auth__Provider: local
+    Secrets__LocalMasterKey: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+    DataProtection__KeyPath: /state/keys
+    Storage__LocalRoot: /state/storage
+    Proxy__TrustForwardedHeaders: "true"
+    Proxy__KnownNetworks__0: "${GATEWAY_SUBNET:-172.31.249.0/24}"
+    AllowedHosts: "localhost;127.0.0.1;*.localhost;*.locintel.test"
+    Gateway__IdentityKey: ${GATEWAY_IDENTITY_KEY:?run tools/gateway-stack.sh}
+    Gateway__Required: "true"
+    Traffic__MaxConcurrentRequests: "${TRAFFIC_MAX_CONCURRENT_REQUESTS:-128}"
+    Public__HostTemplate: http://{slug}.localhost:5800
+    Logging__LogLevel__Default: Warning
+  networks: [backend]
+services:
+  postgres:
+    image: ${LOCINTEL_POSTGRES_IMAGE:?source tools/postgres-image.sh}
+    environment:
+      POSTGRES_PASSWORD: owner
+      POSTGRES_DB: locintel
+    command: [postgres, -c, max_connections=300, -c, shared_preload_libraries=pg_stat_statements, -c, pg_stat_statements.track=all]
+    healthcheck:
+      test: [CMD, pg_isready, -h, 127.0.0.1, -U, postgres]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+    networks: [backend]
+  migrate:
+    <<: *app
+    environment:
+      <<: *app-env
+      ROLE: migrate
+      ConnectionStrings__locintel: Host=postgres;Database=locintel;Username=postgres;Password=owner
+    depends_on:
+      postgres: {condition: service_healthy}
+  api:
+    <<: *app
+    environment:
+      <<: *app-env
+      ROLE: api
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+  worker:
+    <<: *app
+    environment:
+      <<: *app-env
+      ROLE: worker
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+  redis:
+    image: redis:8.2-alpine@sha256:30abb90e62f14b737010746def3ba99cc79fe19dcdb3d37b41f21fc62e7da19d
+    command: [redis-server, --save, "", --appendonly, "no", --maxmemory, 128mb, --maxmemory-policy, noeviction]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 2s
+      timeout: 1s
+      retries: 30
+    networks: [backend]
+  ratelimit:
+    image: envoyproxy/ratelimit@sha256:50ad8cb348c85556d49f1c583c79d4107cd8ab2a1a9540d290700d8e1f4cc271
+    environment:
+      REDIS_SOCKET_TYPE: tcp
+      REDIS_URL: redis:6379
+      RUNTIME_ROOT: /data
+      RUNTIME_SUBDIRECTORY: runtime
+      RUNTIME_WATCH_ROOT: "false"
+      HEALTHY_WITH_AT_LEAST_ONE_CONFIG_LOADED: "true"
+      LOG_LEVEL: warn
+      # Exact tenant overrides appear in this service's descriptor metric names.
+      # Disable those metrics; gateway aggregate counters remain observable.
+      DISABLE_STATS: "true"
+      USE_STATSD: "false"
+      LIMIT_RESPONSE_HEADERS_ENABLED: "true"
+      LIMIT_RESET_HEADER: Retry-After
+      LOCAL_CACHE_SIZE_IN_BYTES: "0"
+    volumes:
+      - ${GATEWAY_RUNTIME}/ratelimit:/data/runtime:ro
+    depends_on:
+      redis: {condition: service_healthy}
+    networks: [backend]
+  gateway:
+    image: envoyproxy/envoy:v1.39.1@sha256:57e14a549d7bd43c8d3f6d03e8cfa653e037d4b38e133acd9b54f38c524401b4
+    user: "${LOCAL_UID}:0"
+    command: [envoy, -c, /etc/envoy/envoy.yaml, --concurrency, "2", --log-level, warn]
+    volumes:
+      - ${GATEWAY_RUNTIME}/envoy.yaml:/etc/envoy/envoy.yaml:ro
+    ports: ["127.0.0.1:5800-5809:8080"]
+    depends_on: [api, ratelimit]
+    networks: [backend]
+networks:
+  backend:
+    ipam:
+      config:
+        - subnet: "${GATEWAY_SUBNET:-172.31.249.0/24}"

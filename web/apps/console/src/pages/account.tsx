@@ -1,9 +1,9 @@
 import { api } from '@locintel/api';
-import { Button, Card, CardContent, CardHeader, CardTitle, ConfirmButton, Input,
-  Label } from '@locintel/ui';
+import { Button, ConfirmButton, Field, FieldLabel, Input } from '@locintel/ui';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { fmtDateTime } from '../lib/format';
+import { PageHeader, Panel } from '../components/page';
 import { useApiMutation } from '../lib/mutation';
 import { useMe } from '../session';
 import { useSessionTransition } from '../app/session-boundary';
@@ -80,30 +80,25 @@ export function AccountPage() {
   if (!me || me.tier !== 'user') return null;
   const draft = name ?? me.name ?? '';
   return (
-    <div className="max-w-lg space-y-6">
-      <h1 className="text-2xl font-semibold">Account</h1>
-      <Card>
-        <CardHeader><CardTitle>Profile</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          <div className="space-y-1">
-            <Label htmlFor="account-email">Email</Label>
+    <div className="max-w-2xl space-y-6">
+      <PageHeader title="Account" description="You, across every organization you belong to." />
+      <Panel title="Profile" bodyClassName="space-y-3">
+          <Field>
+            <FieldLabel htmlFor="account-email">Email</FieldLabel>
             <Input id="account-email" value={me.email} disabled />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="account-name">Name</Label>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="account-name">Name</FieldLabel>
             <Input id="account-name" value={draft} onChange={(e) => setName(e.target.value)} />
-          </div>
+          </Field>
           <Button
             disabled={draft === (me.name ?? '') || !draft.trim() || rename.isPending}
             onClick={() => rename.mutate(draft.trim())}
           >
             Save
           </Button>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader><CardTitle>Sign-in &amp; security</CardTitle></CardHeader>
-        <CardContent className="space-y-2">
+        </Panel>
+      <Panel title="Sign-in &amp; security" bodyClassName="space-y-2">
           <p className="text-sm text-muted-foreground">
             Your password and multi-factor sign-in are managed by your identity provider.
           </p>
@@ -114,11 +109,8 @@ export function AccountPage() {
           >
             {passwordReset.isSuccess ? 'Reset email sent' : 'Send password reset email'}
           </Button>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader><CardTitle>Sessions</CardTitle></CardHeader>
-        <CardContent className="space-y-2">
+        </Panel>
+      <Panel title="Sessions" bodyClassName="space-y-2">
           {sessions?.map((s) => (
             <div key={s.id} className="flex items-center justify-between gap-2 text-sm">
               <div className="min-w-0">
@@ -144,11 +136,8 @@ export function AccountPage() {
               Sign out other sessions
             </ConfirmButton>
           )}
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader><CardTitle className="text-destructive">Danger zone</CardTitle></CardHeader>
-        <CardContent className="space-y-2">
+        </Panel>
+      <Panel title={<span className="text-destructive">Danger zone</span>} bodyClassName="space-y-2">
           <p className="text-sm text-muted-foreground">
             Deleting your account removes your access everywhere and your identity provider
             record. Organizations you manage alone must be handed over or offboarded first.
@@ -160,8 +149,7 @@ export function AccountPage() {
           >
             Delete account
           </ConfirmButton>
-        </CardContent>
-      </Card>
+        </Panel>
     </div>
   );
 }

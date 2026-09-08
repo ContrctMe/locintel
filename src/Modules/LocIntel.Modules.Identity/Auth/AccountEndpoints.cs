@@ -52,7 +52,7 @@ public static class AccountEndpoints
                 if (GetUserId(http) is not { } userId)
                     return Results.Unauthorized();
                 if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Length > 200)
-                    return Results.BadRequest(new { error = "name must be 1-200 characters" });
+                    return ApiErrors.BadRequest("name must be 1-200 characters");
 
                 var user = await db.Users.FirstAsync(u => u.Id == userId, ct);
                 user.Name = request.Name.Trim();
@@ -228,13 +228,11 @@ public static class AccountEndpoints
                         .OrgDirectory.Where(d => blockers.Contains(d.OrgId))
                         .Select(d => d.Name)
                         .ToListAsync(ct);
-                    return Results.Conflict(
-                        new
-                        {
-                            error = "you are the last manager of an organization - transfer management or offboard it first",
-                            code = "last_manager",
-                            organizations = names,
-                        }
+                    return ApiErrors.Status(
+                        "you are the last manager of an organization - transfer management or offboard it first",
+                        StatusCodes.Status409Conflict,
+                        "last_manager",
+                        new { organizations = names }
                     );
                 }
 

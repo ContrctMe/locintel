@@ -15,19 +15,47 @@ for name in smoke-pg smoke-api smoke-worker; do
     exit 1
   fi
 done
-cleanup() { docker rm -f smoke-pg smoke-api smoke-worker >/dev/null 2>&1 || true; docker network rm "$net" >/dev/null 2>&1 || true; }
+secrets_dir=$(mktemp -d "${TMPDIR:-/tmp}/locintel-smoke-keys.XXXXXX")
+keys_volume="$net-keys"
+cleanup() {
+  docker rm -f smoke-pg smoke-api smoke-worker >/dev/null 2>&1 || true
+  docker network rm "$net" >/dev/null 2>&1 || true
+  docker volume rm "$keys_volume" >/dev/null 2>&1 || true
+  rm -rf "$secrets_dir"
+}
 trap cleanup EXIT
+openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj /CN=locintel-image-smoke \
+  -keyout "$secrets_dir/key.pem" -out "$secrets_dir/cert.pem" >/dev/null 2>&1
+openssl pkcs12 -export -inkey "$secrets_dir/key.pem" -in "$secrets_dir/cert.pem" \
+  -out "$secrets_dir/keyring.pfx" -passout pass: >/dev/null 2>&1
+# The containing host directory remains 0700; mount only this ephemeral PFX file.
+chmod 444 "$secrets_dir/keyring.pfx"
+docker volume create "$keys_volume" >/dev/null
+docker run --rm --network none --user 0 --entrypoint chown \
+  -v "$keys_volume:/keys" "$image" 1654:1654 /keys
 docker network create "$net" >/dev/null
-docker run -d --name smoke-pg --network "$net" -e POSTGRES_PASSWORD=owner -e POSTGRES_DB=locintel postgres:17-alpine >/dev/null
-for _ in $(seq 1 30); do docker exec smoke-pg pg_isready -U postgres >/dev/null 2>&1 && break; sleep 1; done
+source "$(cd "$(dirname "$0")" && pwd)/postgres-image.sh"
+docker run -d --name smoke-pg --network "$net" -e POSTGRES_PASSWORD=owner -e POSTGRES_DB=locintel "$LOCINTEL_POSTGRES_IMAGE" >/dev/null
+# Over TCP, not the socket: the image's first-time init runs a temporary
+# server on the socket alone (PostGIS extension scripts take seconds), so a
+# socket check says "ready" before the real server is up (ADR 50).
+for _ in $(seq 1 60); do docker exec smoke-pg pg_isready -h 127.0.0.1 -U postgres >/dev/null 2>&1 && break; sleep 1; done
 
 common=(
   --network "$net"
+  --read-only --cap-drop ALL --security-opt no-new-privileges
+  --tmpfs /tmp:rw,nosuid,size=268435456
+  -v "$keys_volume:/keys"
+  -v "$secrets_dir/keyring.pfx:/certificate/keyring.pfx:ro"
   -e ASPNETCORE_ENVIRONMENT=Production
-  -e "ConnectionStrings__locintel=Host=smoke-pg;Database=locintel;Username=postgres;Password=owner"
+  -e "ConnectionStrings__locintel=Host=smoke-pg;Database=locintel;Username=app_user;Password=app_user"
   -e Database__AppUser=app_user -e Database__AppPassword=app_user
-  -e DataProtection__KeyPath=/tmp/keys
+  -e DataProtection__KeyPath=/keys
+  -e DataProtection__CertificatePath=/certificate/keyring.pfx
   -e Auth__Provider=workos -e Auth__WorkOS__ApiKey=sk_unused -e Auth__WorkOS__ClientId=client_unused
+  -e Auth__WorkOS__WebhookSecret=whsec_unused
+  -e "AllowedHosts=localhost;127.0.0.1;*.example.test"
+  -e Proxy__KnownProxies__0=127.0.0.1
   -e Storage__Provider=s3 -e Storage__S3__BucketName=unused
   -e Scanner__Provider=clamav -e Scanner__ClamAv__Host=unused
   -e Secrets__Provider=kms -e Secrets__Kms__KeyId=unused
@@ -39,7 +67,8 @@ common=(
 )
 
 echo "== migrate"
-docker run --rm "${common[@]}" -e ROLE=migrate "$image"
+docker run --rm "${common[@]}" -e ROLE=migrate \
+  -e "ConnectionStrings__locintel=Host=smoke-pg;Database=locintel;Username=postgres;Password=owner" "$image"
 
 probe() { # name port
   local name=$1 port=$2
@@ -66,6 +95,13 @@ assert_nonroot() {
   local uid
   uid=$(docker exec "$1" id -u)
   [[ "$uid" =~ ^[0-9]+$ && "$uid" != 0 ]] || { echo "$1 is not running as a non-root user"; exit 1; }
+  docker exec "$1" sh -c 'grep -Eq "^Seccomp:[[:space:]]+2$" /proc/self/status' || {
+    echo "$1 has no active seccomp filter"; exit 1;
+  }
+  docker exec "$1" sh -c 'test ! -w /app && test -w /tmp && test -w /keys' || {
+    echo "$1 filesystem permissions do not match the hardened deployment"; exit 1;
+  }
+  docker exec "$1" dotnet --list-runtimes
 }
 sql() { docker exec smoke-pg psql -X -v ON_ERROR_STOP=1 -U postgres -d locintel -Atc "$1"; }
 
@@ -76,7 +112,7 @@ sql "INSERT INTO platform.idempotency_keys (org_id, key, endpoint, request_hash,
      VALUES ('00000000-0000-0000-0000-000000000001', 'smoke-expired', 'smoke', 'smoke', now() - interval '25 hours'),
             ('00000000-0000-0000-0000-000000000001', 'smoke-fresh', 'smoke', 'smoke', now())" >/dev/null
 echo "== worker"
-docker run -d --name smoke-worker "${common[@]}" -p 18081:8080 -e ROLE=worker "$image" >/dev/null
+docker run -d --name smoke-worker "${common[@]}" -p 127.0.0.1:18081:8080 -e ROLE=worker "$image" >/dev/null
 assert_nonroot smoke-worker
 probe smoke-worker 18081
 for _ in $(seq 1 60); do
@@ -102,7 +138,7 @@ done
 echo "worker completed durable cleanup and retained the unexpired record"
 
 echo "== api"
-docker run -d --name smoke-api "${common[@]}" -p 18080:8080 -e ROLE=api "$image" >/dev/null
+docker run -d --name smoke-api "${common[@]}" -p 127.0.0.1:18080:8080 -e ROLE=api "$image" >/dev/null
 assert_nonroot smoke-api
 probe smoke-api 18080
 for name in smoke-api smoke-worker; do

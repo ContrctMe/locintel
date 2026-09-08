@@ -33,3 +33,6 @@ TestResults/
 # browser suite output (tools/e2e-stack.sh)
 web/tools/e2e/test-results/
 web/tools/e2e/playwright-report/
+
+# pnpm content-addressable store, when a local pnpm config points it here
+.pnpm-store/

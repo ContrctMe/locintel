@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using System.Security.Cryptography;
+using LocIntel.Contracts;
 using LocIntel.Modules.Identity.Data;
 using LocIntel.Modules.Identity.Users;
 using LocIntel.Platform.Auth;
@@ -11,6 +13,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace LocIntel.Modules.Identity.Auth;
 
@@ -52,6 +55,7 @@ public static class AuthEndpoints
             (
                 HttpContext http,
                 IAuthProvider provider,
+                IHostEnvironment environment,
                 IDataProtectionProvider dp,
                 string? returnUrl,
                 string? hint,
@@ -59,9 +63,28 @@ public static class AuthEndpoints
                 bool signup = false
             ) =>
             {
+                var correlation = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+                http.Response.Cookies.Append(
+                    "locintel_auth_correlation",
+                    correlation,
+                    new CookieOptions
+                    {
+                        HttpOnly = true,
+                        Secure =
+                            http.Request.IsHttps
+                            || (
+                                !environment.IsDevelopment()
+                                && !environment.IsEnvironment("Testing")
+                            ),
+                        SameSite = SameSiteMode.Lax,
+                        Path = "/auth/callback",
+                        MaxAge = TimeSpan.FromMinutes(10),
+                        IsEssential = true,
+                    }
+                );
                 var state = dp.CreateProtector(StatePurpose)
                     .Protect(
-                        $"{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}|{SafeReturnUrl(returnUrl)}"
+                        $"{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}|{correlation}|{SafeReturnUrl(returnUrl)}"
                     );
                 var redirectUri = CallbackUri(http);
                 return Results.Redirect(
@@ -78,16 +101,12 @@ public static class AuthEndpoints
 
         app.MapGet(
             "/auth/signup",
-            async (IAuthProvider provider, string email, CancellationToken ct) =>
+            (string email) =>
             {
                 var trimmed = email.Trim().ToLowerInvariant();
                 if (!trimmed.Contains('@') || trimmed.Length > 320)
-                    return Results.BadRequest(new { error = "a valid email is required" });
-                // AuthKit's hosted screen registers users itself; providers
-                // that need the record first (the emulator, bare OIDC setups
-                // with admin-created users) get it via the capability.
-                if (provider is IUserProvisioning provisioning)
-                    await provisioning.EnsureUserAsync(trimmed, ct);
+                    return ApiErrors.BadRequest("a valid email is required");
+                // Account creation and email verification belong to the provider's hosted flow.
                 return Results.Redirect(
                     $"/auth/login?hint={Uri.EscapeDataString(trimmed)}&signup=true"
                 );
@@ -99,6 +118,7 @@ public static class AuthEndpoints
             async (
                 HttpContext http,
                 IAuthProvider provider,
+                IHostEnvironment environment,
                 IDataProtectionProvider dp,
                 IdentityDbContext db,
                 string? code,
@@ -123,16 +143,39 @@ public static class AuthEndpoints
                 string returnUrl;
                 try
                 {
-                    var payload = dp.CreateProtector(StatePurpose).Unprotect(state).Split('|', 2);
-                    if (DateTimeOffset.UtcNow.ToUnixTimeSeconds() - long.Parse(payload[0]) > 600)
-                        return Results.BadRequest(
-                            new { error = "auth state expired, retry login" }
-                        );
-                    returnUrl = payload[1];
+                    var payload = dp.CreateProtector(StatePurpose).Unprotect(state).Split('|', 3);
+                    var age = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - long.Parse(payload[0]);
+                    var correlation = http.Request.Cookies["locintel_auth_correlation"];
+                    if (
+                        payload.Length != 3
+                        || correlation is null
+                        || !CryptographicOperations.FixedTimeEquals(
+                            System.Text.Encoding.UTF8.GetBytes(payload[1]),
+                            System.Text.Encoding.UTF8.GetBytes(correlation)
+                        )
+                    )
+                        return ApiErrors.BadRequest("auth state belongs to another browser");
+                    http.Response.Cookies.Delete(
+                        "locintel_auth_correlation",
+                        new CookieOptions
+                        {
+                            Path = "/auth/callback",
+                            Secure =
+                                http.Request.IsHttps
+                                || (
+                                    !environment.IsDevelopment()
+                                    && !environment.IsEnvironment("Testing")
+                                ),
+                            SameSite = SameSiteMode.Lax,
+                        }
+                    );
+                    if (age is < 0 or > 600)
+                        return ApiErrors.BadRequest("auth state expired, retry login");
+                    returnUrl = SafeReturnUrl(payload[2]);
                 }
                 catch (Exception)
                 {
-                    return Results.BadRequest(new { error = "invalid auth state" });
+                    return ApiErrors.BadRequest("invalid auth state");
                 }
 
                 var identity = await provider.ExchangeCodeAsync(code, CallbackUri(http), ct);

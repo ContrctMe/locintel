@@ -24,7 +24,10 @@ public sealed record SsoPortalLinkResponse(string Url);
 /// </summary>
 public static class SsoEndpoints
 {
-    [Transactional(typeof(IdentityDbContext))]
+    [Transactional(
+        typeof(IdentityDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/org/sso")]
     [ProducesResponseType(typeof(SsoStatusResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> Status(
@@ -66,13 +69,13 @@ public static class SsoEndpoints
         if (gate is not GateOutcome.Allowed { Principal: Principal.User principal, Org: var org })
             return gate.ToResult();
         if (request.Intent is not ("sso" or "dsync"))
-            return Results.BadRequest(new { error = "intent must be 'sso' or 'dsync'" });
+            return ApiErrors.BadRequest("intent must be 'sso' or 'dsync'");
         if (!await entitlements.HasAsync(org, EntitlementCatalog.SsoEnabled, ct))
             return GateResults.FeatureOff(EntitlementCatalog.SsoEnabled);
 
         var entry = await db.OrgDirectory.FirstOrDefaultAsync(d => d.OrgId == org, ct);
         if (provider is not IAdminPortal portal || entry?.ExternalId is not { } externalOrgId)
-            return Results.NotFound(new { error = "the auth provider has no admin portal" });
+            return ApiErrors.NotFound("the auth provider has no admin portal");
 
         // open-redirect guard: relative paths only (same rule as auth returnUrl)
         var returnPath =

@@ -71,11 +71,14 @@ public static class MemberEndpoints
         if (membership is null)
             return Results.NotFound();
         if (await Access.ManagerGuard.WouldOrphanAsync(db, org, userId, ct))
-            return Results.Conflict(
-                new { error = "you are the last role manager; assign another before leaving" }
+            return ApiErrors.Conflict(
+                "you are the last role manager; assign another before leaving"
             );
 
         await db.MembershipRoles.Where(r => r.MembershipId == membership.Id).ExecuteDeleteAsync(ct);
+        await db
+            .GrantExceptions.Where(e => e.OrgId == org && e.UserId == userId)
+            .ExecuteDeleteAsync(ct);
         db.Memberships.Remove(membership);
         await db.SaveChangesAsync(ct);
 
@@ -101,7 +104,10 @@ public static class MemberEndpoints
         return Results.NoContent();
     }
 
-    [Transactional(typeof(IdentityDbContext))]
+    [Transactional(
+        typeof(IdentityDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/members")]
     [ProducesResponseType(typeof(MemberListResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> List(
@@ -191,20 +197,18 @@ public static class MemberEndpoints
             return gate.ToResult();
         var inviter = principal.UserId;
         if (provider is not IOrganizationDirectory directory)
-            return Results.Json(
-                new { error = $"auth provider '{provider.Name}' does not support invitations" },
-                statusCode: StatusCodes.Status501NotImplemented
+            return ApiErrors.Status(
+                $"auth provider '{provider.Name}' does not support invitations",
+                StatusCodes.Status501NotImplemented
             );
         var directoryEntry = await db.OrgDirectory.FirstOrDefaultAsync(d => d.OrgId == org, ct);
         if (directoryEntry?.ExternalId is not { } externalOrgId)
-            return Results.Conflict(new { error = "org is not linked to the auth provider" });
+            return ApiErrors.Conflict("org is not linked to the auth provider");
         if (!await db.Roles.AnyAsync(r => r.Id == request.RoleId, ct))
             return Results.NotFound();
         var email = request.Email.Trim().ToLowerInvariant();
         if (await db.InvitedRoles.AnyAsync(i => i.Email == email, ct))
-            return Results.Conflict(
-                new { error = "an invitation for this email is already pending" }
-            );
+            return ApiErrors.Conflict("an invitation for this email is already pending");
 
         // provider delivers and tracks; we record what the invitee becomes
         var invitationId = await directory.SendInvitationAsync(externalOrgId, email, ct);
@@ -225,7 +229,10 @@ public static class MemberEndpoints
         return Results.Ok(new InvitationCreatedResponse(invitationId));
     }
 
-    [Transactional(typeof(IdentityDbContext))]
+    [Transactional(
+        typeof(IdentityDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/members/invitations")]
     [ProducesResponseType(typeof(List<InvitationResponse>), StatusCodes.Status200OK)]
     public static async Task<IResult> ListInvitations(
@@ -308,9 +315,7 @@ public static class MemberEndpoints
             return gate.ToResult();
         var actor = principal.UserId;
         if (userId == actor)
-            return Results.BadRequest(
-                new { error = "you cannot remove yourself; use leave instead" }
-            );
+            return ApiErrors.BadRequest("you cannot remove yourself; use leave instead");
 
         var membership = await db.Memberships.FirstOrDefaultAsync(
             m => m.UserId == userId && m.OrgId == org,
@@ -319,10 +324,13 @@ public static class MemberEndpoints
         if (membership is null)
             return Results.NotFound();
         if (await Access.ManagerGuard.WouldOrphanAsync(db, org, userId, ct))
-            return Results.Conflict(new { error = "cannot remove the org's last role manager" });
+            return ApiErrors.Conflict("cannot remove the org's last role manager");
 
         // deletion tier 3 (ADR 25): the membership ends; audit is the record
         await db.MembershipRoles.Where(r => r.MembershipId == membership.Id).ExecuteDeleteAsync(ct);
+        await db
+            .GrantExceptions.Where(e => e.OrgId == org && e.UserId == userId)
+            .ExecuteDeleteAsync(ct);
         db.Memberships.Remove(membership);
         await db.SaveChangesAsync(ct);
 

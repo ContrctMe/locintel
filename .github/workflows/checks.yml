@@ -7,6 +7,9 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 env:
   DOTNET_NOLOGO: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
@@ -15,8 +18,10 @@ jobs:
   architecture:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           dotnet-version: 10.0.x
       - run: dotnet tool restore || true
@@ -25,8 +30,12 @@ jobs:
         run: dotnet csharpier check .
       - name: Architecture tests
         run: dotnet test tests/LocIntel.ArchitectureTests -c Release --no-build
-      - name: Required gate regression
-        run: python3 tests/ci-gate.test.py
+      - name: Required gate and infrastructure security regressions
+        run: |
+          python3 tests/ci-gate.test.py
+          python3 tests/infrastructure-security.test.py
+          python3 tests/reporting-image.test.py
+          python3 deploy/digitalocean/render.py --check
       - name: Wolverine codegen (catches fails-at-first-request wiring at CI time)
         run: dotnet run --project src/LocIntel.Api -c Release --no-build -- codegen write
         env:
@@ -42,8 +51,10 @@ jobs:
   unit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           dotnet-version: 10.0.x
       - name: Unit tests (discovered by *.UnitTests.csproj - pure logic only)
@@ -58,7 +69,7 @@ jobs:
               { echo "$project produced no Cobertura report"; exit 1; }
           done
           [ "$found" = "1" ] || { echo "no unit-test projects found"; exit 1; }
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: coverage-unit
           path: tests/**/TestResults/**/coverage.cobertura.xml
@@ -71,8 +82,10 @@ jobs:
       matrix:
         shard: [1, 2]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           dotnet-version: 10.0.x
       - run: dotnet build tests/LocIntel.IntegrationTests -c Release
@@ -85,7 +98,7 @@ jobs:
           export LOCINTEL_TEST_SHUFFLE=$RANDOM
           echo "test order seed: $LOCINTEL_TEST_SHUFFLE (replay with LOCINTEL_TEST_SHUFFLE=$LOCINTEL_TEST_SHUFFLE)"
           COVERAGE=1 CONFIGURATION=Release tools/run-integration-shard.sh ${{ matrix.shard }} 2
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: integration-shard-${{ matrix.shard }}
@@ -99,14 +112,16 @@ jobs:
     # an API change is a reviewable diff in the same PR, or CI fails (ADR 38)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           dotnet-version: 10.0.x
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
         with:
           version: 9
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
       - name: Regenerate contract snapshot
@@ -125,11 +140,13 @@ jobs:
   frontend:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
         with:
           version: 9
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
       - name: Regenerate the public app's route tree
@@ -164,8 +181,10 @@ jobs:
     # production-valid configuration must NOT be refused.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           dotnet-version: 10.0.x
       - run: dotnet build src/LocIntel.Api -c Release
@@ -182,6 +201,32 @@ jobs:
           docker image inspect locintel:ci --format 'user={{.Config.User}} ports={{.Config.ExposedPorts}}'
       - name: Smoke the three roles from the image
         run: tools/smoke-image.sh locintel:ci
+      - name: Install the pinned local image scanner
+        working-directory: ${{ runner.temp }}
+        run: |
+          curl --fail --silent --show-error --location \
+            https://github.com/aquasecurity/trivy/releases/download/v0.69.3/trivy_0.69.3_Linux-64bit.tar.gz \
+            --output trivy.tar.gz
+          printf '%s\n' '1816b632dfe529869c740c0913e36bd1629cb7688bd5634f4a858c1d57c88b75  trivy.tar.gz' | sha256sum --check -
+          mkdir -p trivy-bin
+          tar -xzf trivy.tar.gz -C trivy-bin trivy
+          echo "$RUNNER_TEMP/trivy-bin" >> "$GITHUB_PATH"
+      - name: Scan the exact artifact and retain its SBOM
+        run: tools/scan-image.sh locintel:ci coverage/image-security
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: image-security
+          path: coverage/image-security/
+          if-no-files-found: error
+      - name: Generate reference reports from the production image
+        run: bash tools/reporting-image.sh locintel:ci coverage/reporting-image
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: reporting-image-evidence
+          path: coverage/reporting-image/
+          if-no-files-found: ignore
 
   browser:
     # Critical flows and tenant transitions in Chromium, Firefox, and WebKit, with an axe pass on
@@ -190,35 +235,41 @@ jobs:
     # tools/e2e-stack.sh boots Postgres, the migrate and api roles and the
     # built console and public SSR servers, the same way locally.
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [chromium, firefox, webkit]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           dotnet-version: 10.0.x
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
         with:
           version: 9
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
       - name: Install
         working-directory: web
         run: |
           pnpm install --frozen-lockfile
-          pnpm --filter @locintel/e2e exec playwright install --with-deps chromium firefox webkit
+          pnpm --filter @locintel/e2e exec playwright install --with-deps ${{ matrix.engine }}
       - name: Browser argument forwarding regression
         working-directory: web
-        run: pnpm test:e2e --project=chromium --list
+        run: pnpm test:e2e --project=${{ matrix.engine }} --list
       - name: Browser and accessibility suite
         env:
           Logging__LogLevel__Microsoft.AspNetCore.Hosting.Diagnostics: Information
-        run: tools/e2e-stack.sh
+        run: tools/e2e-stack.sh --project=${{ matrix.engine }}
       - name: Failed-stack diagnostic preservation regression
         run: bash tests/e2e-stack-artifacts.test.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: failure()
         with:
-          name: browser-failure-diagnostics
+          name: browser-${{ matrix.engine }}-failure-diagnostics
           path: web/tools/e2e/test-results/
           if-no-files-found: ignore
 
@@ -229,15 +280,17 @@ jobs:
     needs: [unit, integration]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           dotnet-version: 10.0.x
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: coverage-unit
           path: tests/LocIntel.CoverageInput/unit
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           pattern: integration-shard-*
           path: tests/LocIntel.CoverageInput/integration
@@ -245,18 +298,51 @@ jobs:
       - name: Report by tier and module
         run: |
           tools/coverage-report.sh coverage tests/LocIntel.CoverageInput >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: coverage-report
           path: coverage/
 
+  gateway:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - name: Portable gateway fairness and failure controls
+        run: |
+          tools/gateway-stack.sh up 2 2
+          address=$(tools/gateway-stack.sh compose port --index 1 gateway 8080)
+          FLEET_BENCH_FIXTURE="$PWD/coverage/gateway/fixture.local.json" \
+            node tools/fleet-bench.mjs "http://$address" 15 32 2
+          node tools/gateway.test.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: gateway-controls
+          # Never upload runtime keys, cookies, or API-key fixtures.
+          path: coverage/gateway/fairness-results.json
+          if-no-files-found: warn
+      - name: Stop local reference
+        if: always()
+        run: tools/gateway-stack.sh down
+
   checks:
     # the one status branch protection requires
     if: ${{ always() }}
-    needs: [architecture, unit, integration, contract, frontend, image, browser, coverage]
+    needs: [architecture, unit, integration, contract, frontend, image, browser, coverage, gateway]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
       - name: Require every dependency to succeed
         env:
           NEEDS_JSON: ${{ toJSON(needs) }}

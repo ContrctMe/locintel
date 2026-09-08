@@ -51,7 +51,10 @@ public class StorageTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         var file = (await ApiFixture.GetItemsAsync(client, "/api/files"))
             .EnumerateArray()
             .Single(f => f.GetProperty("id").GetGuid() == id);
-        Assert.Equal("PendingUpload", file.GetProperty("status").GetString());
+        Assert.Equal(
+            actualBytes > 4 ? "Quarantined" : "PendingUpload",
+            file.GetProperty("status").GetString()
+        );
         Assert.False(file.GetProperty("hasPreview").GetBoolean());
         Assert.Equal(
             HttpStatusCode.NotFound,
@@ -138,18 +141,13 @@ public class StorageTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         var (client, fileId) = await Upload("older-scan.txt", "clean content");
         using var owner = client;
         await PollStatus(owner, fileId, "Clean");
+        // Populate completed files; outstanding upload tickets intentionally have a smaller budget.
         for (var i = 0; i < 50; i++)
-            (
-                await owner.PostAsJsonAsync(
-                    "/api/files",
-                    new
-                    {
-                        name = $"newer-{i}.txt",
-                        contentType = "text/plain",
-                        sizeBytes = 1,
-                    }
-                )
-            ).EnsureSuccessStatusCode();
+        {
+            var (newerClient, newerId) = await Upload($"newer-{i}.txt", "x");
+            await PollStatus(newerClient, newerId, "Clean");
+            newerClient.Dispose();
+        }
 
         var page = await ApiFixture.GetItemsAsync(owner, "/api/files");
         Assert.DoesNotContain(

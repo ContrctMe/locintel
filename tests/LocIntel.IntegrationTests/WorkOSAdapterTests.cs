@@ -28,6 +28,11 @@ public class WorkOSEmulatorFixture : ApiFixture
             first_name: Alice
             last_name: Test
             email_verified: true
+          - id: user_01SECURITYSESSION000000
+            email: session-security@smoke.test
+            first_name: Security
+            last_name: Session
+            email_verified: true
         """;
 
     public override async Task InitializeAsync()

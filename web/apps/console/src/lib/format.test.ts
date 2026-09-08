@@ -1,6 +1,6 @@
 import { ENTITLEMENTS } from '@locintel/api';
 import { describe, expect, it } from 'vitest';
-import { ENTITLEMENT_LABELS, entitlementLabel, fmtDayInZone, fmtTimeInZone } from './format';
+import { ENTITLEMENT_LABELS, entitlementLabel, fmtBusinessDate, fmtDayInZone, fmtTimeInZone } from './format';
 
 describe('zone-pinned formatting', () => {
   // the regression this guards: the console rendered site hours in the
@@ -27,5 +27,17 @@ describe('entitlement labels', () => {
     for (const code of Object.keys(ENTITLEMENTS)) {
       expect(ENTITLEMENT_LABELS[code], `missing label for '${code}'`).toBeDefined();
     }
+  });
+});
+
+describe('a stamped business date', () => {
+  // a site-local day is a calendar date, never an instant: formatting it
+  // through UTC would show the day before in every zone west of Greenwich
+  it('names the weekday of the date as written', () => {
+    expect(fmtBusinessDate('2026-09-06')).toMatch(/^Sunday, Sep 6$/);
+    expect(fmtBusinessDate('2026-01-01')).toMatch(/^Thursday, Jan 1$/);
+  });
+  it('leaves an unreadable value alone', () => {
+    expect(fmtBusinessDate('today')).toBe('today');
   });
 });

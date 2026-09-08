@@ -24,6 +24,10 @@ public static class PurgeOrgWebhooksHandler
         var org =
             tenant.OrgId
             ?? throw new InvalidOperationException("purge arrived with no tenant on the envelope");
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"DELETE FROM platform.capacity_reservations WHERE org_id = {org.Value} AND code = {WebhookDispatch.Code}",
+            ct
+        );
         await db
             .WebhookDeliveries.IgnoreQueryFilters()
             .Where(d => d.OrgId == org)

@@ -32,7 +32,10 @@ public sealed record AttributeDefinitionResponse(
 /// </summary>
 public static class SiteAttributeEndpoints
 {
-    [Transactional(typeof(TenancyDbContext))]
+    [Transactional(
+        typeof(TenancyDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/sites/attributes")]
     [ProducesResponseType(typeof(List<AttributeDefinitionResponse>), StatusCodes.Status200OK)]
     public static async Task<IResult> List(
@@ -68,15 +71,15 @@ public static class SiteAttributeEndpoints
             key.Length is < 1 or > 60
             || !key.All(c => char.IsAsciiLetterLower(c) || char.IsAsciiDigit(c) || c == '_')
         )
-            return Results.BadRequest(
-                new { error = "key must be 1-60 chars of lowercase letters, digits, underscores" }
+            return ApiErrors.BadRequest(
+                "key must be 1-60 chars of lowercase letters, digits, underscores"
             );
         if (string.IsNullOrWhiteSpace(request.Label) || request.Label.Length > 100)
-            return Results.BadRequest(new { error = "label must be 1-100 characters" });
+            return ApiErrors.BadRequest("label must be 1-100 characters");
         if (!Enum.TryParse<SiteAttributeType>(request.Type, ignoreCase: true, out var type))
-            return Results.BadRequest(new { error = "type must be Text, Number, or Boolean" });
+            return ApiErrors.BadRequest("type must be Text, Number, or Boolean");
         if (await db.SiteAttributeDefinitions.AnyAsync(d => d.Key == key, ct))
-            return Results.Conflict(new { error = $"attribute '{key}' already exists" });
+            return ApiErrors.Conflict($"attribute '{key}' already exists");
 
         var definition = new SiteAttributeDefinition
         {

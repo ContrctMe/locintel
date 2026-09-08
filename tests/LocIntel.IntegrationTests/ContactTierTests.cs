@@ -68,7 +68,7 @@ public class ContactTierTests(ApiFixture fixture) : IClassFixture<ApiFixture>
 
         // redeem, prove the identified session works against the public tier
         var visitor = fixture.GuestClient();
-        visitor.DefaultRequestHeaders.Add("X-Forwarded-Host", "org-a.locintel.test");
+        visitor.DefaultRequestHeaders.Host = "org-a.locintel.test";
         await visitor.GetAsync(path);
         Assert.Equal(
             "contact",
@@ -92,7 +92,7 @@ public class ContactTierTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         // the live session's scope collapses to nothing (fail closed - the
         // still-valid cookie now opens no doors) ...
         var after = await visitor.GetFromJsonAsync<JsonElement>("/public/sites");
-        Assert.Equal(0, after.GetArrayLength());
+        Assert.Equal(0, after.GetProperty("items").GetArrayLength());
 
         // ... and the unexpired link no longer redeems
         var fresh = fixture.GuestClient();

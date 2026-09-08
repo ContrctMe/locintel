@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using LocIntel.Contracts;
 using LocIntel.Modules.Audit.Data;
+using LocIntel.Platform.Data;
 using LocIntel.Platform.Kernel;
 using Microsoft.EntityFrameworkCore;
 
@@ -95,11 +96,23 @@ public sealed class AuditTrailExporter(AuditDbContext db) : IAuditTrailExporter
         CancellationToken ct
     )
     {
-        var page = await rows.Take(MaxRowsPerKind + 1).ToListAsync(ct);
-        var truncated = page.Count > MaxRowsPerKind;
         var builder = new StringBuilder();
-        foreach (var row in page.Take(MaxRowsPerKind))
-            builder.AppendLine(JsonSerializer.Serialize(row, JsonSerializerOptions.Web));
+        var truncated = false;
+        var count = 0;
+        long bytes = 0;
+        await foreach (
+            var row in rows.Take(MaxRowsPerKind + 1).AsAsyncEnumerable().WithCancellation(ct)
+        )
+        {
+            var json = JsonSerializer.Serialize(row, JsonSerializerOptions.Web);
+            bytes += Encoding.UTF8.GetByteCount(json) + 1;
+            if (count++ == MaxRowsPerKind || bytes > ExportLimits.MaxSectionBytes)
+            {
+                truncated = true;
+                break;
+            }
+            builder.Append(json).Append('\n');
+        }
         return new AuditTrailSection(kind, builder.ToString(), truncated);
     }
 }

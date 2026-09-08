@@ -42,10 +42,12 @@ public class GeoSearchTests(ApiFixture fixture) : IClassFixture<ApiFixture>
 
         // the public host resolves the org (ADR 7): guest + forwarded host
         var guest = fixture.GuestClient();
-        guest.DefaultRequestHeaders.Add("X-Forwarded-Host", "org-a.localhost");
-        var near = await guest.GetFromJsonAsync<JsonElement>(
-            "/public/sites?near=42.3601,-71.0589" // downtown Boston
-        );
+        guest.DefaultRequestHeaders.Host = "org-a.localhost";
+        var near = (
+            await guest.GetFromJsonAsync<JsonElement>(
+                "/public/sites?near=42.3601,-71.0589" // downtown Boston
+            )
+        ).GetProperty("items");
         var names = near.EnumerateArray().Select(s => s.GetProperty("name").GetString()!).ToArray();
         Assert.Equal(["Cambridge", "Providence", "No Coords"], names);
 
@@ -59,6 +61,19 @@ public class GeoSearchTests(ApiFixture fixture) : IClassFixture<ApiFixture>
 
         // garbage near degrades to the plain alphabetical list, never an error
         var garbled = await guest.GetFromJsonAsync<JsonElement>("/public/sites?near=banana");
-        Assert.Equal(3, garbled.GetArrayLength());
+        Assert.Equal(3, garbled.GetProperty("items").GetArrayLength());
+        Assert.Equal(JsonValueKind.Null, garbled.GetProperty("next").ValueKind);
+
+        // the alphabetical list pages on a keyset, like the console's
+        var first = await guest.GetFromJsonAsync<JsonElement>("/public/sites?limit=2");
+        Assert.Equal(2, first.GetProperty("items").GetArrayLength());
+        var next = first.GetProperty("next").GetString();
+        Assert.NotNull(next);
+        var second = await guest.GetFromJsonAsync<JsonElement>(
+            $"/public/sites?limit=2&after={next}"
+        );
+        Assert.Equal(1, second.GetProperty("items").GetArrayLength());
+        Assert.Equal(JsonValueKind.Null, second.GetProperty("next").ValueKind);
+        Assert.Equal("Providence", second.GetProperty("items")[0].GetProperty("name").GetString());
     }
 }

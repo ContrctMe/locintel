@@ -9,6 +9,7 @@ using LocIntel.Modules.Ingest.Data;
 using LocIntel.Modules.Storage.Data;
 using LocIntel.Modules.Tenancy.Data;
 using LocIntel.Modules.Tenancy.Organizations;
+using LocIntel.Platform.Data;
 using LocIntel.Platform.Infra;
 using LocIntel.Platform.Kernel;
 using Microsoft.AspNetCore.Hosting;
@@ -32,7 +33,7 @@ namespace LocIntel.IntegrationTests;
 public class ApiFixture : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder(
-        "postgres:17-alpine"
+        PostgresImage.Reference // PostGIS, pinned by digest (ADR 50)
     ).Build();
 
     public WebApplicationFactory<Program> Factory { get; private set; } = null!;
@@ -375,10 +376,41 @@ public class ApiFixture : IAsyncLifetime
             "/api/hierarchy",
             new { name, levels = levels ?? ["Region"] }
         );
+        // a new org's default hierarchy lands via the outbox and may beat
+        // this call by a hair: a conflict means it exists now - read it
+        if (created.StatusCode == System.Net.HttpStatusCode.Conflict)
+            return await EnsureRootAsync(client, name, levels);
         created.EnsureSuccessStatusCode();
         return (await created.Content.ReadFromJsonAsync<JsonElement>())
             .GetProperty("rootNodeId")
             .GetGuid();
+    }
+
+    /// <summary>
+    /// The root of the hierarchy a NEW org is born with (seeded through the
+    /// outbox like the founder's membership): waits for it, so a test that
+    /// creates an org and then places a site never races the seed.
+    /// </summary>
+    public static async Task<Guid> WaitForRootAsync(HttpClient client)
+    {
+        Guid? root = null;
+        await WaitUntilAsync(
+            async () =>
+            {
+                var tree = await client.GetAsync("/api/hierarchy");
+                if (!tree.IsSuccessStatusCode)
+                    return false;
+                root = (await tree.Content.ReadFromJsonAsync<JsonElement>())
+                    .GetProperty("nodes")
+                    .EnumerateArray()
+                    .First(n => n.GetProperty("depth").GetInt32() == 0)
+                    .GetProperty("id")
+                    .GetGuid();
+                return true;
+            },
+            "the default hierarchy to arrive via the outbox"
+        );
+        return root!.Value;
     }
 
     /// <summary>
@@ -607,7 +639,11 @@ public class ApiFixture : IAsyncLifetime
             Activator.CreateInstance(
                 typeof(T),
                 new DbContextOptionsBuilder<T>()
-                    .UseNpgsql(cs, n => n.MigrationsHistoryTable("__ef_migrations_history", schema))
+                    .UseNpgsql(
+                        cs,
+                        n =>
+                            LocIntel.Platform.Data.ModulePersistence.Configure(n, schema, typeof(T))
+                    )
                     .Options,
                 new TenantContext()
             )!;

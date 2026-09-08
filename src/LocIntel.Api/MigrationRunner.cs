@@ -30,7 +30,10 @@ public sealed class MigrationRunner(
                 lifetime.StopApplication();
                 return;
             }
-            catch (Exception e) when (attempt < 30 && !stoppingToken.IsCancellationRequested)
+            // Retry unavailable/transient PostgreSQL only. A broken migration or
+            // missing privilege must fail immediately with its real error.
+            catch (Npgsql.NpgsqlException e)
+                when (e.IsTransient && attempt < 30 && !stoppingToken.IsCancellationRequested)
             {
                 logger.LogInformation("migrate waiting on the database ({Error})", e.Message);
                 await Task.Delay(TimeSpan.FromSeconds(2), stoppingToken);
@@ -49,6 +52,12 @@ public sealed class MigrationRunner(
             var context = (DbContext)sp.GetRequiredService(module.DbContextType);
             await context.Database.MigrateAsync(ct);
         }
+
+        var backfilled = await LocIntel.Modules.Entitlements.PlanEntitlementBackfill.RunAsync(
+            sp.GetRequiredService<LocIntel.Modules.Entitlements.Data.EntitlementsDbContext>(),
+            ct
+        );
+        logger.LogInformation("added {Count} missing subscription plan entitlements", backfilled);
 
         // App role provisioning is idempotent and re-runs every migrate, so
         // grants always cover tables the latest migrations just created.

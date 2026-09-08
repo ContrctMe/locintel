@@ -9,6 +9,10 @@ test('a pending or unavailable hierarchy never offers provisioning', async ({ pa
     await held;
     await route.fulfill({ status: 503, body: 'Hierarchy unavailable' });
   });
+  // the cold path: a warm tab renders the remembered tree instead of loading.
+  // Cleared as the next document starts, so a late write from the page we
+  // are leaving (the dashboard reads the tree too) cannot warm it again.
+  await page.addInitScript(() => sessionStorage.clear());
   await page.goto('/hierarchy');
   await expect(page.getByText('Loading hierarchy…', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Create hierarchy', exact: true })).toHaveCount(0);
@@ -73,12 +77,12 @@ test('role editor owns fresh drafts and preserves failed edits for retry', async
   await expect(dialog.getByRole('button', { name: 'Create role', exact: true })).toBeDisabled();
   const name = `Editor ${Date.now()}`;
   await dialog.getByLabel('Name', { exact: true }).fill(name);
-  await dialog.getByLabel('sites:read', { exact: true }).check();
+  await dialog.getByRole('checkbox', { name: 'See sites', exact: true }).check();
   await dialog.getByRole('button', { name: 'Create role', exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await page.getByRole('row').filter({ hasText: name }).getByRole('button', { name: 'Edit', exact: true }).click();
   await expect(dialog.getByLabel('Name', { exact: true })).toHaveValue(name);
-  await expect(dialog.getByLabel('sites:read', { exact: true })).toBeChecked();
+  await expect(dialog.getByRole('checkbox', { name: 'See sites', exact: true })).toBeChecked();
   await dialog.getByLabel('Name', { exact: true }).fill(`${name} revised`);
   await page.route('**/api/roles/*', async (route) => {
     if (route.request().method() === 'PUT')
@@ -93,7 +97,7 @@ test('role editor owns fresh drafts and preserves failed edits for retry', async
   await expect(page.getByRole('cell', { name: `${name} revised`, exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'New role', exact: true }).click();
   await expect(dialog.getByLabel('Name', { exact: true })).toHaveValue('');
-  await expect(dialog.getByLabel('sites:read', { exact: true })).not.toBeChecked();
+  await expect(dialog.getByRole('checkbox', { name: 'See sites', exact: true })).not.toBeChecked();
 });
 
 test('site hours and closures retain failed drafts and refresh their own data', async ({ page }) => {
@@ -132,11 +136,21 @@ test('site hours and closures retain failed drafts and refresh their own data', 
   await page.getByLabel('Name', { exact: true }).fill('Service hours');
   await page.getByRole('button', { name: 'Add hours', exact: true }).click();
   const schedule = page.getByRole('row').filter({ hasText: 'Service hours' });
-  await expect(schedule).toContainText('09:00 – 17:00');
+  await expect(schedule).toContainText('9:00 AM – 5:00 PM');
   await expect(page.getByText('9:00 AM – 5:00 PM', { exact: true }).first()).toBeVisible();
 
-  const date = new Date(Date.now() + 2 * 86400_000).toISOString().slice(0, 10);
-  await page.getByLabel('Close a day', { exact: true }).fill(date);
+  // the closure date is a calendar (the shadcn date picker): open it, step to
+  // the target's month if the day after tomorrow crosses one, pick the day
+  const target = new Date(Date.now() + 2 * 86400_000);
+  const closeADay = page.getByLabel('Close a day', { exact: true });
+  await closeADay.click();
+  const calendar = page.getByRole('dialog').last();
+  if (target.getMonth() !== new Date().getMonth())
+    await calendar.getByRole('button', { name: /next month/i }).click();
+  await calendar
+    .getByRole('button', { name: new RegExp(`${target.toLocaleString('en-US', { month: 'long' })} ${target.getDate()}(st|nd|rd|th)`) })
+    .click();
+  const shown = target.toLocaleDateString();
   await page.route('**/api/sites/*/closures', async (route) => {
     if (route.request().method() === 'POST')
       await route.fulfill({ status: 503, body: 'Closure unavailable' });
@@ -144,15 +158,16 @@ test('site hours and closures retain failed drafts and refresh their own data', 
   }, { times: 1 });
   await page.getByRole('button', { name: 'Close this day', exact: true }).click();
   await expect(page.getByText('Closure unavailable', { exact: true })).toBeVisible();
-  await expect(page.getByLabel('Close a day', { exact: true })).toHaveValue(date);
+  await expect(closeADay).toContainText(shown);
   await page.getByRole('button', { name: 'Close this day', exact: true }).click();
-  await expect(page.getByLabel('Close a day', { exact: true })).toHaveValue('');
+  await expect(closeADay).toContainText('Pick a day');
   await page.getByRole('button', { name: 'Reopen', exact: true }).click();
   await page.getByRole('button', { name: 'Reopen?', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Reopen', exact: true })).toHaveCount(0);
 
   await schedule.getByRole('button', { name: 'Remove', exact: true }).click();
-  await schedule.getByRole('button', { name: 'Sure?', exact: true }).click();
+  // the confirmation is the shadcn AlertDialog, portaled out of the row
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Sure?', exact: true }).click();
   await expect(schedule).toHaveCount(0);
   await expect(page.getByText('No open windows in the next 7 days.', { exact: true })).toBeVisible();
 });

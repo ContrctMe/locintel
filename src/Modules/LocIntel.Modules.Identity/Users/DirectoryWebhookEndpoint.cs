@@ -37,9 +37,37 @@ public static class DirectoryWebhookEndpoint
             h => h.Value.ToString(),
             StringComparer.OrdinalIgnoreCase
         );
-        var webhook = await source.ParseDirectoryWebhookAsync(body, headers, ct);
+        DirectoryWebhook webhook;
+        try
+        {
+            webhook = await source.ParseDirectoryWebhookAsync(body, headers, ct);
+        }
+        catch (Exception e)
+            when (e
+                    is System.Text.Json.JsonException
+                        or FormatException
+                        or InvalidOperationException
+                        or KeyNotFoundException
+            )
+        {
+            return Results.BadRequest();
+        }
         if (!webhook.Verified)
             return Results.BadRequest();
+        if (webhook is { RevokeUserSubject: { } subject, RevokeSessionsBefore: { } before })
+        {
+            var userIds = db
+                .Users.Where(u => u.Provider == provider.Name && u.Subject == subject)
+                .Select(u => u.Id);
+            await db
+                .Sessions.Where(s =>
+                    userIds.Contains(s.UserId) && s.CreatedAt <= before && s.RevokedAt == null
+                )
+                .ExecuteUpdateAsync(
+                    u => u.SetProperty(s => s.RevokedAt, DateTimeOffset.UtcNow),
+                    ct
+                );
+        }
         if (webhook.Event is not { } evt)
             return Results.Accepted();
 

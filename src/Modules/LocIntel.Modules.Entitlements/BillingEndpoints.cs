@@ -41,7 +41,10 @@ public sealed record BillingLinkResponse(string Url);
 /// </summary>
 public static class BillingEndpoints
 {
-    [Transactional(typeof(EntitlementsDbContext))]
+    [Transactional(
+        typeof(EntitlementsDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/billing")]
     [ProducesResponseType(typeof(BillingResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> Get(
@@ -103,7 +106,7 @@ public static class BillingEndpoints
         if (gate is not GateOutcome.Allowed { Principal: Principal.User principal, Org: var org })
             return gate.ToResult();
         if (PlanCatalog.Find(request.PlanId) is null)
-            return Results.BadRequest(new { error = "unknown plan" });
+            return ApiErrors.BadRequest("unknown plan");
         var returnPath = SafePath(request.ReturnPath);
         var origin = $"{http.Request.Scheme}://{http.Request.Host}";
         var url = await provider.CreateCheckoutUrlAsync(
@@ -137,7 +140,7 @@ public static class BillingEndpoints
             .Select(s => s.CustomerRef)
             .FirstOrDefaultAsync(ct);
         if (customerRef is null)
-            return Results.NotFound(new { error = "no billing account yet" });
+            return ApiErrors.NotFound("no billing account yet");
         var origin = $"{http.Request.Scheme}://{http.Request.Host}";
         var url = await provider.CreatePortalUrlAsync(
             customerRef,
@@ -145,7 +148,7 @@ public static class BillingEndpoints
             ct
         );
         return url is null
-            ? Results.NotFound(new { error = "this provider has no billing portal" })
+            ? ApiErrors.NotFound("this provider has no billing portal")
             : Results.Ok(new BillingLinkResponse(url.ToString()));
     }
 

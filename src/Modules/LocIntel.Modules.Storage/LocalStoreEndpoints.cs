@@ -21,16 +21,25 @@ public static class LocalStoreEndpoints
             "/objects/upload/{token}",
             async (string token, HttpContext http, IObjectStore store, CancellationToken ct) =>
             {
-                if (store is not LocalObjectStore local || local.Redeem(token) is not { } ticket)
+                if (
+                    store is not LocalObjectStore local
+                    || local.Redeem(token, "upload") is not { } ticket
+                )
                     return Results.NotFound();
                 if (http.Request.ContentLength > ticket.maxBytes)
                     return Results.StatusCode(StatusCodes.Status413PayloadTooLarge);
-                await store.WriteAsync(
-                    ticket.key,
-                    http.Request.Body,
-                    http.Request.ContentType ?? "application/octet-stream",
-                    ct
-                );
+                try
+                {
+                    await local.UploadAsync(ticket.key, http.Request.Body, ticket.maxBytes, ct);
+                }
+                catch (InvalidDataException)
+                {
+                    return Results.StatusCode(StatusCodes.Status413PayloadTooLarge);
+                }
+                catch (IOException)
+                {
+                    return Results.Conflict();
+                }
                 return Results.NoContent();
             }
         );
@@ -39,9 +48,15 @@ public static class LocalStoreEndpoints
             "/objects/download/{token}",
             (string token, IObjectStore store) =>
             {
-                if (store is not LocalObjectStore local || local.Redeem(token) is not { } ticket)
+                if (
+                    store is not LocalObjectStore local
+                    || local.Redeem(token, "download") is not { } ticket
+                )
                     return Results.NotFound();
-                return Results.File(local.PathFor(ticket.key));
+                return Results.File(
+                    local.PathFor(ticket.key),
+                    fileDownloadName: Path.GetFileName(ticket.key)
+                );
             }
         );
 

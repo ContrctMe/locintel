@@ -21,9 +21,7 @@ export function parseSiteResponse(value: RawSite): SiteResponse {
     )
   ) throw new Error('invalid site attributes');
 
-  const version = Number(value.version);
-  const latitude = value.latitude === null ? null : Number(value.latitude);
-  const longitude = value.longitude === null ? null : Number(value.longitude);
+  const { version, latitude, longitude } = value;
   if (![version, latitude, longitude].every((item) => item === null || Number.isFinite(item)))
     throw new Error('invalid site coordinates or version');
   return { ...value, attributes: attributes as SiteResponse['attributes'], latitude, longitude, version };

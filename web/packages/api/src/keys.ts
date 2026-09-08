@@ -9,8 +9,11 @@ export const CAPABILITIES = [
   'files:read',
   'files:manage',
   'ingest:manage',
+  'reports:generate',
   'checklists:manage',
   'checklists:complete',
+  'overlays:read',
+  'overlays:manage',
   'audit:read',
   'audit:manage',
   'entitlements:manage',
@@ -22,12 +25,13 @@ export const CAPABILITIES = [
 export type Capability = (typeof CAPABILITIES)[number];
 
 export const ENTITLEMENTS = {
-  'api.requests_per_minute': { shape: 'Limit', policy: 'Block', defaultValue: '600' },
   'audit.read_logging': { shape: 'Boolean', policy: 'Block', defaultValue: 'true' },
   'audit.retention_days': { shape: 'Tiered', policy: 'WarnOnly', defaultValue: '90' },
   'contact_links.enabled': { shape: 'Boolean', policy: 'Block', defaultValue: 'true' },
   'contact_links.monthly': { shape: 'Metered', policy: 'Grace', defaultValue: '1000' },
   'hierarchy.depth': { shape: 'Limit', policy: 'Block', defaultValue: '4' },
+  'reports.enabled': { shape: 'Boolean', policy: 'Block', defaultValue: 'true' },
+  'reports.monthly': { shape: 'Limit', policy: 'Block', defaultValue: '1000' },
   'sites.max': { shape: 'Limit', policy: 'Block', defaultValue: '100' },
   'sso.enabled': { shape: 'Boolean', policy: 'Block', defaultValue: 'false' },
 } as const;

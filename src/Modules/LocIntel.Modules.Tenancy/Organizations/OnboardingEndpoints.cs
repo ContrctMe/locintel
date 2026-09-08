@@ -1,5 +1,6 @@
 using LocIntel.Contracts;
 using LocIntel.Modules.Tenancy.Data;
+using LocIntel.Modules.Tenancy.Hierarchy;
 using LocIntel.Platform.Auth;
 using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Messaging;
@@ -44,13 +45,13 @@ public static class OnboardingEndpoints
             slug.Length is < 3 or > 60
             || !slug.All(c => char.IsAsciiLetterLower(c) || char.IsAsciiDigit(c) || c == '-')
         )
-            return Results.BadRequest(
-                new { error = "slug must be 3-60 chars of lowercase letters, digits, and dashes" }
+            return ApiErrors.BadRequest(
+                "slug must be 3-60 chars of lowercase letters, digits, and dashes"
             );
         if (string.IsNullOrWhiteSpace(request.Name))
-            return Results.BadRequest(new { error = "name is required" });
+            return ApiErrors.BadRequest("name is required");
         if (await db.Organizations.AnyAsync(o => o.Slug == slug, ct))
-            return Results.Conflict(new { error = $"slug '{slug}' is taken" });
+            return ApiErrors.Conflict($"slug '{slug}' is taken");
 
         // provider org first (WorkOS as much as possible): invitations and
         // SSO hang off it. Absent the capability (bare OIDC), ExternalId
@@ -81,6 +82,13 @@ public static class OnboardingEndpoints
                 org.Status.ToString(),
                 org.IsPlatform
             )
+        );
+        // the org's first hierarchy (root named after it, default levels) and
+        // its founder both land under the NEW tenant via the outbox: this
+        // request's connection runs as the founder's previous org, or none
+        await bus.PublishAsync(
+            new ProvisionDefaultHierarchy(org.Id),
+            new DeliveryOptions { TenantId = org.Id.Value.ToString() }
         );
         await bus.PublishAsync(
             new ProvisionFounderMembership(userId, org.Id),
@@ -119,7 +127,7 @@ public static class OrgSettingsEndpoints
             return gate.ToResult();
         var userId = principal.UserId;
         if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Length > 200)
-            return Results.BadRequest(new { error = "name must be 1-200 characters" });
+            return ApiErrors.BadRequest("name must be 1-200 characters");
 
         var org = await db.Organizations.FirstAsync(o => o.Id == orgId, ct);
         var previous = org.Name;

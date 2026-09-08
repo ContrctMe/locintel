@@ -103,6 +103,40 @@ public class DirectorySyncTests(DirectorySyncFixture fixture) : IClassFixture<Di
         return request;
     }
 
+    [Theory]
+    [InlineData("session.revoked")]
+    [InlineData("password_reset.succeeded")]
+    [InlineData("user.deleted")]
+    public async Task Verified_provider_security_events_end_local_sessions_but_do_not_end_later_logins(
+        string eventType
+    )
+    {
+        var client = await AuthKitLoginAsync("session-security@smoke.test");
+        var body = JsonSerializer.Serialize(
+            new
+            {
+                @event = eventType,
+                created_at = DateTimeOffset.UtcNow,
+                data = new Dictionary<string, string>
+                {
+                    [eventType == "user.deleted" ? "id" : "user_id"] =
+                        "user_01SECURITYSESSION000000",
+                },
+            }
+        );
+        (await fixture.GuestClient().SendAsync(SignedWebhook(body))).EnsureSuccessStatusCode();
+        Assert.Equal(
+            "guest",
+            (await client.GetFromJsonAsync<JsonElement>("/me")).GetProperty("tier").GetString()
+        );
+        var fresh = await AuthKitLoginAsync("session-security@smoke.test");
+        (await fixture.GuestClient().SendAsync(SignedWebhook(body))).EnsureSuccessStatusCode();
+        Assert.Equal(
+            "user",
+            (await fresh.GetFromJsonAsync<JsonElement>("/me")).GetProperty("tier").GetString()
+        );
+    }
+
     private static string DsyncUserEvent(
         string eventType,
         string externalOrgId,

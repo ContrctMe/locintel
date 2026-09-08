@@ -6,8 +6,7 @@ namespace LocIntel.Platform.Infra;
 
 /// <summary>
 /// Platform-owned infrastructure tables (not a domain module): currently the
-/// idempotency store (ADR 29) and the sweep leases. Excluded from change-diff audit - infra churn
-/// is noise.
+/// idempotency store (ADR 29) and the sweep leases. Excluded from change-diff audit - infra churn is noise.
 /// </summary>
 public sealed class PlatformDbContext(
     DbContextOptions<PlatformDbContext> options,
@@ -19,10 +18,24 @@ public sealed class PlatformDbContext(
 
     public DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();
     public DbSet<SweepRun> SweepRuns => Set<SweepRun>();
+    public DbSet<LocIntel.Platform.Entitlements.CapacityReservation> CapacityReservations =>
+        Set<LocIntel.Platform.Entitlements.CapacityReservation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.Entity<LocIntel.Platform.Entitlements.CapacityReservation>(b =>
+        {
+            b.ToTable("capacity_reservations");
+            b.HasKey(r => r.Id);
+            b.Property(r => r.Id).HasColumnName("id").ValueGeneratedNever();
+            b.Property(r => r.OrgId).HasColumnName("org_id");
+            b.Property(r => r.Code).HasColumnName("code").HasMaxLength(120);
+            b.Property(r => r.BatchId).HasColumnName("batch_id");
+            b.Property(r => r.CreatedAt).HasColumnName("created_at");
+            b.HasIndex(r => new { r.OrgId, r.Code });
+            b.HasIndex(r => new { r.OrgId, r.BatchId });
+        });
         modelBuilder.Entity<IdempotencyRecord>(b =>
         {
             b.ToTable("idempotency_keys");

@@ -40,14 +40,17 @@ public static class EntitlementCatalog
     /// <summary>Maximum sites; Block at the ceiling.</summary>
     public const string MaxSites = "sites.max";
 
+    /// <summary>Whether the organization may submit or retry report generation.</summary>
+    public const string ReportsEnabled = "reports.enabled";
+
+    /// <summary>PDF outputs reserved or consumed in a UTC calendar month; strict Block admission.</summary>
+    public const string ReportsMonthly = "reports.monthly";
+
     /// <summary>Contact links on/off (boolean gate on the whole feature).</summary>
     public const string ContactLinksEnabled = "contact_links.enabled";
 
     /// <summary>Contact links issued per month; Grace absorbs the approximate live count.</summary>
     public const string ContactLinksMonthly = "contact_links.monthly";
-
-    /// <summary>Per-org API requests per minute (ADR 30's org quota).</summary>
-    public const string ApiRequestsPerMinute = "api.requests_per_minute";
 
     /// <summary>Audit retention in days (tiered) - drives the purge job.</summary>
     public const string AuditRetentionDays = "audit.retention_days";
@@ -63,6 +66,18 @@ public static class EntitlementCatalog
         {
             [HierarchyDepth] = new(HierarchyDepth, EntitlementShape.Limit, LimitPolicy.Block, "4"),
             [MaxSites] = new(MaxSites, EntitlementShape.Limit, LimitPolicy.Block, "100"),
+            [ReportsEnabled] = new(
+                ReportsEnabled,
+                EntitlementShape.Boolean,
+                LimitPolicy.Block,
+                "true"
+            ),
+            [ReportsMonthly] = new(
+                ReportsMonthly,
+                EntitlementShape.Limit,
+                LimitPolicy.Block,
+                "1000"
+            ),
             [ContactLinksEnabled] = new(
                 ContactLinksEnabled,
                 EntitlementShape.Boolean,
@@ -74,12 +89,6 @@ public static class EntitlementCatalog
                 EntitlementShape.Metered,
                 LimitPolicy.Grace,
                 "1000"
-            ),
-            [ApiRequestsPerMinute] = new(
-                ApiRequestsPerMinute,
-                EntitlementShape.Limit,
-                LimitPolicy.Block,
-                "600"
             ),
             [AuditRetentionDays] = new(
                 AuditRetentionDays,

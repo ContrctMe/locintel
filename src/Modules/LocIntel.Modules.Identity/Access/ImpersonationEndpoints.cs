@@ -50,7 +50,7 @@ public static class ImpersonationEndpoints
         if (entry is null)
             return Results.NotFound();
         if (entry.IsPlatform)
-            return Results.BadRequest(new { error = "the platform org cannot be impersonated" });
+            return ApiErrors.BadRequest("the platform org cannot be impersonated");
 
         var ttl = configuration.GetValue<int?>("Impersonation:TtlSeconds") ?? 3600;
         var expiresAt = DateTimeOffset.UtcNow.AddSeconds(ttl);

@@ -18,6 +18,28 @@ namespace LocIntel.ArchitectureTests;
 public class TransactionalAttributeTests
 {
     [Fact]
+    public void Explicit_transactions_on_GET_endpoints_are_lightweight()
+    {
+        var offenders = ProductAssemblies()
+            .SelectMany(a => a.GetTypes())
+            .SelectMany(t =>
+                t.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
+            )
+            .Where(m => m.IsDefined(typeof(Wolverine.Http.WolverineGetAttribute)))
+            .Where(m =>
+                m.GetCustomAttribute<TransactionalAttribute>()
+                    is { Mode: not Wolverine.Persistence.TransactionMiddlewareMode.Lightweight }
+            )
+            .Select(m => $"{m.DeclaringType!.Name}.{m.Name}")
+            .ToArray();
+        Assert.True(
+            offenders.Length == 0,
+            "GET handlers must not hold an eager transaction while calling other modules: "
+                + string.Join(", ", offenders)
+        );
+    }
+
+    [Fact]
     public void Declared_transaction_owners_are_actually_injected()
     {
         var offenders = new List<string>();

@@ -1,6 +1,8 @@
 using LocIntel.Contracts;
 using LocIntel.Modules.Ingest.Data;
+using LocIntel.Platform.Data;
 using LocIntel.Platform.Kernel;
+using Microsoft.EntityFrameworkCore;
 
 namespace LocIntel.Modules.Ingest;
 
@@ -28,12 +30,46 @@ public sealed class StagingService(IngestDbContext db, ISiteLookup sites)
         CancellationToken ct
     )
     {
-        var liveSites = (await sites.ListSitesAsync(ct))
+        if (
+            rows.Count > IngestLimits.MaxRows
+            || rows.Any(r =>
+                r.ExternalId.Length > 120
+                || r.Name.Length > 200
+                || r.TimeZone.Length > 64
+                || r.NodePath.Length > 500
+                || r.Status.Length > 10
+            )
+        )
+            throw new InvalidDataException("Import exceeds row or field limits.");
+        await db.TakeAsync(org.Value, ct);
+        // Retain bounded working history; committed/discarded rows are ephemera, not audit evidence.
+        var cutoff = DateTimeOffset.UtcNow.AddDays(-30);
+        await db
+            .StagedSites.Where(r =>
+                db.Batches.Any(b =>
+                    b.Id == r.BatchId && b.Status != BatchStatus.Staged && b.CreatedAt < cutoff
+                )
+            )
+            .ExecuteDeleteAsync(ct);
+        if (await db.StagedSites.CountAsync(ct) + rows.Count > IngestLimits.MaxStagedRows)
+            throw new InvalidDataException(
+                "Organization staging limit reached; discard unused batches."
+            );
+        // the file's ids, not the org's sites: the diff reads what it needs (code review, 2026-09)
+        var externalIds = rows.Select(r => r.ExternalId)
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct()
+            .ToArray();
+        var liveSites = (await sites.ListSitesAsync(externalIds, ct))
             .Where(s => s.ExternalId is not null)
-            .ToDictionary(s => s.ExternalId!);
-        var nodesByPath = (await sites.ListNodesAsync(ct))
+            .GroupBy(s => s.ExternalId!)
+            .ToDictionary(g => g.Key, g => g.First());
+        var nodes = await sites.ListNodesAsync(ct);
+        var nodesByPath = nodes
             .GroupBy(n => n.NamePath)
             .ToDictionary(g => g.Key, g => g.First().Id);
+        // a spreadsheet may carry the node's id instead of its name path
+        var nodeIds = nodes.Select(n => n.Id).ToHashSet();
 
         var batch = new ImportBatch
         {
@@ -79,6 +115,8 @@ public sealed class StagingService(IngestDbContext db, ISiteLookup sites)
                 errors.Add($"status must be open|closed, got '{row.Status}'");
             if (nodesByPath.TryGetValue(row.NodePath, out var nodeId))
                 staged.NodeId = nodeId;
+            else if (Guid.TryParse(row.NodePath, out var byId) && nodeIds.Contains(byId))
+                staged.NodeId = byId;
             else
                 errors.Add($"no hierarchy node at '{row.NodePath}'");
 
@@ -122,10 +160,14 @@ public static class CsvParser
 {
     public static List<Dictionary<string, string>> Parse(string text)
     {
+        if (System.Text.Encoding.UTF8.GetByteCount(text) > IngestLimits.MaxBytes)
+            throw new InvalidDataException("CSV exceeds byte limit.");
         var lines = SplitRecords(text);
         if (lines.Count == 0)
             return [];
-        var headers = lines[0];
+        var headers = lines[0].Select(h => h.Trim().ToLowerInvariant()).ToList();
+        if (headers.Any(string.IsNullOrEmpty) || headers.Distinct().Count() != headers.Count)
+            throw new InvalidDataException("CSV headers must be nonempty and distinct.");
         return lines
             .Skip(1)
             .Where(fields => fields.Count > 1 || fields[0].Length > 0)
@@ -145,6 +187,12 @@ public static class CsvParser
         var quoted = false;
         for (var i = 0; i < text.Length; i++)
         {
+            if (
+                current.Length > IngestLimits.MaxFieldChars
+                || fields.Count >= IngestLimits.MaxColumns
+                || records.Count > IngestLimits.MaxRows
+            )
+                throw new InvalidDataException("CSV exceeds row, column or field limits.");
             var c = text[i];
             if (quoted)
             {
@@ -182,6 +230,15 @@ public static class CsvParser
             fields.Add(current.ToString());
             records.Add(fields);
         }
+        if (
+            current.Length > IngestLimits.MaxFieldChars
+            || fields.Count > IngestLimits.MaxColumns
+            || records.Count > IngestLimits.MaxRows + 1
+            || quoted
+        )
+            throw new InvalidDataException(
+                "CSV exceeds its limits or has an unclosed quoted field."
+            );
         return records;
     }
 

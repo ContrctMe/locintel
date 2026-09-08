@@ -1,6 +1,7 @@
 using System.Text.Json;
 using LocIntel.Contracts;
 using LocIntel.Modules.Entitlements.Data;
+using LocIntel.Platform.Data;
 using LocIntel.Platform.Kernel;
 using Microsoft.EntityFrameworkCore;
 using Wolverine.Attributes;
@@ -24,7 +25,7 @@ public sealed class EntitlementsExporter(EntitlementsDbContext db) : IOrgDataExp
                 e.Source,
                 e.UpdatedAt,
             })
-            .ToListAsync(ct);
+            .ToBoundedExportListAsync(ct);
         var exceptions = await db
             .Exceptions.IgnoreQueryFilters()
             .Where(e => e.OrgId == org)
@@ -36,7 +37,7 @@ public sealed class EntitlementsExporter(EntitlementsDbContext db) : IOrgDataExp
                 e.ExpiresAt,
                 e.CreatedAt,
             })
-            .ToListAsync(ct);
+            .ToBoundedExportListAsync(ct);
         var rollups = await db
             .Rollups.IgnoreQueryFilters()
             .Where(r => r.OrgId == org)
@@ -46,7 +47,7 @@ public sealed class EntitlementsExporter(EntitlementsDbContext db) : IOrgDataExp
                 r.PeriodMonth,
                 r.Amount,
             })
-            .ToListAsync(ct);
+            .ToBoundedExportListAsync(ct);
         return JsonSerializer.Serialize(
             new
             {

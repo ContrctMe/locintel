@@ -3,9 +3,12 @@ using System.Text;
 using System.Text.Json;
 using LocIntel.Contracts;
 using LocIntel.Modules.Storage.Data;
+using LocIntel.Platform.Data;
+using LocIntel.Platform.Entitlements;
 using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Messaging;
 using LocIntel.Platform.Storage;
+using Microsoft.EntityFrameworkCore;
 using Wolverine;
 using Wolverine.Attributes;
 
@@ -35,12 +38,38 @@ public static class ExportAuditTrailHandler
                 "audit export arrived with no tenant on the envelope"
             );
 
+        await db.TakeAsync(org.Value, ct);
+        if (await db.PurgedOrganizations.AnyAsync(x => x.OrgId == org, ct))
+        {
+            if (message.AdmissionId is { } cancelled)
+                await CapacityReservations.ConsumeAsync(
+                    db,
+                    org,
+                    ExportAdmission.Code,
+                    cancelled,
+                    ct
+                );
+            return;
+        }
+
+        var admission =
+            message.AdmissionId
+            ?? await ExportAdmission.TryReserveAsync(db, org, ct)
+            ?? throw new CapacityBusyException();
+        if (!await db.TryTakeAsync(admission, ct))
+            throw new CapacityBusyException();
+        if (!await ExportAdmission.ExistsAsync(db, org, admission, ct))
+            return;
+
         var sections = await exporter.ExportAsync(org, ct);
         using var buffer = new MemoryStream();
-        using (var zip = new ZipArchive(buffer, ZipArchiveMode.Create, leaveOpen: true))
+        try
         {
+            long bytes = 0;
+            using var zip = new ZipArchive(buffer, ZipArchiveMode.Create, leaveOpen: true);
             foreach (var section in sections)
             {
+                bytes = ExportLimits.AddSection(bytes, section.Jsonl);
                 var entry = zip.CreateEntry($"{section.Kind}.jsonl", CompressionLevel.Optimal);
                 await using var entryStream = entry.Open();
                 await entryStream.WriteAsync(Encoding.UTF8.GetBytes(section.Jsonl), ct);
@@ -64,6 +93,17 @@ public static class ExportAuditTrailHandler
                 ct
             );
         }
+        catch (InvalidDataException)
+        {
+            await bus.AuditAsync(
+                org,
+                AuditActor.User(message.RequestedBy),
+                "audit.export_failed",
+                new { reason = "export_budget_exceeded" }
+            );
+            await CapacityReservations.ConsumeAsync(db, org, ExportAdmission.Code, admission, ct);
+            return;
+        }
         buffer.Position = 0;
 
         var id = Guid.CreateVersion7();
@@ -77,6 +117,7 @@ public static class ExportAuditTrailHandler
                 Key = key,
                 Name = $"audit-export-{DateOnly.FromDateTime(DateTime.UtcNow):yyyy-MM-dd}.zip",
                 ContentType = "application/zip",
+                Origin = "audit-export",
                 MaxBytes = buffer.Length,
                 // internally generated, never touched an upload ticket: born Clean
                 Status = FileStatus.Clean,
@@ -95,5 +136,6 @@ public static class ExportAuditTrailHandler
                 truncatedKinds = sections.Where(s => s.Truncated).Select(s => s.Kind),
             }
         );
+        await CapacityReservations.ConsumeAsync(db, org, ExportAdmission.Code, admission, ct);
     }
 }

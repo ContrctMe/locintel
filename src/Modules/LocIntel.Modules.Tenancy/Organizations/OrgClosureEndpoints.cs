@@ -27,7 +27,10 @@ public static class OrgClosureEndpoints
     public static int GraceDays(IConfiguration configuration) =>
         configuration.GetValue<int?>("Organizations:CloseGraceDays") ?? 30;
 
-    [Transactional(typeof(TenancyDbContext))]
+    [Transactional(
+        typeof(TenancyDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/org/closure")]
     [ProducesResponseType(typeof(ClosureStatusResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> Status(
@@ -68,7 +71,7 @@ public static class OrgClosureEndpoints
         var userId = principal.UserId;
         var org = await db.Organizations.FirstAsync(o => o.Id == orgId, ct);
         if (org.IsPlatform)
-            return Results.BadRequest(new { error = "the platform org cannot be closed" });
+            return ApiErrors.BadRequest("the platform org cannot be closed");
         if (org.CloseRequestedAt is not null)
             return Results.NoContent(); // already pending: idempotent
 

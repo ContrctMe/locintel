@@ -1,5 +1,6 @@
 using LocIntel.Contracts;
 using LocIntel.Modules.Storage.Data;
+using LocIntel.Platform.Data;
 using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Messaging;
 using LocIntel.Platform.Storage;
@@ -34,11 +35,27 @@ public static class PurgeFileTrashHandler
             );
         var window = configuration.GetValue<int?>("Storage:TrashRetentionDays") ?? 30;
         var cutoff = DateTimeOffset.UtcNow.AddDays(-window);
+        var hasLiveCloudTickets = store.SupportsBoundedUpload && store is not LocalObjectStore;
+        var ticketCutoff = DateTimeOffset.UtcNow.AddMinutes(-15);
         var expired = await db
-            .Files.Where(f => f.Status == FileStatus.Deleted && f.DeletedAt < cutoff)
+            .Files.Where(f =>
+                f.Status == FileStatus.Deleted
+                && !f.LegalHold
+                && f.DeletedAt < cutoff
+                && (!hasLiveCloudTickets || f.CreatedAt < ticketCutoff)
+            )
             .ToListAsync(ct);
         foreach (var file in expired)
         {
+            await db.TakeAsync(file.Id, ct);
+            await db.Entry(file).ReloadAsync(ct);
+            if (
+                file.Status != FileStatus.Deleted
+                || file.LegalHold
+                || file.DeletedAt >= cutoff
+                || (hasLiveCloudTickets && file.CreatedAt >= ticketCutoff)
+            )
+                continue;
             await store.DeleteAsync(file.Key, ct);
             if (file.PreviewKey is { } previewKey)
                 await store.DeleteAsync(previewKey, ct);

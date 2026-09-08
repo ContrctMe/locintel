@@ -3,10 +3,14 @@ using LocIntel.Modules.Tenancy.Organizations;
 using LocIntel.Modules.Tenancy.Sites;
 using LocIntel.Platform.Data;
 using LocIntel.Platform.Kernel;
+using LocIntel.Platform.Spatial;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using NetTopologySuite.Geometries;
 
 namespace LocIntel.Modules.Tenancy.Data;
 
+[SpatialModule] // sites.location is geography (ADR 50)
 public sealed class TenancyDbContext(
     DbContextOptions<TenancyDbContext> options,
     ITenantContext tenant
@@ -23,11 +27,90 @@ public sealed class TenancyDbContext(
     public DbSet<SiteOpenWindow> SiteOpenWindows => Set<SiteOpenWindow>();
     public DbSet<Sites.SiteAttributeDefinition> SiteAttributeDefinitions =>
         Set<Sites.SiteAttributeDefinition>();
+    public DbSet<SiteSearchTerm> SiteSearchTerms => Set<SiteSearchTerm>();
+
+    /// <summary>
+    /// sites.location is derived, never set by hand (ADR 50): every save
+    /// rewrites it from Latitude/Longitude, so ingest, the API, and the dev
+    /// seed all keep the geography in step without knowing it exists.
+    /// </summary>
+    public override async Task<int> SaveChangesAsync(
+        bool acceptAllChangesOnSuccess,
+        CancellationToken cancellationToken = default
+    )
+    {
+        foreach (var entry in ChangeTracker.Entries<Site>().ToList())
+            if (entry.State is EntityState.Added or EntityState.Modified)
+            {
+                SyncLocation(entry);
+                SyncKeys(entry);
+                await SyncSearchTermsAsync(entry, cancellationToken);
+            }
+        return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    /// <summary>
+    /// The leakproof keys (ADR 51) follow their sources the same way the
+    /// geography does: cell from the coordinates, path_text from the path.
+    /// </summary>
+    private static void SyncKeys(EntityEntry<Site> entry)
+    {
+        var site = entry.Entity;
+        var cell = SpatialCells.Key(site.Latitude, site.Longitude);
+        if (site.Cell != cell)
+            site.Cell = cell;
+        var pathText = site.Path.ToString();
+        if (site.PathText != pathText)
+            site.PathText = pathText;
+    }
+
+    /// <summary>
+    /// The word index behind search (ADR 51): one row per distinct word of
+    /// the name and city, lower-cased, replaced whenever either changes.
+    /// </summary>
+    private async Task SyncSearchTermsAsync(EntityEntry<Site> entry, CancellationToken ct)
+    {
+        var site = entry.Entity;
+        var changed =
+            entry.State == EntityState.Added
+            || entry.Property(s => s.Name).IsModified
+            || entry.Property(s => s.City).IsModified;
+        if (!changed)
+            return;
+        if (entry.State == EntityState.Modified)
+            await SiteSearchTerms.Where(t => t.SiteId == site.Id).ExecuteDeleteAsync(ct);
+        foreach (var term in SiteSearchTerm.TermsOf(site.Name, site.City))
+            SiteSearchTerms.Add(
+                new SiteSearchTerm
+                {
+                    OrgId = site.OrgId,
+                    SiteId = site.Id,
+                    Term = term,
+                    Name = site.Name,
+                }
+            );
+    }
+
+    private static void SyncLocation(EntityEntry<Site> entry)
+    {
+        var site = entry.Entity;
+        var expected = site is { Latitude: { } lat, Longitude: { } lng }
+            ? new Point(lng, lat) { SRID = 4326 } // x = longitude, y = latitude
+            : null;
+        var current = site.Location;
+        if (expected is null && current is null)
+            return;
+        if (expected is not null && current is not null && expected.EqualsExact(current))
+            return;
+        site.Location = expected;
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
         modelBuilder.HasPostgresExtension("ltree");
+        // not a trusted extension: the migrate role creates it as owner (ADR 50)
+        modelBuilder.HasPostgresExtension("postgis");
 
         modelBuilder.Entity<Organization>(b =>
         {
@@ -121,12 +204,54 @@ public sealed class TenancyDbContext(
             b.Property(s => s.CountryCode).HasColumnName("country_code").HasMaxLength(2);
             b.Property(s => s.Latitude).HasColumnName("latitude");
             b.Property(s => s.Longitude).HasColumnName("longitude");
+            // geography, never geometry, for stored data (ADR 50): meters and
+            // planet-correct boxes without a projection decision per query
+            b.Property(s => s.Location)
+                .HasColumnName("location")
+                .HasColumnType("geography (point, 4326)");
+            b.HasIndex(s => s.Location).HasMethod("gist");
             b.Property(s => s.CreatedAt).HasColumnName("created_at");
             b.HasIndex(s => s.Path).HasMethod("gist");
             b.HasIndex(s => s.NodeId);
+            // the leakproof keys (ADR 51): what the app role's plans actually
+            // use under row security - a tile or viewport is a cell range, a
+            // subtree a path_text range, a page a (name, id) keyset
+            b.Property(s => s.Cell).HasColumnName("cell");
+            b.Property(s => s.PathText).HasColumnName("path_text").UseCollation("C");
+            b.HasIndex(s => new { s.OrgId, s.Cell });
+            b.HasIndex(s => new { s.OrgId, s.PathText });
+            b.HasIndex(s => new
+            {
+                s.OrgId,
+                s.Name,
+                s.Id,
+            });
+            b.HasIndex(s => new { s.OrgId, s.Status });
             b.HasIndex(s => new { s.OrgId, s.ExternalId })
                 .IsUnique()
                 .HasFilter("external_id IS NOT NULL");
+        });
+
+        modelBuilder.Entity<SiteSearchTerm>(b =>
+        {
+            b.ToTable("site_search_terms");
+            b.HasKey(t => new { t.SiteId, t.Term });
+            b.Property(t => t.OrgId).HasColumnName("org_id");
+            b.Property(t => t.SiteId).HasColumnName("site_id");
+            b.Property(t => t.Term).HasColumnName("term").HasMaxLength(120).UseCollation("C");
+            b.Property(t => t.Name).HasColumnName("name").HasMaxLength(200);
+            // the search page IS this index: term range, then name order
+            b.HasIndex(t => new
+            {
+                t.OrgId,
+                t.Term,
+                t.Name,
+                t.SiteId,
+            });
+            b.HasOne<Site>()
+                .WithMany()
+                .HasForeignKey(t => t.SiteId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<Sites.SiteAttributeDefinition>(b =>

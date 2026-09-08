@@ -1,3 +1,4 @@
+using LocIntel.Platform.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
@@ -15,7 +16,7 @@ namespace LocIntel.IntegrationTests;
 public sealed class MigrationDbFixture : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder(
-        "postgres:17-alpine"
+        PostgresImage.Reference
     ).Build();
 
     public string ConnectionString => _postgres.GetConnectionString();
@@ -72,7 +73,11 @@ public class MigrationRoundTripTests(MigrationDbFixture fixture) : IClassFixture
             Activator.CreateInstance(
                 typeof(T),
                 new DbContextOptionsBuilder<T>()
-                    .UseNpgsql(cs, n => n.MigrationsHistoryTable("__ef_migrations_history", schema))
+                    .UseNpgsql(
+                        cs,
+                        n =>
+                            LocIntel.Platform.Data.ModulePersistence.Configure(n, schema, typeof(T))
+                    )
                     .Options,
                 new LocIntel.Platform.Kernel.TenantContext()
             )!;

@@ -1,22 +1,15 @@
 import type { ComponentProps } from 'react';
 import { cn } from '../lib/utils';
+import { NativeSelect } from './native-select';
 
 /**
- * Styled NATIVE select (deliberately not a popover listbox): the template
- * favors zero-surprise controls, and every console picker was hand-rolling
- * these classes. One place to restyle.
+ * The console's pickers are NATIVE selects on purpose: zero-surprise, right
+ * on phones, driven by the browser suite with selectOption. They wear
+ * shadcn's own native-select styling; `className` sizes the control, as it
+ * always did (the wrapper takes it, the select fills the wrapper).
  */
-export function Select({ className, ...props }: ComponentProps<'select'>) {
-  return (
-    <select
-      className={cn(
-        'h-9 w-full rounded-md border bg-background px-2 text-sm outline-none',
-        'focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50',
-        className,
-      )}
-      {...props}
-    />
-  );
+export function Select({ className, ...props }: Omit<ComponentProps<'select'>, 'size'>) {
+  return <NativeSelect className={cn('w-full', className)} {...props} />;
 }
 
 const TIME_ZONES: string[] = (() => {
@@ -28,7 +21,7 @@ const TIME_ZONES: string[] = (() => {
 })();
 
 /** Every IANA zone the runtime knows - no more freetext "America/New_York". */
-export function TimeZoneSelect(props: Omit<ComponentProps<'select'>, 'children'>) {
+export function TimeZoneSelect(props: Omit<ComponentProps<'select'>, 'children' | 'size'>) {
   return (
     <Select {...props}>
       {TIME_ZONES.map((zone) => (

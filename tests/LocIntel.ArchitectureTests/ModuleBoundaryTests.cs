@@ -66,7 +66,11 @@ public class ModuleBoundaryTests
     ///   Tenancy (base: org/site master data - consumes no module's contracts)
     ///   Identity (above Tenancy - reads org data ONLY via its event-fed
     ///             org_directory read model, never IOrganizationLookup)
-    ///   Entitlements (top - may consume IOrganizationLookup and the probes)
+    ///   Entitlements (may consume IOrganizationLookup and the probes)
+    ///   Storage, Spatial (above those - own bytes and geometry; a lower
+    ///             module reaches them through a Platform port, never directly)
+    ///   Reporting (top - consumes site, file, overlay and requester contracts
+    ///             implemented below it, and publishes none of its own)
     /// Platform ports (IScopeResolver, IEntitlements) are exempt: the host
     /// wires them, and their hub-shaped runtime coupling is a documented
     /// decision (ADR 37), not an accident.
@@ -84,6 +88,33 @@ public class ModuleBoundaryTests
             "Identity must use its org_directory read model, not Tenancy's lookup: "
                 + string.Join(", ", result.FailingTypeNames ?? [])
         );
+    }
+
+    /// <summary>
+    /// Reporting is the ladder's top rung, so nothing but the host may reference
+    /// it. The theory above already forbids module-to-module references, but the
+    /// direction is what matters here and it is worth failing by name: a fork
+    /// that wires Storage or Tenancy to a report type has made Reporting
+    /// impossible to extract, and would otherwise learn that from a generic
+    /// message about "another module's internals".
+    /// </summary>
+    [Fact]
+    public void Nothing_below_reporting_consumes_it()
+    {
+        var reporting = typeof(Modules.Reporting.ReportRegistry).Assembly.GetName().Name!;
+        foreach (var module in ModuleAssemblies.Where(a => a.GetName().Name != reporting))
+        {
+            var result = Types
+                .InAssembly(module)
+                .ShouldNot()
+                .HaveDependencyOn(reporting)
+                .GetResult();
+            Assert.True(
+                result.IsSuccessful,
+                $"{module.GetName().Name} consumes Reporting, which sits above it: "
+                    + string.Join(", ", result.FailingTypeNames ?? [])
+            );
+        }
     }
 
     // every adapter the host wires (the scan used to cover WorkOS alone)

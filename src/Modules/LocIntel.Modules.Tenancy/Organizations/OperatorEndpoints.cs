@@ -24,7 +24,10 @@ public sealed record OperatedOrgResponse(
 /// <summary>Org lifecycle, operator custody: the back half the entities always modeled.</summary>
 public static class OperatorOrgEndpoints
 {
-    [Transactional(typeof(TenancyDbContext))]
+    [Transactional(
+        typeof(TenancyDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/operator/orgs")]
     [ProducesResponseType(typeof(List<OperatedOrgResponse>), StatusCodes.Status200OK)]
     public static async Task<IResult> List(
@@ -117,7 +120,7 @@ public static class OperatorOrgEndpoints
         if (org is null)
             return Results.NotFound();
         if (org.IsPlatform)
-            return Results.BadRequest(new { error = "the platform org cannot be suspended" });
+            return ApiErrors.BadRequest("the platform org cannot be suspended");
         if (org.Status == status)
             return Results.NoContent();
 

@@ -31,10 +31,25 @@ export class ApiError extends Error {
     public readonly body: unknown,
     cause?: unknown,
     public readonly outcomeUnknown = false,
+    /** Seconds the server asked the caller to wait, from Retry-After. */
+    public readonly retryAfterSeconds?: number,
   ) {
     super(apiErrorMessage(status, body), { cause });
     this.name = 'ApiError';
   }
+}
+
+/**
+ * A refusal the server itself says is transient. It must name a Retry-After: a
+ * bare 503 can come from something in front of the API, after the work was
+ * already done, and repeating a write on that guess is how a request lands twice.
+ */
+export function isTransient(error: unknown): error is ApiError {
+  return (
+    error instanceof ApiError &&
+    error.status === 503 &&
+    error.retryAfterSeconds !== undefined
+  );
 }
 
 export type ApiProblem = {
@@ -69,7 +84,40 @@ export function apiProblem(value: unknown): ApiProblem | undefined {
   return candidate as ApiProblem;
 }
 
+/**
+ * Gate 1's single 402 body (GateResults). A plan limit is an upsell, not a
+ * failure, so callers can offer the plan instead of only reporting an error.
+ * `limit`/`current` are absent when the plan omits the feature entirely.
+ */
+export type ApiPlanLimit = {
+  code: string;
+  limit?: number;
+  current?: number;
+};
+
+export function apiPlanLimit(
+  status: number,
+  body: unknown,
+): ApiPlanLimit | undefined {
+  if (status !== 402 || typeof body !== 'object' || body === null)
+    return undefined;
+  const candidate = body as Record<string, unknown>;
+  if (typeof candidate.code !== 'string') return undefined;
+  const limit = candidate.limit;
+  const current = candidate.current;
+  return {
+    code: candidate.code,
+    limit: typeof limit === 'number' ? limit : undefined,
+    current: typeof current === 'number' ? current : undefined,
+  };
+}
+
 function apiErrorMessage(status: number, body: unknown): string {
+  const plan = apiPlanLimit(status, body);
+  if (plan)
+    return plan.limit === undefined
+      ? 'Your plan does not include this feature'
+      : `Plan limit reached: ${plan.current ?? plan.limit} of ${plan.limit} used`;
   const problem = apiProblem(body);
   if (problem?.error) return problem.error;
   const validation = problem?.errors
@@ -83,6 +131,7 @@ function apiErrorMessage(status: number, body: unknown): string {
   if (status === 401) return 'Sign in required';
   if (status === 403) return 'Permission denied';
   if (status === 409) return 'The request conflicts with a newer change';
+  if (status === 503) return 'The server is busy. Please try again.';
   return `API ${status}`;
 }
 
@@ -152,7 +201,7 @@ type Init<O> = ([PathParams<O>] extends [undefined]
     ? { query?: undefined }
     : HasRequiredKeys<QueryParams<O>> extends true
       ? { query: QueryParams<O> }
-      : { query?: QueryParams<O> }) & { signal?: AbortSignal };
+      : { query?: QueryParams<O> }) & { signal?: AbortSignal; idempotencyKey?: string };
 type InitArgs<O> = HasRequiredInit<O> extends true ? [init: Init<O>] : [init?: Init<O>];
 type WriteArgs<O> = O extends { requestBody: { content: { 'application/json': unknown } } }
   ? [body: RequestBody<O>, ...init: InitArgs<O>]
@@ -180,7 +229,7 @@ function url(template: string, init?: { path?: unknown; query?: unknown }): stri
 async function request<T>(
   method: string,
   template: string,
-  init?: { path?: unknown; query?: unknown; signal?: AbortSignal },
+  init?: { path?: unknown; query?: unknown; signal?: AbortSignal; idempotencyKey?: string },
   body?: unknown,
 ): Promise<T> {
   const generation = sessionGeneration;
@@ -197,6 +246,7 @@ async function request<T>(
       signal,
       credentials: 'include',
       headers: {
+        ...(init?.idempotencyKey ? { 'Idempotency-Key': init.idempotencyKey } : {}),
         ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
         ...(sessionContext && template !== '/me' ? { [sessionHeader]: sessionContext } : {}),
       },
@@ -240,7 +290,19 @@ async function request<T>(
       window.dispatchEvent(new CustomEvent(SESSION_CONTEXT_OBSERVED, { detail: observed }));
     }
   }
-  if (!response.ok) throw new ApiError(response.status, parsed);
+  if (!response.ok) {
+    // Number(null) is 0, which would have made every bare 503 look like the
+    // server had asked for an immediate retry.
+    const header = response.headers.get('Retry-After');
+    const after = header === null || header.trim() === '' ? Number.NaN : Number(header);
+    throw new ApiError(
+      response.status,
+      parsed,
+      undefined,
+      false,
+      Number.isFinite(after) && after >= 0 ? after : undefined,
+    );
+  }
   return parsed as T;
 }
 

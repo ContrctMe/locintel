@@ -6,8 +6,8 @@
   efficiency, test strategy, and production maturity
 - **Status:** Follow-up remediation active; prior verification is historical evidence
 - **Owner:** Project maintainers
-- **Last updated:** 2026-09-05
-- **Reviewed state:** Commit `2b18a4c` plus the current uncommitted working tree
+- **Last updated:** 2026-09-07
+- **Reviewed state:** Hosted verification at `e1b1552`; subsequent local investigation is recorded separately
 
 This review evaluates LocIntel as a forkable foundation for location/site-based,
 multi-tenant SaaS. Ratings are relative to a production-ready template, not to a
@@ -15,6 +15,62 @@ prototype or example application. Its purpose is to record what is strong today,
 what remains risky, and the acceptance criteria for the next stages of work.
 
 ## Executive assessment
+
+### Architecture follow-up (2026-09-07, current local work)
+
+This follow-up is separate from the historical hosted revision below. The
+maintainer prioritized business invariants, transaction conventions, deployment
+compatibility, and demonstrated maintenance hotspots.
+
+- **Business capacity:** [ADR 55](decisions/0055-business-capacity-reservations.md)
+  records strict site admission and the explicitly selected whole-batch import
+  reservation policy. The per-process site-count cache is removed. Platform-owned
+  reservations share the accepting Ingest transaction and are consumed with the
+  Tenancy write. Pending/failed work retains its capacity until completion or
+  explicit reconciliation. Contact-link metering retains its existing approximate
+  Grace contract; it is not qualified as an exact billing ledger.
+- **Execution conventions:** annotated GET endpoints use lightweight transactions,
+  checked by an architecture regression. Write/outbox transactions retain their
+  owning context. Migration startup retries only transient database errors.
+  [Production conventions](production.md#handler-and-transaction-conventions)
+  explain the ordering and ownership rules.
+- **Compatibility deployment:** local preparation remains available in
+  [the ordered checklist](../deploy/digitalocean/README.md). Actual provisioning
+  still depends on account/context, domain, registry and provider choices. No live
+  provider, managed-database privilege, NFS, or hosted gateway result is claimed.
+- **Frontend locality:** the settings route delegates to `features/settings`;
+  its typed API module owns requests, while site-attribute and basemap editors
+  are separate internal components. Existing validation, query keys, redirects
+  and mutation behavior are retained.
+
+Local verification before the final contention-retry tuning: **321 integration tests passed** across the existing
+shards (134 + 187), with one expected opt-in scale skip; **52 architecture** and
+**68 unit** tests passed. This includes imports, reservations, migration failure
+handling and all module migration round trips. Console typechecking, lint,
+49 tests, production build, and the settings Chromium accessibility check passed.
+The Linux production image passed migration, non-root API/worker readiness and
+durable worker cleanup smoke checks. The frontend build still reports a
+large-chunk warning; this change does not claim bundle optimization.
+
+The first two-replica run exposed a recovery regression: scheduling every capacity
+collision missed the existing five-minute import recovery limit. The final native
+Wolverine policy adds short, jittered retries before durable delayed retries.
+After that change, all **5 capacity integration tests** and **5 two-replica fleet
+tests passed**. The fleet completed the 400-row import after killing its accepting
+API in **3 minutes 10 seconds**, within the unchanged five-minute limit. The fleet
+also verified one remaining business slot under concurrent creates, shared
+sessions, idempotency and sweep uniqueness. The final rebuilt production image
+passed all three role smoke checks again. Test containers and processes were
+cleaned up. These are correctness/recovery checks, not throughput qualification.
+
+The first broad run exposed a replay test that did not handle intentional
+transient contention; the final run retries only that condition. An existing
+import test now waits for both queued rows before inspecting a subsequent
+preview, rather than assuming the first row's appearance means all work finished.
+Logs are local `/tmp/locintel-hardening-*` files; final TRX results are under
+`tests/LocIntel.IntegrationTests/TestResults/shard-1-18195/` and
+`tests/LocIntel.IntegrationTests/TestResults/shard-2-18132/`. They are local evidence,
+not a hosted CI or live-provider result.
 
 The subsequent objective review reopened work in this priority order:
 
@@ -27,8 +83,11 @@ The subsequent objective review reopened work in this priority order:
 
 The original nine-phase ledgers below describe the preceding remediation, not
 completion of this new work. The user authorized requiring `checks` on `main`;
-that GitHub setting is now applied and verified. Commits, pushes, and deployments
-remain outside that approval.
+that GitHub setting is now applied and verified. The subsequent approved
+submission is [PR #1](https://github.com/Contrct-Owner/multi-tenant-site-saas/pull/1).
+All ten hosted checks passed on `e1b1552`. No merge or deployment was performed.
+Deployment targets and strategy are deferred to a separate discussion; the
+current authorized work is local reliability investigation and documentation cleanup.
 
 ### Current acceptance status (2026-09-05)
 
@@ -37,15 +96,21 @@ below. Local verification does not establish hosted or production acceptance.
 
 | Priority | Current evidence | Still required |
 | --- | --- | --- |
-| 1 — Session/tenant correctness | Server context guard and cross-tab browser regressions implemented; latest browser matrix 120/120 passes | Hosted verification of the submitted tree |
-| 2 — Transport and recovery | Error parsing, native cancellation, deadlines, and unconfirmed-mutation recovery implemented; native cancellation negative control fails as intended | Hosted verification; historical intermittent slow reads remain unexplained |
-| 3 — CI enforcement/repeatability | GitHub `main` requires `checks` from Actions app 15368, including administrators; strict up-to-date mode is off; local aggregate-gate regressions pass | Submit current changes with authorization, then verify all hosted jobs on that revision; retain and investigate intermittent-failure evidence |
+| 1 — Session/tenant correctness | Server context guard and cross-tab browser regressions implemented; hosted browser matrix 120/120 passes | No outstanding implementation finding in this category; deployment behavior belongs to priority 4 |
+| 2 — Transport and recovery | Error parsing, native cancellation, deadlines, and unconfirmed-mutation recovery implemented and hosted-verified; native cancellation negative control fails as intended | Historical slow reads did not reproduce in the bounded local investigation below; cause remains unproven |
+| 3 — CI enforcement/repeatability | GitHub `main` requires `checks` from Actions app 15368, including administrators; all ten hosted checks pass on `e1b1552` | Historical slow reads and shutdown hang remain open risks, provisionally accepted for staging; resume diagnosis on recurrence or a limit breach |
 | 4 — Provider/topology acceptance | Local adapter and topology tests provide bounded evidence only | Select live providers and deployment target; authorize and execute acceptance there |
 | 5 — Load/soak | Prior local mixed-load measurements are historical, not production SLO proof | Agree latency/resource objectives and run longer soak on the selected topology |
 | 6 — Maintenance/documentation | Feature-boundary improvements and detailed evidence are recorded | Finish consolidation and reassess demonstrated hotspots after higher-priority acceptance |
 
 Branch protection was verified using GitHub's branch-protection API after the
 approved update. No commit, push, or deployment accompanied the policy change.
+The later [successful hosted run](https://github.com/Contrct-Owner/multi-tenant-site-saas/actions/runs/33965371540)
+verified architecture, unit, both integration shards, contract, frontend, image,
+browser, coverage, and the aggregate gate on one revision. Browser logs confirm
+40 tests per engine and the failed-stack diagnostic preservation regression.
+The pnpm 9 argument-forwarding, fleet-test formatting, and fork-sync fixture
+branch defects exposed during hosted verification were fixed before that run.
 
 Fresh full integration verification of the current tree passes **267 tests**
 (155 + 112), with one expected opt-in scale skip and normal process exits.
@@ -59,6 +124,80 @@ tools/run-integration-shard.sh 1 2` and the same command with seed `9052`, shard
 new real-database fleet-paging test in the complete suite. The CI gate regression
 also passes workflow wiring and all 40 negative cases. No fresh coverage or
 production soak claim follows from this run.
+
+### Local reliability investigation (2026-09-05)
+
+This investigation changes evidence and documentation, not application behavior.
+No retry, assertion timeout, rate limit, or dependency version was changed.
+
+- **Shutdown:** Recovered the original 34-class selection from
+  `TestResults/shard-1-16416/integration-shard-1.trx`, instead of assuming today's
+  shard 1 selects the same classes. Three fresh-process replays on current code,
+  with shuffle seeds `90511`, `90512`, and `90513`, each passed 118 tests and
+  exited normally (354 total; runner durations 1m35s, 2m16s, and 59s).
+  Results are in `tests/LocIntel.IntegrationTests/TestResults/shutdown-replay-<seed>/replay.trx`.
+  Five-minute inactivity detection and full-dump capture were enabled. No hang
+  occurred, so full-dump collection was not exercised and no new dump is claimed.
+  The first successful replay emitted the same `NpgsqlOperationInProgressException`
+  in `Wolverine.Postgresql.AdvisoryLock.HasLock` (`select 1`) as the historical
+  failure. That warning is not sufficient evidence of a hang or its cause.
+- **WebKit:** 25 repetitions each of the tenant-switch and pending-write flows
+  passed (50/50, 5.3 minutes). Integration replays overlapped the later iterations
+  deliberately to add local resource pressure; these are not isolated latency
+  benchmarks. API logs contain 3,232 completions, none taking five seconds;
+  maximum 1,975.9174ms (a cancelled request). Of 400 site GET completions,
+  389 were HTTP 200; their maximum was 677.6638ms. Whole test flows reached
+  22.3 seconds, but include setup, repeated transitions, and deliberate holds;
+  this is not a 22.3-second server request. Logs:
+  `/var/folders/33/vztx0_zd35q7vbzt_q8ph_b40000gn/T/locintel-e2e.1lfXrI/`.
+- **Firefox:** After the integration replays ended, 25 repetitions of the
+  pending-write flow passed (1.6 minutes), with `--trace=on`. The 174 successful
+  site GET entries captured in the browser network traces had maximum total
+  time 411.197ms and maximum wait time 408.027ms. API logs independently record
+  1,471 completed requests (maximum 424.5612ms), including 175 successful site
+  reads (maximum 406.4763ms). These counts describe their respective capture
+  boundaries, not a claimed one-to-one trace join. No five-second read recurred.
+  All browser and integration processes exited normally. Combined fresh evidence
+  is 75 browser passes and 354 integration-test passes, not new coverage or
+  deployment-capacity certification.
+
+The 25 Firefox traces, both stack logs, and three shutdown replay result trees
+are preserved privately under `/tmp/locintel-reliability.hsfGDM/` (outside Git).
+Temporary evidence may be purged by the OS; retain it in an approved private
+archive if long-term storage is needed. No production instrumentation or
+application-code changes were made. Documentation changes remain local.
+
+**Disposition:** Neither historical symptom is established as fixed. The
+shutdown warning can coexist with normal termination, and the measured server
+requests do not reproduce the old five-second successful read. Preserve the
+original failure artifacts. On recurrence, correlate browser/network timings,
+server request duration and database waits; for a hang, inspect the full managed
+heap/async wait before changing shutdown or dependency behavior. The
+[local investigation runbook](runbook.md#local-intermittent-failure-investigation)
+records repeatable commands and sensitive-artifact handling.
+
+### Provisional risk acceptance (2026-09-05)
+
+The maintainer explicitly agreed to accept the unreproduced slow-read and
+test-host shutdown risks **provisionally for controlled staging**, not to label
+them fixed or approve production readiness. Broad local repetition stops for
+now. Diagnostic procedures and browser failure capture are available; full-dump
+capture was armed locally but has not been exercised by a reproduced hang.
+
+- **Owner:** Project maintainers.
+- **Reopen investigation:** Either symptom recurs in CI or normal usage, or
+  breaches the latency/shutdown limits to be agreed during deployment planning.
+  Preserve the original occurrence's evidence before rerunning.
+- **Controls:** Keep required checks, assertion timeouts, and retry policy strict.
+  Keep traces, logs, and heap dumps private. Do not substitute warning suppression
+  or passing reruns for a root-cause finding.
+- **Review point:** Reassess both risks after staging and soak results, before a
+  production-readiness decision. Production limits and acceptance remain unset.
+- **Authority:** This acceptance permits moving to deployment planning; it does
+  not authorize a merge, deployment, provider purchase, or account configuration.
+
+The overall goal remains incomplete: provider/topology acceptance, agreed
+load/soak objectives and evidence, and final maintenance reassessment remain.
 
 ### Follow-up evidence history
 
@@ -604,7 +743,7 @@ merge enforcement, and deployment-scale capacity remain outside the local proof.
    and built frontend loading observations are now recorded with their limits.
    They do not establish production capacity.
 
-## Current qualitative ratings
+## Historical qualitative ratings (before the current follow-up)
 
 | Area | Assessment | Evidence or remaining limitation |
 | --- | --- | --- |
@@ -1047,7 +1186,7 @@ bundle output. Historical results and the current tested local envelope are publ
 **Exit criterion:** Performance and operability claims are backed by repeatable
 benchmarks at published data and replica counts.
 
-## Final-tree verification ledger
+## Historical final-tree verification ledger
 
 Earlier phase results remain evidence for those snapshots, not completion of
 the current tree. Final checks after the pool-budget and feed changes:
@@ -1077,7 +1216,11 @@ increased. A full Firefox rerun with request-duration diagnostics passed all
 preserved beside the trace as `full-rerun-api.log`.
 The isolated delay's cause is not established by the successful repetitions.
 
-## Final disposition and deployment follow-up
+## Historical disposition and deployment follow-up (superseded)
+
+The following records the earlier review's conclusion, not today's status.
+In particular, its uncommitted-tree, missing-protection, and missing cross-tab
+coordination statements are superseded by the current acceptance summary above.
 
 All nine remediation phases have implementation and local verification evidence
 in the ledgers above. This closes the reviewed implementation/evidence gaps;

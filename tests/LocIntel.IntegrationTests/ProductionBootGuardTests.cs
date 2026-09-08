@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Options;
@@ -14,26 +16,52 @@ namespace LocIntel.IntegrationTests;
 /// adapter, and the host must refuse before it starts. The refusal happens
 /// while the composition root runs, so no database or fixture is needed.
 /// </summary>
-public class ProductionBootGuardTests
+public class ProductionBootGuardTests : IDisposable
 {
-    private static readonly string KeyPath = Path.Combine(
+    private readonly string KeyPath = Path.Combine(
         Path.GetTempPath(),
-        "locintel-boot-guard-keys"
+        $"locintel-boot-guard-{Guid.NewGuid():N}"
     );
 
+    public ProductionBootGuardTests()
+    {
+        Directory.CreateDirectory(KeyPath);
+        using var rsa = RSA.Create(2048);
+        var request = new CertificateRequest(
+            "CN=locintel-boot-guard",
+            rsa,
+            HashAlgorithmName.SHA256,
+            RSASignaturePadding.Pkcs1
+        );
+        using var certificate = request.CreateSelfSigned(
+            DateTimeOffset.UtcNow.AddMinutes(-1),
+            DateTimeOffset.UtcNow.AddDays(1)
+        );
+        File.WriteAllBytes(
+            Path.Combine(KeyPath, "keyring.pfx"),
+            certificate.Export(X509ContentType.Pfx)
+        );
+    }
+
+    public void Dispose() => Directory.Delete(KeyPath, recursive: true);
+
     /// <summary>Every seam on its production adapter (registration is lazy; nothing connects).</summary>
-    private static Dictionary<string, string?> ProductionValid() =>
+    private Dictionary<string, string?> ProductionValid() =>
         new()
         {
             ["ROLE"] = "api",
             ["ConnectionStrings:locintel"] = "Host=localhost;Database=unused",
             ["DataProtection:KeyPath"] = KeyPath,
+            ["DataProtection:CertificatePath"] = Path.Combine(KeyPath, "keyring.pfx"),
+            ["AllowedHosts"] = "localhost;*.locintel.test",
             ["Auth:Provider"] = "workos",
             ["Auth:WorkOS:ApiKey"] = "sk_unused",
             ["Auth:WorkOS:ClientId"] = "client_unused",
+            ["Auth:WorkOS:WebhookSecret"] = "whsec_unused",
             ["Storage:Provider"] = "s3",
             ["Storage:S3:BucketName"] = "unused",
-            ["Storage:Azure:ConnectionString"] = "UseDevelopmentStorage=true",
+            ["Storage:Azure:ConnectionString"] =
+                "DefaultEndpointsProtocol=https;AccountName=unused;AccountKey=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=;EndpointSuffix=core.windows.net",
             ["Storage:Azure:ContainerName"] = "unused",
             ["Scanner:Provider"] = "clamav",
             ["Scanner:ClamAv:Host"] = "unused",
@@ -75,6 +103,13 @@ public class ProductionBootGuardTests
     )]
     [InlineData("Notifications:Sms", "local", "Notifications:Sms 'local' is dev/test only")]
     [InlineData("DataProtection:KeyPath", null, "DataProtection:KeyPath is required in Production")]
+    [InlineData("DataProtection:CertificatePath", null, "DataProtection:CertificatePath")]
+    [InlineData("AllowedHosts", "*", "AllowedHosts must list")]
+    [InlineData(
+        "Proxy:TrustForwardedHeaders",
+        "true",
+        "Proxy:KnownProxies or Proxy:KnownNetworks is required"
+    )]
     public void Production_refuses_to_boot_with_a_dev_adapter(
         string key,
         string? devValue,
@@ -286,6 +321,55 @@ public class ProductionBootGuardTests
         "user",
         "Notifications:Smtp:UserName and Password"
     )]
+    [InlineData(
+        "Auth:Provider",
+        "workos",
+        "Auth:WorkOS:ApiBaseUrl",
+        "http://example.test",
+        "Auth:WorkOS:ApiBaseUrl"
+    )]
+    [InlineData(
+        "Auth:Provider",
+        "workos",
+        "Auth:WorkOS:WebhookSecret",
+        null,
+        "Auth:WorkOS:WebhookSecret"
+    )]
+    [InlineData(
+        "Storage:Provider",
+        "s3",
+        "Storage:S3:ServiceUrl",
+        "http://example.test",
+        "Storage:S3:ServiceUrl"
+    )]
+    [InlineData(
+        "Storage:Provider",
+        "azure",
+        "Storage:Azure:ConnectionString",
+        "UseDevelopmentStorage=true",
+        "Storage:Azure configuration is malformed"
+    )]
+    [InlineData(
+        "Secrets:Provider",
+        "kms",
+        "Secrets:Kms:ServiceUrl",
+        "http://example.test",
+        "Secrets:Kms:ServiceUrl"
+    )]
+    [InlineData(
+        "Billing:Provider",
+        "stripe",
+        "Billing:Stripe:ApiBase",
+        "http://example.test",
+        "Billing:Stripe:ApiBase"
+    )]
+    [InlineData(
+        "Notifications:Transport",
+        "smtp",
+        "Notifications:Smtp:UseStartTls",
+        "false",
+        "Notifications:Smtp:UseStartTls"
+    )]
     public void Production_refuses_invalid_provider_options(
         string selectorKey,
         string selectorValue,
@@ -301,12 +385,43 @@ public class ProductionBootGuardTests
         Assert.Contains(refusal, BootRefusal(settings)!.Message);
     }
 
+    [Theory]
+    [InlineData("Proxy:KnownNetworks:0", "0.0.0.0/0")]
+    [InlineData("Proxy:KnownNetworks:0", "::/0")]
+    [InlineData("Proxy:KnownProxies:0", "0.0.0.0")]
+    [InlineData("Proxy:KnownProxies:0", "bad-address")]
+    public void Wildcard_or_malformed_proxy_peers_are_refused(string key, string value)
+    {
+        var settings = ProductionValid();
+        settings["Proxy:TrustForwardedHeaders"] = "true";
+        settings[key] = value;
+        Assert.Contains("Proxy:Known", BootRefusal(settings)!.Message);
+    }
+
+    [Theory]
+    [InlineData("Auth:Provider", "local")]
+    [InlineData("Storage:Provider", "local")]
+    [InlineData("Scanner:Provider", "eicar")]
+    [InlineData("Secrets:Provider", "local")]
+    [InlineData("Billing:Provider", "local")]
+    [InlineData("Notifications:Transport", "local")]
+    [InlineData("Notifications:Sms", "local")]
+    public void Staging_does_not_enable_development_adapters(string key, string value)
+    {
+        var settings = ProductionValid();
+        settings[key] = value;
+        Assert.Contains(key, BootRefusal(settings, "Staging")!.Message);
+    }
+
     /// <summary>The composition root's refusal, or null when the host built.</summary>
-    private static Exception? BootRefusal(Dictionary<string, string?> settings)
+    private static Exception? BootRefusal(
+        Dictionary<string, string?> settings,
+        string environment = "Production"
+    )
     {
         using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(b =>
         {
-            b.UseEnvironment("Production");
+            b.UseEnvironment(environment);
             foreach (var (key, value) in settings)
                 b.UseSetting(key, value);
         });

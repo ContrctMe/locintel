@@ -18,7 +18,10 @@ public sealed record PublicUrlResponse(string Url, string EmbedSnippet);
 /// </summary>
 public static class PublicUrlEndpoint
 {
-    [Transactional(typeof(TenancyDbContext))]
+    [Transactional(
+        typeof(TenancyDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/org/public-url")]
     [ProducesResponseType(typeof(PublicUrlResponse), StatusCodes.Status200OK)]
     public static async Task<IResult> Get(

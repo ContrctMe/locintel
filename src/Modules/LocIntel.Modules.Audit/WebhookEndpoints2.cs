@@ -1,6 +1,8 @@
 using System.Security.Cryptography;
 using LocIntel.Contracts;
 using LocIntel.Modules.Audit.Data;
+using LocIntel.Platform.Data;
+using LocIntel.Platform.Http;
 using LocIntel.Platform.Kernel;
 using LocIntel.Platform.Secrets;
 using Microsoft.AspNetCore.Hosting;
@@ -56,7 +58,10 @@ public sealed record WebhookDeliveryResponse(
 /// </summary>
 public static class WebhookManagementEndpoints
 {
-    [Transactional(typeof(AuditDbContext))]
+    [Transactional(
+        typeof(AuditDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/webhooks")]
     [ProducesResponseType(typeof(List<WebhookResponse>), StatusCodes.Status200OK)]
     public static async Task<IResult> List(
@@ -112,35 +117,25 @@ public static class WebhookManagementEndpoints
         var gate = await Allowed(accessor, scopes, ct);
         if (gate is not GateOutcome.Allowed)
             return gate.ToResult();
-        if (!Uri.TryCreate(request.Url, UriKind.Absolute, out var uri))
-            return Results.BadRequest(new { error = "url must be absolute" });
-        if (environment.IsProduction())
-        {
-            // SSRF floor: outbound calls originate from OUR network, so the
-            // target must be a PUBLIC https endpoint (ADR 40).
-            if (uri.Scheme != "https")
-                return Results.BadRequest(new { error = "webhook urls must be https" });
-            if (uri.IsLoopback || uri.Host is "localhost")
-                return Results.BadRequest(new { error = "webhook urls must be public" });
-            // resolve the name and reject any address in a private/reserved
-            // range - a public DNS name that A-records to 10.x or the cloud
-            // metadata IP (169.254.169.254) is the classic SSRF pivot. This
-            // is registration-time defence; the delivery client should also
-            // pin/re-check at connect time in a hardened fork (DNS can rebind).
-            System.Net.IPAddress[] addresses;
-            try
-            {
-                addresses = await System.Net.Dns.GetHostAddressesAsync(uri.Host, ct);
-            }
-            catch (Exception)
-            {
-                return Results.BadRequest(new { error = "webhook host does not resolve" });
-            }
-            if (addresses.Length == 0 || addresses.Any(IsPrivateOrReserved))
-                return Results.BadRequest(
-                    new { error = "webhook host resolves to a private or reserved address" }
-                );
-        }
+        if (
+            !PublicHttp.IsAllowedUrl(
+                request.Url,
+                environment.IsDevelopment() || environment.IsEnvironment("Testing")
+            )
+        )
+            return ApiErrors.BadRequest("Webhook URL must be a public HTTPS endpoint on port 443.");
+        if (
+            request.Events is { Length: > 50 }
+            || request.Events?.Any(e => string.IsNullOrWhiteSpace(e) || e.Length > 100) == true
+        )
+            return ApiErrors.BadRequest("Choose at most 50 event names of at most 100 characters.");
+        if (!await db.TryTakeAsync(org.Value, ct))
+            return ApiErrors.Conflict("Webhook configuration is busy.");
+        if (await db.WebhookEndpoints.CountAsync(ct) >= WebhookDispatch.MaxEndpoints)
+            return ApiErrors.Status(
+                "Webhook endpoint limit reached.",
+                StatusCodes.Status429TooManyRequests
+            );
 
         var secret =
             "whsec_"
@@ -226,13 +221,20 @@ public static class WebhookManagementEndpoints
         var endpoint = await db.WebhookEndpoints.FirstOrDefaultAsync(e => e.Id == id, ct);
         if (endpoint is null)
             return Results.NotFound();
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"DELETE FROM platform.capacity_reservations WHERE org_id = {endpoint.OrgId.Value} AND code = {WebhookDispatch.Code} AND batch_id = {id}",
+            ct
+        );
         db.WebhookEndpoints.Remove(endpoint);
         await db.WebhookDeliveries.Where(d => d.EndpointId == id).ExecuteDeleteAsync(ct);
         await db.SaveChangesAsync(ct);
         return Results.NoContent();
     }
 
-    [Transactional(typeof(AuditDbContext))]
+    [Transactional(
+        typeof(AuditDbContext),
+        Mode = Wolverine.Persistence.TransactionMiddlewareMode.Lightweight
+    )]
     [WolverineGet("/api/webhooks/{id}/deliveries")]
     [ProducesResponseType(typeof(List<WebhookDeliveryResponse>), StatusCodes.Status200OK)]
     public static async Task<IResult> Deliveries(
@@ -282,17 +284,26 @@ public static class WebhookManagementEndpoints
             return gate.ToResult();
         if (!await db.WebhookEndpoints.AnyAsync(e => e.Id == id, ct))
             return Results.NotFound();
-        await bus.PublishAsync(
-            new DeliverWebhook(
-                id,
-                Guid.CreateVersion7(),
-                "webhook.ping",
-                "{}",
-                DateTimeOffset.UtcNow,
-                Attempt: 1
-            ),
-            new DeliveryOptions { TenantId = org.Value.ToString() }
-        );
+        if (
+            !await WebhookDispatch.EnqueueAsync(
+                db,
+                org,
+                new DeliverWebhook(
+                    id,
+                    Guid.CreateVersion7(),
+                    "webhook.ping",
+                    "{}",
+                    DateTimeOffset.UtcNow,
+                    Attempt: 1
+                ),
+                bus,
+                ct
+            )
+        )
+            return ApiErrors.Status(
+                "Webhook delivery queue is full.",
+                StatusCodes.Status429TooManyRequests
+            );
         return Results.Accepted();
     }
 
@@ -301,25 +312,4 @@ public static class WebhookManagementEndpoints
         IScopeResolver scopes,
         CancellationToken ct
     ) => Gate.RequireAsync(accessor, scopes, Capabilities.OrgManage, ct);
-
-    private static bool IsPrivateOrReserved(System.Net.IPAddress address)
-    {
-        if (
-            System.Net.IPAddress.IsLoopback(address)
-            || address.IsIPv6LinkLocal
-            || address.IsIPv6SiteLocal
-            || address.IsIPv6UniqueLocal
-        )
-            return true;
-        var b = address.GetAddressBytes();
-        if (address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
-            return b[0] == 10 // 10.0.0.0/8
-                || (b[0] == 172 && b[1] >= 16 && b[1] <= 31) // 172.16.0.0/12
-                || (b[0] == 192 && b[1] == 168) // 192.168.0.0/16
-                || (b[0] == 169 && b[1] == 254) // 169.254.0.0/16 link-local (cloud metadata)
-                || b[0] == 127 // loopback
-                || b[0] == 0
-                || b[0] >= 224; // multicast/reserved
-        return false;
-    }
 }

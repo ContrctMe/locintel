@@ -46,6 +46,8 @@ public static class ModuleCatalog
             "checklists",
             typeof(LocIntel.Modules.Checklists.Data.ChecklistsDbContext)
         ),
+        new("spatial", "spatial", typeof(LocIntel.Modules.Spatial.Data.SpatialDbContext)),
+        new("reporting", "reporting", typeof(LocIntel.Modules.Reporting.Data.ReportingDbContext)),
     ];
 
     /// <summary>

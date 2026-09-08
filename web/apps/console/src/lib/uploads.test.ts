@@ -6,7 +6,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-it('polls the uploaded file directly rather than searching a paginated listing', async () => {
+it.each([undefined, '01990000-0000-7000-8000-000000000001'])('uploads with site %s and polls the file directly', async (siteId) => {
   const fetchMock = vi.fn(async (url: unknown, init?: RequestInit) => {
     if (url === '/api/files' && init?.method === 'POST') return Response.json({
       fileId: 'file-1', ticket: { url: 'https://storage.test/upload', method: 'PUT', headers: {} },
@@ -17,7 +17,11 @@ it('polls the uploaded file directly rather than searching a paginated listing',
     throw new Error('scan polling must not depend on a listing page');
   });
   vi.stubGlobal('fetch', fetchMock);
-  await expect(uploadFile(new File(['data'], 'file.txt'), 'text/plain')).resolves.toBe('file-1');
+  await expect(uploadFile(new File(['data'], 'file.txt'), 'text/plain', undefined, siteId)).resolves.toBe('file-1');
+  expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({
+    name: 'file.txt', contentType: 'text/plain', sizeBytes: 4,
+    ...(siteId ? { siteId } : {}),
+  });
   expect(fetchMock.mock.calls.at(-1)?.[0]).toBe('/api/files/file-1');
 });
 

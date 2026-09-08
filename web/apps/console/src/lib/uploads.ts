@@ -5,6 +5,7 @@ export async function uploadFile(
   file: File,
   contentType: string,
   onPhase?: (phase: string) => void,
+  siteId?: string,
 ): Promise<string> {
   // Bound the entire chain, not sixty independent polling deadlines. Larger
   // uploads need a deliberate limit change and slow-link acceptance tests.
@@ -14,6 +15,7 @@ export async function uploadFile(
     name: file.name,
     contentType,
     sizeBytes: file.size,
+    ...(siteId ? { siteId } : {}),
   }, { signal });
   onPhase?.('Uploading to storage…');
   let uploaded: Response;

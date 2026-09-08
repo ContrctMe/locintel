@@ -25,6 +25,7 @@ public sealed class S3Options
 /// </summary>
 public sealed class S3ObjectStore : IObjectStore
 {
+    public bool SupportsBoundedUpload => true;
     private readonly IAmazonS3 _client;
     private readonly string _bucket;
     private readonly bool _plainHttp;
@@ -63,7 +64,7 @@ public sealed class S3ObjectStore : IObjectStore
                 Expires = expires.UtcDateTime,
                 ContentType = contentType,
                 // Signed: omitting the condition must invalidate the ticket.
-                Headers = { ["If-None-Match"] = "*" },
+                Headers = { ["If-None-Match"] = "*", ContentLength = maxBytes },
             }
         );
         return new UploadTicket(
@@ -73,6 +74,9 @@ public sealed class S3ObjectStore : IObjectStore
             {
                 ["Content-Type"] = contentType,
                 ["If-None-Match"] = "*",
+                ["Content-Length"] = maxBytes.ToString(
+                    System.Globalization.CultureInfo.InvariantCulture
+                ),
             },
             expires
         );
@@ -91,6 +95,10 @@ public sealed class S3ObjectStore : IObjectStore
                         BucketName = _bucket,
                         Key = key,
                         Verb = HttpVerb.GET,
+                        ResponseHeaderOverrides = new ResponseHeaderOverrides
+                        {
+                            ContentDisposition = "attachment",
+                        },
                         Expires = DateTime.UtcNow.Add(ttl),
                     }
                 )
@@ -131,6 +139,7 @@ public sealed class S3ObjectStore : IObjectStore
                 BucketName = _bucket,
                 Key = key,
                 InputStream = content,
+                AutoCloseStream = false,
                 ContentType = contentType,
             },
             ct

@@ -60,14 +60,8 @@ public class GatesTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         await ApiFixture.WaitForMembershipAsync(owner);
         (await owner.PostAsJsonAsync("/auth/switch-org", new { orgId })).EnsureSuccessStatusCode();
 
-        var created = await owner.PostAsJsonAsync(
-            "/api/hierarchy",
-            new { name = email, levels = new[] { "Region", "Market" } }
-        );
-        created.EnsureSuccessStatusCode();
-        var rootId = (await created.Content.ReadFromJsonAsync<JsonElement>())
-            .GetProperty("rootNodeId")
-            .GetGuid();
+        // the org is born with a hierarchy (root + default levels)
+        var rootId = await ApiFixture.WaitForRootAsync(owner);
         return (owner, rootId, orgId);
     }
 
@@ -156,7 +150,7 @@ public class GatesTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         );
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal(1, body.GetProperty("over").GetInt64());
+        Assert.Equal(1, body.GetProperty("detail").GetProperty("over").GetInt64());
     }
 
     [Fact]
@@ -246,10 +240,7 @@ public class GatesTests(ApiFixture fixture) : IClassFixture<ApiFixture>
             JsonValueKind.Null,
             entitlements.GetProperty("contact_links.enabled").GetProperty("usage").ValueKind
         );
-        Assert.Equal(
-            JsonValueKind.Null,
-            entitlements.GetProperty("api.requests_per_minute").GetProperty("usage").ValueKind
-        );
+        Assert.False(entitlements.TryGetProperty("api.requests_per_minute", out _));
     }
 
     [Fact]
